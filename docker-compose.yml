@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # The Admin backend that controls everything
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_URL=redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    volumes:
+      # THIS IS THE MAGIC: It lets the Go backend talk to the host's Docker daemon
+      # so your Admin UI can literally start/stop the other containers below!
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - redis
+      - rabbitmq
+
+  # The Public Landing Page & Admin UI
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - backend
+
+  # --- The "Widgets" (Can be toggled ON/OFF from the Admin UI) ---
+  
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    # Added labels so our Go backend knows this is a "Widget" it can control
+    labels:
+      - "playground.widget=cache"
+      - "playground.name=Redis Cache"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"   # AMQP protocol
+      - "15672:15672" # Management UI
+    labels:
+      - "playground.widget=queue"
+      - "playground.name=RabbitMQ Message Queue"
