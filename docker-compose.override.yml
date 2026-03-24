@@ -1,0 +1,17 @@
+# Local Development Override
+# Docker Compose automatically loads this file if you just run \`docker compose up\`!
+# It injects the build instructions and local environment variables.
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      # Local frontend expects the backend on localhost:8080
+      - NEXT_PUBLIC_API_URL=http://localhost:8080

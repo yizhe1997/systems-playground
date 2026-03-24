@@ -1,17 +1,18 @@
-tunnel: <id>
-credentials-file: /home/.../.cloudflared/<id>.json
+tunnel: <your-tunnel-id>
+credentials-file: /home/user/.cloudflared/<your-tunnel-id>.json
 
 ingress:
-  - hostname: aspire.38569123.xyz
-    service: http://localhost:18888
-  - hostname: yzportal.38569123.xyz
+  # Example: Expose the Systems Playground Frontend
+  - hostname: portal.yourdomain.com
     service: http://localhost:8081
-  - hostname: yzportalserver.38569123.xyz
+    
+  # Example: Expose the Systems Playground API
+  - hostname: api.yourdomain.com
     service: http://localhost:8080
-  - hostname: n8n.38569123.xyz
+    
+  # Example: Expose other applications
+  - hostname: n8n.yourdomain.com
     service: http://localhost:5678
-  - hostname: 38569123.xyz
-    service: http_status:404
-  - hostname: www.38569123.xyz
-    service: http_status:404
+    
+  # Catch-all for unmatched traffic
   - service: http_status:404
