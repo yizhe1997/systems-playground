@@ -1,5 +1,16 @@
 name: Deploy to NUC (Self-Hosted)
 
+# ⚠️ IMPORTANT: HOW TO PREVENT THE RUNNER FROM DYING ON REBOOT ⚠️
+# ----------------------------------------------------------------
+# When you install the GitHub Actions runner on your WSL/Linux host,
+# DO NOT just run `./run.sh`. If your NUC restarts, the runner will die.
+#
+# To ensure the runner automatically starts every time the NUC boots:
+# 1. CD into your actions-runner directory: `cd ~/actions-runner`
+# 2. Install the background service: `sudo ./svc.sh install`
+# 3. Start the background service: `sudo ./svc.sh start`
+# ----------------------------------------------------------------
+
 on:
   push:
     branches:
