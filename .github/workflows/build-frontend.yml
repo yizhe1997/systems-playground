@@ -4,8 +4,8 @@ on:
     branches:
       - main
     paths:
-      # This is the magic part: it ONLY triggers if a file in the /frontend folder changed.
       - "frontend/**"
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions UI
 
 jobs:
   build-and-push:

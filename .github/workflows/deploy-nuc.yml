@@ -4,20 +4,16 @@ on:
   push:
     branches:
       - main
-    # You can optionally exclude frontend/backend paths here if you want 
-    # the Watchtower workflow to handle those, but since we are building locally:
     paths-ignore:
       - 'docs/**'
       - 'README.md'
+  workflow_dispatch:
 
 jobs:
   deploy:
-    # This targets the GitHub runner installed on your NUC
     runs-on: self-hosted
     
     steps:
       - name: Trigger Zero-Downtime Deployment
         run: |
-          # We don't even need actions/checkout. 
-          # We just tell the NUC to run the bash script we already wrote!
           # bash /home/user/apps/systems-playground/infra/scripts/deploy-playground.sh
