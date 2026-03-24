@@ -1,0 +1,13 @@
+# Production Override
+# Use this when running via Watchtower or pulling pre-built images.
+# Run with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  backend:
+    image: yourdockerhub/systems-playground-backend:latest
+
+  frontend:
+    image: yourdockerhub/systems-playground-frontend:latest
+    environment:
+      # Production frontend expects the backend routed through Cloudflare
+      - NEXT_PUBLIC_API_URL=https://api.yourdomain.com
