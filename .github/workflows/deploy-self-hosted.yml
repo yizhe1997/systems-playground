@@ -1,0 +1,34 @@
+name: Instant Deploy (Self-Hosted)
+on:
+  # This listens for the successful completion of the build-and-push workflows
+  workflow_run:
+    workflows: ["Build and Push Backend", "Build and Push Frontend"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      # Set this in GitHub -> Settings -> Secrets and variables -> Actions
+      APP_DIR: ${{ vars.APP_DIR || '/home/user/apps/systems-playground' }}
+      
+    steps:
+      - name: Trigger Instant Zero-Downtime Deployment
+        run: |
+          cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
+          
+          echo "📦 Pulling latest compose configurations..."
+          git pull origin main
+          
+          echo "📥 Pulling latest pre-built images from registry..."
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+          
+          echo "🔄 Gracefully recreating containers..."
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+          
+          echo "🧹 Cleaning up old images..."
+          docker image prune -f
+          
+          echo "✅ Instant deployment complete!"

@@ -10,13 +10,15 @@ A robust local host environment separates core infrastructure from application w
 ├── infra/                      # Core System Services
 │   ├── wsl-startup.sh          # Boots infra & initializes Cloudflare Tunnel
 │   ├── wsl-shutdown.sh         # Gracefully stops infra
-│   ├── config.env              # Environment variables (Discord webhooks, paths)
-│   └── docker-compose.yml      # Runs Uptime Kuma, Watchtower, etc.
+│   ├── .env                    # Environment variables (Discord webhooks, paths)
+│   └── uptime-kuma
+│       ├── docker-compose.yml  # Runs Uptime Kuma, Watchtower, etc.
+│       └── .env
 │
 └── apps/                       # Application Workloads
     ├── wsl-startup.sh          # Loops through all apps and boots them
     ├── wsl-shutdown.sh         # Gracefully stops all apps
-    ├── config.env              # Defines the APPS_LIST array, backups, etc.
+    ├── .env                    # Defines the APPS_LIST array, backups, etc.
     ├── wsl-backup.sh           # Safe automated backup script for named volumes
     │
     ├── systems-playground/     # <-- Git clone this repository here
