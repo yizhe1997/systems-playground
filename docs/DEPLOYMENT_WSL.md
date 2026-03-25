@@ -47,7 +47,7 @@ To expose your local WSL services securely without opening router ports, we use 
 
 ### How to Bind Domains in `config.yml`
 Here is an example configuration showing how to route public domains to the internal local ports. By default, the Systems Playground uses:
-*   **Frontend:** Port `3000` (mapped to `8081` on host)
+*   **Frontend:** Port `3000` (mapped to `8086` on host)
 *   **Backend API:** Port `8080` (mapped to `8085` on host)
 
 ```yaml
@@ -57,7 +57,7 @@ credentials-file: /home/user/.cloudflared/<your-tunnel-id>.json
 ingress:
   # Example: Expose the Systems Playground Frontend
   - hostname: portal.yourdomain.com
-    service: http://localhost:8081
+    service: http://localhost:8086
     
   # Example: Expose the Systems Playground API
   - hostname: api.yourdomain.com

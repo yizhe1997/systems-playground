@@ -26,7 +26,7 @@ description: "How to run and manage the Systems Playground."
     docker-compose up --build -d
     ```
 3.  Once the containers spin up, you can access the applications at:
-    *   **Public Landing Page & Admin UI:** `http://localhost:3000` (mapped to `8081` when running in prod)
+    *   **Public Landing Page & Admin UI:** `http://localhost:3000` (mapped to `8086` when running in prod)
     *   **Golang API:** `http://localhost:8085/health`
     *   **RabbitMQ Management UI:** `http://localhost:15672` (if you want to peek under the hood)
 
