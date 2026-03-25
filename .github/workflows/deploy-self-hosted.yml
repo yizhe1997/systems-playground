@@ -19,12 +19,21 @@ jobs:
       APP_DIR: ${{ vars.APP_DIR || '/home/user/apps/systems-playground' }}
       
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
       - name: Trigger Instant Zero-Downtime Deployment
         run: |
-          cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
+          # 1. Ensure the destination directory exists
+          mkdir -p "$APP_DIR"
           
-          echo "📦 Pulling latest compose configurations..."
-          git pull origin main
+          # 2. Copy ONLY the necessary compose files from the cloned runner workspace to the APP_DIR
+          echo "📦 Copying latest compose configurations to $APP_DIR..."
+          cp docker-compose.yml "$APP_DIR/"
+          cp docker-compose.prod.yml "$APP_DIR/"
+          
+          # 3. Navigate to the APP_DIR to execute Docker commands
+          cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
           
           echo "📥 Pulling latest pre-built images from registry..."
           docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
