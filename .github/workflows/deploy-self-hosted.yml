@@ -1,6 +1,10 @@
 name: Instant Deploy (Self-Hosted)
 on:
-  # This listens for the successful completion of the build-and-push workflows
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker-compose*.yml'
   workflow_run:
     workflows: ["Build and Push Backend", "Build and Push Frontend"]
     types:
