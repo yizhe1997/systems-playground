@@ -17,6 +17,8 @@ jobs:
     env:
       # Set this in GitHub -> Settings -> Secrets and variables -> Actions
       APP_DIR: ${{ vars.APP_DIR || '/home/user/apps/systems-playground' }}
+      # Export the Docker Hub username so docker compose can dynamically construct the image pull path
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       
     steps:
       - name: Check out repository
