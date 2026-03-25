@@ -90,6 +90,15 @@ If you want true push-to-deploy without needing a Docker Hub registry or manual 
 
 1. Go to your GitHub Repository -> **Settings** -> **Actions** -> **Runners**.
 2. Click **New self-hosted runner** and select Linux/x64.
-3. SSH into your NUC, run the provided commands to download and configure the runner service (install it as a background service using `sudo ./svc.sh install`).
-4. A workflow file `.github/workflows/deploy-nuc.yml` is already included in this repository. Whenever you push to `main`, GitHub will send a signal directly to your NUC.
-5. The runner on your NUC will instantly execute the `deploy-playground.sh` script we wrote in Option A, giving you 100% automated, zero-downtime local builds.
+3. SSH into your NUC, run the provided commands to download and configure the runner service inside your WSL Ubuntu environment.
+   
+   ⚠️ **IMPORTANT: HOW TO PREVENT THE RUNNER FROM DYING ON REBOOT** ⚠️
+   When you install the GitHub Actions runner on your WSL/Linux host, DO NOT just run `./run.sh`. If your NUC restarts, the runner will die.
+   To ensure the runner automatically starts every time the NUC boots:
+   * CD into your actions-runner directory: `cd ~/actions-runner`
+   * Install the background service: `sudo ./svc.sh install`
+   * Start the background service: `sudo ./svc.sh start`
+
+4. Go to your GitHub Repository -> **Settings** -> **Secrets and variables** -> **Actions** -> **Variables**, and create a new repository variable called `APP_DIR` with the absolute path to your cloned repository on the NUC (e.g., `/home/user/apps/systems-playground`).
+5. A workflow file `.github/workflows/deploy-nuc.yml` is already included in this repository. Whenever you push to `main`, GitHub will send a signal directly to your NUC.
+6. The runner on your NUC will instantly execute the `deploy-playground.sh` script, giving you 100% automated, zero-downtime local builds.
