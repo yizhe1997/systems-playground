@@ -10,5 +10,7 @@ services:
 
   frontend:
     image: ${DOCKER_USERNAME:-yourdockerhub}/systems-playground-frontend:latest
+    env_file:
+      - ./frontend/.env
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
