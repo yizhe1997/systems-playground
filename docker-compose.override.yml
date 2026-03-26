@@ -12,6 +12,5 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    environment:
-      # Local frontend expects the backend on localhost:8085
-      - NEXT_PUBLIC_API_URL=http://localhost:8085
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8085

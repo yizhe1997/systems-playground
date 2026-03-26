@@ -30,3 +30,5 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/systems-playground-frontend:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://portfolio-api.38569123.xyz
