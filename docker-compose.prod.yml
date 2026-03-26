@@ -12,6 +12,6 @@ services:
     image: ${DOCKER_USERNAME:-yourdockerhub}/systems-playground-frontend:latest
     environment:
       # Production frontend expects the backend routed through Cloudflare
-      - NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+      - NEXT_PUBLIC_API_URL=https://portfolio-api.38569123.xyz
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
