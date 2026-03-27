@@ -181,21 +181,14 @@ export default function Home() {
       {/* Markdown Modal */}
       <Dialog open={adrModalOpen} onOpenChange={setAdrModalOpen}>
         <DialogContent 
-          className={`flex flex-col transition-all duration-300 ease-in-out ${isExpanded ? 'max-w-[95vw] h-[95vh]' : 'max-w-[90vw] md:max-w-[75vw] lg:max-w-[1200px] max-h-[85vh]'} resize overflow-auto`}
+          onInteractOutside={(e) => e.preventDefault()}
+          className="flex flex-col max-w-[90vw] md:max-w-[75vw] lg:max-w-[1200px] max-h-[85vh] resize overflow-auto transition-all duration-300 ease-in-out"
         >
-          <DialogHeader className="flex flex-row justify-between items-start pr-8">
-            <div>
-              <DialogTitle className="text-2xl">{adrTitle}</DialogTitle>
-              <DialogDescription>
-                Raw engineering log fetched dynamically from the GitHub repository.
-              </DialogDescription>
-            </div>
-            <button 
-              onClick={() => setIsExpanded(!isExpanded)} 
-              className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md border border-gray-200 transition"
-            >
-              {isExpanded ? 'Shrink' : 'Maximize'}
-            </button>
+          <DialogHeader className="flex flex-col items-start pr-8">
+            <DialogTitle className="text-2xl">{adrTitle}</DialogTitle>
+            <DialogDescription>
+              Raw engineering log fetched dynamically from the GitHub repository.
+            </DialogDescription>
           </DialogHeader>
           <div className="mt-4 flex-1 overflow-y-auto">
             <div className="prose prose-slate prose-blue max-w-none pr-4">
