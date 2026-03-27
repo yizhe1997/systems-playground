@@ -71,18 +71,33 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-blue-200">
-      {/* Navigation */}
-      <nav className="w-full max-w-5xl mx-auto px-6 py-8 flex justify-between items-center">
-        <div className="font-bold text-xl tracking-tight">Chin Yi Zhe.</div>
-        <div className="flex gap-6 text-sm font-medium text-gray-600">
-          <a href="#playground" className="hover:text-black transition">Playground</a>
-          <a href="#adrs" className="hover:text-black transition">Architecture</a>
-          <Link href="/admin" className="hover:text-blue-600 transition">Admin Dashboard</Link>
+      {/* Header/Nav */}
+      <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/60">
+        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold font-mono text-sm shadow-sm">
+              YZ
+            </div>
+            <span className="font-bold text-lg tracking-tight text-gray-900 hidden sm:inline-block">
+              SYSTEMS_PLAYGROUND
+            </span>
+          </div>
+          <nav className="flex items-center gap-6 text-sm font-medium text-gray-600">
+            <a href="#playground" className="hover:text-blue-600 transition-colors">Playground</a>
+            <a href="#adrs" className="hover:text-blue-600 transition-colors">Architecture</a>
+            <div className="w-px h-4 bg-gray-300 hidden sm:block"></div>
+            <Link 
+              href="/admin" 
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-gray-200 bg-white hover:bg-gray-100 hover:text-gray-900 h-9 px-4 py-2"
+            >
+              Control Plane ⚙️
+            </Link>
+          </nav>
         </div>
-      </nav>
+      </header>
 
       {/* Hero Section */}
-      <section className="w-full max-w-5xl mx-auto px-6 py-20">
+      <section className="w-full max-w-5xl mx-auto px-6 py-24 md:py-32">
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6">
           Hi, I&apos;m Chin Yi Zhe.<br />
           <span className="text-blue-600">I build scalable cloud systems.</span>
