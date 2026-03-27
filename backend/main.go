@@ -7,6 +7,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/websocket/v2"
+	"github.com/yizhe1997/systems-playground/backend/pkg/rabbitmq"
 )
 
 func main() {
@@ -18,22 +20,32 @@ func main() {
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*", // We'll lock this down later in production
-		AllowHeaders: "Origin, Content-Type, Accept",
+		AllowHeaders: "Origin, Content-Type, Accept, X-Admin-Token",
 	}))
 
-	// Health Check Route
-	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status":  "ok",
-			"message": "Golang backend is up and running!",
-		})
+	// --- WEBSOCKET MIDDLEWARE (Upgrade HTTP to WS) ---
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
 	})
 
-	// Initialize Redis
+	// Initialize external systems
 	initRedis()
+	rabbitmq.InitRabbitMQ()
+
+	// Start the RabbitMQ Consumer and WebSocket Broadcaster in background goroutines
+	go rabbitmq.ConsumeJobs()
+	go rabbitmq.StartBroadcaster()
 
 	// --- PUBLIC API ENDPOINTS ---
-	// Get dynamic settings (Resume, LinkedIn) for the landing page
+
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"status": "ok"})
+	})
+
 	app.Get("/api/config", func(c *fiber.Ctx) error {
 		resumeUrl, _ := GetConfig(c.Context(), "resumeUrl", "#")
 		linkedinUrl, _ := GetConfig(c.Context(), "linkedinUrl", "#")
@@ -44,6 +56,31 @@ func main() {
 		})
 	})
 
+	// Webhook Simulator Endpoint
+	app.Post("/api/demo/webhook", func(c *fiber.Ctx) error {
+		var payload rabbitmq.WebhookPayload
+		if err := c.BodyParser(&payload); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid JSON"})
+		}
+
+		// 1. Push directly into RabbitMQ
+		err := rabbitmq.PublishJob(payload)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to queue job"})
+		}
+
+		// 2. Return 202 Accepted immediately. Do NOT wait for processing.
+		return c.Status(202).JSON(fiber.Map{
+			"status": "queued",
+			"jobId":  payload.ID,
+		})
+	})
+
+	// WebSocket live-feed endpoint
+	app.Get("/ws/demo", websocket.New(func(c *websocket.Conn) {
+		rabbitmq.HandleWebSocketConnections(c)
+	}))
+
 	// --- ADMIN UI CONTROL PLANE ENDPOINTS ---
 
 	// 1. List all Widgets (Redis/RabbitMQ containers)
@@ -53,28 +90,18 @@ func main() {
 			log.Printf("Error listing widgets: %v", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to list widgets from Docker daemon"})
 		}
-		
-		// If no widgets found yet, return empty array to prevent null
 		if widgets == nil {
 			widgets = []Widget{}
 		}
-		
 		return c.JSON(widgets)
 	})
 
 	// 2. Toggle a Widget (Start/Stop) - Protected via X-Admin-Token middleware
 	app.Post("/admin/widgets/:id/toggle", func(c *fiber.Ctx) error {
-		// Secure Middleware: Check if the request came from our trusted Next.js Node server
 		token := c.Get("X-Admin-Token")
 		expectedToken := os.Getenv("ADMIN_API_KEY")
 
-		if expectedToken == "" {
-			log.Println("[SECURITY WARNING] No ADMIN_API_KEY environment variable set on Go backend!")
-			return c.Status(500).JSON(fiber.Map{"error": "Server misconfiguration"})
-		}
-
-		if token != expectedToken {
-			log.Printf("[SECURITY WARNING] Unauthorized toggle attempt! Invalid X-Admin-Token: %s", token)
+		if expectedToken == "" || token != expectedToken {
 			return c.Status(403).JSON(fiber.Map{"error": "Forbidden: Invalid Internal API Key"})
 		}
 
@@ -98,7 +125,6 @@ func main() {
 	}
 
 	app.Post("/admin/config", func(c *fiber.Ctx) error {
-		// Secure Middleware (Same as toggle)
 		token := c.Get("X-Admin-Token")
 		expectedToken := os.Getenv("ADMIN_API_KEY")
 		if expectedToken == "" || token != expectedToken {
@@ -110,7 +136,6 @@ func main() {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 		}
 
-		// Save to Redis permanently
 		ctx := c.Context()
 		SetConfig(ctx, "resumeUrl", req.ResumeUrl)
 		SetConfig(ctx, "linkedinUrl", req.LinkedinUrl)
