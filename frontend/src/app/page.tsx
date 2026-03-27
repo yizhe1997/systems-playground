@@ -181,7 +181,7 @@ export default function Home() {
       {/* Markdown Modal */}
       <Dialog open={adrModalOpen} onOpenChange={setAdrModalOpen}>
         <DialogContent 
-          className={`flex flex-col transition-all duration-300 ease-in-out ${isExpanded ? 'max-w-[95vw] h-[95vh]' : 'max-w-5xl max-h-[85vh]'} resize overflow-auto`}
+          className={`flex flex-col transition-all duration-300 ease-in-out ${isExpanded ? 'max-w-[95vw] h-[95vh]' : 'max-w-[90vw] md:max-w-[75vw] lg:max-w-[1200px] max-h-[85vh]'} resize overflow-auto`}
         >
           <DialogHeader className="flex flex-row justify-between items-start pr-8">
             <div>
