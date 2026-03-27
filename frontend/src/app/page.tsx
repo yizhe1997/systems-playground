@@ -22,6 +22,12 @@ export default function Home() {
   const [adrModalOpen, setAdrModalOpen] = useState(false);
   const [adrContent, setAdrContent] = useState<string>('');
   const [adrTitle, setAdrTitle] = useState<string>('');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const formatUrl = (url: string) => {
+    if (!url || url === '#') return '#';
+    return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+  };
 
   const openAdr = async (slug: string, title: string) => {
     setAdrTitle(title);
@@ -86,10 +92,10 @@ export default function Home() {
           I focus on architecting resilient distributed systems, automating complex cloud deployment pipelines, and modernizing enterprise applications.
         </p>
         <div className="flex gap-4">
-          <a href={resumeUrl} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition shadow-sm">
+          <a href={formatUrl(resumeUrl)} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition shadow-sm">
             Download Resume
           </a>
-          <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition shadow-sm">
+          <a href={formatUrl(linkedinUrl)} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition shadow-sm">
             View LinkedIn
           </a>
         </div>
@@ -174,17 +180,29 @@ export default function Home() {
       
       {/* Markdown Modal */}
       <Dialog open={adrModalOpen} onOpenChange={setAdrModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">{adrTitle}</DialogTitle>
-            <DialogDescription>
-              Raw engineering log fetched dynamically from the GitHub repository.
-            </DialogDescription>
+        <DialogContent 
+          className={`flex flex-col transition-all duration-300 ease-in-out ${isExpanded ? 'max-w-[95vw] h-[95vh]' : 'max-w-5xl max-h-[85vh]'} resize overflow-auto`}
+        >
+          <DialogHeader className="flex flex-row justify-between items-start pr-8">
+            <div>
+              <DialogTitle className="text-2xl">{adrTitle}</DialogTitle>
+              <DialogDescription>
+                Raw engineering log fetched dynamically from the GitHub repository.
+              </DialogDescription>
+            </div>
+            <button 
+              onClick={() => setIsExpanded(!isExpanded)} 
+              className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md border border-gray-200 transition"
+            >
+              {isExpanded ? 'Shrink' : 'Maximize'}
+            </button>
           </DialogHeader>
-          <div className="mt-6 prose prose-slate prose-blue max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {adrContent}
-            </ReactMarkdown>
+          <div className="mt-4 flex-1 overflow-y-auto">
+            <div className="prose prose-slate prose-blue max-w-none pr-4">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {adrContent}
+              </ReactMarkdown>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
