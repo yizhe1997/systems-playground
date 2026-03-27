@@ -29,6 +29,21 @@ func main() {
 		})
 	})
 
+	// Initialize Redis
+	initRedis()
+
+	// --- PUBLIC API ENDPOINTS ---
+	// Get dynamic settings (Resume, LinkedIn) for the landing page
+	app.Get("/api/config", func(c *fiber.Ctx) error {
+		resumeUrl, _ := GetConfig(c.Context(), "resumeUrl", "#")
+		linkedinUrl, _ := GetConfig(c.Context(), "linkedinUrl", "#")
+
+		return c.JSON(fiber.Map{
+			"resumeUrl":   resumeUrl,
+			"linkedinUrl": linkedinUrl,
+		})
+	})
+
 	// --- ADMIN UI CONTROL PLANE ENDPOINTS ---
 
 	// 1. List all Widgets (Redis/RabbitMQ containers)
@@ -74,6 +89,33 @@ func main() {
 			"id":     id,
 			"status": newStatus,
 		})
+	})
+
+	// 3. Update Configuration Settings
+	type ConfigRequest struct {
+		ResumeUrl   string `json:"resumeUrl"`
+		LinkedinUrl string `json:"linkedinUrl"`
+	}
+
+	app.Post("/admin/config", func(c *fiber.Ctx) error {
+		// Secure Middleware (Same as toggle)
+		token := c.Get("X-Admin-Token")
+		expectedToken := os.Getenv("ADMIN_API_KEY")
+		if expectedToken == "" || token != expectedToken {
+			return c.Status(403).JSON(fiber.Map{"error": "Forbidden: Invalid Internal API Key"})
+		}
+
+		var req ConfigRequest
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+		}
+
+		// Save to Redis permanently
+		ctx := c.Context()
+		SetConfig(ctx, "resumeUrl", req.ResumeUrl)
+		SetConfig(ctx, "linkedinUrl", req.LinkedinUrl)
+
+		return c.JSON(fiber.Map{"status": "success", "message": "Configuration updated successfully"})
 	})
 
 	// Get port from env or default to 8080
