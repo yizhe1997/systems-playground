@@ -15,10 +15,15 @@ jobs:
   deploy:
     runs-on: self-hosted
     env:
-      # Set this in GitHub -> Settings -> Secrets and variables -> Actions
       APP_DIR: ${{ vars.APP_DIR || '/home/user/apps/systems-playground' }}
-      # Export the Docker Hub username so docker compose can dynamically construct the image pull path
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      
+      # Frontend Secrets
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
       
     steps:
       - name: Check out repository
@@ -26,15 +31,22 @@ jobs:
 
       - name: Trigger Instant Zero-Downtime Deployment
         run: |
-          # 1. Ensure the destination directory exists
           mkdir -p "$APP_DIR"
           
-          # 2. Copy ONLY the necessary compose files from the cloned runner workspace to the APP_DIR
           echo "📦 Copying latest compose configurations to $APP_DIR..."
           cp docker-compose.yml "$APP_DIR/"
           cp docker-compose.prod.yml "$APP_DIR/"
           
-          # 3. Navigate to the APP_DIR to execute Docker commands
+          echo "🔐 Constructing .env file from GitHub Secrets..."
+          mkdir -p "$APP_DIR/frontend"
+          cat <<EOF > "$APP_DIR/frontend/.env"
+          NEXTAUTH_SECRET=$NEXTAUTH_SECRET
+          NEXTAUTH_URL=$NEXTAUTH_URL
+          GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+          GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+          ADMIN_EMAILS=$ADMIN_EMAILS
+          EOF
+          
           cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
           
           echo "📥 Pulling latest pre-built images from registry..."
