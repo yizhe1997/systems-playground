@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 type Widget = {
   id: string;
@@ -15,6 +18,27 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [resumeUrl, setResumeUrl] = useState<string>('#');
   const [linkedinUrl, setLinkedinUrl] = useState<string>('#');
+  
+  const [adrModalOpen, setAdrModalOpen] = useState(false);
+  const [adrContent, setAdrContent] = useState<string>('');
+  const [adrTitle, setAdrTitle] = useState<string>('');
+
+  const openAdr = async (slug: string, title: string) => {
+    setAdrTitle(title);
+    setAdrContent('Loading architecture logs...');
+    setAdrModalOpen(true);
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/yizhe1997/systems-playground/main/docs/adrs/${slug}.md`);
+      if (res.ok) {
+        setAdrContent(await res.text());
+      } else {
+        setAdrContent('Failed to load ADR from GitHub repository.');
+      }
+    } catch(err) {
+      console.error(err);
+      setAdrContent('Network error while loading ADR.');
+    }
+  };
 
   useEffect(() => {
     // Fetch widget statuses from the Go backend
@@ -125,23 +149,46 @@ export default function Home() {
       <section id="adrs" className="w-full max-w-5xl mx-auto px-6 py-24">
         <h2 className="text-3xl font-bold mb-8">📚 Architecture Decision Records (ADRs)</h2>
         <div className="space-y-4">
-          <div className="group block border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition cursor-pointer bg-white">
+          <div 
+            onClick={() => openAdr('001-custom-go-control-plane', 'ADR 001: Custom Go Control Plane')}
+            className="group block border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition cursor-pointer bg-white"
+          >
             <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition">ADR 001: Custom Go Control Plane vs. Portainer</h3>
             <p className="text-gray-600 mt-2 text-sm leading-relaxed">
               Why I built a custom Golang daemon socket integration instead of using standard orchestration tools, 
-              focusing on security isolation and implementing Scale-to-Zero memory optimization for the NUC host.
+              focusing on security isolation and implementing Scale-to-Zero memory optimization for the host machine.
             </p>
           </div>
-          <div className="group block border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition cursor-pointer bg-white">
-            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition">Case Study: Designing Idempotent Webhooks</h3>
+          <div 
+            onClick={() => openAdr('002-bff-proxy-security', 'ADR 002: Backend-For-Frontend (BFF) Pattern')}
+            className="group block border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition cursor-pointer bg-white"
+          >
+            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition">ADR 002: Backend-For-Frontend (BFF) API Security</h3>
             <p className="text-gray-600 mt-2 text-sm leading-relaxed">
-              Synchronizing candidate data from a legacy ATS into a multi-tenant portal without creating duplicate 
-              records or race conditions during high-volume bursts using Redis locks.
+              Securing the Golang control plane using a Next.js Node server API proxy to evaluate NextAuth JWTs 
+              and assign Role-Based Access Control (RBAC) without exposing API keys to the browser.
             </p>
           </div>
         </div>
       </section>
       
+      {/* Markdown Modal */}
+      <Dialog open={adrModalOpen} onOpenChange={setAdrModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">{adrTitle}</DialogTitle>
+            <DialogDescription>
+              Raw engineering log fetched dynamically from the GitHub repository.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-6 prose prose-slate prose-blue max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {adrContent}
+            </ReactMarkdown>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Footer */}
       <footer className="w-full border-t border-gray-200 py-12 mt-12 text-center text-gray-500 text-sm">
         <p>© 2026 Chin Yi Zhe. Engineered with Golang & Next.js.</p>
