@@ -34,9 +34,6 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    labels:
-      - "playground.widget=cache"
-      - "playground.name=Redis Cache"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
