@@ -1,3 +1,4 @@
 
 # Local Infrastructure Scripts Config
 infra/scripts/config.env
+.DS_Store
