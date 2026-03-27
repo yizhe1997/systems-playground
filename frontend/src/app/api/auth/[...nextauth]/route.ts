@@ -1,5 +1,14 @@
-import NextAuth from "next-auth";
+import NextAuth, { DefaultSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+
+// Extend the built-in session type so TS knows about our custom role
+declare module "next-auth" {
+  interface Session {
+    user: {
+      role?: string;
+    } & DefaultSession["user"];
+  }
+}
 
 const handler = NextAuth({
   providers: [
@@ -12,28 +21,31 @@ const handler = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
-    async signIn({ user }) {
-      // 1. If ADMIN_EMAILS isn't set, block everyone by default for safety
-      if (!process.env.ADMIN_EMAILS) {
-        console.warn("ADMIN_EMAILS environment variable is not set. Blocking all logins.");
-        return false;
+    async jwt({ token, user }) {
+      // 1. This block runs the first time they log in
+      if (user && user.email) {
+        const whitelistedEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
+        
+        // 2. Inject their RBAC role into the JWT token payload
+        if (whitelistedEmails.includes(user.email.toLowerCase())) {
+          token.role = "admin";
+        } else {
+          token.role = "viewer";
+          console.log(`[Auth] Issued Read-Only 'viewer' token to: ${user.email}`);
+        }
       }
-
-      // 2. Parse the whitelisted emails (e.g. "yizhe1997@gmail.com,admin@company.com")
-      const whitelistedEmails = process.env.ADMIN_EMAILS.split(",").map(e => e.trim().toLowerCase());
-      
-      // 3. Check if the logged-in Google email is in the whitelist
-      if (user.email && whitelistedEmails.includes(user.email.toLowerCase())) {
-        return true; // Login successful!
+      return token;
+    },
+    async session({ session, token }) {
+      // 3. This block exposes the JWT payload to the Next.js React components
+      if (session.user) {
+        session.user.role = token.role as string;
       }
-
-      // 4. If not on the list, reject them immediately
-      console.warn(`Unauthorized login attempt from: ${user.email}`);
-      return false; // Redirects them to an "Access Denied" page
+      return session;
     },
   },
   pages: {
-    signIn: "/admin/login", // We'll build a custom login page later
+    signIn: "/admin/login",
   },
 });
 
