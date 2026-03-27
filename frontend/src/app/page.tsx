@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
 
 type Widget = {
   id: string;
@@ -141,20 +142,25 @@ export default function Home() {
                     </span>
                   </div>
                   
-                  <div className="h-32 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg mb-6 bg-white">
-                    {widget.status === 'running' ? (
-                      <span className="text-gray-500 font-medium">✨ Live Demo Active ✨</span>
-                    ) : (
-                      <span className="text-gray-400 text-sm">Container is stopped (Scale-to-Zero)</span>
-                    )}
-                  </div>
-                  
-                  <button 
-                    disabled={widget.status !== 'running'}
-                    className={`w-full py-3 rounded-lg font-medium transition ${widget.status === 'running' ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
-                  >
-                    {widget.status === 'running' ? 'Interact with Demo' : 'Turn on via Admin Dashboard to test'}
-                  </button>
+                  {widget.status === 'running' && widget.type === 'queue' ? (
+                    <RabbitMQDemo widgetId={widget.id} />
+                  ) : (
+                    <>
+                      <div className="h-32 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg mb-6 bg-white">
+                        {widget.status === 'running' ? (
+                          <span className="text-gray-500 font-medium">✨ Live Demo Active ✨</span>
+                        ) : (
+                          <span className="text-gray-400 text-sm">Container is stopped (Scale-to-Zero)</span>
+                        )}
+                      </div>
+                      <button 
+                        disabled={widget.status !== 'running'}
+                        className={`w-full py-3 rounded-lg font-medium transition ${widget.status === 'running' ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                      >
+                        {widget.status === 'running' ? 'Interact with Demo' : 'Turn on via Admin Dashboard to test'}
+                      </button>
+                    </>
+                  )}
                 </div>
               )) : (
                 <div className="col-span-2 text-gray-500 bg-yellow-50 p-6 rounded-lg border border-yellow-200">

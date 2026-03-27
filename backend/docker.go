@@ -2,12 +2,46 @@ package main
 
 import (
 	"context"
+	"log"
+	"sync"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 )
+
+var (
+	activityMap = make(map[string]time.Time)
+	activityMutex sync.Mutex
+)
+
+// RecordActivity resets the 10-minute idle timer for a container
+func RecordActivity(id string) {
+	activityMutex.Lock()
+	defer activityMutex.Unlock()
+	activityMap[id] = time.Now()
+}
+
+// StartReaper checks for idle playground widgets every minute and stops them if idle > 10m
+func StartReaper() {
+	ticker := time.NewTicker(1 * time.Minute)
+	go func() {
+		for range ticker.C {
+			activityMutex.Lock()
+			now := time.Now()
+			for id, lastActive := range activityMap {
+				if now.Sub(lastActive) > 10*time.Minute {
+					log.Printf("⏳ [Scale-to-Zero] Container %s has been idle for >10m. Shutting down.", id)
+					toggleWidget(id) // stop it
+					delete(activityMap, id)
+				}
+			}
+			activityMutex.Unlock()
+		}
+	}()
+}
 
 type Widget struct {
 	ID     string `json:"id"`
@@ -76,12 +110,16 @@ func toggleWidget(id string) (string, error) {
 		if err := cli.ContainerStop(ctx, id, container.StopOptions{}); err != nil {
 			return "", err
 		}
+		activityMutex.Lock()
+		delete(activityMap, id)
+		activityMutex.Unlock()
 		return "exited", nil
 	} else {
 		// If stopped, turn it on
 		if err := cli.ContainerStart(ctx, id, types.ContainerStartOptions{}); err != nil {
 			return "", err
 		}
+		RecordActivity(id)
 		return "running", nil
 	}
 }

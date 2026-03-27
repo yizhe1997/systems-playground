@@ -36,9 +36,10 @@ func main() {
 	initRedis()
 	rabbitmq.InitRabbitMQ()
 
-	// Start the RabbitMQ Consumer and WebSocket Broadcaster in background goroutines
+	// Start the RabbitMQ Consumer, WebSocket Broadcaster, and Scale-to-Zero Reaper
 	go rabbitmq.ConsumeJobs()
 	go rabbitmq.StartBroadcaster()
+	StartReaper()
 
 	// --- PUBLIC API ENDPOINTS ---
 
@@ -80,6 +81,13 @@ func main() {
 	app.Get("/ws/demo", websocket.New(func(c *websocket.Conn) {
 		rabbitmq.HandleWebSocketConnections(c)
 	}))
+
+	// Heartbeat endpoint to keep Scale-to-Zero containers alive
+	app.Post("/api/demo/widgets/:id/heartbeat", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		RecordActivity(id)
+		return c.SendStatus(200)
+	})
 
 	// --- ADMIN UI CONTROL PLANE ENDPOINTS ---
 
