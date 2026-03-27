@@ -13,10 +13,12 @@ type Widget = {
 export default function Home() {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resumeUrl, setResumeUrl] = useState<string>('#');
+  const [linkedinUrl, setLinkedinUrl] = useState<string>('#');
 
   useEffect(() => {
     // Fetch widget statuses from the Go backend
-    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080') + '/admin/widgets')
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085') + '/admin/widgets')
       .then((res) => res.json())
       .then((data) => {
         setWidgets(data);
@@ -26,6 +28,15 @@ export default function Home() {
         console.error('Error fetching widgets:', err);
         setLoading(false);
       });
+
+    // Fetch dynamic resume links
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085') + '/api/config')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.resumeUrl) setResumeUrl(data.resumeUrl);
+        if (data.linkedinUrl) setLinkedinUrl(data.linkedinUrl);
+      })
+      .catch(console.error);
   }, []);
 
   return (
@@ -51,10 +62,10 @@ export default function Home() {
           I focus on architecting resilient distributed systems, automating complex cloud deployment pipelines, and modernizing enterprise applications.
         </p>
         <div className="flex gap-4">
-          <a href="#" className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition shadow-sm">
+          <a href={resumeUrl} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition shadow-sm">
             Download Resume
           </a>
-          <a href="#" className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition shadow-sm">
+          <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition shadow-sm">
             View LinkedIn
           </a>
         </div>
