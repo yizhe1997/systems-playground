@@ -3,10 +3,11 @@ import { getServerSession } from "next-auth";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // 1. Verify the user is authenticated via NextAuth (reading the secure HTTP-only cookie)
   const session = await getServerSession();
+  const { id } = await params;
   
   if (!session || !session.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -15,7 +16,7 @@ export async function POST(
   // 2. Verify they actually have the "admin" role before we do anything
   // @ts-expect-error - Custom role injected via JWT callback
   if (session.user.role !== "admin") {
-    console.warn(`[Security] User ${session.user.email} attempted to toggle widget ${params.id} without admin privileges.`);
+    console.warn(`[Security] User ${session.user.email} attempted to toggle widget ${id} without admin privileges.`);
     return NextResponse.json({ error: "Forbidden: Admins Only" }, { status: 403 });
   }
 
@@ -31,7 +32,7 @@ export async function POST(
 
   try {
     // 4. Forward the request to the internal Go API network, attaching the secret PSK header
-    const response = await fetch(`${backendApiUrl}/admin/widgets/${params.id}/toggle`, {
+    const response = await fetch(`${backendApiUrl}/admin/widgets/${id}/toggle`, {
       method: "POST",
       headers: {
         "X-Admin-Token": psk,
