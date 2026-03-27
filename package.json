@@ -1,0 +1,28 @@
+{
+  "name": "systems-playground",
+  "version": "1.0.0",
+  "description": "> An interactive portfolio and developer showcase by Chin Yi Zhe.  > Instead of just listing technologies on a resume, this project visually demonstrates backend architecture concepts (Message Queues, Caching, WebSockets) in real-time.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yizhe1997/systems-playground.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/yizhe1997/systems-playground/issues"
+  },
+  "homepage": "https://github.com/yizhe1997/systems-playground#readme",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

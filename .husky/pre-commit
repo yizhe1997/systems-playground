@@ -1,0 +1,22 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "⏳ Running pre-commit hooks..."
+
+# Check if there are changes in the frontend folder
+if git diff --cached --name-only | grep -q "^frontend/"; then
+  echo "🔨 Frontend changes detected. Running Next.js build check..."
+  cd frontend
+  
+  # Run the build process which includes TypeScript type checking
+  if ! npm run build; then
+    echo "❌ Frontend build failed. Commit rejected."
+    echo "Please fix the TypeScript/Next.js errors before committing."
+    exit 1
+  fi
+  
+  echo "✅ Frontend build successful."
+  cd ..
+fi
+
+echo "✅ Pre-commit hooks passed."
