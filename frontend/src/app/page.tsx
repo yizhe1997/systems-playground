@@ -181,7 +181,6 @@ export default function Home() {
       {/* Markdown Modal */}
       <Dialog open={adrModalOpen} onOpenChange={setAdrModalOpen}>
         <DialogContent 
-          onInteractOutside={(e) => e.preventDefault()}
           className="flex flex-col max-w-[90vw] md:max-w-[75vw] lg:max-w-[1200px] max-h-[85vh] resize overflow-auto transition-all duration-300 ease-in-out"
         >
           <DialogHeader className="flex flex-col items-start pr-8">
