@@ -14,7 +14,6 @@ export async function POST(
   }
 
   // 2. Verify they actually have the "admin" role before we do anything
-  // @ts-expect-error - Custom role injected via JWT callback
   if (session.user.role !== "admin") {
     console.warn(`[Security] User ${session.user.email} attempted to toggle widget ${id} without admin privileges.`);
     return NextResponse.json({ error: "Forbidden: Admins Only" }, { status: 403 });
