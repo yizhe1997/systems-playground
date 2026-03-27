@@ -179,7 +179,7 @@ export default function Home() {
       </section>
       
       {/* Markdown Modal */}
-      <Dialog open={adrModalOpen} onOpenChange={setAdrModalOpen}>
+      <Dialog open={adrModalOpen} onOpenChange={setAdrModalOpen} disablePointerDismissal>
         <DialogContent 
           className="flex flex-col max-w-[90vw] md:max-w-[75vw] lg:max-w-[1200px] max-h-[85vh] resize overflow-auto transition-all duration-300 ease-in-out"
         >
