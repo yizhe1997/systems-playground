@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 
 type Widget = {
   id: string;
@@ -59,9 +60,17 @@ export default function AdminDashboard() {
           </h1>
           <p className="text-sm text-slate-400 font-mono mt-1">Control Plane API</p>
         </div>
-        <Link href="/" className="px-4 py-2 text-sm font-medium border border-slate-700 rounded hover:bg-slate-800 transition">
-          ← Back to Site
-        </Link>
+        <div className="flex gap-4">
+          <Link href="/" className="px-4 py-2 text-sm font-medium border border-slate-700 rounded hover:bg-slate-800 transition">
+            ← Back to Site
+          </Link>
+          <button 
+            onClick={() => signOut({ callbackUrl: '/' })} 
+            className="px-4 py-2 text-sm font-medium bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded hover:bg-rose-500 hover:text-white transition"
+          >
+            Sign Out
+          </button>
+        </div>
       </header>
 
       {/* Main Content */}
