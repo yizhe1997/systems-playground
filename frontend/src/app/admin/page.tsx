@@ -43,7 +43,7 @@ export default function AdminDashboard() {
     
     setToggling(id);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085') + `/admin/widgets/${id}/toggle`, {
+      const res = await fetch(`/api/proxy/widgets/${id}/toggle`, {
         method: 'POST',
       });
       if (res.ok) {

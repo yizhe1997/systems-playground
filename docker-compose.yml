@@ -11,6 +11,8 @@ services:
     environment:
       - REDIS_URL=redis:6379
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    env_file:
+      - ./frontend/.env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
@@ -20,6 +22,9 @@ services:
   frontend:
     ports:
       - "8086:3000"
+    environment:
+      # Local Node server proxies to Go Backend on the internal Docker network
+      - INTERNAL_BACKEND_URL=http://backend:8080
     depends_on:
       - backend
 

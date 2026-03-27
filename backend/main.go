@@ -47,8 +47,22 @@ func main() {
 		return c.JSON(widgets)
 	})
 
-	// 2. Toggle a Widget (Start/Stop)
+	// 2. Toggle a Widget (Start/Stop) - Protected via X-Admin-Token middleware
 	app.Post("/admin/widgets/:id/toggle", func(c *fiber.Ctx) error {
+		// Secure Middleware: Check if the request came from our trusted Next.js Node server
+		token := c.Get("X-Admin-Token")
+		expectedToken := os.Getenv("ADMIN_API_KEY")
+
+		if expectedToken == "" {
+			log.Println("[SECURITY WARNING] No ADMIN_API_KEY environment variable set on Go backend!")
+			return c.Status(500).JSON(fiber.Map{"error": "Server misconfiguration"})
+		}
+
+		if token != expectedToken {
+			log.Printf("[SECURITY WARNING] Unauthorized toggle attempt! Invalid X-Admin-Token: %s", token)
+			return c.Status(403).JSON(fiber.Map{"error": "Forbidden: Invalid Internal API Key"})
+		}
+
 		id := c.Params("id")
 		newStatus, err := toggleWidget(id)
 		if err != nil {

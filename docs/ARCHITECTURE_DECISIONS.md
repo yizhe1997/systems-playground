@@ -5,24 +5,27 @@ This document tracks pivotal architectural and design decisions made during the 
 ---
 
 ## ADR 001: Custom Go Control Plane vs. Portainer for Infrastructure Management
+*(See previous entries for details on Scale-to-Zero architecture).*
 
-**Date:** 2026-03-22
+---
+
+## ADR 002: Backend-For-Frontend (BFF) Pattern for API Security
+
+**Date:** 2026-03-27
 **Status:** Accepted
 
 ### Context
-The Systems Playground requires backend services (Redis, RabbitMQ, Kafka, etc.) to demonstrate concepts. However, the host machine is a NUC with limited hardware resources (RAM/CPU). Running a dozen enterprise infrastructure containers 24/7 is not feasible and will crash the server.
-
-We needed a way to manage the lifecycle of these containers.
+The Systems Playground exposes a Golang Control Plane API that can physically start and stop Docker containers on the host machine via `/var/run/docker.sock`. 
+The Next.js React frontend needs to allow authenticated "Admin" users to trigger these endpoints while blocking "Viewer" users. 
 
 ### Options Considered
-1. **Portainer / Traefik:** Industry-standard tools for container management.
-2. **Custom Golang API via `docker.sock`:** Building a custom control plane that mounts the host's Docker socket to manage specific containers.
+1. **Frontend Pre-Shared Key (PSK):** The Next.js client-side code holds an API key (e.g., `NEXT_PUBLIC_API_KEY`) and sends it directly to the Go backend.
+2. **Backend-For-Frontend (BFF) Proxy:** The Next.js client talks to a Next.js server-side API route. The server verifies the user's secure HTTP-only session cookie (JWT) and RBAC role. If valid, the Next.js server acts as a proxy, appending a highly secure, server-side-only PSK to the request before forwarding it to the Golang API.
 
 ### Decision
-We chose the **Custom Golang API**.
+We chose the **Backend-For-Frontend (BFF) Proxy Pattern (Option 2)**.
 
 ### Reasoning
-1. **Scale-to-Zero (Resource Conservation):** Portainer is a manual dashboard. If a recruiter starts a RabbitMQ demo, they will likely not remember to stop it. Our custom Go API allows us to implement "Scale-to-Zero" logic—automatically issuing `ContainerStop` commands after a period of inactivity. This is strictly required to protect the NUC's memory.
-2. **Security & Scope:** Exposing a Portainer iframe to the public internet creates a massive attack surface. If compromised, the attacker gains root access to the entire NUC. The custom Go API is restricted (via Docker labels like `playground.widget=queue`) to *only* interact with portfolio containers, completely isolating it from private home-server services running on the same NUC.
-3. **Seamless UX:** A custom API allows us to build toggle buttons directly into the Next.js portfolio UI, creating a cohesive "magic" experience without redirecting users to a third-party IT dashboard.
-4. **Demonstrable Engineering Depth:** Building a control plane demonstrates a deep understanding of container orchestration, SDKs, and system design—perfectly aligning with the goal of a senior-level developer portfolio.
+1. **Zero-Trust Client Security:** Option 1 is inherently insecure for Single Page Applications (SPAs). Any variable exposed to the browser (`NEXT_PUBLIC_`) can be extracted via Chrome DevTools. If a "Viewer" extracted the PSK, they could bypass the UI role restrictions and `curl` the Go backend directly to execute privileged Docker commands.
+2. **Enterprise Architecture Standardization:** Using the Next.js Node server as an API Gateway/BFF is the industry standard for securing microservices. The Golang backend is completely isolated from the public internet (except through the gateway), trusting only internal network requests that carry the server-side PSK.
+3. **Stateless Authorization:** By verifying the NextAuth JWT on the Next.js server edge, we avoid needing a shared database or complex distributed session management between the Go and Node.js containers.

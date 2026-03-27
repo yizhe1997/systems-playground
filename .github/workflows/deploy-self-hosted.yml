@@ -24,6 +24,7 @@ jobs:
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+      ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
       
     steps:
       - name: Check out repository
@@ -45,6 +46,7 @@ jobs:
           GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
           GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
           ADMIN_EMAILS=$ADMIN_EMAILS
+          ADMIN_API_KEY=$ADMIN_API_KEY
           EOF
           
           cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
