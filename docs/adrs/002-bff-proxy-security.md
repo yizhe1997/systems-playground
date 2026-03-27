@@ -1,15 +1,4 @@
-# Architecture Decision Records (ADR)
-
-This document tracks pivotal architectural and design decisions made during the development of the Systems Playground. It serves as a historical record of *why* certain paths were chosen over alternatives.
-
----
-
-## ADR 001: Custom Go Control Plane vs. Portainer for Infrastructure Management
-*(See previous entries for details on Scale-to-Zero architecture).*
-
----
-
-## ADR 002: Backend-For-Frontend (BFF) Pattern for API Security
+# ADR 002: Backend-For-Frontend (BFF) Pattern for API Security
 
 **Date:** 2026-03-27
 **Status:** Accepted
