@@ -124,7 +124,7 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-[600px] sm:h-[500px] overflow-hidden bg-slate-50 text-slate-800 font-sans">
+    <div className="flex flex-col w-full h-full min-h-[500px] overflow-hidden bg-slate-50 text-slate-800 font-sans">
       
       {/* Header Panel */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-slate-200 bg-white gap-4">
@@ -174,7 +174,7 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
         <div className="flex-1 border-b sm:border-b-0 sm:border-r border-slate-200 flex flex-col bg-white overflow-hidden">
           <div className="bg-slate-100 border-b border-slate-200 px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
             <span>Live Redis Database State</span>
-            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[10px]">job:*</span>
+            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[10px]" title="Redis Key Pattern">Keys: job:*</span>
           </div>
           <div className="p-4 overflow-y-auto flex-1 space-y-3">
             {jobs.length === 0 ? (

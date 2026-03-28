@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -58,8 +59,8 @@ func RecordHeartbeat(ctx context.Context, containerID string) error {
 	if redisClient == nil {
 		return nil
 	}
-	// Give the container a 10-minute TTL (10 * 60 * time.Second)
-	return redisClient.Set(ctx, "heartbeat:"+containerID, "active", 10*60*1000*1000*1000).Err() // 10 minutes in nanoseconds
+	// Give the container a 10-minute TTL
+	return redisClient.Set(ctx, "heartbeat:"+containerID, "active", 10*time.Minute).Err()
 }
 
 // IsHeartbeatAlive checks if the container's heartbeat key still exists in Redis

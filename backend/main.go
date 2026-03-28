@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"sort"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -80,6 +82,19 @@ func main() {
 				jobs = append(jobs, jobData)
 			}
 		}
+
+		// Sort jobs by newest first (updated_at or created_at)
+		sort.Slice(jobs, func(i, j int) bool {
+			timeI := jobs[i]["updated_at"]
+			if timeI == nil {
+				timeI = jobs[i]["created_at"]
+			}
+			timeJ := jobs[j]["updated_at"]
+			if timeJ == nil {
+				timeJ = jobs[j]["created_at"]
+			}
+			return fmt.Sprintf("%v", timeI) > fmt.Sprintf("%v", timeJ)
+		})
 		
 		return c.JSON(jobs)
 	})
