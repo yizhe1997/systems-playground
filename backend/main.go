@@ -36,6 +36,9 @@ func main() {
 	initRedis()
 	rabbitmq.InitRabbitMQ()
 
+	// Pass the Redis client to the RabbitMQ consumer so it can mutate data
+	rabbitmq.RedisClient = redisClient
+
 	// Start the RabbitMQ Consumer, WebSocket Broadcaster, and Scale-to-Zero Reaper
 	go rabbitmq.ConsumeJobs()
 	go rabbitmq.StartBroadcaster()
@@ -55,6 +58,29 @@ func main() {
 			"resumeUrl":   resumeUrl,
 			"linkedinUrl": linkedinUrl,
 		})
+	})
+
+	// 1. Fetch current jobs directly from the Redis database
+	app.Get("/api/demo/jobs", func(c *fiber.Ctx) error {
+		ctx := c.Context()
+		
+		// Find all keys that match our job prefix
+		keys, err := redisClient.Keys(ctx, "job:*").Result()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch jobs"})
+		}
+		
+		jobs := make([]map[string]any, 0)
+		for _, key := range keys {
+			jobRecord, err := redisClient.Get(ctx, key).Result()
+			if err == nil {
+				var jobData map[string]any
+				json.Unmarshal([]byte(jobRecord), &jobData)
+				jobs = append(jobs, jobData)
+			}
+		}
+		
+		return c.JSON(jobs)
 	})
 
 	// Webhook Simulator Endpoint
