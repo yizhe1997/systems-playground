@@ -14,8 +14,24 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [queueLogs, setQueueLogs] = useState<{id: string, text: string, time: number}[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<'draft' | 'published'>('published');
+  
+  const [mode, setMode] = useState<'create' | 'update'>('create');
+  const [targetId, setTargetId] = useState<string>('');
+  const [jobTitle, setJobTitle] = useState<string>('');
+  const [jobStatus, setJobStatus] = useState<'draft' | 'published' | 'closed'>('draft');
+  
   const wsRef = useRef<WebSocket | null>(null);
+
+  // Auto-fill form when targetId changes
+  useEffect(() => {
+    if (mode === 'update' && targetId) {
+      const job = jobs.find(j => j.id === targetId);
+      if (job) {
+        setJobTitle(job.title);
+        setJobStatus(job.status as any);
+      }
+    }
+  }, [targetId, mode, jobs]);
 
   const fetchDatabaseState = async () => {
     try {
@@ -93,16 +109,20 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
 
   const sendWebhook = async () => {
     if (!isConnected) return;
+    if (mode === 'update' && !targetId) {
+      alert('Please select a job ID to update.');
+      return;
+    }
 
-    const id = Math.random().toString(36).substring(2, 9);
-    const title = `Software Engineer L${Math.floor(Math.random() * 5) + 1}`;
+    const id = mode === 'create' ? Math.random().toString(36).substring(2, 9) : targetId;
+    const title = jobTitle.trim() || `Software Engineer L${Math.floor(Math.random() * 5) + 1}`;
     
     // Add to the visual queue log
     setQueueLogs(prev => [{
       id,
       text: `HTTP 202 Accepted: Dropped payload into RabbitMQ`,
       time: Date.now()
-    }, ...prev].slice(0, 8));
+    }, ...prev].slice(0, 15));
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
@@ -114,10 +134,13 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
           timestamp: Date.now(),
           data: {
             title: title,
-            target_status: selectedStatus
+            target_status: jobStatus
           }
         }),
       });
+      if (mode === 'create') {
+        setJobTitle(''); // Clear title on new creation
+      }
     } catch (err) {
       console.error('Webhook failed:', err);
     }
@@ -146,26 +169,65 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
         </div>
         
         {/* Controls */}
-        <div className="flex items-center gap-2 w-full sm:w-auto pr-8">
-          <select 
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value as any)}
-            className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 flex-1 sm:flex-none"
-          >
-            <option value="draft">Sync as Draft</option>
-            <option value="published">Sync as Published</option>
-          </select>
-          <button
-            onClick={sendWebhook}
-            disabled={!isConnected}
-            className={`px-4 py-2 text-sm font-semibold rounded-md shadow-sm transition whitespace-nowrap ${
-              isConnected
-                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            }`}
-          >
-            Fire Webhook
-          </button>
+        <div className="flex flex-col gap-2 w-full sm:w-72 bg-slate-100 p-3 rounded-lg border border-slate-200">
+          <div className="flex bg-slate-200/50 p-1 rounded-md gap-1">
+            <button 
+              onClick={() => setMode('create')} 
+              className={`flex-1 text-[11px] font-semibold py-1 rounded transition-colors ${mode === 'create' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              New Job
+            </button>
+            <button 
+              onClick={() => { setMode('update'); if(jobs.length > 0) setTargetId(jobs[0].id); }} 
+              disabled={jobs.length === 0}
+              className={`flex-1 text-[11px] font-semibold py-1 rounded transition-colors ${mode === 'update' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'} disabled:opacity-50`}
+            >
+              Update Job
+            </button>
+          </div>
+
+          {mode === 'update' && (
+            <select 
+              value={targetId}
+              onChange={(e) => setTargetId(e.target.value)}
+              className="text-xs border border-slate-200 rounded px-2 py-1.5 bg-white text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="" disabled>Select target ID...</option>
+              {jobs.map(j => <option key={j.id} value={j.id}>{j.id} - {j.title}</option>)}
+            </select>
+          )}
+
+          <input 
+            type="text" 
+            value={jobTitle} 
+            onChange={(e) => setJobTitle(e.target.value)} 
+            placeholder={mode === 'create' ? "Job Title (e.g. Software Engineer)" : "Update Job Title"}
+            className="text-xs border border-slate-200 rounded px-2 py-1.5 bg-white text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+
+          <div className="flex gap-2">
+            <select 
+              value={jobStatus}
+              onChange={(e) => setJobStatus(e.target.value as any)}
+              className="text-xs border border-slate-200 rounded px-2 py-1.5 bg-white text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 flex-1"
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="closed">Closed</option>
+            </select>
+            
+            <button
+              onClick={sendWebhook}
+              disabled={!isConnected}
+              className={`px-3 py-1.5 text-xs font-bold rounded shadow-sm transition whitespace-nowrap ${
+                isConnected
+                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              Fire Webhook
+            </button>
+          </div>
         </div>
       </div>
 

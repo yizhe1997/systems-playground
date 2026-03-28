@@ -134,7 +134,7 @@ func ConsumeJobs() {
 					jobData["updated_at"] = time.Now().Format(time.RFC3339)
 					
 					updatedJson, _ := json.Marshal(jobData)
-					RedisClient.Set(ctx, "job:"+payload.ID, updatedJson, 0)
+					RedisClient.Set(ctx, "job:"+payload.ID, updatedJson, 5*time.Minute)
 					log.Printf("💾 [Consumer] Updated Job %s in Redis to status: %s", payload.ID, newStatus)
 				} else {
 					// Job doesn't exist yet, insert it
@@ -145,7 +145,7 @@ func ConsumeJobs() {
 						"created_at": time.Now().Format(time.RFC3339),
 					}
 					updatedJson, _ := json.Marshal(newJob)
-					RedisClient.Set(ctx, "job:"+payload.ID, updatedJson, 0)
+					RedisClient.Set(ctx, "job:"+payload.ID, updatedJson, 5*time.Minute)
 					log.Printf("💾 [Consumer] Inserted new Job %s into Redis", payload.ID)
 				}
 			}

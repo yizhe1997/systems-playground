@@ -96,6 +96,11 @@ func main() {
 			return fmt.Sprintf("%v", timeI) > fmt.Sprintf("%v", timeJ)
 		})
 		
+		// Limit to max 50 jobs
+		if len(jobs) > 50 {
+			jobs = jobs[:50]
+		}
+		
 		return c.JSON(jobs)
 	})
 

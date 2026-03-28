@@ -44,7 +44,7 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     labels:
       - "playground.widget=queue"
-      - "playground.name=RabbitMQ Message Queue"
+      - "playground.name=ATS Synchronization (RabbitMQ)"
 
 volumes:
   redis_data:

@@ -205,9 +205,14 @@ export default function Home() {
                   
                   <div className="text-sm text-gray-600 pt-4 border-t border-gray-100 leading-relaxed">
                     {widget.type === 'queue' && (
-                      <p>
-                        Demonstrates <strong>Event-Driven Architecture (EDA)</strong> by offloading heavy database writes to a background worker via an idempotent webhook handler. Prevents race conditions and keeps the main API thread lightning fast during high-volume ATS synchronization.
-                      </p>
+                      <div className="space-y-3">
+                        <p>
+                          <strong>Business Problem:</strong> Large enterprises use external Applicant Tracking Systems (ATS) to manage hiring, sending massive bursts of webhook data when jobs are created or updated. Synchronously processing these causes database locks and crashes APIs.
+                        </p>
+                        <p>
+                          <strong>Solution:</strong> Demonstrates <strong>Event-Driven Architecture (EDA)</strong> by decoupling the API from the database. Webhooks are instantly acknowledged and dropped into a message queue, where background workers process them safely, preventing race conditions.
+                        </p>
+                      </div>
                     )}
                     {widget.type === 'cache' && (
                       <p>
