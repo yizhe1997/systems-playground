@@ -24,7 +24,7 @@ func main() {
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*", // We'll lock this down later in production
-		AllowHeaders: "Origin, Content-Type, Accept, X-Admin-Token",
+		AllowHeaders: "Origin, Content-Type, Accept, X-Admin-Token, Idempotency-Key",
 	}))
 
 	// --- WEBSOCKET MIDDLEWARE (Upgrade HTTP to WS) ---
