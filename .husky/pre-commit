@@ -8,7 +8,6 @@ if git diff --cached --name-only | grep -q "^frontend/"; then
   echo "🔨 Frontend changes detected. Running Next.js build check..."
   cd frontend
   
-  # Run the build process which includes TypeScript type checking
   if ! npm run build; then
     echo "❌ Frontend build failed. Commit rejected."
     echo "Please fix the TypeScript/Next.js errors before committing."
@@ -16,6 +15,22 @@ if git diff --cached --name-only | grep -q "^frontend/"; then
   fi
   
   echo "✅ Frontend build successful."
+  cd ..
+fi
+
+# Check if there are changes in the backend folder
+if git diff --cached --name-only | grep -q "^backend/"; then
+  echo "🔨 Backend changes detected. Running Go build check..."
+  cd backend
+  
+  # Run a lightweight go build check
+  if ! docker run --rm -v "$PWD":/app -w /app golang:1.24-alpine sh -c "go build -o /dev/null main.go docker.go redis.go"; then
+    echo "❌ Backend build failed. Commit rejected."
+    echo "Please fix the Go syntax/import errors before committing."
+    exit 1
+  fi
+  
+  echo "✅ Backend build successful."
   cd ..
 fi
 
