@@ -255,6 +255,15 @@ export default function Home() {
               and assign Role-Based Access Control (RBAC) without exposing API keys to the browser.
             </p>
           </div>
+          <div 
+            onClick={() => openAdr('003-secure-resume-storage', 'ADR 003: Secure Local Storage vs Git Blobs')}
+            className="group block border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition cursor-pointer bg-white"
+          >
+            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition">ADR 003: Secure Local Storage over Git-Tracked Blobs</h3>
+            <p className="text-gray-600 mt-2 text-sm leading-relaxed">
+              Why we opted for a dedicated self-hosted file manager container over committing binary PDFs to the Next.js `public/` directory, introducing expiring share links and protecting the Git repository from bloat.
+            </p>
+          </div>
         </div>
       </section>
       
