@@ -333,14 +333,17 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
       </div>
 
       {/* Footer Info Panel */}
-      <div className="bg-indigo-50 border-t border-indigo-100 p-4 shrink-0 text-xs text-indigo-900 leading-relaxed overflow-y-auto">
+      <div className="bg-indigo-50 border-t border-indigo-100 p-4 shrink-0 text-[11px] sm:text-xs text-indigo-900 leading-relaxed overflow-y-auto">
         <h4 className="font-bold uppercase tracking-wider text-indigo-700 mb-2">How this architecture works</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <strong>1. The Idempotency Lock:</strong> Clicking "Simulate Burst" fires 10 identical webhook payloads at the Go API simultaneously. The API generates a hash (the Idempotency-Key) and checks it against Redis via a <code>SETNX</code> command. The first request grabs the lock and drops the payload into RabbitMQ. The other 9 requests instantly hit the lock and are rejected, preventing race conditions and database corruption.
           </div>
           <div>
             <strong>2. Event-Driven Syncing:</strong> Instead of the HTTP API thread talking directly to the database (which crashes during high load), it instantly returns <code>202 Accepted</code>. A background Go worker consumes the RabbitMQ queue (FIFO) at a safe speed, updates the Redis database, and pushes the final state to the UI via persistent WebSockets.
+          </div>
+          <div>
+            <strong>3. Eventual Consistency:</strong> Because the API replies instantly <em>before</em> the database actually updates, the frontend state and backend state are briefly out of sync (eventual consistency). To prevent user confusion, WebSockets instantly push the finalized state back to the UI the millisecond the worker finishes, perfectly masking the asynchronous delay.
           </div>
         </div>
       </div>
