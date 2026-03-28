@@ -4,54 +4,65 @@ import { useState, useEffect, useRef } from 'react';
 
 type Job = {
   id: string;
-  status: 'queued' | 'processing' | 'completed';
-  data: string;
-  timestamp: number;
+  title: string;
+  status: 'draft' | 'published';
+  created_at: string;
+  updated_at?: string;
 };
 
 export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [queueLogs, setQueueLogs] = useState<{id: string, text: string, time: number}[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<'draft' | 'published'>('published');
   const wsRef = useRef<WebSocket | null>(null);
+
+  const fetchDatabaseState = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
+      const res = await fetch(`${apiUrl}/api/demo/jobs`);
+      const data = await res.json();
+      setJobs(data || []);
+    } catch (err) {
+      console.error('Failed to fetch Redis jobs:', err);
+    }
+  };
 
   useEffect(() => {
     let ws: WebSocket;
     let retryTimeout: NodeJS.Timeout;
 
+    fetchDatabaseState();
+
     const connectWs = () => {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-      // Convert http/https to ws/wss
       const wsUrl = apiUrl.replace(/^http/, 'ws') + '/ws/demo';
 
       try {
         ws = new WebSocket(wsUrl);
 
-        ws.onopen = () => {
-          setIsConnected(true);
-        };
+        ws.onopen = () => setIsConnected(true);
 
         ws.onclose = () => {
           setIsConnected(false);
-          // Try to reconnect if the Go API bounces or proxy drops
           retryTimeout = setTimeout(connectWs, 2000);
         };
 
         ws.onmessage = (event) => {
           try {
             const msg = JSON.parse(event.data);
-            setJobs((prev) =>
-              prev.map((job) => {
-                if (job.id === msg.jobId) {
-                  if (msg.type === 'job_processing') {
-                    return { ...job, status: 'processing' };
-                  }
-                  if (msg.type === 'job_completed') {
-                    return { ...job, status: 'completed' };
-                  }
-                }
-                return job;
-              })
-            );
+            
+            // Add a log entry for the visual queue
+            setQueueLogs(prev => [{
+              id: msg.jobId,
+              text: msg.type === 'job_processing' ? `Worker picked up job ${msg.jobId}` : `Successfully synced job ${msg.jobId} to database`,
+              time: msg.timestamp
+            }, ...prev].slice(0, 8));
+
+            // If a job just finished, re-fetch the actual database to prove it mutated!
+            if (msg.type === 'job_completed') {
+              fetchDatabaseState();
+            }
           } catch (e) {
             console.error('Error parsing WS message:', e);
           }
@@ -59,7 +70,6 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
 
         wsRef.current = ws;
       } catch (err) {
-        console.error('Failed to establish WebSocket:', err);
         retryTimeout = setTimeout(connectWs, 2000);
       }
     };
@@ -84,12 +94,15 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
   const sendWebhook = async () => {
     if (!isConnected) return;
 
-    // Generate a random mock ID and data payload
     const id = Math.random().toString(36).substring(2, 9);
-    const data = `ATS Job Sync #${Math.floor(Math.random() * 9000) + 1000}`;
-
-    // Optimistically add it to the UI queue
-    setJobs((prev) => [{ id, status: 'queued' as const, data, timestamp: Date.now() }, ...prev].slice(0, 5)); // Keep only last 5
+    const title = `Software Engineer L${Math.floor(Math.random() * 5) + 1}`;
+    
+    // Add to the visual queue log
+    setQueueLogs(prev => [{
+      id,
+      text: `HTTP 202 Accepted: Dropped payload into RabbitMQ`,
+      time: Date.now()
+    }, ...prev].slice(0, 8));
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
@@ -99,89 +112,131 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
         body: JSON.stringify({
           id,
           timestamp: Date.now(),
-          data,
+          data: {
+            title: title,
+            target_status: selectedStatus
+          }
         }),
       });
     } catch (err) {
       console.error('Webhook failed:', err);
-      // Mark as failed in a real app, but for demo we just log it
     }
   };
 
   return (
-    <div className="flex flex-col w-full bg-white rounded-lg border border-gray-200 overflow-hidden shadow-inner h-64">
-      {/* Demo Header */}
-      <div className="flex items-center justify-between bg-gray-50 px-4 py-3 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-          <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            {isConnected ? 'WebSocket Connected' : 'Connecting to API...'}
-          </span>
+    <div className="flex flex-col w-full h-[600px] sm:h-[500px] overflow-hidden bg-slate-50 text-slate-800 font-sans">
+      
+      {/* Header Panel */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-slate-200 bg-white gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`flex items-center justify-center w-8 h-8 rounded-md ${isConnected ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-800">Event-Driven Job Sync</h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                {isConnected ? 'Go WebSocket Connected' : 'Disconnected'}
+              </span>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={sendWebhook}
-          disabled={!isConnected}
-          className={`text-xs px-4 py-1.5 rounded font-medium shadow-sm transition-colors ${
-            isConnected
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          Fire Webhook
-        </button>
+        
+        {/* Controls */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <select 
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value as any)}
+            className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 flex-1 sm:flex-none"
+          >
+            <option value="draft">Sync as Draft</option>
+            <option value="published">Sync as Published</option>
+          </select>
+          <button
+            onClick={sendWebhook}
+            disabled={!isConnected}
+            className={`px-4 py-2 text-sm font-semibold rounded-md shadow-sm transition whitespace-nowrap ${
+              isConnected
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            Fire Webhook
+          </button>
+        </div>
       </div>
 
-      {/* Demo Body (The Queue) */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50">
-        {jobs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-400">
-            <svg className="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            <p className="text-xs font-medium">Queue is empty</p>
-            <p className="text-[10px] mt-1">Click "Fire Webhook" to drop a payload into RabbitMQ.</p>
+      <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
+        {/* Left Side: Live Database State */}
+        <div className="flex-1 border-b sm:border-b-0 sm:border-r border-slate-200 flex flex-col bg-white overflow-hidden">
+          <div className="bg-slate-100 border-b border-slate-200 px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
+            <span>Live Redis Database State</span>
+            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[10px]">job:*</span>
           </div>
-        ) : (
-          jobs.map((job) => (
-            <div key={job.id} className="flex items-center justify-between bg-white border border-gray-200 p-3 rounded-md shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                  {job.id}
-                </div>
-                <span className="text-sm font-medium text-gray-700">{job.data}</span>
+          <div className="p-4 overflow-y-auto flex-1 space-y-3">
+            {jobs.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-70">
+                <span className="text-4xl mb-2">🗄️</span>
+                <p className="text-sm font-medium">Database is empty</p>
+                <p className="text-xs text-center mt-1">Fire a webhook to insert a job</p>
               </div>
-
-              <div className="flex items-center">
-                {job.status === 'queued' && (
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            ) : (
+              jobs.map((job) => (
+                <div key={job.id} className="border border-slate-200 rounded-md p-3 shadow-sm flex flex-col gap-2 relative overflow-hidden group">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                  <div className="flex justify-between items-start pl-2">
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm leading-tight">{job.title}</h4>
+                      <span className="text-[10px] font-mono text-slate-500">ID: {job.id}</span>
+                    </div>
+                    <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${
+                      job.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {job.status}
                     </span>
-                    In Queue
-                  </span>
-                )}
-                {job.status === 'processing' && (
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
-                    <svg className="animate-spin h-3 w-3 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Worker Processing
-                  </span>
-                )}
-                {job.status === 'completed' && (
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                    <svg className="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-                    </svg>
-                    Success
-                  </span>
-                )}
+                  </div>
+                  <div className="pl-2 pt-2 border-t border-slate-100 flex justify-between items-center">
+                    <span className="text-[10px] text-slate-400">
+                      {job.updated_at ? 'Updated: ' : 'Created: '}
+                      {new Date(job.updated_at || job.created_at).toLocaleTimeString()}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Right Side: Event Queue Log */}
+        <div className="w-full sm:w-2/5 flex flex-col bg-slate-900 text-slate-300 overflow-hidden">
+          <div className="bg-slate-950 border-b border-slate-800 px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
+            <span>RabbitMQ Event Stream</span>
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Live</span>
+          </div>
+          <div className="p-4 overflow-y-auto flex-1 space-y-3 font-mono text-[11px] leading-relaxed">
+            {queueLogs.length === 0 ? (
+              <div className="opacity-50 text-center mt-10">
+                Listening for events on<br/>`webhook_jobs` queue...
               </div>
-            </div>
-          ))
-        )}
+            ) : (
+              queueLogs.map((log, i) => (
+                <div key={i} className="flex items-start gap-2 border-b border-slate-800 pb-2 last:border-0 last:pb-0">
+                  <span className="text-slate-500 shrink-0">[{new Date(log.time).toISOString().substring(11, 19)}]</span>
+                  <span className={`
+                    ${log.text.includes('Dropped payload') ? 'text-blue-400' : ''}
+                    ${log.text.includes('Worker picked up') ? 'text-amber-400' : ''}
+                    ${log.text.includes('Successfully synced') ? 'text-emerald-400' : ''}
+                  `}>
+                    {log.text}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
