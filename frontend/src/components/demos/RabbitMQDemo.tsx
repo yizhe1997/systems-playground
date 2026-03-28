@@ -124,10 +124,10 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden bg-slate-50 text-slate-800 font-sans">
+    <div className="flex flex-col w-full h-full min-h-[500px] bg-slate-50 text-slate-800 font-sans">
       
       {/* Header Panel */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-slate-200 bg-white gap-4">
+      <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between p-4 border-b border-slate-200 bg-white gap-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className={`flex items-center justify-center w-8 h-8 rounded-md ${isConnected ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

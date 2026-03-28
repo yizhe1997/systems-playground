@@ -276,7 +276,7 @@ export default function Home() {
 
       {/* Active Demo Modal */}
       <Dialog open={activeDemo !== null} onOpenChange={(open) => !open && setActiveDemo(null)} disablePointerDismissal>
-        <DialogContent className="flex flex-col w-[95vw] max-w-[1200px] h-[90vh] max-h-[800px] p-0 overflow-hidden bg-slate-50 border border-slate-200 resize">
+        <DialogContent className="flex flex-col w-[90vw] md:w-[75vw] lg:w-[1200px] max-w-[1200px] h-[85vh] max-h-[85vh] p-0 overflow-auto bg-slate-50 border border-slate-200 resize transition-all duration-300 ease-in-out">
           {activeDemo?.type === 'queue' && <RabbitMQDemo widgetId={activeDemo.id} />}
         </DialogContent>
       </Dialog>
