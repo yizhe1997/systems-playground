@@ -220,24 +220,24 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
             value={jobTitle} 
             onChange={(e) => setJobTitle(e.target.value)} 
             placeholder={mode === 'create' ? "Job Title (e.g. Software Engineer)" : "Update Job Title"}
-            className="text-xs border border-slate-200 rounded px-2 py-1.5 bg-white text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full text-xs border border-slate-200 rounded px-2 py-1.5 bg-white text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
           />
 
+          <select 
+            value={jobStatus}
+            onChange={(e) => setJobStatus(e.target.value as any)}
+            className="w-full text-xs border border-slate-200 rounded px-2 py-1.5 bg-white text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="closed">Closed</option>
+          </select>
+
           <div className="flex gap-2">
-            <select 
-              value={jobStatus}
-              onChange={(e) => setJobStatus(e.target.value as any)}
-              className="text-xs border border-slate-200 rounded px-2 py-1.5 bg-white text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 flex-1"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="closed">Closed</option>
-            </select>
-            
             <button
               onClick={() => sendWebhook(false)}
               disabled={!isConnected}
-              className={`px-3 py-1.5 text-xs font-bold rounded shadow-sm transition whitespace-nowrap ${
+              className={`flex-1 px-3 py-1.5 text-xs font-bold rounded shadow-sm transition whitespace-nowrap ${
                 isConnected
                   ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
@@ -249,7 +249,7 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
               onClick={() => sendWebhook(true)}
               disabled={!isConnected}
               title="Sends 10 identical requests simultaneously to test the Redis idempotency lock"
-              className={`px-3 py-1.5 text-xs font-bold rounded shadow-sm transition whitespace-nowrap border ${
+              className={`flex-1 px-3 py-1.5 text-xs font-bold rounded shadow-sm transition whitespace-nowrap border ${
                 isConnected
                   ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200'
                   : 'bg-slate-50 text-slate-400 cursor-not-allowed border-slate-200'
