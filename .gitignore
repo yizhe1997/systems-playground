@@ -4,3 +4,6 @@ infra/scripts/config.env
 .DS_Store
 # Filebrowser local storage
 storage/
+
+# Ignore filebrowser runtime data
+wsl-reference-setup/apps/filebrowser/data/

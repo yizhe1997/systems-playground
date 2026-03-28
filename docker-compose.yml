@@ -46,15 +46,6 @@ services:
       - "playground.widget=queue"
       - "playground.name=ATS Synchronization (RabbitMQ)"
 
-  filebrowser:
-    image: filebrowser/filebrowser:latest
-    ports:
-      - "8088:80"
-    volumes:
-      - ./storage/files:/srv
-      - ./storage/config/filebrowser.db:/database/filebrowser.db
-    restart: unless-stopped
-
 volumes:
   redis_data:
   rabbitmq_data:
