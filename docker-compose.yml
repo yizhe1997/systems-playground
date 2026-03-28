@@ -54,9 +54,6 @@ services:
       - ./storage/files:/srv
       - ./storage/config/filebrowser.db:/database/filebrowser.db
     restart: unless-stopped
-    labels:
-      - "playground.widget=storage"
-      - "playground.name=Secure Resume Storage"
 
 volumes:
   redis_data:
