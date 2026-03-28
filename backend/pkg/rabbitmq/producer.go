@@ -17,9 +17,9 @@ var (
 )
 
 type WebhookPayload struct {
-	ID        string `json:"id"`
-	Timestamp int64  `json:"timestamp"`
-	Data      string `json:"data"`
+	ID        string         `json:"id"`
+	Timestamp int64          `json:"timestamp"`
+	Data      map[string]any `json:"data"`
 }
 
 func InitRabbitMQ() {
