@@ -146,7 +146,7 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
         </div>
         
         {/* Controls */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto pr-8">
           <select 
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value as any)}
