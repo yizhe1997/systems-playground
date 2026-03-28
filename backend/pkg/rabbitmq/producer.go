@@ -30,7 +30,7 @@ func InitRabbitMQ() {
 
 	var err error
 	
-	// Add retry logic because RabbitMQ often takes a few seconds to boot up in Docker
+	// Add retry logic because RabbitMQ might be turned off (Scale-to-Zero)
 	for i := 0; i < 5; i++ {
 		conn, err = amqp.Dial(rabbitURL)
 		if err == nil {
@@ -41,7 +41,7 @@ func InitRabbitMQ() {
 	}
 
 	if err != nil {
-		log.Printf("❌ Failed to connect to RabbitMQ: %v", err)
+		log.Printf("⚠️ RabbitMQ is currently offline (Scale-to-Zero). API is running, but queuing is disabled.")
 		return
 	}
 
@@ -68,8 +68,17 @@ func InitRabbitMQ() {
 	log.Printf("✅ Connected to RabbitMQ. Queue '%s' initialized.", Queue.Name)
 }
 
+func ConnectIfNeeded() bool {
+	if channel != nil && !channel.IsClosed() {
+		return true
+	}
+	// Try reconnecting
+	InitRabbitMQ()
+	return channel != nil && !channel.IsClosed()
+}
+
 func PublishJob(payload WebhookPayload) error {
-	if channel == nil {
+	if !ConnectIfNeeded() {
 		return amqp.ErrClosed
 	}
 

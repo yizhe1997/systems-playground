@@ -62,59 +62,67 @@ func StartBroadcaster() {
 
 // ConsumeJobs runs in a background goroutine and listens to RabbitMQ
 func ConsumeJobs() {
-	if channel == nil {
-		log.Println("⚠️ Cannot start consumer: RabbitMQ channel is nil")
-		return
-	}
-
-	msgs, err := channel.Consume(
-		Queue.Name, // queue
-		"",         // consumer label
-		false,      // auto-ack (set to false to simulate real enterprise workflows)
-		false,      // exclusive
-		false,      // no-local
-		false,      // no-wait
-		nil,        // args
-	)
-	if err != nil {
-		log.Printf("❌ Failed to register a consumer: %v", err)
-		return
-	}
-
-	log.Printf("📡 [Consumer] Background worker is listening for jobs...")
-
-	for d := range msgs {
-		var payload WebhookPayload
-		if err := json.Unmarshal(d.Body, &payload); err != nil {
-			log.Printf("❌ Error decoding message: %v", err)
-			d.Nack(false, false) // Drop bad messages
+	for {
+		if !ConnectIfNeeded() {
+			// If RabbitMQ is offline (Scale-to-Zero), sleep and check again later
+			time.Sleep(10 * time.Second)
 			continue
 		}
 
-		// 1. Tell the React UI that the worker picked up the job
-		broadcast <- BroadcastMessage{
-			Type:      "job_processing",
-			JobID:     payload.ID,
-			Data:      payload.Data,
-			Timestamp: time.Now().UnixMilli(),
+		msgs, err := channel.Consume(
+			Queue.Name, // queue
+			"",         // consumer label
+			false,      // auto-ack (set to false to simulate real enterprise workflows)
+			false,      // exclusive
+			false,      // no-local
+			false,      // no-wait
+			nil,        // args
+		)
+		if err != nil {
+			log.Printf("❌ Failed to register a consumer. Retrying in 10s... %v", err)
+			time.Sleep(10 * time.Second)
+			continue
 		}
 
-		log.Printf("⚙️ [Consumer] Processing Job %s...", payload.ID)
+		log.Printf("📡 [Consumer] Background worker is listening for jobs...")
 
-		// 2. Simulate heavy background work (e.g., parsing an ATS webhook, hitting the database, formatting a response)
-		time.Sleep(3 * time.Second)
+		for d := range msgs {
+			var payload WebhookPayload
+			if err := json.Unmarshal(d.Body, &payload); err != nil {
+				log.Printf("❌ Error decoding message: %v", err)
+				d.Nack(false, false) // Drop bad messages
+				continue
+			}
 
-		// 3. Mark the job as completely finished
-		d.Ack(false) // Manually acknowledge that the job succeeded
+			// 1. Tell the React UI that the worker picked up the job
+			broadcast <- BroadcastMessage{
+				Type:      "job_processing",
+				JobID:     payload.ID,
+				Data:      payload.Data,
+				Timestamp: time.Now().UnixMilli(),
+			}
 
-		log.Printf("✅ [Consumer] Completed Job %s.", payload.ID)
+			log.Printf("⚙️ [Consumer] Processing Job %s...", payload.ID)
 
-		// 4. Tell the React UI that the job is done
-		broadcast <- BroadcastMessage{
-			Type:      "job_completed",
-			JobID:     payload.ID,
-			Data:      "Finished ATS sync for: " + payload.Data,
-			Timestamp: time.Now().UnixMilli(),
+			// 2. Simulate heavy background work
+			time.Sleep(3 * time.Second)
+
+			// 3. Mark the job as completely finished
+			d.Ack(false) // Manually acknowledge that the job succeeded
+
+			log.Printf("✅ [Consumer] Completed Job %s.", payload.ID)
+
+			// 4. Tell the React UI that the job is done
+			broadcast <- BroadcastMessage{
+				Type:      "job_completed",
+				JobID:     payload.ID,
+				Data:      "Finished ATS sync for: " + payload.Data,
+				Timestamp: time.Now().UnixMilli(),
+			}
 		}
+
+		// If the range ends, it means the channel closed (e.g. RabbitMQ was stopped)
+		log.Println("⚠️ [Consumer] RabbitMQ connection lost. Worker entering standby mode.")
+		time.Sleep(5 * time.Second)
 	}
 }
