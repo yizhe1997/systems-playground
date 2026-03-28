@@ -124,7 +124,7 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-full min-h-[500px] overflow-hidden bg-slate-50 text-slate-800 font-sans">
+    <div className="flex flex-col w-full h-full overflow-hidden bg-slate-50 text-slate-800 font-sans">
       
       {/* Header Panel */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-slate-200 bg-white gap-4">
