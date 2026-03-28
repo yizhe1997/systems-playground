@@ -68,12 +68,18 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
           try {
             const msg = JSON.parse(event.data);
             
+            // Determine log text
+            let text = '';
+            if (msg.type === 'job_processing') text = `Worker picked up job ${msg.jobId}`;
+            else if (msg.type === 'job_duplicate') text = `[Idempotency Lock] Ignored duplicate webhook for ${msg.jobId}`;
+            else text = `Successfully synced job ${msg.jobId} to database`;
+
             // Add a log entry for the visual queue
             setQueueLogs(prev => [{
               id: msg.jobId,
-              text: msg.type === 'job_processing' ? `Worker picked up job ${msg.jobId}` : `Successfully synced job ${msg.jobId} to database`,
+              text,
               time: msg.timestamp
-            }, ...prev].slice(0, 8));
+            }, ...prev].slice(0, 15));
 
             // If a job just finished, re-fetch the actual database to prove it mutated!
             if (msg.type === 'job_completed') {
@@ -107,7 +113,7 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
     };
   }, []);
 
-  const sendWebhook = async () => {
+  const sendWebhook = async (isBurst = false) => {
     if (!isConnected) return;
     if (mode === 'update' && !targetId) {
       alert('Please select a job ID to update.');
@@ -116,28 +122,40 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
 
     const id = mode === 'create' ? Math.random().toString(36).substring(2, 9) : targetId;
     const title = jobTitle.trim() || `Software Engineer L${Math.floor(Math.random() * 5) + 1}`;
+    const idempotencyKey = `req-${id}-${Date.now()}`;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
     
     // Add to the visual queue log
     setQueueLogs(prev => [{
       id,
-      text: `HTTP 202 Accepted: Dropped payload into RabbitMQ`,
+      text: isBurst ? `⚡ Firing 10 identical webhooks simultaneously (Network Burst)` : `HTTP 202 Accepted: Dropped payload into RabbitMQ`,
       time: Date.now()
     }, ...prev].slice(0, 15));
 
+    const fireRequest = () => fetch(`${apiUrl}/api/demo/webhook`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Idempotency-Key': idempotencyKey
+      },
+      body: JSON.stringify({
+        id,
+        timestamp: Date.now(),
+        data: {
+          title: title,
+          target_status: jobStatus
+        }
+      }),
+    });
+
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-      await fetch(`${apiUrl}/api/demo/webhook`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id,
-          timestamp: Date.now(),
-          data: {
-            title: title,
-            target_status: jobStatus
-          }
-        }),
-      });
+      if (isBurst) {
+        // Fire 10 parallel requests with the EXACT same idempotency key
+        await Promise.all(Array(10).fill(null).map(fireRequest));
+      } else {
+        await fireRequest();
+      }
+      
       if (mode === 'create') {
         setJobTitle(''); // Clear title on new creation
       }
@@ -147,7 +165,7 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-[60vh] min-h-[500px] bg-slate-50 text-slate-800 font-sans">
+    <div className="flex flex-col w-full h-[85vh] min-h-[600px] bg-slate-50 text-slate-800 font-sans">
       
       {/* Header Panel */}
       <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between p-4 border-b border-slate-200 bg-white gap-4 shrink-0">
@@ -217,7 +235,7 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
             </select>
             
             <button
-              onClick={sendWebhook}
+              onClick={() => sendWebhook(false)}
               disabled={!isConnected}
               className={`px-3 py-1.5 text-xs font-bold rounded shadow-sm transition whitespace-nowrap ${
                 isConnected
@@ -226,6 +244,18 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
               }`}
             >
               Fire Webhook
+            </button>
+            <button
+              onClick={() => sendWebhook(true)}
+              disabled={!isConnected}
+              title="Sends 10 identical requests simultaneously to test the Redis idempotency lock"
+              className={`px-3 py-1.5 text-xs font-bold rounded shadow-sm transition whitespace-nowrap border ${
+                isConnected
+                  ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200'
+                  : 'bg-slate-50 text-slate-400 cursor-not-allowed border-slate-200'
+              }`}
+            >
+              Simulate Burst
             </button>
           </div>
         </div>
@@ -275,7 +305,7 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
         {/* Right Side: Event Queue Log */}
         <div className="w-full sm:w-2/5 flex flex-col bg-slate-900 text-slate-300 overflow-hidden">
           <div className="bg-slate-950 border-b border-slate-800 px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
-            <span>RabbitMQ Event Stream</span>
+            <span>Event Stream</span>
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Live</span>
           </div>
           <div className="p-4 overflow-y-auto flex-1 space-y-3 font-mono text-[11px] leading-relaxed">
@@ -291,12 +321,26 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
                     ${log.text.includes('Dropped payload') ? 'text-blue-400' : ''}
                     ${log.text.includes('Worker picked up') ? 'text-amber-400' : ''}
                     ${log.text.includes('Successfully synced') ? 'text-emerald-400' : ''}
+                    ${log.text.includes('Duplicate') || log.text.includes('Burst') ? 'text-rose-400' : ''}
                   `}>
                     {log.text}
                   </span>
                 </div>
               ))
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Info Panel */}
+      <div className="bg-indigo-50 border-t border-indigo-100 p-4 shrink-0 text-xs text-indigo-900 leading-relaxed overflow-y-auto">
+        <h4 className="font-bold uppercase tracking-wider text-indigo-700 mb-2">How this architecture works</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <strong>1. The Idempotency Lock:</strong> Clicking "Simulate Burst" fires 10 identical webhook payloads at the Go API simultaneously. The API generates a hash (the Idempotency-Key) and checks it against Redis via a <code>SETNX</code> command. The first request grabs the lock and drops the payload into RabbitMQ. The other 9 requests instantly hit the lock and are rejected, preventing race conditions and database corruption.
+          </div>
+          <div>
+            <strong>2. Event-Driven Syncing:</strong> Instead of the HTTP API thread talking directly to the database (which crashes during high load), it instantly returns <code>202 Accepted</code>. A background Go worker consumes the RabbitMQ queue (FIFO) at a safe speed, updates the Redis database, and pushes the final state to the UI via persistent WebSockets.
           </div>
         </div>
       </div>

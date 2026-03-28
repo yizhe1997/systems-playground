@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -109,6 +110,20 @@ func main() {
 		var payload rabbitmq.WebhookPayload
 		if err := c.BodyParser(&payload); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid JSON"})
+		}
+
+		idemKey := c.Get("Idempotency-Key")
+		if idemKey != "" && redisClient != nil {
+			added, _ := redisClient.SetNX(c.Context(), "idem:"+idemKey, "1", 5*time.Minute).Result()
+			if !added {
+				rabbitmq.BroadcastEvent(rabbitmq.BroadcastMessage{
+					Type:      "job_duplicate",
+					JobID:     payload.ID,
+					Data:      map[string]any{"status": "blocked"},
+					Timestamp: time.Now().UnixMilli(),
+				})
+				return c.Status(200).JSON(fiber.Map{"status": "ignored", "reason": "duplicate idempotency key"})
+			}
 		}
 
 		// 1. Push directly into RabbitMQ

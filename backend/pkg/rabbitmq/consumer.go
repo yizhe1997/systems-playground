@@ -18,6 +18,11 @@ var clients = make(map[*websocket.Conn]bool)
 // A channel to receive messages that need to be broadcasted to all clients
 var broadcast = make(chan BroadcastMessage)
 
+// BroadcastEvent allows external packages to push messages to the UI stream
+func BroadcastEvent(msg BroadcastMessage) {
+	broadcast <- msg
+}
+
 // BroadcastMessage defines the JSON structure sent to the React frontend
 type BroadcastMessage struct {
 	Type      string         `json:"type"` // e.g., "job_queued", "job_processing", "job_completed"
@@ -127,10 +132,11 @@ func ConsumeJobs() {
 				
 				jobRecord, err := RedisClient.Get(ctx, "job:"+payload.ID).Result()
 				if err == nil {
-					// Job exists, update its status
+					// Job exists, update its status and title
 					var jobData map[string]any
 					json.Unmarshal([]byte(jobRecord), &jobData)
 					jobData["status"] = newStatus
+					jobData["title"] = title
 					jobData["updated_at"] = time.Now().Format(time.RFC3339)
 					
 					updatedJson, _ := json.Marshal(jobData)
