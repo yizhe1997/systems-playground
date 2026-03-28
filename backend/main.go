@@ -85,8 +85,19 @@ func main() {
 	// Heartbeat endpoint to keep Scale-to-Zero containers alive
 	app.Post("/api/demo/widgets/:id/heartbeat", func(c *fiber.Ctx) error {
 		id := c.Params("id")
-		RecordActivity(id)
+		RecordHeartbeat(c.Context(), id)
 		return c.SendStatus(200)
+	})
+
+	// Wake endpoint allowing anonymous users to boot a sleeping widget
+	app.Post("/api/demo/widgets/:id/wake", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		status, err := wakeWidget(id)
+		if err != nil {
+			log.Printf("Error waking widget %s: %v", id, err)
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to wake container"})
+		}
+		return c.JSON(fiber.Map{"id": id, "status": status})
 	})
 
 	// --- ADMIN UI CONTROL PLANE ENDPOINTS ---

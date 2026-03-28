@@ -52,3 +52,24 @@ func SetConfig(ctx context.Context, key string, value string) error {
 	}
 	return redisClient.Set(ctx, "config:"+key, value, 0).Err() // 0 means no expiration
 }
+
+// RecordHeartbeat sets an expiring key in Redis to track container activity
+func RecordHeartbeat(ctx context.Context, containerID string) error {
+	if redisClient == nil {
+		return nil
+	}
+	// Give the container a 10-minute TTL (10 * 60 * time.Second)
+	return redisClient.Set(ctx, "heartbeat:"+containerID, "active", 10*60*1000*1000*1000).Err() // 10 minutes in nanoseconds
+}
+
+// IsHeartbeatAlive checks if the container's heartbeat key still exists in Redis
+func IsHeartbeatAlive(ctx context.Context, containerID string) bool {
+	if redisClient == nil {
+		return true // If Redis is down, fail-safe to keep containers alive
+	}
+	val, err := redisClient.Exists(ctx, "heartbeat:"+containerID).Result()
+	if err != nil {
+		return true
+	}
+	return val > 0
+}

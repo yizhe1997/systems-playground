@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -12,33 +11,30 @@ import (
 	"github.com/docker/docker/client"
 )
 
-var (
-	activityMap = make(map[string]time.Time)
-	activityMutex sync.Mutex
-)
-
-// RecordActivity resets the 10-minute idle timer for a container
-func RecordActivity(id string) {
-	activityMutex.Lock()
-	defer activityMutex.Unlock()
-	activityMap[id] = time.Now()
-}
-
-// StartReaper checks for idle playground widgets every minute and stops them if idle > 10m
+// StartReaper checks for idle playground widgets every minute and stops them if their Redis heartbeat has expired
 func StartReaper() {
 	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
 		for range ticker.C {
-			activityMutex.Lock()
-			now := time.Now()
-			for id, lastActive := range activityMap {
-				if now.Sub(lastActive) > 10*time.Minute {
-					log.Printf("⏳ [Scale-to-Zero] Container %s has been idle for >10m. Shutting down.", id)
-					toggleWidget(id) // stop it
-					delete(activityMap, id)
+			ctx := context.Background()
+			widgets, err := listWidgets()
+			if err != nil {
+				continue
+			}
+
+			for _, w := range widgets {
+				// Only track things that are actually running
+				if w.Status == "running" {
+					if !IsHeartbeatAlive(ctx, w.ID) {
+						log.Printf("⏳ [Scale-to-Zero] Container %s heartbeat expired. Shutting down.", w.ID)
+						cli, err := getDockerClient()
+						if err == nil {
+							cli.ContainerStop(ctx, w.ID, container.StopOptions{})
+							cli.Close()
+						}
+					}
 				}
 			}
-			activityMutex.Unlock()
 		}
 	}()
 }
@@ -110,16 +106,38 @@ func toggleWidget(id string) (string, error) {
 		if err := cli.ContainerStop(ctx, id, container.StopOptions{}); err != nil {
 			return "", err
 		}
-		activityMutex.Lock()
-		delete(activityMap, id)
-		activityMutex.Unlock()
 		return "exited", nil
 	} else {
 		// If stopped, turn it on
 		if err := cli.ContainerStart(ctx, id, types.ContainerStartOptions{}); err != nil {
 			return "", err
 		}
-		RecordActivity(id)
+		RecordHeartbeat(ctx, id)
 		return "running", nil
 	}
 }
+
+// wakeWidget ensures a container is running without toggling it off if it already is
+func wakeWidget(id string) (string, error) {
+	cli, err := getDockerClient()
+	if err != nil {
+		return "", err
+	}
+	defer cli.Close()
+
+	ctx := context.Background()
+	c, err := cli.ContainerInspect(ctx, id)
+	if err != nil {
+		return "", err
+	}
+
+	if !c.State.Running {
+		if err := cli.ContainerStart(ctx, id, types.ContainerStartOptions{}); err != nil {
+			return "", err
+		}
+	}
+	
+	RecordHeartbeat(ctx, id)
+	return "running", nil
+}
+
