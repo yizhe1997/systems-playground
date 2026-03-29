@@ -10,14 +10,5 @@ services:
       - UPTIME_KUMA_CLOUDFLARED_TOKEN=${UPTIME_KUMA_CLOUDFLARED_TOKEN}
     labels:
       - com.centurylinklabs.watchtower.enable=true
-  watchtower:
-    image: nickfedor/watchtower:latest
-    container_name: watchtower-global
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    restart: unless-stopped
-    environment:
-      - WATCHTOWER_LABEL_ENABLE=true
-      - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_DISCORD_URL}
 volumes:
   uptime_kuma_data:

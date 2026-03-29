@@ -1,9 +1,9 @@
 
 # Local Infrastructure Scripts Config
-infra/scripts/config.env
+infra/scripts/.env
 .DS_Store
 # Filebrowser local storage
 storage/
 
 # Ignore filebrowser runtime data
-wsl-reference-setup/apps/filebrowser/data/
+wsl-reference-setup/infra/filebrowser/data/

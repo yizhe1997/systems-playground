@@ -5,9 +5,9 @@
 # Global WSL Startup script for Windows/WSL Environments
 # ==========================================================
 
-# Load optional config.env file if present in the same directory
+# Load optional .env file if present in the same directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-[ -f "$SCRIPT_DIR/config.env" ] && source "$SCRIPT_DIR/config.env"
+[ -f "$SCRIPT_DIR/.env" ] && source "$SCRIPT_DIR/.env"
 
 LOGDIR="${LOGDIR:-/home/user/infra/logs}"
 mkdir -p "$LOGDIR"

@@ -5,7 +5,7 @@
 # ==========================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-[ -f "$SCRIPT_DIR/config.env" ] && source "$SCRIPT_DIR/config.env"
+[ -f "$SCRIPT_DIR/.env" ] && source "$SCRIPT_DIR/.env"
 
 BACKUP_BASE_DIR="${BACKUP_BASE_DIR:-/home/user/apps/backups}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
@@ -29,7 +29,7 @@ if [ -n "$VOLUMES_TO_BACKUP" ]; then
         tar -czf "/backup/${volume}_${DATE}.tar.gz" -C /data .
   done
 else
-  echo "[*] ⚠️ No VOLUMES_TO_BACKUP defined in config.env. Skipping volume backup."
+  echo "[*] ⚠️ No VOLUMES_TO_BACKUP defined in .env. Skipping volume backup."
 fi
 
 # 3. Start apps back up
