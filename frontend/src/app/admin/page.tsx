@@ -27,6 +27,7 @@ export default function AdminDashboard() {
   // Configuration State
   const [resumeUrl, setResumeUrl] = useState<string>('');
   const [linkedinUrl, setLinkedinUrl] = useState<string>('');
+  const [githubUrl, setGithubUrl] = useState<string>('');
   const [savingConfig, setSavingConfig] = useState(false);
 
   const fetchConfig = async () => {
@@ -35,6 +36,7 @@ export default function AdminDashboard() {
       const data = await res.json();
       setResumeUrl(data.resumeUrl || '');
       setLinkedinUrl(data.linkedinUrl || '');
+      setGithubUrl(data.githubUrl || '');
     } catch (err) {
       console.error('Error fetching config:', err);
     }
@@ -68,7 +70,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/proxy/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resumeUrl, linkedinUrl }),
+        body: JSON.stringify({ resumeUrl, linkedinUrl, githubUrl }),
       });
       if (res.ok) {
         toast.success("Settings saved successfully to Redis!");
@@ -292,6 +294,19 @@ export default function AdminDashboard() {
                     className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600"
                   />
                   <p className="text-xs text-slate-500">The link for the "View LinkedIn" button.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="githubUrl" className="text-slate-300 font-medium">GitHub Repository URL</Label>
+                  <Input 
+                    id="githubUrl" 
+                    value={githubUrl}
+                    onChange={(e) => setGithubUrl(e.target.value)}
+                    placeholder="https://github.com/yizhe1997/systems-playground"
+                    disabled={!isAdmin}
+                    className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-600"
+                  />
+                  <p className="text-xs text-slate-500">The link for the "View GitHub" button.</p>
                 </div>
                 
                 <div className="pt-4 flex items-center justify-between border-t border-slate-800">

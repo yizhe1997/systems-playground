@@ -57,10 +57,12 @@ func main() {
 	app.Get("/api/config", func(c *fiber.Ctx) error {
 		resumeUrl, _ := GetConfig(c.Context(), "resumeUrl", "#")
 		linkedinUrl, _ := GetConfig(c.Context(), "linkedinUrl", "#")
+		githubUrl, _ := GetConfig(c.Context(), "githubUrl", "#")
 
 		return c.JSON(fiber.Map{
 			"resumeUrl":   resumeUrl,
 			"linkedinUrl": linkedinUrl,
+			"githubUrl":   githubUrl,
 		})
 	})
 
@@ -203,6 +205,7 @@ func main() {
 	type ConfigRequest struct {
 		ResumeUrl   string `json:"resumeUrl"`
 		LinkedinUrl string `json:"linkedinUrl"`
+		GithubUrl   string `json:"githubUrl"`
 	}
 
 	app.Post("/admin/config", func(c *fiber.Ctx) error {
@@ -220,6 +223,7 @@ func main() {
 		ctx := c.Context()
 		SetConfig(ctx, "resumeUrl", req.ResumeUrl)
 		SetConfig(ctx, "linkedinUrl", req.LinkedinUrl)
+		SetConfig(ctx, "githubUrl", req.GithubUrl)
 
 		return c.JSON(fiber.Map{"status": "success", "message": "Configuration updated successfully"})
 	})
