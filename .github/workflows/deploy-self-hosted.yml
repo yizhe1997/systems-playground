@@ -38,7 +38,14 @@ jobs:
           cp docker-compose.yml "$APP_DIR/"
           cp docker-compose.prod.yml "$APP_DIR/docker-compose.override.yml"
           
-          echo "🔐 Constructing .env file from GitHub Secrets..."
+          echo "🔐 Constructing .env files from GitHub Secrets..."
+          
+          # Root .env for docker-compose.yml overrides
+          cat <<EOF > "$APP_DIR/.env"
+          DOCKER_USERNAME=$DOCKER_USERNAME
+          EOF
+          
+          # Frontend .env
           mkdir -p "$APP_DIR/frontend"
           cat <<EOF > "$APP_DIR/frontend/.env"
           NEXTAUTH_SECRET=$NEXTAUTH_SECRET
