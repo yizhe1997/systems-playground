@@ -39,3 +39,49 @@ description: "How to run and manage the Systems Playground."
     ```bash
     docker-compose down
     ```
+
+---
+
+## 🤖 Feature Development with Speckit
+
+This project uses [**Speckit**](https://github.com/github/spec-kit) — an AI-assisted specification workflow that turns a feature idea into a spec, an implementation plan, and a task list before a single line of code is written. All speckit artifacts live under `.specify/`.
+
+### End-to-End Workflow
+
+For any non-trivial feature, follow these steps in order:
+
+1. **Specify** — Describe the feature in natural language. The agent produces a structured spec at `.specify/specs/<###-feature-name>/spec.md`.
+   ```
+   @speckit.specify <describe the feature here>
+   ```
+
+2. **Plan** — The agent reads the spec, researches the codebase, and produces an implementation plan (`plan.md`), a data model, API contracts, and a quickstart guide.
+   ```
+   @speckit.plan
+   ```
+
+3. **Generate tasks** — The agent converts the plan into a dependency-ordered task list (`tasks.md`) grouped by user story so each story is independently deliverable.
+   ```
+   @speckit.tasks
+   ```
+
+4. **Implement** — The agent works through `tasks.md` task-by-task, respecting the constitution gates in `plan.md`.
+   ```
+   @speckit.implement
+   ```
+
+At every step the agent verifies the [Constitution](.specify/memory/constitution.md) gates defined in `plan.md` (separation of concerns, clean architecture, BFF security, scale-to-zero, Turbopack compatibility, IaC). A feature PR MUST NOT be raised unless all gates are ✅.
+
+### Migrating Away from GitHub Copilot
+
+Speckit is intentionally agent-agnostic. The workflow artifacts (`.specify/memory/constitution.md`, `spec.md`, `plan.md`, `tasks.md`) are plain Markdown and carry no Copilot-specific tooling inside them.
+
+To switch to a different AI agent (e.g., Cursor, Claude Code, Windsurf):
+
+1. **Copy the prompt files** — `.github/prompts/speckit.*.prompt.md` define each command's instructions. Port them to your new agent's equivalent instruction format (e.g., `.cursor/rules/`, `CLAUDE.md` includes, or custom slash-commands).
+2. **Update agent guidance files** — `frontend/AGENTS.md` and `frontend/CLAUDE.md` already demonstrate the pattern. Create equivalent files for the new agent and point them at the same content.
+3. **Keep the constitution** — `.specify/memory/constitution.md` is the single source of truth for project rules. The new agent MUST read it at the start of every speckit command.
+4. **Validate tool availability** — Each prompt uses file-system and search tools. Confirm the replacement agent exposes equivalent capabilities (read file, grep, write file, run terminal).
+5. **Run a smoke test** — Re-run `@speckit.specify` on a small existing feature and verify the output matches the template in `.specify/templates/spec-template.md`.
+
+The constitution and all spec artifacts remain unchanged; only the agent invocation mechanism changes.
