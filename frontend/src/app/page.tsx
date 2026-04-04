@@ -192,9 +192,9 @@ export default function Home() {
 
           <div className="grid md:grid-cols-2 gap-8">
             {featuredProjects.length === 0 ? (
-              <div className="col-span-2 text-slate-500 bg-white dark:bg-slate-900 p-16 text-center rounded-xl border border-dashed border-slate-300">
+              <div className="col-span-2 text-slate-500 bg-white dark:bg-slate-900 p-16 text-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                 <span className="text-4xl mb-4 block opacity-50">📂</span>
-                <p className="text-lg font-medium text-slate-700">It's empty at the moment...</p>
+                <p className="text-lg font-medium text-slate-700 dark:text-slate-300">It's empty at the moment...</p>
                 <p className="text-sm mt-1">Real-world applications are currently in development.</p>
               </div>
             ) : (
@@ -253,9 +253,9 @@ export default function Home() {
             {loading ? (
               <div className="text-slate-500 dark:text-slate-400 animate-pulse">Checking infrastructure status...</div>
             ) : featuredDemos.length === 0 ? (
-              <div className="col-span-2 text-slate-500 bg-white dark:bg-slate-900 p-16 text-center rounded-xl border border-dashed border-slate-300">
+              <div className="col-span-2 text-slate-500 bg-white dark:bg-slate-900 p-16 text-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                 <span className="text-4xl mb-4 block opacity-50">🕹️</span>
-                <p className="text-lg font-medium text-slate-700">It's empty at the moment...</p>
+                <p className="text-lg font-medium text-slate-700 dark:text-slate-300">It's empty at the moment...</p>
                 <p className="text-sm mt-1">Playground widgets will appear here when featured.</p>
               </div>
             ) : (
