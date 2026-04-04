@@ -7,6 +7,8 @@ import remarkGfm from 'remark-gfm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
 
+import ThemeToggle from '@/components/ThemeToggle';
+
 type Widget = {
   id: string;
   name: string;
@@ -26,8 +28,10 @@ type Project = {
 export default function Home() {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [docs, setDocs] = useState<any[]>([]);
   const [featuredProjects, setFeaturedProjects] = useState<string[]>([]);
   const [featuredDemos, setFeaturedDemos] = useState<string[]>([]);
+  const [featuredDocs, setFeaturedDocs] = useState<string[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [waking, setWaking] = useState<string | null>(null);
@@ -44,23 +48,6 @@ export default function Home() {
   const formatUrl = (url: string) => {
     if (!url || url === '#') return '#';
     return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
-  };
-
-  const openAdr = async (slug: string, title: string) => {
-    setAdrTitle(title);
-    setAdrContent('Loading architecture logs...');
-    setAdrModalOpen(true);
-    try {
-      const res = await fetch(`https://raw.githubusercontent.com/yizhe1997/systems-playground/main/docs/adrs/${slug}.md`);
-      if (res.ok) {
-        setAdrContent(await res.text());
-      } else {
-        setAdrContent('Failed to load ADR from GitHub repository.');
-      }
-    } catch(err) {
-      console.error(err);
-      setAdrContent('Network error while loading ADR.');
-    }
   };
 
   useEffect(() => {
@@ -105,11 +92,17 @@ export default function Home() {
       .then((data) => setProjects(data || []))
       .catch(console.error);
 
+    fetch(apiUrl + '/api/documents')
+      .then((res) => res.json())
+      .then((data) => setDocs(data || []))
+      .catch(console.error);
+
     fetch(apiUrl + '/api/homepage')
       .then((res) => res.json())
       .then((data) => {
         setFeaturedProjects(data.featured_projects || []);
         setFeaturedDemos(data.featured_demos || []);
+        setFeaturedDocs(data.featured_docs || []);
       })
       .catch(console.error);
 
@@ -141,13 +134,14 @@ export default function Home() {
               SYSTEMS_PLAYGROUND
             </span>
           </div>
-          <nav className="flex items-center gap-6 text-sm font-medium text-gray-600">
-            <a href="#playground" className="hover:text-blue-600 transition-colors">Playground</a>
-            <a href="#adrs" className="hover:text-blue-600 transition-colors">Architecture</a>
-            <div className="w-px h-4 bg-gray-300 hidden sm:block"></div>
+          <nav className="flex items-center gap-4 sm:gap-6 text-sm font-medium text-slate-600 dark:text-slate-400">
+            <ThemeToggle />
+            <a href="#playground" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors hidden sm:block">Playground</a>
+            <a href="#adrs" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors hidden sm:block">Architecture</a>
+            <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 hidden sm:block"></div>
             <Link 
               href="/admin" 
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-gray-200 bg-white hover:bg-gray-100 hover:text-gray-900 h-9 px-4 py-2"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white h-9 px-4 py-2"
             >
               Control Plane ⚙️
             </Link>
@@ -351,35 +345,35 @@ export default function Home() {
           </Link>
         </div>
         <div className="space-y-4">
-          <div 
-            onClick={() => openAdr('001-custom-go-control-plane', 'ADR 001: Custom Go Control Plane')}
-            className="group block border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition cursor-pointer bg-white"
-          >
-            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition">ADR 001: Custom Go Control Plane vs. Portainer</h3>
-            <p className="text-gray-600 mt-2 text-sm leading-relaxed">
-              Why I built a custom Golang daemon socket integration instead of using standard orchestration tools, 
-              focusing on security isolation and implementing Scale-to-Zero memory optimization for the host machine.
-            </p>
-          </div>
-          <div 
-            onClick={() => openAdr('002-bff-proxy-security', 'ADR 002: Backend-For-Frontend (BFF) Pattern')}
-            className="group block border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition cursor-pointer bg-white"
-          >
-            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition">ADR 002: Backend-For-Frontend (BFF) API Security</h3>
-            <p className="text-gray-600 mt-2 text-sm leading-relaxed">
-              Securing the Golang control plane using a Next.js Node server API proxy to evaluate NextAuth JWTs 
-              and assign Role-Based Access Control (RBAC) without exposing API keys to the browser.
-            </p>
-          </div>
-          <div 
-            onClick={() => openAdr('003-secure-resume-storage', 'ADR 003: Secure Local Storage vs Git Blobs')}
-            className="group block border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition cursor-pointer bg-white"
-          >
-            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition">ADR 003: Secure Local Storage over Git-Tracked Blobs</h3>
-            <p className="text-gray-600 mt-2 text-sm leading-relaxed">
-              Why we opted for a dedicated self-hosted file manager container over committing binary PDFs to the Next.js `public/` directory, introducing expiring share links and protecting the Git repository from bloat.
-            </p>
-          </div>
+          {featuredDocs.length === 0 ? (
+            <div className="text-slate-500 bg-white p-16 text-center rounded-xl border border-dashed border-slate-300">
+              <span className="text-4xl mb-4 block opacity-50">📄</span>
+              <p className="text-lg font-medium text-slate-700">It's empty at the moment...</p>
+              <p className="text-sm mt-1">Documentation will appear here when featured.</p>
+            </div>
+          ) : (
+            docs.filter(d => featuredDocs.includes(d.id)).slice(0, 4).map(doc => (
+              <Link 
+                key={doc.id}
+                href={`/docs/${doc.id}`}
+                className="group block border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition bg-white"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition">{doc.title}</h3>
+                  <span className={`px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md border ${
+                    doc.source_type === 'external_url' 
+                      ? 'bg-amber-50 text-amber-600 border-amber-200' 
+                      : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                  }`}>
+                    {doc.source_type === 'external_url' ? 'External' : 'Native'}
+                  </span>
+                </div>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {doc.description}
+                </p>
+              </Link>
+            ))
+          )}
           
           <div className="mt-8 text-center sm:hidden">
             <Link href="/docs" className="inline-flex items-center text-blue-600 font-medium hover:underline">
@@ -388,27 +382,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      
-      {/* Markdown Modal */}
-      <Dialog open={adrModalOpen} onOpenChange={setAdrModalOpen} disablePointerDismissal>
-        <DialogContent 
-          className="flex flex-col max-w-[90vw] md:max-w-[75vw] lg:max-w-[1200px] max-h-[85vh] resize overflow-auto transition-all duration-300 ease-in-out"
-        >
-          <DialogHeader className="flex flex-col items-start pr-8">
-            <DialogTitle className="text-2xl">{adrTitle}</DialogTitle>
-            <DialogDescription>
-              Raw engineering log fetched dynamically from the GitHub repository.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4 flex-1 overflow-y-auto">
-            <div className="prose prose-slate prose-blue max-w-none pr-4">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {adrContent}
-              </ReactMarkdown>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Active Demo Modal */}
       <Dialog open={activeDemo !== null} onOpenChange={(open) => !open && setActiveDemo(null)} disablePointerDismissal>
