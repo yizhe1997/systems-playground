@@ -2,6 +2,11 @@
 # Local Infrastructure Scripts Config
 infra/scripts/.env
 .DS_Store
+
+# Build Artifacts
+.next/
+backend/api
+
 # Filebrowser local storage
 storage/
 

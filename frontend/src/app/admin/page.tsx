@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Toaster, toast } from "sonner"
 import CmsManager from "@/components/admin/CmsManager"
+import ResumeRequests from "@/components/admin/ResumeRequests"
 import ThemeToggle from "@/components/ThemeToggle"
 
 type Widget = {
@@ -141,14 +142,17 @@ export default function AdminDashboard() {
       <main className="max-w-4xl mx-auto p-6 mt-8">
         <Tabs defaultValue="orchestration" className="w-full">
           <div className="flex justify-between items-center mb-8">
-            <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-              <TabsTrigger value="orchestration" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500">
+            <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap h-auto">
+              <TabsTrigger value="orchestration" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 py-2.5">
                 Container Orchestration
               </TabsTrigger>
-              <TabsTrigger value="cms" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500">
+              <TabsTrigger value="cms" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 py-2.5">
                 CMS & Portfolio
               </TabsTrigger>
-              <TabsTrigger value="settings" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500">
+              <TabsTrigger value="resume" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 py-2.5">
+                Resume Requests
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 py-2.5">
                 Global Settings
               </TabsTrigger>
             </TabsList>
@@ -347,6 +351,14 @@ export default function AdminDashboard() {
               <p className="text-slate-600 dark:text-slate-400">Configure your homepage layout, dynamic projects, and markdown documentation.</p>
             </div>
             <CmsManager isAdmin={isAdmin} widgets={widgets} />
+          </TabsContent>
+
+          <TabsContent value="resume" className="animate-in fade-in-50 duration-500">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Resume Requests</h2>
+              <p className="text-slate-600 dark:text-slate-400">Manage incoming requests for your private resume PDF.</p>
+            </div>
+            <ResumeRequests isAdmin={isAdmin} />
           </TabsContent>
         </Tabs>
       </main>

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/smtp"
 	"os"
 	"time"
 
@@ -215,35 +216,32 @@ func generateFilebrowserShareLink() (string, error) {
 }
 
 func sendEmailViaSMTP(toEmail string, name string, shareLink string) error {
-	// This uses the Resend.com API (or SendGrid equivalent)
-	apiKey := os.Getenv("RESUME_EMAIL_API_KEY")
-	if apiKey == "" {
-		log.Println("⚠️ RESUME_EMAIL_API_KEY not set. Skipping actual email dispatch (Simulation Mode).")
+	smtpEmail := os.Getenv("SMTP_EMAIL")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+
+	if smtpEmail == "" || smtpPassword == "" {
+		log.Println("⚠️ SMTP credentials not set. Skipping actual email dispatch (Simulation Mode).")
 		log.Printf("📩 SIMULATED EMAIL TO %s: Here is your link: %s\n", toEmail, shareLink)
 		return nil
 	}
 
-	// Make real API call to email provider here
-	payload := map[string]any{
-		"from":    "Chin Yi Zhe <noreply@yourdomain.com>", // Update this to verified domain
-		"to":      []string{toEmail},
-		"subject": "Chin Yi Zhe - Requested Resume",
-		"html":    fmt.Sprintf("<p>Hi %s,</p><p>Thank you for your interest! As requested, here is the link to download my resume.</p><p><a href='%s'>Download Resume (Expires in 24 hours)</a></p><p>Best regards,<br/>Chin Yi Zhe</p>", name, shareLink),
-	}
-	jsonPayload, _ := json.Marshal(payload)
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
 
-	req, _ := http.NewRequest("POST", "https://api.resend.com/emails", bytes.NewBuffer(jsonPayload))
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
-	req.Header.Set("Content-Type", "application/json")
+	auth := smtp.PlainAuth("", smtpEmail, smtpPassword, smtpHost)
 
-	resp, err := httpClient.Do(req)
+	from := smtpEmail
+	to := []string{toEmail}
+
+	subject := "Subject: Chin Yi Zhe - Requested Resume\r\n"
+	mime := "MIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n"
+	body := fmt.Sprintf("<p>Hi %s,</p><p>Thank you for your interest! As requested, here is the link to download my resume.</p><p><a href='%s'>Download Resume (Expires in 24 hours)</a></p><p>Best regards,<br/>Chin Yi Zhe</p>", name, shareLink)
+
+	msg := []byte(subject + mime + body)
+
+	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, msg)
 	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("email provider returned status: %d", resp.StatusCode)
+		return fmt.Errorf("smtp error: %v", err)
 	}
 
 	return nil
