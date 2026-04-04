@@ -10,6 +10,7 @@ import { BentoCard, EmptyState, staggerContainer } from '@/components/ui/Shared'
 type Widget = {
   id: string;
   name: string;
+  description: string;
   type: string;
   status: string;
 };

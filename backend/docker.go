@@ -40,10 +40,11 @@ func StartReaper() {
 }
 
 type Widget struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Type   string `json:"type"`
-	Status string `json:"status"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Type        string `json:"type"`
+	Status      string `json:"status"`
 }
 
 func getDockerClient() (*client.Client, error) {
@@ -77,11 +78,17 @@ func listWidgets() ([]Widget, error) {
 		if name == "" {
 			name = c.Names[0]
 		}
+		desc := c.Labels["playground.desc"]
+		if desc == "" {
+			desc = "An interactive systems container."
+		}
+
 		widgets = append(widgets, Widget{
-			ID:     c.ID[:12],
-			Name:   name,
-			Type:   c.Labels["playground.widget"],
-			Status: c.State, // "running", "exited", etc.
+			ID:          c.ID[:12],
+			Name:        name,
+			Description: desc,
+			Type:        c.Labels["playground.widget"],
+			Status:      c.State, // "running", "exited", etc.
 		})
 	}
 	return widgets, nil

@@ -48,6 +48,7 @@ services:
     labels:
       - "playground.widget=queue"
       - "playground.name=ATS Synchronization (RabbitMQ)"
+      - "playground.desc=Business Problem: Candidate status payloads from external ATS APIs overwhelm HTTP threads during bursts, causing timeouts and db lock contention. Solution: Next.js API returns 202 Accepted instantly and pushes to a RabbitMQ FIFO queue. A background Go worker processes it and syncs state via WebSockets."
 
 volumes:
   redis_data:

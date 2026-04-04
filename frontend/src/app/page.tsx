@@ -46,6 +46,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 type Widget = {
   id: string;
   name: string;
+  description: string;
   type: string;
   status: string;
 };
@@ -458,7 +459,7 @@ export default function Home() {
                             ) : (
                               <>
                                 <Power className="w-4 h-4" />
-                                Wake Up Container
+                                Wake Container
                               </>
                             )}
                           </button>
@@ -466,22 +467,17 @@ export default function Home() {
                       </div>
                     </div>
                     
-                    <div className="text-sm text-muted-foreground pt-5 border-t border-border leading-relaxed">
-                      {widget.type === 'queue' && (
-                        <div className="space-y-3">
-                          <p>
-                            <strong className="text-foreground">Business Problem:</strong> Large enterprises use external Applicant Tracking Systems (ATS) to manage hiring, sending massive bursts of webhook data when jobs are created or updated. Synchronously processing these causes database locks and crashes APIs.
-                          </p>
-                          <p>
-                            <strong className="text-foreground">Solution:</strong> Demonstrates <strong className="text-foreground">Event-Driven Architecture (EDA)</strong> by decoupling the API from the database. Webhooks are instantly acknowledged and dropped into a message queue, where background workers process them safely, preventing race conditions.
-                          </p>
-                        </div>
-                      )}
-                      {widget.type === 'cache' && (
-                        <p>
-                          Demonstrates the massive latency difference between querying a disk-based relational database versus a high-speed, in-memory key-value store. Prove the power of caching on hot-path endpoints.
-                        </p>
-                      )}
+                    <div className="mt-2 mb-6">
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
+                        {widget.description}
+                      </p>
+                    </div>
+
+                    <div className="pt-5 border-t border-border">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Architecture</span>
+                        <span className="font-mono text-foreground bg-muted px-2 py-1 rounded">Scale-to-Zero</span>
+                      </div>
                     </div>
                   </BentoCard>
                 ))
