@@ -36,7 +36,8 @@ const LinkedinIcon = () => (
     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.847-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
   </svg>
 );
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Toaster, toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -196,10 +197,39 @@ export default function Home() {
   const [adrTitle, setAdrTitle] = useState<string>('');
 
   const [activeDemo, setActiveDemo] = useState<Widget | null>(null);
+  
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [requestForm, setRequestForm] = useState({ name: '', email: '', company: '', reason: '' });
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
 
   const formatUrl = (url: string) => {
     if (!url || url === '#') return '#';
     return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+  };
+
+  const handleResumeRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRequestSubmitting(true);
+    try {
+      const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
+      const res = await fetch(`${url}/api/resume/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestForm)
+      });
+      if (res.ok) {
+        setRequestModalOpen(false);
+        toast.success("Request sent successfully! Check your email soon.");
+        setRequestForm({ name: '', email: '', company: '', reason: '' });
+      } else {
+        toast.error("Failed to send request. Please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Network error while sending request.");
+    } finally {
+      setRequestSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -345,15 +375,13 @@ export default function Home() {
             variants={fadeInUp}
             className="flex flex-wrap gap-3"
           >
-            <a 
-              href={formatUrl(resumeUrl)} 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <button 
+              onClick={() => setRequestModalOpen(true)}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-foreground text-background rounded-xl font-medium hover:opacity-90 transition-all shadow-lg shadow-foreground/10"
             >
               <FileDown className="w-4 h-4" />
-              Download Resume
-            </a>
+              Request Full Resume
+            </button>
             <a 
               href={formatUrl(linkedinUrl)} 
               target="_blank" 
@@ -660,6 +688,43 @@ export default function Home() {
       <Dialog open={activeDemo !== null} onOpenChange={(open) => !open && setActiveDemo(null)} disablePointerDismissal>
         <DialogContent className="flex flex-col max-w-[95vw] md:max-w-[85vw] lg:max-w-[1400px] max-h-[85vh] p-0 overflow-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 resize transition-all duration-300 ease-in-out">
           {activeDemo?.type === 'queue' && <RabbitMQDemo widgetId={activeDemo.id} />}
+        </DialogContent>
+      </Dialog>
+
+      {/* Resume Request Modal */}
+      <Dialog open={requestModalOpen} onOpenChange={setRequestModalOpen}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-foreground">Request Resume</DialogTitle>
+            <DialogDescription className="text-muted-foreground mt-2">
+              For privacy and security reasons, my full resume is not publicly exposed. Please provide your details below, and an expiring link will be emailed to you upon approval.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleResumeRequest} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Full Name *</label>
+              <input required value={requestForm.name} onChange={e => setRequestForm({...requestForm, name: e.target.value})} className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:ring-2 outline-none" placeholder="John Doe" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Company Name *</label>
+              <input required value={requestForm.company} onChange={e => setRequestForm({...requestForm, company: e.target.value})} className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:ring-2 outline-none" placeholder="Google, Inc." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Professional Email *</label>
+              <input required type="email" value={requestForm.email} onChange={e => setRequestForm({...requestForm, email: e.target.value})} className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:ring-2 outline-none" placeholder="john@google.com" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Reason (Optional)</label>
+              <textarea value={requestForm.reason} onChange={e => setRequestForm({...requestForm, reason: e.target.value})} className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:ring-2 outline-none resize-none" placeholder="We are hiring for a Senior Backend role..." rows={3} />
+            </div>
+            <div className="pt-4 flex justify-end gap-3">
+              <button type="button" onClick={() => setRequestModalOpen(false)} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent rounded-md transition">Cancel</button>
+              <button type="submit" disabled={requestSubmitting} className="px-5 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition flex items-center gap-2">
+                {requestSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                Submit Request
+              </button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 

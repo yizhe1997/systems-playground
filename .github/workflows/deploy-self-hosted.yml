@@ -17,6 +17,8 @@ jobs:
     env:
       APP_DIR: ${{ vars.APP_DIR || '/home/user/apps/systems-playground' }}
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      RESUME_EMAIL_API_KEY: ${{ secrets.RESUME_EMAIL_API_KEY }}
+      RESUME_WEBHOOK_URL: ${{ secrets.RESUME_WEBHOOK_URL }}
       
       # Frontend Secrets
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
@@ -43,6 +45,8 @@ jobs:
           # Root .env for docker-compose.yml overrides
           cat <<EOF > "$APP_DIR/.env"
           DOCKER_USERNAME=$DOCKER_USERNAME
+          RESUME_EMAIL_API_KEY=$RESUME_EMAIL_API_KEY
+          RESUME_WEBHOOK_URL=$RESUME_WEBHOOK_URL
           EOF
           
           # Frontend .env

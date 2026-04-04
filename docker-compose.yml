@@ -11,6 +11,8 @@ services:
     environment:
       - REDIS_URL=redis:6379
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RESUME_WEBHOOK_URL=${RESUME_WEBHOOK_URL:-}
+      - RESUME_EMAIL_API_KEY=${RESUME_EMAIL_API_KEY:-}
     env_file:
       - ./frontend/.env
     volumes:
