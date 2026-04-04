@@ -14,7 +14,7 @@ RUN go mod download || true # ignore for now until go.sum exists
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/api main.go docker.go redis.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/api .
 
 # Use a lightweight alpine image for the final container
 FROM alpine:3.18

@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Toaster, toast } from "sonner"
+import CmsManager from "@/components/admin/CmsManager"
 
 type Widget = {
   id: string;
@@ -140,6 +141,9 @@ export default function AdminDashboard() {
             <TabsList className="bg-slate-900 border border-slate-800">
               <TabsTrigger value="orchestration" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white">
                 Container Orchestration
+              </TabsTrigger>
+              <TabsTrigger value="cms" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white">
+                CMS & Portfolio
               </TabsTrigger>
               <TabsTrigger value="settings" className="data-[state=active]:bg-slate-800 data-[state=active]:text-white">
                 Global Settings
@@ -332,6 +336,14 @@ export default function AdminDashboard() {
                 </div>
               </form>
             </div>
+          </TabsContent>
+
+          <TabsContent value="cms" className="animate-in fade-in-50 duration-500">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">CMS & Portfolio Manager</h2>
+              <p className="text-slate-400">Configure your homepage layout, dynamic projects, and markdown documentation.</p>
+            </div>
+            <CmsManager isAdmin={isAdmin} widgets={widgets} />
           </TabsContent>
         </Tabs>
       </main>

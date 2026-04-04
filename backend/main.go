@@ -48,6 +48,9 @@ func main() {
 	go rabbitmq.StartBroadcaster()
 	StartReaper()
 
+	RegisterCMSRoutes(app)
+	RegisterFilebrowserRoutes(app)
+
 	// --- PUBLIC API ENDPOINTS ---
 
 	app.Get("/health", func(c *fiber.Ctx) error {

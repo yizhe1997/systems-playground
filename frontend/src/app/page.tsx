@@ -14,8 +14,21 @@ type Widget = {
   status: string;
 };
 
+type Project = {
+  id: string;
+  title: string;
+  description: string;
+  tech_stack: string[];
+  live_url: string;
+  github_url: string;
+};
+
 export default function Home() {
   const [widgets, setWidgets] = useState<Widget[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [featuredProjects, setFeaturedProjects] = useState<string[]>([]);
+  const [featuredDemos, setFeaturedDemos] = useState<string[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [waking, setWaking] = useState<string | null>(null);
   const [resumeUrl, setResumeUrl] = useState<string>('#');
@@ -25,7 +38,6 @@ export default function Home() {
   const [adrModalOpen, setAdrModalOpen] = useState(false);
   const [adrContent, setAdrContent] = useState<string>('');
   const [adrTitle, setAdrTitle] = useState<string>('');
-  const [isExpanded, setIsExpanded] = useState(false);
 
   const [activeDemo, setActiveDemo] = useState<Widget | null>(null);
 
@@ -75,13 +87,29 @@ export default function Home() {
     fetchWidgets();
     const interval = setInterval(fetchWidgets, 5000);
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
+
     // Fetch dynamic resume links
-    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085') + '/api/config')
+    fetch(apiUrl + '/api/config')
       .then((res) => res.json())
       .then((data) => {
         if (data.resumeUrl) setResumeUrl(data.resumeUrl);
         if (data.linkedinUrl) setLinkedinUrl(data.linkedinUrl);
         if (data.githubUrl) setGithubUrl(data.githubUrl);
+      })
+      .catch(console.error);
+
+    // Fetch CMS Projects & Homepage Visibility
+    fetch(apiUrl + '/api/projects')
+      .then((res) => res.json())
+      .then((data) => setProjects(data || []))
+      .catch(console.error);
+
+    fetch(apiUrl + '/api/homepage')
+      .then((res) => res.json())
+      .then((data) => {
+        setFeaturedProjects(data.featured_projects || []);
+        setFeaturedDemos(data.featured_demos || []);
       })
       .catch(console.error);
 
@@ -153,6 +181,62 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Featured Projects */}
+      <section id="projects" className="w-full bg-slate-50 border-t border-gray-200 py-24">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="mb-12 flex justify-between items-end">
+            <div>
+              <h2 className="text-3xl font-bold mb-4">💼 Featured Projects</h2>
+              <p className="text-gray-600 max-w-2xl">
+                Standalone applications and cloud-native services currently in development or production.
+              </p>
+            </div>
+            <Link href="/projects" className="hidden sm:inline-flex items-center text-blue-600 font-medium hover:underline">
+              View All Projects →
+            </Link>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {featuredProjects.length === 0 ? (
+              <div className="col-span-2 text-gray-500 bg-white p-12 text-center rounded-xl border border-dashed border-gray-300">
+                <p className="text-lg font-medium">Coming Soon</p>
+                <p className="text-sm">Real-world applications are currently in development.</p>
+              </div>
+            ) : (
+              projects.filter(p => featuredProjects.includes(p.id)).slice(0, 4).map(project => (
+                <div key={project.id} className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm hover:shadow-md transition flex flex-col h-full">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{project.title}</h3>
+                  <p className="text-gray-600 leading-relaxed mb-6 flex-1">
+                    {project.description}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    {project.tech_stack.map(tech => (
+                      <span key={tech} className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-4 mt-auto pt-6 border-t border-gray-100">
+                    <a href={formatUrl(project.live_url)} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition shadow-sm">
+                      Live App
+                    </a>
+                    <a href={formatUrl(project.github_url)} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition shadow-sm">
+                      Source Code
+                    </a>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          
+          <div className="mt-8 text-center sm:hidden">
+            <Link href="/projects" className="inline-flex items-center text-blue-600 font-medium hover:underline">
+              View All Projects →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Interactive Playground */}
       <section id="playground" className="w-full bg-white border-y border-gray-200 py-24">
         <div className="max-w-5xl mx-auto px-6">
@@ -169,7 +253,7 @@ export default function Home() {
             {loading ? (
               <div className="text-gray-500 animate-pulse">Checking infrastructure status...</div>
             ) : (
-              widgets.length > 0 ? widgets.map((widget) => (
+              featuredDemos.length > 0 ? widgets.filter(w => featuredDemos.includes(w.id)).slice(0, 4).map((widget) => (
                 <div key={widget.id} className="border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition bg-white flex flex-col gap-4">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex items-center gap-3">
@@ -236,12 +320,28 @@ export default function Home() {
               )
             )}
           </div>
+          
+          <div className="mt-8 text-center sm:hidden">
+            <Link href="/playground" className="inline-flex items-center text-blue-600 font-medium hover:underline">
+              View All Experiments →
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Architecture Logs */}
       <section id="adrs" className="w-full max-w-5xl mx-auto px-6 py-24">
-        <h2 className="text-3xl font-bold mb-8">📚 Architecture Decision Records (ADRs)</h2>
+        <div className="mb-12 flex justify-between items-end">
+          <div>
+            <h2 className="text-3xl font-bold mb-4">📚 Architecture Decision Records (ADRs)</h2>
+            <p className="text-gray-600 max-w-2xl">
+              Engineering logs, system designs, and technical writing.
+            </p>
+          </div>
+          <Link href="/docs" className="hidden sm:inline-flex items-center text-blue-600 font-medium hover:underline">
+            View All Docs →
+          </Link>
+        </div>
         <div className="space-y-4">
           <div 
             onClick={() => openAdr('001-custom-go-control-plane', 'ADR 001: Custom Go Control Plane')}
@@ -271,6 +371,12 @@ export default function Home() {
             <p className="text-gray-600 mt-2 text-sm leading-relaxed">
               Why we opted for a dedicated self-hosted file manager container over committing binary PDFs to the Next.js `public/` directory, introducing expiring share links and protecting the Git repository from bloat.
             </p>
+          </div>
+          
+          <div className="mt-8 text-center sm:hidden">
+            <Link href="/docs" className="inline-flex items-center text-blue-600 font-medium hover:underline">
+              View All Docs →
+            </Link>
           </div>
         </div>
       </section>
