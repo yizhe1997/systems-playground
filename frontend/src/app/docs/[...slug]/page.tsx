@@ -67,19 +67,19 @@ export default function DocumentViewer({ params }: { params: { slug: string[] } 
     fetchDoc();
   }, [id]);
 
-  if (loading) return <div className="animate-pulse flex items-center gap-3 text-slate-500"><span className="text-xl">⌛</span> Loading engineering document...</div>;
-  if (error) return <div className="text-rose-500 p-6 bg-rose-50 rounded-xl border border-rose-200 shadow-sm flex items-center gap-3"><span className="text-2xl">⚠️</span> {error}</div>;
+  if (loading) return <div className="animate-pulse flex items-center gap-3 text-muted-foreground"><span className="text-xl">⌛</span> Loading engineering document...</div>;
+  if (error) return <div className="text-destructive p-6 bg-destructive/10 rounded-xl border border-destructive/20 shadow-sm flex items-center gap-3"><span className="text-2xl">⚠️</span> {error}</div>;
 
   return (
-    <article className="prose prose-slate max-w-none prose-headings:font-bold prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-pre:bg-slate-900 prose-pre:text-slate-50">
-      <div className="mb-10 pb-8 border-b border-slate-200">
-        <h1 className="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-4 leading-tight">{docMeta?.title}</h1>
-        <p className="text-xl text-slate-500 font-medium">{docMeta?.description}</p>
-        <div className="mt-6 flex items-center gap-3">
-          <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full ${docMeta?.source_type === 'external_url' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+    <article className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary hover:prose-a:text-primary/80 prose-pre:bg-slate-900 prose-pre:text-slate-50">
+      <div className="mb-10 pb-8 border-b border-border">
+        <h1 className="text-4xl lg:text-5xl font-extrabold text-foreground mb-4 leading-tight">{docMeta?.title}</h1>
+        <p className="text-xl text-muted-foreground font-medium">{docMeta?.description}</p>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full border ${docMeta?.source_type === 'external_url' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/20'}`}>
             {docMeta?.source_type === 'external_url' ? '🔗 External Source (Read-Only)' : '💾 Native CMS'}
           </span>
-          <span className="text-xs text-slate-400 font-mono bg-slate-100 px-2 py-1 rounded">Folder: {docMeta?.folder_path}</span>
+          <span className="text-xs text-muted-foreground font-mono bg-accent px-2 py-1 rounded border border-border">Folder: {docMeta?.folder_path}</span>
         </div>
       </div>
       

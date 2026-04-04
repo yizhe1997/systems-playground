@@ -52,14 +52,14 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
   const renderTree = (node: FolderNode) => (
     <div key={node.path} className="ml-4 mt-2">
       {node.name !== 'root' && (
-        <h4 className="font-bold text-slate-800 uppercase tracking-wider text-xs mb-2 mt-4 flex items-center gap-2">
+        <h4 className="font-bold text-foreground uppercase tracking-wider text-xs mb-2 mt-4 flex items-center gap-2">
           📁 {node.name}
         </h4>
       )}
-      <ul className="space-y-2 border-l-2 border-slate-200 ml-2 pl-4">
+      <ul className="space-y-2 border-l-2 border-border ml-2 pl-4">
         {node.docs.map(doc => (
           <li key={doc.id}>
-            <Link href={`/docs/${doc.id}`} className="text-sm text-slate-600 hover:text-blue-600 transition-colors block py-1">
+            <Link href={`/docs/${doc.id}`} className="text-sm text-muted-foreground hover:text-primary transition-colors block py-1">
               📄 {doc.title}
             </Link>
           </li>
@@ -70,13 +70,13 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-24 flex flex-col md:flex-row gap-12 items-start">
+    <div className="max-w-7xl mx-auto px-6 py-24 flex flex-col md:flex-row gap-12 items-start min-h-screen bg-background">
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 shrink-0 border border-slate-200 bg-slate-50 rounded-xl p-6 shadow-sm sticky top-24">
-        <h3 className="font-bold text-lg mb-4 text-slate-900 border-b border-slate-200 pb-2">Documentation</h3>
+      <aside className="w-full md:w-64 shrink-0 border border-border bg-card rounded-xl p-6 shadow-sm sticky top-24">
+        <h3 className="font-bold text-lg mb-4 text-foreground border-b border-border pb-2">Documentation</h3>
         <div className="overflow-y-auto max-h-[60vh] -ml-4">
           {docs.length === 0 ? (
-            <p className="text-sm text-slate-500 ml-4 italic mt-4">No documents found.</p>
+            <p className="text-sm text-muted-foreground ml-4 italic mt-4">No documents found.</p>
           ) : (
             renderTree(tree)
           )}
@@ -84,7 +84,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 w-full bg-white border border-slate-200 rounded-xl p-8 md:p-12 shadow-sm prose prose-slate max-w-none">
+      <main className="flex-1 min-w-0 w-full bg-card border border-border rounded-xl p-8 md:p-12 shadow-sm prose prose-slate dark:prose-invert max-w-none">
         {children}
       </main>
     </div>

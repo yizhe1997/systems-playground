@@ -106,30 +106,31 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20">
       {/* Header */}
-      <header className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm dark:shadow-lg">
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-            <span className="text-indigo-500">⚙️</span> CONTROL PLANE
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-3">
+            <span className="text-primary">⚙️</span> CONTROL PLANE
           </h1>
           <div className="flex items-center gap-3 mt-1.5">
-            <div className="text-xs font-mono text-slate-500 dark:text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white dark:bg-slate-900 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800">
+            <div className="text-xs font-mono text-muted-foreground bg-accent px-2.5 py-1 rounded-md border border-border">
               {userEmail}
             </div>
-            <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${isAdmin ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' : 'bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20'}`}>
+            <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${isAdmin ? 'bg-primary/10 text-primary border-primary/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
               Role: {isAdmin ? 'ADMIN' : 'READ ONLY'}
             </span>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />
-          <Link href="/" className="px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <div className="w-px h-5 bg-border hidden sm:block" />
+          <Link href="/" className="px-4 py-2 text-sm font-medium border border-border bg-card rounded-xl hover:bg-accent hover:border-primary/50 transition">
             ← Portfolio
           </Link>
           <button 
             onClick={() => signOut({ callbackUrl: '/' })} 
-            className="px-4 py-2 text-sm font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 rounded hover:bg-rose-500 hover:text-white transition"
+            className="px-4 py-2 text-sm font-medium bg-destructive/10 text-destructive border border-destructive/20 rounded-xl hover:bg-destructive hover:text-destructive-foreground transition"
           >
             Sign Out
           </button>

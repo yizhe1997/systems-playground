@@ -5,22 +5,22 @@ import Link from "next/link";
 
 export default function AdminLoginPage() {
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-primary/20">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center text-5xl mb-4">⚙️</div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-white tracking-tight">
+        <h2 className="mt-6 text-center text-3xl font-extrabold tracking-tight">
           Control Plane Access
         </h2>
-        <p className="mt-2 text-center text-sm text-slate-400 font-mono">
+        <p className="mt-2 text-center text-sm text-muted-foreground font-mono">
           Unauthorized access is strictly prohibited.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-slate-900 py-8 px-4 shadow-xl border border-slate-800 sm:rounded-xl sm:px-10">
+        <div className="bg-card py-8 px-4 shadow-xl border border-border sm:rounded-2xl sm:px-10">
           <button
             onClick={() => signIn("google", { callbackUrl: "/admin" })}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-900 transition-colors"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background transition-colors"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -31,8 +31,8 @@ export default function AdminLoginPage() {
             Sign in with Google SSO
           </button>
 
-          <div className="mt-6 flex justify-center">
-            <Link href="/" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
+          <div className="mt-8 flex justify-center">
+            <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               ← Back to Portfolio
             </Link>
           </div>

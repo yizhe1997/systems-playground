@@ -282,22 +282,29 @@ export default function Home() {
       {/* Header/Nav */}
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center text-primary-foreground font-bold font-mono text-sm shadow-lg shadow-primary/20">
               YZ
             </div>
             <span className="font-bold text-lg tracking-tight text-foreground hidden sm:inline-block">
               SYSTEMS_PLAYGROUND
             </span>
-          </div>
-          <nav className="flex items-center gap-3 sm:gap-5 text-sm font-medium">
-            <ThemeToggle />
-            <a href="#playground" className="text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
+          </Link>
+          
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
+            <Link href="/projects" className="text-muted-foreground hover:text-foreground transition-colors">
+              Projects
+            </Link>
+            <Link href="/playground" className="text-muted-foreground hover:text-foreground transition-colors">
               Playground
-            </a>
-            <a href="#adrs" className="text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
-              Architecture
-            </a>
+            </Link>
+            <Link href="/docs" className="text-muted-foreground hover:text-foreground transition-colors">
+              Docs
+            </Link>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <div className="w-px h-5 bg-border hidden sm:block" />
             <Link 
               href="/admin" 
@@ -306,7 +313,7 @@ export default function Home() {
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Control Plane</span>
             </Link>
-          </nav>
+          </div>
         </div>
       </header>
 
