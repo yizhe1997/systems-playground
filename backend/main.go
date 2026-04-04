@@ -50,6 +50,7 @@ func main() {
 
 	RegisterCMSRoutes(app)
 	RegisterFilebrowserRoutes(app)
+	RegisterResumeRoutes(app)
 
 	// --- PUBLIC API ENDPOINTS ---
 
