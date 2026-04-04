@@ -40,6 +40,8 @@ import { Toaster, toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
 import ThemeToggle from '@/components/ThemeToggle';
+import { BentoCard, EmptyState, fadeInUp, staggerContainer } from '@/components/ui/Shared';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 
 type Widget = {
   id: string;
@@ -56,127 +58,6 @@ type Project = {
   live_url: string;
   github_url: string;
 };
-
-// Animation variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 }
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
-// Glowing border card component
-function BentoCard({ 
-  children, 
-  className = '', 
-  glowColor = 'primary',
-  size = 'default'
-}: { 
-  children: React.ReactNode; 
-  className?: string;
-  glowColor?: 'primary' | 'secondary' | 'emerald' | 'rose';
-  size?: 'default' | 'large' | 'tall' | 'wide';
-}) {
-  const sizeClasses = {
-    default: '',
-    large: 'md:col-span-2 md:row-span-2',
-    tall: 'md:row-span-2',
-    wide: 'md:col-span-2'
-  };
-
-  const glowClasses = {
-    primary: 'hover:shadow-[0_0_30px_rgba(var(--glow-primary-rgb,56,189,248),0.15)] dark:hover:shadow-[0_0_40px_rgba(56,189,248,0.25)]',
-    secondary: 'hover:shadow-[0_0_30px_rgba(var(--glow-secondary-rgb,52,211,153),0.15)] dark:hover:shadow-[0_0_40px_rgba(52,211,153,0.25)]',
-    emerald: 'hover:shadow-[0_0_30px_rgba(52,211,153,0.15)] dark:hover:shadow-[0_0_40px_rgba(52,211,153,0.25)]',
-    rose: 'hover:shadow-[0_0_30px_rgba(251,113,133,0.15)] dark:hover:shadow-[0_0_40px_rgba(251,113,133,0.25)]'
-  };
-
-  return (
-    <motion.div
-      variants={fadeInUp}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className={`
-        relative group rounded-2xl border border-border bg-card p-6
-        transition-all duration-300 ease-out
-        hover:border-primary/50
-        ${glowClasses[glowColor]}
-        ${sizeClasses[size]}
-        ${className}
-      `}
-    >
-      {/* Subtle gradient overlay on hover */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-      <div className="relative z-10">{children}</div>
-    </motion.div>
-  );
-}
-
-// Section header component
-function SectionHeader({ 
-  icon: Icon, 
-  title, 
-  description, 
-  linkHref, 
-  linkText 
-}: { 
-  icon: React.ElementType; 
-  title: string; 
-  description: string; 
-  linkHref?: string; 
-  linkText?: string;
-}) {
-  return (
-    <motion.div 
-      variants={fadeInUp}
-      className="mb-10 flex flex-col md:flex-row justify-between md:items-end gap-4"
-    >
-      <div>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Icon className="w-5 h-5 text-primary" />
-          </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground">{title}</h2>
-        </div>
-        <p className="text-muted-foreground max-w-2xl leading-relaxed">
-          {description}
-        </p>
-      </div>
-      {linkHref && linkText && (
-        <Link 
-          href={linkHref} 
-          className="hidden sm:inline-flex items-center gap-2 text-primary font-medium hover:gap-3 transition-all group"
-        >
-          {linkText}
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </Link>
-      )}
-    </motion.div>
-  );
-}
-
-// Empty state component
-function EmptyState({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle: string }) {
-  return (
-    <motion.div 
-      variants={fadeInUp}
-      className="col-span-full flex flex-col items-center justify-center p-16 rounded-2xl border-2 border-dashed border-border bg-card/50"
-    >
-      <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-        <Icon className="w-8 h-8 text-muted-foreground" />
-      </div>
-      <p className="text-lg font-medium text-foreground mb-1">{title}</p>
-      <p className="text-sm text-muted-foreground">{subtitle}</p>
-    </motion.div>
-  );
-}
 
 export default function Home() {
   const [widgets, setWidgets] = useState<Widget[]>([]);

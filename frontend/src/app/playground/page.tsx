@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Power, Loader2, CircleDot, Server, Database, MessageSquare } from 'lucide-react';
+import { Power, Loader2, CircleDot, Server, Database, MessageSquare, Gamepad2 } from 'lucide-react';
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
+import { BentoCard, EmptyState, staggerContainer } from '@/components/ui/Shared';
 
 type Widget = {
   id: string;
@@ -53,7 +54,7 @@ export default function PlaygroundPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-24 min-h-screen bg-background text-foreground">
+    <div className="max-w-6xl mx-auto px-6 py-24 min-h-screen bg-background text-foreground">
       <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition mb-8 group">
         <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -65,21 +66,29 @@ export default function PlaygroundPage() {
       <p className="text-xl text-muted-foreground mb-12">Live infrastructure experiments and scale-to-zero demos.</p>
       
       {loading ? (
-        <div className="animate-pulse flex items-center gap-3 text-muted-foreground">
+        <div className="animate-pulse flex items-center gap-3 text-muted-foreground p-12">
           <Loader2 className="w-5 h-5 animate-spin" />
           Loading infrastructure...
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+        >
           {widgets.length === 0 ? (
-            <div className="col-span-full p-12 text-center border border-dashed border-border bg-card rounded-xl">
-              <p className="text-muted-foreground">No experiments are available right now.</p>
-            </div>
+            <EmptyState 
+              icon={Gamepad2}
+              title="It's empty at the moment..."
+              subtitle="No interactive systems are currently available."
+            />
           ) : (
-            widgets.map((widget) => (
-              <div 
+            widgets.map((widget, index) => (
+              <BentoCard 
                 key={widget.id}
-                className="relative overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-border/80 shadow-sm hover:shadow-md p-6 group"
+                size={index === 0 ? 'wide' : 'default'}
+                glowColor={widget.status === 'running' ? 'emerald' : 'rose'}
               >
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
                   <div className="flex items-center gap-3">
@@ -131,10 +140,10 @@ export default function PlaygroundPage() {
                     <span className="font-mono text-foreground bg-muted px-2 py-1 rounded">Scale-to-Zero</span>
                   </div>
                 </div>
-              </div>
+              </BentoCard>
             ))
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* Active Demo Modal */}
