@@ -634,8 +634,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-      
-      <Toaster theme="system" />
     </main>
   );
 }

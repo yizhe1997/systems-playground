@@ -362,8 +362,6 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </main>
-      
-      <Toaster theme="dark" />
     </div>
   );
 }

@@ -51,7 +51,8 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
         toast.success(`Request ${action}d successfully`);
         fetchRequests(); // Refresh actual state
       } else {
-        toast.error(`Failed to ${action} request`);
+        const errorData = await res.json();
+        toast.error(errorData.error || `Failed to ${action} request`);
         setRequests(previous); // Revert
       }
     } catch (e) {

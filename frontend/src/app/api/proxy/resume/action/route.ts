@@ -27,7 +27,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      return NextResponse.json({ error: "Backend failed to process action" }, { status: response.status });
+      let errorMsg = "Backend failed to process action";
+      try {
+        const errData = await response.json();
+        if (errData.error) errorMsg = errData.error;
+      } catch (e) {}
+      return NextResponse.json({ error: errorMsg }, { status: response.status });
     }
 
     const data = await response.json();

@@ -123,7 +123,7 @@ func RegisterResumeRoutes(app *fiber.App) {
 			shareLink, err := generateFilebrowserShareLink(ctx)
 			if err != nil {
 				log.Printf("❌ Failed to generate share link: %v", err)
-				return c.Status(500).JSON(fiber.Map{"error": "Failed to generate secure link"})
+				return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("Failed to generate secure link (Is Filebrowser running on port 8088?): %v", err)})
 			}
 
 			// 2. Send the Email via SendGrid/Resend API
