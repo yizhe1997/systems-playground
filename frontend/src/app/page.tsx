@@ -422,7 +422,7 @@ export default function Home() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {featuredProjects.length === 0 ? (
+              {filteredProjects.length === 0 ? (
                 <EmptyState 
                   icon={FolderOpen}
                   title="It&apos;s empty at the moment..."
@@ -515,7 +515,7 @@ export default function Home() {
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Checking infrastructure status...
                 </motion.div>
-              ) : featuredDemos.length === 0 ? (
+              ) : filteredWidgets.length === 0 ? (
                 <EmptyState 
                   icon={Gamepad2}
                   title="It&apos;s empty at the moment..."
@@ -635,7 +635,7 @@ export default function Home() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {featuredDocs.length === 0 ? (
+              {filteredDocs.length === 0 ? (
                 <EmptyState 
                   icon={FileText}
                   title="It&apos;s empty at the moment..."

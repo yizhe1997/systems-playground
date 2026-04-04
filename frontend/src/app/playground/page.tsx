@@ -1,6 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Power, Loader2, CircleDot, Server, Database, MessageSquare } from 'lucide-react';
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
 
 type Widget = {
@@ -13,6 +16,8 @@ type Widget = {
 export default function PlaygroundPage() {
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [loading, setLoading] = useState(true);
+  const [waking, setWaking] = useState<string | null>(null);
+  const [activeDemo, setActiveDemo] = useState<Widget | null>(null);
 
   useEffect(() => {
     const fetchWidgets = () => {
@@ -21,6 +26,12 @@ export default function PlaygroundPage() {
         .then((data) => {
           setWidgets(data);
           setLoading(false);
+          if (waking) {
+            const wokenWidget = data.find((w: Widget) => w.id === waking);
+            if (wokenWidget && wokenWidget.status === 'running') {
+              setWaking(null);
+            }
+          }
         })
         .catch(console.error);
     };
@@ -28,10 +39,21 @@ export default function PlaygroundPage() {
     fetchWidgets();
     const interval = setInterval(fetchWidgets, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [waking]);
+
+  const wakeWidget = async (id: string) => {
+    setWaking(id);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
+      await fetch(`${apiUrl}/api/demo/widgets/${id}/wake`, { method: 'POST' });
+    } catch (err) {
+      console.error('Failed to wake widget:', err);
+      setWaking(null);
+    }
+  };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-24 min-h-screen">
+    <div className="max-w-5xl mx-auto px-6 py-24 min-h-screen bg-background text-foreground">
       <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition mb-8 group">
         <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -43,21 +65,84 @@ export default function PlaygroundPage() {
       <p className="text-xl text-muted-foreground mb-12">Live infrastructure experiments and scale-to-zero demos.</p>
       
       {loading ? (
-        <div className="animate-pulse text-muted-foreground">Loading infrastructure...</div>
+        <div className="animate-pulse flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Loading infrastructure...
+        </div>
       ) : (
-        <div className="grid gap-12">
-          {widgets.map(w => w.status === 'running' && w.type === 'queue' ? (
-            <div key={w.id} className="border border-border bg-card rounded-xl overflow-hidden shadow-sm">
-              <RabbitMQDemo widgetId={w.id} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {widgets.length === 0 ? (
+            <div className="col-span-full p-12 text-center border border-dashed border-border bg-card rounded-xl">
+              <p className="text-muted-foreground">No experiments are available right now.</p>
             </div>
-          ) : null)}
-          {!widgets.some(w => w.status === 'running') && (
-            <div className="p-12 text-center border border-dashed border-border bg-card rounded-xl">
-              <p className="text-muted-foreground">Containers are currently scaled to zero. Boot them from the Admin panel.</p>
-            </div>
+          ) : (
+            widgets.map((widget) => (
+              <div 
+                key={widget.id}
+                className="relative overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-border/80 shadow-sm hover:shadow-md p-6 group"
+              >
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                      {widget.type === 'queue' ? (
+                        <MessageSquare className="w-5 h-5 text-muted-foreground" />
+                      ) : widget.type === 'cache' ? (
+                        <Database className="w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <Server className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground">{widget.name}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <CircleDot className={`w-3 h-3 ${widget.status === 'running' ? 'text-emerald-500' : 'text-rose-500'}`} />
+                        <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+                          {widget.status === 'running' ? 'Online' : 'Hibernating'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {widget.status === 'running' ? (
+                    <button 
+                      onClick={() => setActiveDemo(widget)}
+                      className="px-4 py-2 bg-foreground text-background text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity w-full sm:w-auto"
+                    >
+                      Open Demo
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => wakeWidget(widget.id)}
+                      disabled={waking === widget.id}
+                      className="px-4 py-2 border border-border bg-background text-foreground text-sm font-semibold rounded-lg hover:bg-accent disabled:opacity-50 transition-all w-full sm:w-auto flex items-center justify-center gap-2"
+                    >
+                      {waking === widget.id ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Booting...</>
+                      ) : (
+                        <><Power className="w-4 h-4" /> Wake Container</>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                <div className="pt-5 border-t border-border">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Architecture</span>
+                    <span className="font-mono text-foreground bg-muted px-2 py-1 rounded">Scale-to-Zero</span>
+                  </div>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
+
+      {/* Active Demo Modal */}
+      <Dialog open={activeDemo !== null} onOpenChange={(open) => !open && setActiveDemo(null)} disablePointerDismissal>
+        <DialogContent className="flex flex-col max-w-[95vw] md:max-w-[85vw] lg:max-w-[1400px] max-h-[85vh] p-0 overflow-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 resize transition-all duration-300 ease-in-out">
+          {activeDemo?.type === 'queue' && <RabbitMQDemo widgetId={activeDemo.id} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
