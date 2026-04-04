@@ -2,17 +2,20 @@
 
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { Shield } from "lucide-react";
 
 export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-primary/20">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="text-center text-5xl mb-4">⚙️</div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold tracking-tight">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md flex flex-col items-center">
+        <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-border">
+          <Shield className="w-8 h-8 text-primary" />
+        </div>
+        <h2 className="mt-2 text-center text-3xl font-extrabold tracking-tight">
           Control Plane Access
         </h2>
-        <p className="mt-2 text-center text-sm text-muted-foreground font-mono">
-          Unauthorized access is strictly prohibited.
+        <p className="mt-4 text-center text-sm text-muted-foreground leading-relaxed px-4">
+          This login portal is exposed so that anonymous visitors can experience the read-only view of the custom admin dashboard and Container Orchestration plane. It is not for public configuration.
         </p>
       </div>
 
