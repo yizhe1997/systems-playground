@@ -198,9 +198,10 @@ export default function Home() {
 
           <div className="grid md:grid-cols-2 gap-8">
             {featuredProjects.length === 0 ? (
-              <div className="col-span-2 text-gray-500 bg-white p-12 text-center rounded-xl border border-dashed border-gray-300">
-                <p className="text-lg font-medium">Coming Soon</p>
-                <p className="text-sm">Real-world applications are currently in development.</p>
+              <div className="col-span-2 text-slate-500 bg-white p-16 text-center rounded-xl border border-dashed border-slate-300">
+                <span className="text-4xl mb-4 block opacity-50">📂</span>
+                <p className="text-lg font-medium text-slate-700">It's empty at the moment...</p>
+                <p className="text-sm mt-1">Real-world applications are currently in development.</p>
               </div>
             ) : (
               projects.filter(p => featuredProjects.includes(p.id)).slice(0, 4).map(project => (
@@ -240,12 +241,17 @@ export default function Home() {
       {/* Interactive Playground */}
       <section id="playground" className="w-full bg-white border-y border-gray-200 py-24">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold mb-4">🚀 Interactive Systems Playground</h2>
-            <p className="text-gray-600 max-w-2xl">
-              These aren&apos;t simulated animations. Below are real infrastructure containers connected to a Golang control plane. 
-              They are built using a <strong>Scale-to-Zero</strong> architecture—they shut down automatically when idle to conserve memory.
-            </p>
+          <div className="mb-12 flex justify-between items-end">
+            <div>
+              <h2 className="text-3xl font-bold mb-4">🚀 Interactive Systems Playground</h2>
+              <p className="text-gray-600 max-w-2xl">
+                These aren&apos;t simulated animations. Below are real infrastructure containers connected to a Golang control plane. 
+                They are built using a <strong>Scale-to-Zero</strong> architecture—they shut down automatically when idle to conserve memory.
+              </p>
+            </div>
+            <Link href="/playground" className="hidden sm:inline-flex items-center text-blue-600 font-medium hover:underline">
+              View All Experiments →
+            </Link>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
@@ -314,9 +320,11 @@ export default function Home() {
                   </div>
                 </div>
               )) : (
-                <div className="col-span-2 text-gray-500 bg-yellow-50 p-6 rounded-lg border border-yellow-200">
-                  ⚠️ No playground widgets found. Ensure Docker daemon is running and containers have the 'playground.widget' label.
-                </div>
+              <div className="col-span-2 text-slate-500 bg-white p-16 text-center rounded-xl border border-dashed border-slate-300">
+                <span className="text-4xl mb-4 block opacity-50">🕹️</span>
+                <p className="text-lg font-medium text-slate-700">It's empty at the moment...</p>
+                <p className="text-sm mt-1">Playground widgets will appear here when featured.</p>
+              </div>
               )
             )}
           </div>

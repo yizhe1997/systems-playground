@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
 
 type Widget = {
@@ -31,6 +32,13 @@ export default function PlaygroundPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-24">
+      <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800 transition mb-8 group">
+        <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Home
+      </Link>
+
       <h1 className="text-4xl font-bold mb-4">Systems Playground</h1>
       <p className="text-xl text-gray-500 mb-12">Live infrastructure experiments and scale-to-zero demos.</p>
       
