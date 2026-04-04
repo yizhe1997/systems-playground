@@ -8,23 +8,34 @@ export function SectionHeader({ icon: Icon, title, description, linkHref, linkTe
   icon: React.ElementType;
   title: string;
   description: string;
-  linkHref: string;
-  linkText: string;
+  linkHref?: string;
+  linkText?: string;
 }) {
   return (
-    <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-12">
-      <div className="max-w-2xl">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-medium text-sm mb-4">
-          <Icon className="w-4 h-4" />
-          {title}
+    <motion.div 
+      variants={fadeInUp}
+      className="mb-10 flex flex-col md:flex-row justify-between md:items-end gap-4"
+    >
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Icon className="w-5 h-5 text-primary" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground">{title}</h2>
         </div>
-        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">{title}</h2>
-        <p className="text-lg text-muted-foreground">{description}</p>
+        <p className="text-muted-foreground max-w-2xl leading-relaxed">
+          {description}
+        </p>
       </div>
-      <Link href={linkHref} className="hidden sm:inline-flex items-center gap-2 text-primary font-medium hover:opacity-80 transition-opacity">
-        {linkText}
-        <ArrowRight className="w-4 h-4" />
-      </Link>
+      {linkHref && linkText && (
+        <Link 
+          href={linkHref} 
+          className="hidden sm:inline-flex items-center gap-2 text-primary font-medium hover:gap-3 transition-all group"
+        >
+          {linkText}
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </Link>
+      )}
     </motion.div>
   );
 }
