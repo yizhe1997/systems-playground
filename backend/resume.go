@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -119,7 +120,7 @@ func RegisterResumeRoutes(app *fiber.App) {
 			targetReq.Status = "approved"
 			
 			// 1. Ask Filebrowser for a 24h expiring link
-			shareLink, err := generateFilebrowserShareLink()
+			shareLink, err := generateFilebrowserShareLink(ctx)
 			if err != nil {
 				log.Printf("❌ Failed to generate share link: %v", err)
 				return c.Status(500).JSON(fiber.Map{"error": "Failed to generate secure link"})
@@ -161,7 +162,7 @@ func fireNotificationWebhook(url string, req ResumeRequest) {
 	http.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
 }
 
-func generateFilebrowserShareLink() (string, error) {
+func generateFilebrowserShareLink(ctx context.Context) (string, error) {
 	// Get internal filebrowser API token
 	token, err := getFilebrowserToken()
 	if err != nil {
@@ -173,9 +174,18 @@ func generateFilebrowserShareLink() (string, error) {
 		fbUrl = "http://host.docker.internal:8088"
 	}
 
-	// We assume the resume is stored at /resume.pdf in the filebrowser root
-	// Post to /api/share/resume.pdf
+	// Fetch dynamic path from Redis global settings
+	resumePath, err := GetConfig(ctx, "resumeUrl", "/resume.pdf")
+	if err != nil || resumePath == "" {
+		resumePath = "/resume.pdf"
+	}
 	
+	// Ensure the path starts with a slash
+	if len(resumePath) > 0 && resumePath[0] != '/' {
+		resumePath = "/" + resumePath
+	}
+
+	// Post to /api/share/{path}
 	payload := map[string]any{
 		"password": "", 
 		"expires": "24h", // 24 hour expiration
@@ -183,7 +193,8 @@ func generateFilebrowserShareLink() (string, error) {
 	}
 	jsonPayload, _ := json.Marshal(payload)
 
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/share/resume.pdf", fbUrl), bytes.NewBuffer(jsonPayload))
+	reqUrl := fmt.Sprintf("%s/api/share%s", fbUrl, resumePath)
+	req, _ := http.NewRequest("POST", reqUrl, bytes.NewBuffer(jsonPayload))
 	req.Header.Set("X-Auth", token)
 	req.Header.Set("Content-Type", "application/json")
 

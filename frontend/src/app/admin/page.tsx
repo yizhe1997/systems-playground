@@ -282,16 +282,16 @@ export default function AdminDashboard() {
               
               <form onSubmit={handleSaveConfig} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="resumeUrl" className="text-slate-300 font-medium">Resume PDF URL</Label>
+                  <Label htmlFor="resumeUrl" className="text-slate-300 font-medium">Filebrowser Resume Path</Label>
                   <Input 
                     id="resumeUrl" 
                     value={resumeUrl}
                     onChange={(e) => setResumeUrl(e.target.value)}
-                    placeholder="https://link-to-your-pdf.com/resume.pdf"
+                    placeholder="/resume.pdf"
                     disabled={!isAdmin}
                     className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
                   />
-                  <p className="text-xs text-slate-500">The link users are redirected to when clicking "Download Resume".</p>
+                  <p className="text-xs text-slate-500">The file path in Filebrowser to generate expiring links for (e.g. <code>/resume.pdf</code>).</p>
                 </div>
                 
                 <div className="space-y-2">
