@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 type ResumeRequest = {
   id: string;
@@ -15,6 +15,7 @@ type ResumeRequest = {
 export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
   const [requests, setRequests] = useState<ResumeRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const fetchRequests = async () => {
     try {
@@ -48,15 +49,15 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
       });
       
       if (res.ok) {
-        toast.success(`Request ${action}d successfully`);
+        toast({ title: "Success", description: `Request ${action}d successfully` });
         fetchRequests(); // Refresh actual state
       } else {
         const errorData = await res.json();
-        toast.error(errorData.error || `Failed to ${action} request`);
+        toast({ title: "Error", description: errorData.error || `Failed to ${action} request`, variant: "destructive" });
         setRequests(previous); // Revert
       }
     } catch (e) {
-      toast.error('Network error');
+      toast({ title: "Error", description: 'Network error', variant: "destructive" });
       setRequests(previous);
     }
   };

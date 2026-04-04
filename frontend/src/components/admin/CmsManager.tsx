@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 type Project = { id: string; title: string; description: string; tech_stack: string[]; live_url: string; github_url: string; };
 type Document = { id: string; title: string; description: string; folder_path: string; source_type: string; content_target: string; };
@@ -15,6 +15,8 @@ export default function CmsManager({ isAdmin, widgets }: { isAdmin: boolean; wid
   const [homepage, setHomepage] = useState<HomepageVisibility>({ featured_projects: [], featured_demos: [], featured_docs: [] });
 
   const [editingFile, setEditingFile] = useState<{ path: string, content: string } | null>(null);
+
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -40,10 +42,10 @@ export default function CmsManager({ isAdmin, widgets }: { isAdmin: boolean; wid
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, payload })
       });
-      if (res.ok) toast.success(`Saved ${type} to Redis!`);
-      else toast.error(`Failed to save ${type}.`);
+      if (res.ok) toast({ title: "Success", description: `Saved ${type} to Redis!` });
+      else toast({ title: "Error", description: `Failed to save ${type}.`, variant: "destructive" });
     } catch (e) {
-      toast.error("Network error.");
+      toast({ title: "Error", description: "Network error.", variant: "destructive" });
     }
     setLoading(false);
   };
@@ -53,9 +55,9 @@ export default function CmsManager({ isAdmin, widgets }: { isAdmin: boolean; wid
       const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
       const res = await fetch(`${url}/api/docs/raw${path.startsWith('/') ? path : '/'+path}`);
       if (res.ok) setEditingFile({ path, content: await res.text() });
-      else toast.error("Failed to load file from storage. It may not exist yet.");
+      else toast({ title: "Notice", description: "Failed to load file from storage. It may not exist yet." });
     } catch (e) {
-      toast.error("Network error loading file.");
+      toast({ title: "Error", description: "Network error loading file.", variant: "destructive" });
     }
   };
 
@@ -69,13 +71,13 @@ export default function CmsManager({ isAdmin, widgets }: { isAdmin: boolean; wid
         body: JSON.stringify(editingFile)
       });
       if (res.ok) {
-        toast.success("File saved to Filebrowser storage!");
+        toast({ title: "Success", description: "File saved to Filebrowser storage!" });
         setEditingFile(null);
       } else {
-        toast.error("Failed to save file.");
+        toast({ title: "Error", description: "Failed to save file.", variant: "destructive" });
       }
     } catch (e) {
-      toast.error("Network error saving file.");
+      toast({ title: "Error", description: "Network error saving file.", variant: "destructive" });
     }
     setLoading(false);
   };

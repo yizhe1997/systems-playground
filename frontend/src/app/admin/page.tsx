@@ -6,7 +6,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Toaster, toast } from "sonner"
+import { useToast } from "@/hooks/use-toast"
 import CmsManager from "@/components/admin/CmsManager"
 import ResumeRequests from "@/components/admin/ResumeRequests"
 import ThemeToggle from "@/components/ThemeToggle"
@@ -32,6 +32,8 @@ export default function AdminDashboard() {
   const [linkedinUrl, setLinkedinUrl] = useState<string>('');
   const [githubUrl, setGithubUrl] = useState<string>('');
   const [savingConfig, setSavingConfig] = useState(false);
+
+  const { toast } = useToast();
 
   const fetchConfig = async () => {
     try {
@@ -76,13 +78,13 @@ export default function AdminDashboard() {
         body: JSON.stringify({ resumeUrl, linkedinUrl, githubUrl }),
       });
       if (res.ok) {
-        toast.success("Settings saved successfully to Redis!");
+        toast({ title: "Success", description: "Settings saved successfully to Redis!" });
       } else {
-        toast.error("Failed to save settings.");
+        toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
       }
     } catch (err) {
       console.error(err);
-      toast.error("Network error while saving settings.");
+      toast({ title: "Error", description: "Network error while saving settings.", variant: "destructive" });
     } finally {
       setSavingConfig(false);
     }

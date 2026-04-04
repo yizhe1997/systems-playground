@@ -20,7 +20,8 @@ import {
   CircleDot,
   Server,
   Database,
-  MessageSquare
+  MessageSquare,
+  Menu
 } from 'lucide-react';
 
 const GithubIcon = () => (
@@ -36,8 +37,10 @@ const LinkedinIcon = () => (
     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.847-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
   </svg>
 );
-import { Toaster, toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { BentoCard, EmptyState, fadeInUp, staggerContainer } from '@/components/ui/Shared';
@@ -61,6 +64,8 @@ type Project = {
 };
 
 export default function Home() {
+  const isMobile = useIsMobile();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [docs, setDocs] = useState<any[]>([]);
@@ -80,6 +85,8 @@ export default function Home() {
 
   const [activeDemo, setActiveDemo] = useState<Widget | null>(null);
   
+  const { toast } = useToast();
+
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestForm, setRequestForm] = useState({ name: '', email: '', company: '', reason: '' });
   const [requestSubmitting, setRequestSubmitting] = useState(false);
@@ -101,14 +108,14 @@ export default function Home() {
       });
       if (res.ok) {
         setRequestModalOpen(false);
-        toast.success("Request sent successfully! Check your email soon.");
+        toast({ title: "Request sent successfully!", description: "Check your email soon." });
         setRequestForm({ name: '', email: '', company: '', reason: '' });
       } else {
-        toast.error("Failed to send request. Please try again.");
+        toast({ title: "Error", description: "Failed to send request. Please try again.", variant: "destructive" });
       }
     } catch (err) {
       console.error(err);
-      toast.error("Network error while sending request.");
+      toast({ title: "Error", description: "Network error while sending request.", variant: "destructive" });
     } finally {
       setRequestSubmitting(false);
     }
@@ -218,13 +225,53 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <div className="w-px h-5 bg-border hidden sm:block" />
+            
+            {/* Desktop Admin Button */}
             <Link 
               href="/admin" 
-              className="inline-flex items-center gap-2 rounded-xl text-sm font-medium transition-all border border-border bg-card hover:bg-accent hover:border-primary/50 h-9 px-4 text-foreground"
+              className="hidden sm:inline-flex items-center gap-2 rounded-xl text-sm font-medium transition-all border border-border bg-card hover:bg-accent hover:border-primary/50 h-9 px-4 text-foreground"
             >
               <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Control Plane</span>
+              <span>Control Plane</span>
             </Link>
+
+            {/* Mobile Menu */}
+            <div className="sm:hidden flex items-center">
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <button className="p-2 -mr-2 flex items-center justify-center text-foreground hover:text-primary transition-colors">
+                    <Menu className="w-6 h-6" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="right" className="bg-background border-l border-border w-[280px] p-6 flex flex-col gap-8">
+                  <SheetHeader>
+                    <SheetTitle className="text-left font-bold tracking-tight">Navigation</SheetTitle>
+                  </SheetHeader>
+                  <nav className="flex flex-col gap-6 text-base font-medium">
+                    <Link href="/projects" onClick={() => setMobileMenuOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      Projects
+                    </Link>
+                    <Link href="/playground" onClick={() => setMobileMenuOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      Playground
+                    </Link>
+                    <Link href="/docs" onClick={() => setMobileMenuOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      Docs
+                    </Link>
+                  </nav>
+                  
+                  <div className="mt-auto pt-6 border-t border-border">
+                    <Link 
+                      href="/admin" 
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl text-sm font-medium transition-all border border-border bg-card hover:bg-accent hover:border-primary/50 h-10 px-4 text-foreground"
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>Control Plane</span>
+                    </Link>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </header>
