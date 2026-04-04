@@ -240,7 +240,7 @@ export default function Home() {
             variants={fadeInUp}
             className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-6 text-balance"
           >
-            Hi, I&apos;m Chin Yi Zhe.
+            Hi, I&apos;m YZ.
             <br />
             <span className="bg-gradient-to-r from-primary via-primary to-emerald-500 bg-clip-text text-transparent">
               I build scalable cloud systems.
