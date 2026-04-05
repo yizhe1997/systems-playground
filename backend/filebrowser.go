@@ -19,9 +19,6 @@ var httpClient = &http.Client{Timeout: 10 * time.Second}
 func getFilebrowserToken() (string, error) {
 	fbUrl := os.Getenv("FILEBROWSER_PUBLIC_URL")
 	if fbUrl == "" {
-		fbUrl = os.Getenv("FILEBROWSER_URL")
-	}
-	if fbUrl == "" {
 		fbUrl = "http://host.docker.internal:8088" // Default assuming host mapped port
 	}
 	fbUser := os.Getenv("FILEBROWSER_ADMIN_USERNAME")
@@ -59,9 +56,6 @@ func getFilebrowserToken() (string, error) {
 // RegisterFilebrowserRoutes sets up the proxy endpoints for the Next.js frontend to talk to Filebrowser securely.
 func RegisterFilebrowserRoutes(app *fiber.App) {
 	fbUrl := os.Getenv("FILEBROWSER_PUBLIC_URL")
-	if fbUrl == "" {
-		fbUrl = os.Getenv("FILEBROWSER_URL")
-	}
 	if fbUrl == "" {
 		fbUrl = "http://host.docker.internal:8088"
 	}
