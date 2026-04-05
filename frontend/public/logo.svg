@@ -15,14 +15,14 @@
     }
   </style>
   <text x="0" y="28" class="t-main" style="font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 900; font-size: 20px; letter-spacing: -1px;">
-    SYSTEMS<tspan class="t-accent">_</tspan>PLAYGROUND<tspan class="t-accent" dy="2">.</tspan>
+    SYSTEMS<tspan class="t-accent">_</tspan>PLAYGROUND<tspan class="t-accent">.</tspan>
   </text>
 
-  <g transform="translate(245, 18)">
+  <g transform="translate(233, 16)">
     <path d="M2 2 L8 7 L2 12" class="s-accent" stroke-width="2.5" stroke-linecap="square" fill="none" />
     
-    <text x="14" y="9" class="t-accent" style="font-family: ui-monospace, monospace; font-weight: 900; font-size: 13px;">YZ</text>
+    <text x="14" y="10" class="t-accent" style="font-family: ui-monospace, monospace; font-weight: 900; font-size: 13px;">YZ</text>
     
-    <rect x="14" y="10" width="16" height="2" class="t-accent" />
+    <rect x="14" y="12" width="16" height="2" class="t-accent" />
   </g>
 </svg>
