@@ -201,12 +201,12 @@ export default function Home() {
       {/* Header/Nav */}
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-border group-hover:border-primary/50 transition-colors">
-              <img src="/logo.jpg" alt="Systems Playground Logo" className="w-full h-full object-cover" />
-            </div>
-            <span className="font-black text-lg tracking-tighter text-foreground hidden sm:flex items-center">
-              SYSTEMS<span className="text-primary font-mono ml-0.5">_</span>PLAYGROUND
+          <Link href="/" className="flex items-center gap-2 group">
+            <span className="font-black text-lg tracking-tighter text-foreground flex items-center">
+              SYSTEMS<span className="text-primary font-mono mx-0.5">_</span>PLAYGROUND
+            </span>
+            <span className="text-muted-foreground font-mono text-sm group-hover:text-primary transition-colors duration-300">
+              &gt; YZ
             </span>
           </Link>
           
@@ -293,14 +293,18 @@ export default function Home() {
               I build scalable cloud systems.
             </span>
           </motion.h1>
-          <motion.p 
+          <motion.div 
             variants={fadeInUp}
-            className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10 leading-relaxed"
+            className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10 leading-relaxed space-y-4"
           >
-            I&apos;m a Backend-focused Software Engineer with deep expertise in .NET and Golang, alongside full-stack experience with Blazor, Angular, and React. 
-            I focus on architecting resilient distributed systems, automating complex cloud deployment pipelines, and modernizing enterprise applications.
-            This site serves as my interactive <strong>Systems Playground</strong>—a live environment to explore my engineering projects, read my technical documentation, and interact directly with my scale-to-zero containerized backend demos below.
-          </motion.p>
+            <p>
+              I&apos;m a Backend-focused Software Engineer with deep expertise in .NET and Golang, alongside full-stack experience with Blazor, Angular, and React. 
+              I focus on architecting resilient distributed systems, automating complex cloud deployment pipelines, and modernizing enterprise applications.
+            </p>
+            <p>
+              This site serves as my interactive <strong>Systems Playground</strong>—a live environment to explore my engineering projects, read my technical documentation, and interact directly with my scale-to-zero containerized backend demos below.
+            </p>
+          </motion.div>
           <motion.div 
             variants={fadeInUp}
             className="flex flex-wrap gap-3"
