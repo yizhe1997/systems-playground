@@ -21,11 +21,11 @@ func getFilebrowserToken() (string, error) {
 	if fbUrl == "" {
 		fbUrl = "http://host.docker.internal:8088" // Default assuming host mapped port
 	}
-	fbUser := os.Getenv("FILEBROWSER_USERNAME")
+	fbUser := os.Getenv("FILEBROWSER_ADMIN_USERNAME")
 	if fbUser == "" {
 		fbUser = "admin"
 	}
-	fbPass := os.Getenv("FILEBROWSER_PASSWORD")
+	fbPass := os.Getenv("FILEBROWSER_ADMIN_PASSWORD")
 	if fbPass == "" {
 		fbPass = "admin"
 	}
