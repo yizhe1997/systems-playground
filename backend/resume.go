@@ -248,7 +248,7 @@ func sendEmailViaSMTP(toEmail string, name string, shareLink string) error {
 	mime := "MIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n"
 	body := fmt.Sprintf("<p>Hi %s,</p><p>Thank you for your interest! As requested, here is the link to download my resume.</p><p><a href='%s'>Download Resume (Expires in 24 hours)</a></p><p>Best regards,<br/>Chin Yi Zhe</p>", name, shareLink)
 
-	msg := []byte(subject + mime + body)
+	msg := []byte("From: " + from + "\r\nTo: " + toEmail + "\r\n" + subject + mime + body)
 
 	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, msg)
 	if err != nil {
