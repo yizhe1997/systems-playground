@@ -18,11 +18,11 @@
     SYSTEMS<tspan class="t-accent">_</tspan>PLAYGROUND<tspan class="t-accent" stroke="url(#brandGrad)" stroke-width="1">.</tspan>
   </text>
 
-  <g transform="translate(236, 16)">
+  <g transform="translate(238, 16)">
     <path d="M2 1 L8 6.5 L2 12" class="s-accent" stroke-width="3" stroke-linecap="square" fill="none" stroke-linejoin="miter" />
     
-    <text x="13" y="10" class="t-accent" style="font-family: ui-monospace, monospace; font-weight: 900; font-size: 15px;" stroke="url(#brandGrad)" stroke-width="1">YZ</text>
+    <text x="11" y="10" class="t-accent" style="font-family: ui-monospace, monospace; font-weight: 900; font-size: 15px;" stroke="url(#brandGrad)" stroke-width="1">YZ</text>
     
-    <rect x="13" y="12" width="19" height="3" class="t-accent" />
+    <rect x="11" y="12" width="19" height="3" class="t-accent" />
   </g>
 </svg>
