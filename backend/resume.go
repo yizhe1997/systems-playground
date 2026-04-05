@@ -123,7 +123,7 @@ func RegisterResumeRoutes(app *fiber.App) {
 			shareLink, err := generateFilebrowserShareLink(ctx)
 			if err != nil {
 				log.Printf("❌ Failed to generate share link: %v", err)
-				return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("Failed to generate secure link (Is Filebrowser running on port 8088?): %v", err)})
+				return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("Failed to generate secure link: %v", err)})
 			}
 
 			// 2. Send the Email via SendGrid/Resend API
@@ -188,7 +188,7 @@ func generateFilebrowserShareLink(ctx context.Context) (string, error) {
 	// Post to /api/share/{path}
 	payload := map[string]any{
 		"password": "", 
-		"expires": "24h", // 24 hour expiration
+		"expires": "24", // 24 hour expiration
 		"unit": "hours",
 	}
 	jsonPayload, _ := json.Marshal(payload)
