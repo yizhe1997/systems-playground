@@ -169,7 +169,10 @@ func generateFilebrowserShareLink(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	fbUrl := os.Getenv("FILEBROWSER_URL")
+	fbUrl := os.Getenv("FILEBROWSER_PUBLIC_URL")
+	if fbUrl == "" {
+		fbUrl = os.Getenv("FILEBROWSER_URL")
+	}
 	if fbUrl == "" {
 		fbUrl = "http://host.docker.internal:8088"
 	}

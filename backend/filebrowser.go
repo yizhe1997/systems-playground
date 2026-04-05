@@ -17,15 +17,18 @@ var httpClient = &http.Client{Timeout: 10 * time.Second}
 
 // getFilebrowserToken authenticates with the Filebrowser API and returns the JWT token.
 func getFilebrowserToken() (string, error) {
-	fbUrl := os.Getenv("FILEBROWSER_URL")
+	fbUrl := os.Getenv("FILEBROWSER_PUBLIC_URL")
+	if fbUrl == "" {
+		fbUrl = os.Getenv("FILEBROWSER_URL")
+	}
 	if fbUrl == "" {
 		fbUrl = "http://host.docker.internal:8088" // Default assuming host mapped port
 	}
-	fbUser := os.Getenv("FILEBROWSER_USERNAME")
+	fbUser := os.Getenv("FILEBROWSER_ADMIN_USERNAME")
 	if fbUser == "" {
 		fbUser = "admin"
 	}
-	fbPass := os.Getenv("FILEBROWSER_PASSWORD")
+	fbPass := os.Getenv("FILEBROWSER_ADMIN_PASSWORD")
 	if fbPass == "" {
 		fbPass = "admin"
 	}
@@ -55,7 +58,10 @@ func getFilebrowserToken() (string, error) {
 
 // RegisterFilebrowserRoutes sets up the proxy endpoints for the Next.js frontend to talk to Filebrowser securely.
 func RegisterFilebrowserRoutes(app *fiber.App) {
-	fbUrl := os.Getenv("FILEBROWSER_URL")
+	fbUrl := os.Getenv("FILEBROWSER_PUBLIC_URL")
+	if fbUrl == "" {
+		fbUrl = os.Getenv("FILEBROWSER_URL")
+	}
 	if fbUrl == "" {
 		fbUrl = "http://host.docker.internal:8088"
 	}
@@ -64,7 +70,7 @@ func RegisterFilebrowserRoutes(app *fiber.App) {
 	// Next.js will call: /api/docs/raw/blogs/my-post.md
 	app.Get("/api/docs/raw/*", func(c *fiber.Ctx) error {
 		filePath := c.Params("*")
-		
+
 		token, err := getFilebrowserToken()
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to connect to storage engine"})
