@@ -201,13 +201,8 @@ export default function Home() {
       {/* Header/Nav */}
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <span className="font-black text-lg tracking-tighter text-foreground flex items-center">
-              SYSTEMS<span className="text-primary font-mono mx-0.5">_</span>PLAYGROUND
-            </span>
-            <span className="text-muted-foreground font-mono text-sm group-hover:text-primary transition-colors duration-300">
-              &gt; YZ
-            </span>
+          <Link href="/" className="flex items-center group">
+            <img src="/logo.svg" alt="Systems Playground > YZ" className="h-6 w-auto opacity-90 group-hover:opacity-100 transition-opacity dark:invert invert-0" />
           </Link>
           
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
@@ -302,7 +297,7 @@ export default function Home() {
               I focus on architecting resilient distributed systems, automating complex cloud deployment pipelines, and modernizing enterprise applications.
             </p>
             <p>
-              This site serves as my interactive <strong>Systems Playground</strong>—a live environment to explore my engineering projects, read my technical documentation, and interact directly with my scale-to-zero containerized backend demos below.
+              This site serves as my interactive <strong>Systems Playground</strong>—a live environment to explore my projects, read my blogs, and interact directly with my scale-to-zero containerized backend demos below.
             </p>
           </motion.div>
           <motion.div 
