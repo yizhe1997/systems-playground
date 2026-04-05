@@ -46,15 +46,9 @@ jobs:
           
           echo "🔐 Constructing .env files from GitHub Secrets..."
           
-          # Root .env for docker-compose.yml overrides
+          # Root .env for docker-compose.yml overrides (only needed for docker-compose itself, e.g. DOCKER_USERNAME)
           cat <<EOF > "$APP_DIR/.env"
           DOCKER_USERNAME=$DOCKER_USERNAME
-          SMTP_EMAIL=$SMTP_EMAIL
-          SMTP_PASSWORD=$SMTP_PASSWORD
-          RESUME_WEBHOOK_URL=$RESUME_WEBHOOK_URL
-          FILEBROWSER_PUBLIC_URL=$FILEBROWSER_PUBLIC_URL
-          FILEBROWSER_ADMIN_USERNAME=$FILEBROWSER_ADMIN_USERNAME
-          FILEBROWSER_ADMIN_PASSWORD=$FILEBROWSER_ADMIN_PASSWORD
           EOF
           
           # Frontend .env
@@ -66,6 +60,18 @@ jobs:
           GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
           ADMIN_EMAILS=$ADMIN_EMAILS
           ADMIN_API_KEY=$ADMIN_API_KEY
+          EOF
+
+          # Backend .env
+          mkdir -p "$APP_DIR/backend"
+          cat <<EOF > "$APP_DIR/backend/.env"
+          ADMIN_API_KEY=$ADMIN_API_KEY
+          SMTP_EMAIL=$SMTP_EMAIL
+          SMTP_PASSWORD=$SMTP_PASSWORD
+          RESUME_WEBHOOK_URL=$RESUME_WEBHOOK_URL
+          FILEBROWSER_PUBLIC_URL=$FILEBROWSER_PUBLIC_URL
+          FILEBROWSER_ADMIN_USERNAME=$FILEBROWSER_ADMIN_USERNAME
+          FILEBROWSER_ADMIN_PASSWORD=$FILEBROWSER_ADMIN_PASSWORD
           EOF
           
           cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
