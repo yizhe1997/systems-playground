@@ -88,7 +88,11 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                     {req.status}
                   </span>
                 </div>
-                <a href={`mailto:${req.email}`} className="text-sm text-blue-600 hover:underline mb-3 inline-block">{req.email}</a>
+                {isAdmin ? (
+                  <a href={`mailto:${req.email}`} className="text-sm text-blue-600 hover:underline mb-3 inline-block">{req.email}</a>
+                ) : (
+                  <span className="text-sm text-slate-500 mb-3 inline-block">{req.email}</span>
+                )}
                 {req.reason && (
                   <p className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-100 dark:border-slate-800 italic">
                     "{req.reason}"
