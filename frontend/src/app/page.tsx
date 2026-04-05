@@ -202,9 +202,8 @@ export default function Home() {
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-9 h-9 rounded-xl bg-slate-950 dark:bg-slate-900 flex items-center justify-center overflow-hidden border border-slate-800 shadow-lg group-hover:border-primary/50 transition-colors">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-              <span className="relative z-10 font-black font-mono text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 text-sm tracking-tighter">YZ</span>
+            <div className="relative w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-border group-hover:border-primary/50 transition-colors">
+              <img src="/logo.jpg" alt="Systems Playground Logo" className="w-full h-full object-cover" />
             </div>
             <span className="font-black text-lg tracking-tighter text-foreground hidden sm:flex items-center">
               SYSTEMS<span className="text-primary font-mono ml-0.5">_</span>PLAYGROUND
@@ -294,17 +293,14 @@ export default function Home() {
               I build scalable cloud systems.
             </span>
           </motion.h1>
-          <motion.div variants={fadeInUp} className="max-w-2xl mb-10 space-y-6">
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              I&apos;m a Backend-focused Software Engineer with deep expertise in .NET and Golang, alongside full-stack experience with Blazor, Angular, and React. 
-              I focus on architecting resilient distributed systems, automating complex cloud deployment pipelines, and modernizing enterprise applications.
-            </p>
-            <div className="p-5 rounded-xl bg-primary/5 border border-primary/20 text-foreground/80 text-sm md:text-base leading-relaxed relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1 h-full bg-primary/80" />
-              <strong className="font-semibold text-primary block mb-1">Welcome to my control plane.</strong>
-              This isn&apos;t a static resume. It&apos;s a live, interactive <strong>Systems Playground</strong>. Feel free to explore my blogs, review my Architecture Decision Records (ADRs), and interact directly with my scale-to-zero containerized backend demos below.
-            </div>
-          </motion.div>
+          <motion.p 
+            variants={fadeInUp}
+            className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10 leading-relaxed"
+          >
+            I&apos;m a Backend-focused Software Engineer with deep expertise in .NET and Golang, alongside full-stack experience with Blazor, Angular, and React. 
+            I focus on architecting resilient distributed systems, automating complex cloud deployment pipelines, and modernizing enterprise applications.
+            This site serves as my interactive <strong>Systems Playground</strong>—a live environment to explore my engineering projects, read my technical documentation, and interact directly with my scale-to-zero containerized backend demos below.
+          </motion.p>
           <motion.div 
             variants={fadeInUp}
             className="flex flex-wrap gap-3"
