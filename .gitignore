@@ -3,6 +3,11 @@
 infra/scripts/.env
 .DS_Store
 
+# Global Env Files
+**/.env
+**/.env.*
+!**/.env.example
+
 # Build Artifacts
 .next/
 backend/api
