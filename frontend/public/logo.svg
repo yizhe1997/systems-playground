@@ -1,13 +1,21 @@
 <svg viewBox="0 0 310 40" xmlns="http://www.w3.org/2000/svg">
-  <text x="0" y="28" fill="currentColor" style="font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 900; font-size: 20px; letter-spacing: -1px;">
-    SYSTEMS_PLAYGROUND.
+  <style>
+    .t-main { fill: #0f172a; }
+    .t-accent { fill: #10b981; }
+    .s-accent { stroke: #10b981; }
+    @media (prefers-color-scheme: dark) {
+      .t-main { fill: #f8fafc; }
+    }
+  </style>
+  <text x="0" y="28" class="t-main" style="font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 900; font-size: 20px; letter-spacing: -1px;">
+    SYSTEMS<tspan class="t-accent">_</tspan>PLAYGROUND<tspan class="t-accent">.</tspan>
   </text>
 
-  <g transform="translate(242, 12)" fill="currentColor">
-    <path d="M2 2L9 8.5L2 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" fill="none" />
+  <g transform="translate(242, 12)">
+    <path d="M2 2L9 8.5L2 15" class="s-accent" stroke-width="2.5" stroke-linecap="square" fill="none" />
     
-    <text x="12" y="7.5" style="font-family: ui-monospace, monospace; font-weight: 900; font-size: 10px;">YZ</text>
+    <text x="12" y="7.5" class="t-main" style="font-family: ui-monospace, monospace; font-weight: 900; font-size: 10px;">YZ</text>
     
-    <rect x="12" y="11" width="14" height="3.5" />
+    <rect x="12" y="11" width="14" height="3.5" class="t-main" />
   </g>
 </svg>

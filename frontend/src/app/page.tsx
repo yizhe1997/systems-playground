@@ -202,7 +202,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center group">
-            <img src="/logo.svg" alt="Systems Playground > YZ" className="h-6 w-auto opacity-90 group-hover:opacity-100 transition-opacity dark:invert invert-0" />
+            <img src="/logo.svg" alt="Systems Playground > YZ" className="h-8 sm:h-9 w-auto opacity-90 group-hover:opacity-100 transition-opacity" />
           </Link>
           
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
