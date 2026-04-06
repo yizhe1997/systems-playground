@@ -144,17 +144,17 @@ export default function AdminDashboard() {
       <main className="max-w-4xl mx-auto p-6 mt-8">
         <Tabs defaultValue="orchestration" className="w-full">
           <div className="flex justify-between items-center mb-8">
-            <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap h-auto">
-              <TabsTrigger value="orchestration" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 py-2.5">
+            <TabsList className="bg-card border border-border/50 shadow-sm flex flex-wrap h-auto">
+              <TabsTrigger value="orchestration" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary text-muted-foreground py-2.5 transition-colors">
                 Container Orchestration
               </TabsTrigger>
-              <TabsTrigger value="cms" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 py-2.5">
+              <TabsTrigger value="cms" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary text-muted-foreground py-2.5 transition-colors">
                 CMS & Portfolio
               </TabsTrigger>
-              <TabsTrigger value="resume" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 py-2.5">
+              <TabsTrigger value="resume" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary text-muted-foreground py-2.5 transition-colors">
                 Resume Requests
               </TabsTrigger>
-              <TabsTrigger value="settings" className="data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-500 py-2.5">
+              <TabsTrigger value="settings" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary text-muted-foreground py-2.5 transition-colors">
                 Global Settings
               </TabsTrigger>
             </TabsList>
@@ -162,33 +162,33 @@ export default function AdminDashboard() {
 
           <TabsContent value="orchestration" className="space-y-8 animate-in fade-in-50 duration-500">
             {/* Status Banner */}
-            <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-5 flex gap-4 items-start shadow-inner">
-              <div className="text-indigo-400 text-xl">ℹ️</div>
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 flex gap-4 items-start shadow-inner">
+              <div className="text-primary text-xl">ℹ️</div>
               <div>
-                <h2 className="text-lg font-semibold text-indigo-100">Live Host Telemetry Active</h2>
-                <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm leading-relaxed">
+                <h2 className="text-lg font-semibold text-primary">Live Host Telemetry Active</h2>
+                <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
                   This dashboard provides real-time container status directly from the Docker daemon socket on the physical host machine.
-                  {isAdmin && <span className="block mt-1 text-emerald-400">✅ <strong>Admin Mode:</strong> You have full execution privileges to start and stop remote containers.</span>}
-                  {!isAdmin && <span className="block mt-1 text-amber-400">⚠️ <strong>Read-Only Mode:</strong> Container orchestration commands (`ContainerStart`, `ContainerStop`) are disabled for your account.</span>}
+                  {isAdmin && <span className="block mt-2 text-emerald-500 font-medium">✅ Admin Mode: You have full execution privileges to start and stop remote containers.</span>}
+                  {!isAdmin && <span className="block mt-2 text-amber-500 font-medium">⚠️ Read-Only Mode: Container orchestration commands (`ContainerStart`, `ContainerStop`) are disabled for your account.</span>}
                 </p>
               </div>
             </div>
 
-            <h3 className="text-sm font-bold tracking-wider text-slate-500 uppercase">Infrastructure Targets</h3>
+            <h3 className="text-sm font-bold tracking-wider text-muted-foreground uppercase">Infrastructure Targets</h3>
 
             {/* Targets List */}
             <div className="space-y-4">
               {loading && widgets.length === 0 ? (
-                <div className="animate-pulse flex gap-4 p-6 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900">
-                  <div className="h-10 w-10 bg-slate-800 rounded-full"></div>
+                <div className="animate-pulse flex gap-4 p-6 border border-border/50 rounded-xl bg-card">
+                  <div className="h-10 w-10 bg-muted rounded-full"></div>
                   <div className="flex-1 space-y-3">
-                    <div className="h-4 w-1/3 bg-slate-800 rounded"></div>
-                    <div className="h-3 w-1/4 bg-slate-800 rounded"></div>
+                    <div className="h-4 w-1/3 bg-muted rounded"></div>
+                    <div className="h-3 w-1/4 bg-muted rounded"></div>
                   </div>
                 </div>
               ) : widgets.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 bg-white dark:bg-slate-900">
-                  No containers labeled with \`playground.widget\` found on the Docker host.
+                <div className="text-center py-12 border border-dashed border-border rounded-xl text-muted-foreground bg-card">
+                  No containers labeled with `playground.widget` found on the Docker host.
                 </div>
               ) : (
                 widgets.map((widget) => {
@@ -196,19 +196,19 @@ export default function AdminDashboard() {
                   const isToggling = toggling === widget.id;
 
                   return (
-                    <div key={widget.id} className="flex flex-col md:flex-row md:items-center justify-between p-6 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-sm hover:border-slate-300 dark:border-slate-700 transition gap-6 relative overflow-hidden">
+                    <div key={widget.id} className="flex flex-col md:flex-row md:items-center justify-between p-6 border border-border/50 rounded-xl bg-card shadow-sm hover:border-border transition gap-6 relative overflow-hidden">
                       
                       {/* Info */}
                       <div className="flex gap-4 items-center relative z-10">
-                        <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl ${isRunning ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-500'}`}>
+                        <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl ${isRunning ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500' : 'bg-muted border border-border text-muted-foreground'}`}>
                           {widget.type === 'cache' ? '🗄️' : '📨'}
                         </div>
                         <div>
-                          <h4 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">{widget.name}</h4>
+                          <h4 className="text-lg font-bold text-foreground tracking-tight">{widget.name}</h4>
                           <div className="flex items-center gap-3 mt-2 text-sm">
-                            <span className="font-mono text-xs text-slate-500">ID: {widget.id}</span>
-                            <span className="w-1 h-1 rounded-full bg-slate-600"></span>
-                            <span className={`font-medium ${isRunning ? 'text-emerald-400' : 'text-slate-500'}`}>
+                            <span className="font-mono text-xs text-muted-foreground">ID: {widget.id}</span>
+                            <span className="w-1 h-1 rounded-full bg-muted-foreground/50"></span>
+                            <span className={`font-medium ${isRunning ? 'text-emerald-500' : 'text-muted-foreground'}`}>
                               Status: {isRunning ? '🟢 Running' : '⚫ Offline'}
                             </span>
                           </div>
@@ -216,10 +216,10 @@ export default function AdminDashboard() {
                       </div>
 
                       {/* Actions & Metrics */}
-                      <div className="flex items-center gap-6 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 pt-4 md:pt-0 md:pl-6 relative z-10">
+                      <div className="flex items-center gap-6 border-t md:border-t-0 md:border-l border-border/50 pt-4 md:pt-0 md:pl-6 relative z-10">
                         <div className="text-right hidden sm:block">
-                          <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">Host Usage</div>
-                          <div className="text-sm text-slate-300 font-mono mt-1">
+                          <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Host Usage</div>
+                          <div className="text-sm text-foreground font-mono mt-1">
                             {isRunning ? 'Memory Locked' : 'Scaled to 0'}
                           </div>
                         </div>
@@ -230,12 +230,12 @@ export default function AdminDashboard() {
                             disabled={isToggling || !isAdmin}
                             className={`relative overflow-hidden min-w-[120px] px-5 py-2.5 rounded shadow-sm font-semibold transition-all duration-200 ${
                               !isAdmin 
-                                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                                ? 'bg-muted text-muted-foreground cursor-not-allowed border border-border'
                                 : isToggling 
-                                  ? 'bg-slate-700 text-slate-600 dark:text-slate-400 cursor-wait' 
+                                  ? 'bg-muted text-muted-foreground cursor-wait' 
                                   : isRunning 
-                                    ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white border border-rose-500/30' 
-                                    : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/30'
+                                    ? 'bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border border-destructive/30' 
+                                    : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/30'
                             }`}
                           >
                             <span className={`relative z-10 flex items-center justify-center gap-2 ${isToggling && 'opacity-0'}`}>
@@ -276,9 +276,9 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-8 animate-in fade-in-50 duration-500">
-            <div className="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 p-8 shadow-sm">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Portfolio Configurations</h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm mb-8">
+            <div className="border border-border /50 rounded-xl bg-card  p-8 shadow-sm">
+              <h2 className="text-xl font-bold text-foreground  mb-2">Portfolio Configurations</h2>
+              <p className="text-muted-foreground dark:text-muted-foreground/70 text-sm mb-8">
                 These settings are securely persisted in the <strong>Redis Infrastructure Cache</strong> via the Golang API.
               </p>
               
@@ -291,9 +291,9 @@ export default function AdminDashboard() {
                     onChange={(e) => setResumeUrl(e.target.value)}
                     placeholder="/resume.pdf"
                     disabled={!isAdmin}
-                    className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                    className="bg-card dark:bg-black/90 border-slate-300 dark:border-slate-700 text-foreground  placeholder:text-muted-foreground/70 dark:placeholder:text-muted-foreground"
                   />
-                  <p className="text-xs text-slate-500">The file path in Filebrowser to generate expiring links for (e.g. <code>/resume.pdf</code>).</p>
+                  <p className="text-xs text-muted-foreground">The file path in Filebrowser to generate expiring links for (e.g. <code>/resume.pdf</code>).</p>
                 </div>
                 
                 <div className="space-y-2">
@@ -304,9 +304,9 @@ export default function AdminDashboard() {
                     onChange={(e) => setLinkedinUrl(e.target.value)}
                     placeholder="https://linkedin.com/in/chin-yi-zhe..."
                     disabled={!isAdmin}
-                    className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                    className="bg-card dark:bg-black/90 border-slate-300 dark:border-slate-700 text-foreground  placeholder:text-muted-foreground/70 dark:placeholder:text-muted-foreground"
                   />
-                  <p className="text-xs text-slate-500">The link for the "View LinkedIn" button.</p>
+                  <p className="text-xs text-muted-foreground">The link for the "View LinkedIn" button.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -317,12 +317,12 @@ export default function AdminDashboard() {
                     onChange={(e) => setGithubUrl(e.target.value)}
                     placeholder="https://github.com/yizhe1997/systems-playground"
                     disabled={!isAdmin}
-                    className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                    className="bg-card dark:bg-black/90 border-slate-300 dark:border-slate-700 text-foreground  placeholder:text-muted-foreground/70 dark:placeholder:text-muted-foreground"
                   />
-                  <p className="text-xs text-slate-500">The link for the "View GitHub" button.</p>
+                  <p className="text-xs text-muted-foreground">The link for the "View GitHub" button.</p>
                 </div>
                 
-                <div className="pt-4 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
+                <div className="pt-4 flex items-center justify-between border-t border-border /50">
                   {!isAdmin ? (
                     <span className="text-amber-500 text-sm font-medium flex items-center gap-2">
                       ⚠️ Configuration updates require Admin privileges
@@ -336,8 +336,8 @@ export default function AdminDashboard() {
                     disabled={!isAdmin || savingConfig}
                     className={`px-6 py-2.5 rounded-lg font-medium shadow-sm transition-colors ${
                       !isAdmin || savingConfig
-                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
-                        : 'bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-500'
+                        ? 'bg-slate-800 text-muted-foreground cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                        : 'bg-primary hover:bg-primary text-white border border-indigo-500'
                     }`}
                   >
                     {savingConfig ? 'Saving to Redis...' : 'Save Settings'}
@@ -349,16 +349,16 @@ export default function AdminDashboard() {
 
           <TabsContent value="cms" className="animate-in fade-in-50 duration-500">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">CMS & Portfolio Manager</h2>
-              <p className="text-slate-600 dark:text-slate-400">Configure your homepage layout, dynamic projects, and markdown documentation.</p>
+              <h2 className="text-2xl font-bold text-foreground  mb-2">CMS & Portfolio Manager</h2>
+              <p className="text-muted-foreground dark:text-muted-foreground/70">Configure your homepage layout, dynamic projects, and markdown documentation.</p>
             </div>
             <CmsManager isAdmin={isAdmin} widgets={widgets} />
           </TabsContent>
 
           <TabsContent value="resume" className="animate-in fade-in-50 duration-500">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Resume Requests</h2>
-              <p className="text-slate-600 dark:text-slate-400">Manage incoming requests for your private resume PDF.</p>
+              <h2 className="text-2xl font-bold text-foreground  mb-2">Resume Requests</h2>
+              <p className="text-muted-foreground dark:text-muted-foreground/70">Manage incoming requests for your private resume PDF.</p>
             </div>
             <ResumeRequests isAdmin={isAdmin} />
           </TabsContent>

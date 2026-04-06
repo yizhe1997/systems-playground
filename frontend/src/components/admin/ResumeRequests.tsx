@@ -62,28 +62,28 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
     }
   };
 
-  if (loading) return <div className="animate-pulse text-slate-500 p-8 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">Loading requests...</div>;
+  if (loading) return <div className="animate-pulse text-muted-foreground p-8 text-center bg-card  border border-border /50 rounded-xl">Loading requests...</div>;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+    <div className="bg-card  rounded-xl shadow-sm border border-border /50 overflow-hidden">
       {requests.length === 0 ? (
-        <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+        <div className="p-12 text-center text-muted-foreground dark:text-muted-foreground/70">
           <span className="text-4xl block mb-4 opacity-50">📥</span>
           No resume requests found.
         </div>
       ) : (
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {requests.sort((a, b) => b.created_at - a.created_at).map(req => (
-            <div key={req.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+            <div key={req.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-muted/50  transition">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1">
-                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{req.name}</h4>
-                  <span className="text-sm font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">{req.company}</span>
+                  <h4 className="font-bold text-foreground  text-lg">{req.name}</h4>
+                  <span className="text-sm font-mono text-muted-foreground dark:text-muted-foreground/70 bg-muted  px-2 py-0.5 rounded">{req.company}</span>
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                    req.status === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20' :
-                    req.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' :
-                    req.status === 'approving...' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 animate-pulse' :
-                    'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
+                    req.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-200   ' :
+                    req.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-200   ' :
+                    req.status === 'approving...' ? 'bg-blue-100 text-blue-700 border-blue-200    animate-pulse' :
+                    'bg-rose-500/10 text-rose-500 border-rose-200   '
                   }`}>
                     {req.status}
                   </span>
@@ -91,14 +91,14 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                 {isAdmin ? (
                   <a href={`mailto:${req.email}`} className="text-sm text-blue-600 hover:underline mb-3 inline-block">{req.email}</a>
                 ) : (
-                  <span className="text-sm text-slate-500 mb-3 inline-block">{req.email}</span>
+                  <span className="text-sm text-muted-foreground mb-3 inline-block">{req.email}</span>
                 )}
                 {req.reason && (
-                  <p className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-100 dark:border-slate-800 italic">
+                  <p className="text-sm text-muted-foreground dark:text-muted-foreground/70 bg-muted/50 dark:bg-black/90 p-3 rounded-lg border border-border/50 /50 italic">
                     "{req.reason}"
                   </p>
                 )}
-                <div className="text-[10px] text-slate-400 mt-3 font-mono">
+                <div className="text-[10px] text-muted-foreground/70 mt-3 font-mono">
                   Requested: {new Date(req.created_at).toLocaleString()}
                 </div>
               </div>
@@ -107,7 +107,7 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                 <div className="flex items-center gap-3 shrink-0">
                   <button 
                     onClick={() => handleAction(req.id, 'reject')}
-                    className="px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition"
+                    className="px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50  rounded-lg transition"
                   >
                     Reject
                   </button>
