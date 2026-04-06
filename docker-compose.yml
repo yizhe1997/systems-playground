@@ -44,8 +44,8 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     labels:
       - "playground.widget=queue"
-      - "playground.name=Asynchronous Webhook Processing"
-      - "playground.desc=Use Cases: High-throughput webhook ingestion from external platforms (such as ATS or payment gateways) often causes API timeouts and database lock contention when processed synchronously. Solution: Demonstrates Event-Driven Architecture (EDA) by decoupling the API from the database. Payloads are instantly acknowledged and placed into a RabbitMQ message queue, allowing background workers to process them at a safe, controlled rate."
+      - "playground.name=Task Queuing & Worker Pools"
+      - "playground.desc=Use Cases: Offloading heavy, synchronous HTTP tasks (like generating PDFs, sending emails, or processing batch webhooks) to background worker pools to prevent API timeouts and database lock contention. Solution: Demonstrates strict FIFO task delegation using a RabbitMQ message broker. Jobs are distributed to background Go workers, safely processed, acknowledged, and permanently deleted from the queue."
 
 volumes:
   redis_data:

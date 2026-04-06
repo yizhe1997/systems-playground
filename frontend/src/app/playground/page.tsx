@@ -148,6 +148,10 @@ export default function PlaygroundPage() {
                           const [before, after] = text.split('Event-Driven Architecture (EDA)');
                           return <>{before}<strong className="text-foreground">Event-Driven Architecture (EDA)</strong>{after}</>;
                         }
+                        if (text.includes('FIFO task delegation')) {
+                          const [before, after] = text.split('FIFO task delegation');
+                          return <>{before}<strong className="text-foreground">FIFO task delegation</strong>{after}</>;
+                        }
                         return text;
                       };
 
