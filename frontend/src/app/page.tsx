@@ -515,7 +515,35 @@ export default function Home() {
                     </div>
                     
                     <div className="text-sm text-muted-foreground pt-5 border-t border-border leading-relaxed mb-4 mt-6">
-                      <p>{widget.description}</p>
+                      {(() => {
+                        const desc = widget.description || '';
+                        if (desc.includes('Use Cases:') && desc.includes('Solution:')) {
+                          const parts = desc.split('Solution:');
+                          const useCasesText = parts[0].replace('Use Cases:', '').trim();
+                          const solutionText = parts[1].trim();
+                          
+                          // Optional: Bold specific known keywords if they appear
+                          const formatText = (text: string) => {
+                            if (text.includes('Event-Driven Architecture (EDA)')) {
+                              const [before, after] = text.split('Event-Driven Architecture (EDA)');
+                              return <>{before}<strong className="text-foreground">Event-Driven Architecture (EDA)</strong>{after}</>;
+                            }
+                            return text;
+                          };
+
+                          return (
+                            <div className="space-y-3">
+                              <p>
+                                <strong className="text-foreground">Use Cases:</strong> {useCasesText}
+                              </p>
+                              <p>
+                                <strong className="text-foreground">Solution:</strong> {formatText(solutionText)}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return <p>{desc}</p>;
+                      })()}
                     </div>
                   </BentoCard>
                 ))
