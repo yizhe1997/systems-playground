@@ -42,6 +42,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
+import RedpandaDemo from '@/components/demos/RedpandaDemo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { BentoCard, EmptyState, fadeInUp, staggerContainer } from '@/components/ui/Shared';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -633,8 +634,9 @@ export default function Home() {
 
       {/* Active Demo Modal */}
       <Dialog open={activeDemo !== null} onOpenChange={(open) => !open && setActiveDemo(null)} disablePointerDismissal>
-        <DialogContent className="flex flex-col max-w-[95vw] md:max-w-[85vw] lg:max-w-[1400px] max-h-[85vh] p-0 overflow-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 resize transition-all duration-300 ease-in-out">
+        <DialogContent className="flex flex-col max-w-[95vw] md:max-w-[85vw] lg:max-w-[1400px] max-h-[85vh] p-0 overflow-auto bg-background border border-border resize transition-all duration-300 ease-in-out">
           {activeDemo?.type === 'queue' && <RabbitMQDemo widgetId={activeDemo.id} />}
+          {activeDemo?.type === 'event' && <RedpandaDemo widgetId={activeDemo.id} />}
         </DialogContent>
       </Dialog>
 

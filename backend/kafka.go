@@ -21,6 +21,7 @@ type EventMessage struct {
 
 var (
 	kafkaWriter *kafka.Writer
+	kafkaMutex  sync.Mutex
 	
 	// Track the states of our 3 mock consumers (Inventory, Email, Analytics)
 	consumerStates = struct {
@@ -41,94 +42,93 @@ var (
 )
 
 func InitKafkaProducer() {
-	broker := os.Getenv("KAFKA_BROKER")
-	if broker == "" {
-		broker = "redpanda:9092"
-	}
+	go func() {
+		for {
+			kafkaMutex.Lock()
+			if kafkaWriter == nil {
+				broker := os.Getenv("KAFKA_BROKER")
+				if broker == "" {
+					broker = "redpanda:9092"
+				}
 
-	// Wait for Redpanda to boot
-	var err error
-	for i := 0; i < 5; i++ {
-		_, err = kafka.Dial("tcp", broker)
-		if err == nil {
-			break
+				_, err := kafka.Dial("tcp", broker)
+				if err == nil {
+					// Create topic if it doesn't exist
+					conn, _ := kafka.DialLeader(context.Background(), "tcp", broker, "orders", 0)
+					if conn != nil {
+						conn.Close()
+					}
+
+					kafkaWriter = &kafka.Writer{
+						Addr:     kafka.TCP(broker),
+						Topic:    "orders",
+						Balancer: &kafka.LeastBytes{},
+					}
+					log.Println("✅ Connected to Redpanda (Kafka clone). Producer ready.")
+
+					// Start Consumer Groups
+					go startConsumerGroup(broker, "orders", "inventory_group", func(msg EventMessage) {
+						consumerStates.Lock()
+						defer consumerStates.Unlock()
+						if consumerStates.InventoryCrashed {
+							return // Simulate dropped message because service is dead
+						}
+						time.Sleep(300 * time.Millisecond) // simulate work
+						consumerStates.Inventory[msg.OrderID] = "Stock Deducted"
+						broadcastKafkaState()
+					})
+
+					go startConsumerGroup(broker, "orders", "email_group", func(msg EventMessage) {
+						consumerStates.Lock()
+						defer consumerStates.Unlock()
+						if consumerStates.EmailCrashed {
+							return
+						}
+						time.Sleep(500 * time.Millisecond)
+						consumerStates.Email[msg.OrderID] = "Receipt Sent"
+						broadcastKafkaState()
+					})
+
+					go startConsumerGroup(broker, "orders", "analytics_group", func(msg EventMessage) {
+						consumerStates.Lock()
+						defer consumerStates.Unlock()
+						if consumerStates.AnalyticsCrashed {
+							return
+						}
+						time.Sleep(100 * time.Millisecond)
+						consumerStates.Analytics[msg.OrderID] = "Dashboard Updated"
+						broadcastKafkaState()
+					})
+				}
+			}
+			kafkaMutex.Unlock()
+			time.Sleep(10 * time.Second)
 		}
-		log.Printf("⚠️ Waiting for Redpanda... (attempt %d/5)", i+1)
-		time.Sleep(2 * time.Second)
-	}
-
-	if err != nil {
-		log.Printf("⚠️ Redpanda is offline. Kafka Producer not started.")
-		return
-	}
-
-	// Create topic if it doesn't exist
-	conn, err := kafka.DialLeader(context.Background(), "tcp", broker, "orders", 0)
-	if err == nil {
-		conn.Close()
-	}
-
-	kafkaWriter = &kafka.Writer{
-		Addr:     kafka.TCP(broker),
-		Topic:    "orders",
-		Balancer: &kafka.LeastBytes{},
-	}
-	log.Println("✅ Connected to Redpanda (Kafka clone). Producer ready.")
-
-	// Start Consumer Groups
-	go startConsumerGroup(broker, "orders", "inventory_group", func(msg EventMessage) {
-		consumerStates.Lock()
-		defer consumerStates.Unlock()
-		if consumerStates.InventoryCrashed {
-			return // Simulate dropped message because service is dead
-		}
-		time.Sleep(300 * time.Millisecond) // simulate work
-		consumerStates.Inventory[msg.OrderID] = "Stock Deducted"
-		broadcastKafkaState()
-	})
-
-	go startConsumerGroup(broker, "orders", "email_group", func(msg EventMessage) {
-		consumerStates.Lock()
-		defer consumerStates.Unlock()
-		if consumerStates.EmailCrashed {
-			return
-		}
-		time.Sleep(500 * time.Millisecond)
-		consumerStates.Email[msg.OrderID] = "Receipt Sent"
-		broadcastKafkaState()
-	})
-
-	go startConsumerGroup(broker, "orders", "analytics_group", func(msg EventMessage) {
-		consumerStates.Lock()
-		defer consumerStates.Unlock()
-		if consumerStates.AnalyticsCrashed {
-			return
-		}
-		time.Sleep(100 * time.Millisecond)
-		consumerStates.Analytics[msg.OrderID] = "Dashboard Updated"
-		broadcastKafkaState()
-	})
+	}()
 }
 
 func startConsumerGroup(broker, topic, groupID string, handler func(EventMessage)) {
-	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  []string{broker},
-		GroupID:  groupID,
-		Topic:    topic,
-		MaxBytes: 10e6, // 10MB
-	})
-
 	for {
-		m, err := r.ReadMessage(context.Background())
-		if err != nil {
-			log.Printf("Consumer %s error: %v", groupID, err)
-			time.Sleep(2 * time.Second)
-			continue
+		r := kafka.NewReader(kafka.ReaderConfig{
+			Brokers:  []string{broker},
+			GroupID:  groupID,
+			Topic:    topic,
+			MaxBytes: 10e6, // 10MB
+		})
+
+		for {
+			m, err := r.ReadMessage(context.Background())
+			if err != nil {
+				log.Printf("Consumer %s error: %v", groupID, err)
+				r.Close()
+				time.Sleep(5 * time.Second)
+				break // break inner loop to recreate reader
+			}
+			
+			var event EventMessage
+			json.Unmarshal(m.Value, &event)
+			handler(event)
 		}
-		
-		var event EventMessage
-		json.Unmarshal(m.Value, &event)
-		handler(event)
 	}
 }
 

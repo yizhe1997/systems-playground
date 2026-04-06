@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Power, Loader2, CircleDot, Server, Database, MessageSquare, Gamepad2 } from 'lucide-react';
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
+import RedpandaDemo from '@/components/demos/RedpandaDemo';
 import { BentoCard, EmptyState, staggerContainer } from '@/components/ui/Shared';
 
 type Widget = {
@@ -177,8 +178,9 @@ export default function PlaygroundPage() {
 
       {/* Active Demo Modal */}
       <Dialog open={activeDemo !== null} onOpenChange={(open) => !open && setActiveDemo(null)} disablePointerDismissal>
-        <DialogContent className="flex flex-col max-w-[95vw] md:max-w-[85vw] lg:max-w-[1400px] max-h-[85vh] p-0 overflow-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 resize transition-all duration-300 ease-in-out">
+        <DialogContent className="flex flex-col max-w-[95vw] md:max-w-[85vw] lg:max-w-[1400px] max-h-[85vh] p-0 overflow-auto bg-background border border-border resize transition-all duration-300 ease-in-out">
           {activeDemo?.type === 'queue' && <RabbitMQDemo widgetId={activeDemo.id} />}
+          {activeDemo?.type === 'event' && <RedpandaDemo widgetId={activeDemo.id} />}
         </DialogContent>
       </Dialog>
     </div>

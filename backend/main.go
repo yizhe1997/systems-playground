@@ -16,6 +16,8 @@ import (
 )
 
 func main() {
+	InitKafkaProducer()
+	
 	app := fiber.New(fiber.Config{
 		AppName: "Systems Playground API",
 	})
@@ -51,6 +53,7 @@ func main() {
 	RegisterCMSRoutes(app)
 	RegisterFilebrowserRoutes(app)
 	RegisterResumeRoutes(app)
+	RegisterKafkaRoutes(app)
 
 	// --- PUBLIC API ENDPOINTS ---
 
