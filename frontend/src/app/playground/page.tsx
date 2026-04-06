@@ -89,7 +89,7 @@ export default function PlaygroundPage() {
             widgets.map((widget, index) => (
               <BentoCard 
                 key={widget.id}
-                size={index === 0 ? 'wide' : 'default'}
+                size="default"
                 glowColor={widget.status === 'running' ? 'emerald' : 'rose'}
               >
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">

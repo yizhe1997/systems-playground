@@ -362,7 +362,7 @@ export default function Home() {
                 filteredProjects.map((project, index) => (
                   <BentoCard 
                     key={project.id} 
-                    size={index === 0 ? 'wide' : 'default'}
+                    size="default"
                     glowColor="primary"
                   >
                     <h3 className="text-xl font-bold text-foreground mb-3">{project.title}</h3>
@@ -455,7 +455,7 @@ export default function Home() {
                 filteredWidgets.map((widget, index) => (
                   <BentoCard 
                     key={widget.id}
-                    size={index === 0 ? 'wide' : 'default'}
+                    size="default"
                     glowColor={widget.status === 'running' ? 'emerald' : 'rose'}
                   >
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
