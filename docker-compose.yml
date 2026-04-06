@@ -50,7 +50,7 @@ services:
       - "playground.desc=Use Cases: Offloading heavy, synchronous HTTP tasks (like generating PDFs, sending emails, or processing batch webhooks) to background worker pools to prevent API timeouts and database lock contention. Solution: Demonstrates strict FIFO task delegation using a RabbitMQ message broker. Jobs are distributed to background Go workers, safely processed, acknowledged, and permanently deleted from the queue."
 
   redpanda:
-    image: vectorized/redpanda:v23.1.2
+    image: redpandadata/redpanda:v23.1.2
     command:
       - redpanda
       - start
