@@ -44,8 +44,8 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     labels:
       - "playground.widget=queue"
-      - "playground.name=ATS Synchronization (RabbitMQ)"
-      - "playground.desc=Business Problem: Candidate status payloads from external ATS APIs overwhelm HTTP threads during bursts, causing timeouts and db lock contention. Solution: Next.js API returns 202 Accepted instantly and pushes to a RabbitMQ FIFO queue. A background Go worker processes it and syncs state via WebSockets."
+      - "playground.name=Asynchronous Webhook Processing"
+      - "playground.desc=Use Cases: High-throughput webhook ingestion from external platforms (such as ATS or payment gateways) often causes API timeouts and database lock contention when processed synchronously. Solution: Demonstrates Event-Driven Architecture (EDA) by decoupling the API from the database. Payloads are instantly acknowledged and placed into a RabbitMQ message queue, allowing background workers to process them at a safe, controlled rate."
 
 volumes:
   redis_data:
