@@ -1,6 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 type ResumeRequest = {
   id: string;
@@ -15,7 +19,19 @@ type ResumeRequest = {
 export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
   const [requests, setRequests] = useState<ResumeRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Dialog state
+  const [approveDialog, setApproveDialog] = useState<{ open: boolean; reqId: string | null; name: string }>({ open: false, reqId: null, name: '' });
+  const [emailSubject, setEmailSubject] = useState("Chin Yi Zhe - Requested Resume");
+  const [emailBody, setEmailBody] = useState("");
+
   const { toast } = useToast();
+
+  const openApproveDialog = (id: string, name: string) => {
+    setEmailSubject("Chin Yi Zhe - Requested Resume");
+    setEmailBody(`Hi {{name}},\n\nThank you for your interest! As requested, here is the link to download my resume.\n\n{{link}}\n\nBest regards,\nChin Yi Zhe`);
+    setApproveDialog({ open: true, reqId: id, name });
+  };
 
   const fetchRequests = async () => {
     try {
@@ -34,18 +50,19 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
     fetchRequests();
   }, []);
 
-  const handleAction = async (id: string, action: 'approve' | 'reject') => {
+  const handleAction = async (id: string, action: 'approve' | 'reject', subject?: string, body?: string) => {
     if (!isAdmin) return;
     const previous = [...requests];
     
     // Optimistic update
     setRequests(reqs => reqs.map(r => r.id === id ? { ...r, status: action === 'approve' ? 'approving...' : 'rejected' } : r));
+    setApproveDialog({ open: false, reqId: null, name: '' });
 
     try {
       const res = await fetch('/api/proxy/resume/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action })
+        body: JSON.stringify({ id, action, subject, body })
       });
       
       if (res.ok) {
@@ -112,7 +129,7 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                     Reject
                   </button>
                   <button 
-                    onClick={() => handleAction(req.id, 'approve')}
+                    onClick={() => openApproveDialog(req.id, req.name)}
                     className="px-4 py-2 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition"
                   >
                     Approve & Email Link
@@ -123,6 +140,54 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
           ))}
         </div>
       )}
+
+      {/* Approval Dialog */}
+      <Dialog open={approveDialog.open} onOpenChange={(open) => !open && setApproveDialog({ ...approveDialog, open: false })}>
+        <DialogContent className="sm:max-w-xl bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-foreground">Approve Request</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Customize the email that will be sent to <strong className="text-foreground">{approveDialog.name}</strong>. 
+              Use <code className="bg-muted px-1 rounded text-primary">{"{{name}}"}</code> and <code className="bg-muted px-1 rounded text-primary">{"{{link}}"}</code> as template variables.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Email Subject</Label>
+              <Input 
+                value={emailSubject} 
+                onChange={e => setEmailSubject(e.target.value)} 
+                className="bg-background border-input text-foreground"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Email Body</Label>
+              <Textarea 
+                value={emailBody} 
+                onChange={e => setEmailBody(e.target.value)} 
+                rows={8}
+                className="bg-background border-input text-foreground font-mono text-sm leading-relaxed"
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-3 pt-2">
+            <button 
+              onClick={() => setApproveDialog({ ...approveDialog, open: false })}
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent rounded-md transition"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={() => handleAction(approveDialog.reqId!, 'approve', emailSubject, emailBody)}
+              className="px-5 py-2 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition flex items-center gap-2"
+            >
+              Send Secure Link
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

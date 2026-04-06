@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/smtp"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -85,7 +86,9 @@ func RegisterResumeRoutes(app *fiber.App) {
 		id := c.Params("id")
 		
 		type ActionPayload struct {
-			Action string `json:"action"` // "approve" or "reject"
+			Action  string `json:"action"` // "approve" or "reject"
+			Subject string `json:"subject"`
+			Body    string `json:"body"`
 		}
 		var payload ActionPayload
 		if err := c.BodyParser(&payload); err != nil {
@@ -127,7 +130,7 @@ func RegisterResumeRoutes(app *fiber.App) {
 			}
 
 			// 2. Send the Email via SendGrid/Resend API
-			err = sendEmailViaSMTP(targetReq.Email, targetReq.Name, shareLink)
+			err = sendEmailViaSMTP(targetReq.Email, targetReq.Name, shareLink, payload.Subject, payload.Body)
 			if err != nil {
 				log.Printf("❌ Failed to send email: %v", err)
 				return c.Status(500).JSON(fiber.Map{"error": "Failed to send email. Link was generated."})
@@ -226,7 +229,7 @@ func generateFilebrowserShareLink(ctx context.Context) (string, error) {
 	return fmt.Sprintf("%s/share/%s", publicDomain, hash), nil
 }
 
-func sendEmailViaSMTP(toEmail string, name string, shareLink string) error {
+func sendEmailViaSMTP(toEmail string, name string, shareLink string, customSubject string, customBody string) error {
 	smtpEmail := os.Getenv("SMTP_EMAIL")
 	smtpPassword := os.Getenv("SMTP_PASSWORD")
 
@@ -244,9 +247,24 @@ func sendEmailViaSMTP(toEmail string, name string, shareLink string) error {
 	from := smtpEmail
 	to := []string{toEmail}
 
-	subject := "Subject: Chin Yi Zhe - Requested Resume\r\n"
+	subjectLine := customSubject
+	if subjectLine == "" {
+		subjectLine = "Chin Yi Zhe - Requested Resume"
+	}
+	subject := "Subject: " + subjectLine + "\r\n"
+	
 	mime := "MIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n"
-	body := fmt.Sprintf("<p>Hi %s,</p><p>Thank you for your interest! As requested, here is the link to download my resume.</p><p><a href='%s'>Download Resume (Expires in 24 hours)</a></p><p>Best regards,<br/>Chin Yi Zhe</p>", name, shareLink)
+	
+	body := customBody
+	if body == "" {
+		body = fmt.Sprintf("<p>Hi %s,</p><p>Thank you for your interest! As requested, here is the link to download my resume.</p><p><a href='%s'>Download Resume (Expires in 24 hours)</a></p><p>Best regards,<br/>Chin Yi Zhe</p>", name, shareLink)
+	} else {
+		// Replace line breaks with HTML line breaks and inject variables
+		body = strings.ReplaceAll(body, "\n", "<br/>")
+		body = strings.ReplaceAll(body, "{{name}}", name)
+		body = strings.ReplaceAll(body, "{{link}}", fmt.Sprintf("<a href='%s'>Download Resume (Expires in 24 hours)</a>", shareLink))
+		body = strings.ReplaceAll(body, "{{raw_link}}", shareLink)
+	}
 
 	msg := []byte("From: " + from + "\r\nTo: " + toEmail + "\r\n" + subject + mime + body)
 
