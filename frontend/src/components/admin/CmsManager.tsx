@@ -101,8 +101,8 @@ export default function CmsManager({ isAdmin, widgets }: { isAdmin: boolean; wid
               <div className="flex flex-wrap gap-3">
                 {widgets.map(w => (
                   <label key={w.id} className="flex items-center gap-2 text-sm bg-muted/50 px-3 py-2 rounded-md border border-border cursor-pointer">
-                    <input type="checkbox" checked={homepage.featured_demos?.includes(w.id)} onChange={e => {
-                      const nu = e.target.checked ? [...(homepage.featured_demos||[]), w.id] : homepage.featured_demos.filter(id => id !== w.id);
+                    <input type="checkbox" checked={homepage.featured_demos?.includes(w.type)} onChange={e => {
+                      const nu = e.target.checked ? [...(homepage.featured_demos||[]), w.type] : homepage.featured_demos.filter(id => id !== w.type);
                       setHomepage({ ...homepage, featured_demos: nu });
                     }} disabled={!isAdmin} className="rounded" />
                     {w.name}

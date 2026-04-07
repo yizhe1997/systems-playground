@@ -194,7 +194,7 @@ export default function Home() {
   };
 
   const filteredProjects = projects.filter(p => featuredProjects.includes(p.id)).slice(0, 4);
-  const filteredWidgets = widgets.filter(w => featuredDemos.includes(w.id)).slice(0, 4);
+  const filteredWidgets = widgets.filter(w => featuredDemos.includes(w.type)).slice(0, 4);
   const filteredDocs = docs.filter(d => featuredDocs.includes(d.id)).slice(0, 4);
 
   return (
@@ -436,7 +436,7 @@ export default function Home() {
               linkText="View All Experiments"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {loading ? (
                 <motion.div 
                   variants={fadeInUp}
