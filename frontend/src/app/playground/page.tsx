@@ -6,7 +6,7 @@ import { Power, Loader2, CircleDot, Server, Database, MessageSquare, Gamepad2 } 
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
 import RedpandaDemo from '@/components/demos/RedpandaDemo';
-import { BentoCard, EmptyState, staggerContainer } from '@/components/ui/Shared';
+import { BentoCard, EmptyState, staggerContainer, fadeInUp } from '@/components/ui/Shared';
 
 type Widget = {
   id: string;
@@ -68,10 +68,13 @@ export default function PlaygroundPage() {
       <p className="text-xl text-muted-foreground mb-12">Live infrastructure experiments and scale-to-zero demos.</p>
       
       {loading ? (
-        <div className="animate-pulse flex items-center gap-3 text-muted-foreground p-12">
+        <motion.div 
+          variants={fadeInUp}
+          className="col-span-full flex items-center justify-center gap-3 p-12 text-muted-foreground"
+        >
           <Loader2 className="w-5 h-5 animate-spin" />
-          Loading infrastructure...
-        </div>
+          Checking infrastructure status...
+        </motion.div>
       ) : (
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"

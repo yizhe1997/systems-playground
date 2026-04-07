@@ -1,11 +1,15 @@
+'use client';
+import { BookOpen } from 'lucide-react';
+import { EmptyState } from '@/components/ui/Shared';
+
 export default function DocsIndex() {
   return (
-    <div className="text-center py-20 flex flex-col items-center justify-center h-full">
-      <span className="text-6xl mb-6 opacity-80">📖</span>
-      <h1 className="text-3xl font-bold text-foreground mb-4">Engineering Documentation</h1>
-      <p className="text-muted-foreground max-w-md mx-auto text-lg">
-        Select an Architecture Decision Record (ADR) or engineering blog post from the virtual folder tree on the left to begin reading.
-      </p>
+    <div className="flex flex-col items-center justify-center h-full w-full max-w-lg mx-auto py-10">
+      <EmptyState 
+        icon={BookOpen}
+        title="Engineering Documentation"
+        subtitle="Select an Architecture Decision Record (ADR) or engineering blog post from the virtual folder tree on the left to begin reading."
+      />
     </div>
   );
 }
