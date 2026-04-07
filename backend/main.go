@@ -168,6 +168,7 @@ func main() {
 			log.Printf("Error waking widget %s: %v", id, err)
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to wake container"})
 		}
+		rabbitmq.BroadcastEvent(rabbitmq.BroadcastMessage{Type: "WIDGETS_UPDATED"})
 		return c.JSON(fiber.Map{"id": id, "status": status})
 	})
 
@@ -201,6 +202,8 @@ func main() {
 			log.Printf("Error toggling widget %s: %v", id, err)
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to toggle widget container"})
 		}
+
+		rabbitmq.BroadcastEvent(rabbitmq.BroadcastMessage{Type: "WIDGETS_UPDATED"})
 
 		return c.JSON(fiber.Map{
 			"id":     id,

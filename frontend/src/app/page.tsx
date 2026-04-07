@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { 
   Briefcase, 
@@ -43,17 +44,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import RabbitMQDemo from '@/components/demos/RabbitMQDemo';
 import RedpandaDemo from '@/components/demos/RedpandaDemo';
+import WidgetGrid, { type PlaygroundWidget } from '@/components/playground/WidgetGrid';
+import { useWidgetsFeed } from '@/hooks/use-widgets-feed';
 import ThemeToggle from '@/components/ThemeToggle';
 import { BentoCard, EmptyState, fadeInUp, staggerContainer } from '@/components/ui/Shared';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 
-type Widget = {
-  id: string;
-  name: string;
-  description: string;
-  type: string;
-  status: string;
-};
+type Widget = PlaygroundWidget;
 
 type Project = {
   id: string;
@@ -67,15 +64,13 @@ type Project = {
 export default function Home() {
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [widgets, setWidgets] = useState<Widget[]>([]);
+  const { widgets, loading: widgetsLoading, waking, wakeWidget } = useWidgetsFeed();
   const [projects, setProjects] = useState<Project[]>([]);
   const [docs, setDocs] = useState<any[]>([]);
   const [featuredProjects, setFeaturedProjects] = useState<string[]>([]);
   const [featuredDemos, setFeaturedDemos] = useState<string[]>([]);
   const [featuredDocs, setFeaturedDocs] = useState<string[]>([]);
-  
-  const [loading, setLoading] = useState(true);
-  const [waking, setWaking] = useState<string | null>(null);
+
   const [resumeUrl, setResumeUrl] = useState<string>('#');
   const [linkedinUrl, setLinkedinUrl] = useState<string>('#');
   const [githubUrl, setGithubUrl] = useState<string>('#');
@@ -123,78 +118,84 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const fetchWidgets = () => {
-      fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085') + '/admin/widgets')
-        .then((res) => res.json())
-        .then((data) => {
-          setWidgets(data);
-          setLoading(false);
-          // If we were waking a widget and it's now running, clear the waking state
-          if (waking) {
-            const wokenWidget = data.find((w: Widget) => w.id === waking);
-            if (wokenWidget && wokenWidget.status === 'running') {
-              setWaking(null);
-            }
-          }
-        })
-        .catch((err) => {
-          console.error('Error fetching widgets:', err);
-          setLoading(false);
-        });
-    };
-    
-    fetchWidgets();
-    const interval = setInterval(fetchWidgets, 5000);
-
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
+    const fetchOptions: RequestInit = { cache: 'no-store' };
+    const defaultTimeoutMs = 8000;
 
-    // Fetch dynamic resume links
-    fetch(apiUrl + '/api/config')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.resumeUrl) setResumeUrl(data.resumeUrl);
-        if (data.linkedinUrl) setLinkedinUrl(data.linkedinUrl);
-        if (data.githubUrl) setGithubUrl(data.githubUrl);
-      })
-      .catch(console.error);
+    const fetchJson = async <T,>(path: string, timeoutMs = defaultTimeoutMs): Promise<T> => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(`${apiUrl}${path}`, {
+          ...fetchOptions,
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          throw new Error(`Failed to fetch ${path}: ${res.status}`);
+        }
+        return res.json();
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
 
-    // Fetch CMS Projects & Homepage Visibility
-    fetch(apiUrl + '/api/projects')
-      .then((res) => res.json())
-      .then((data) => setProjects(data || []))
-      .catch(console.error);
+    // Load all other data
+    const loadOtherData = async () => {
+      try {
+        const [configRes, projectsRes, docsRes, homepageRes] = await Promise.allSettled([
+          fetchJson<{ resumeUrl?: string; linkedinUrl?: string; githubUrl?: string }>('/api/config'),
+          fetchJson<Project[]>('/api/projects'),
+          fetchJson<any[]>('/api/documents'),
+          fetchJson<{ featured_projects?: string[]; featured_demos?: string[]; featured_docs?: string[] }>('/api/homepage'),
+        ]);
 
-    fetch(apiUrl + '/api/documents')
-      .then((res) => res.json())
-      .then((data) => setDocs(data || []))
-      .catch(console.error);
+        if (configRes.status === 'fulfilled' && configRes.value) {
+          if (configRes.value.resumeUrl) setResumeUrl(configRes.value.resumeUrl);
+          if (configRes.value.linkedinUrl) setLinkedinUrl(configRes.value.linkedinUrl);
+          if (configRes.value.githubUrl) setGithubUrl(configRes.value.githubUrl);
+        }
 
-    fetch(apiUrl + '/api/homepage')
-      .then((res) => res.json())
-      .then((data) => {
-        setFeaturedProjects(data.featured_projects || []);
-        setFeaturedDemos(data.featured_demos || []);
-        setFeaturedDocs(data.featured_docs || []);
-      })
-      .catch(console.error);
+        if (projectsRes.status === 'fulfilled') {
+          setProjects(projectsRes.value || []);
+        }
 
-    return () => clearInterval(interval);
-  }, [waking]);
+        if (docsRes.status === 'fulfilled') {
+          setDocs(docsRes.value || []);
+        }
 
-  const wakeWidget = async (id: string) => {
-    setWaking(id);
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-      await fetch(`${apiUrl}/api/demo/widgets/${id}/wake`, { method: 'POST' });
-      // The interval polling will catch the status change
-    } catch (err) {
-      console.error('Failed to wake widget:', err);
-      setWaking(null);
-    }
-  };
+        if (homepageRes.status === 'fulfilled' && homepageRes.value) {
+          setFeaturedProjects(homepageRes.value.featured_projects || []);
+          setFeaturedDemos(homepageRes.value.featured_demos || []);
+          setFeaturedDocs(homepageRes.value.featured_docs || []);
+        }
+      } catch (err) {
+        console.error('Other data fetch failed:', err);
+      }
+    };
+
+    loadOtherData();
+
+    return () => {
+      // no-op
+    };
+  }, []);
 
   const filteredProjects = projects.filter(p => featuredProjects.includes(p.id)).slice(0, 4);
-  const filteredWidgets = widgets.filter(w => featuredDemos.includes(w.type)).slice(0, 4);
+  const featuredDemoSet = new Set(
+    featuredDemos
+      .map((value) => value?.trim().toLowerCase())
+      .filter((value): value is string => Boolean(value))
+  );
+
+  const filteredWidgets = (
+    featuredDemoSet.size > 0
+      ? widgets.filter((w) => {
+          const typeKey = w.type?.trim().toLowerCase();
+          const idKey = w.id?.trim().toLowerCase();
+          return featuredDemoSet.has(typeKey) || featuredDemoSet.has(idKey);
+        })
+      : widgets
+  ).slice(0, 4);
   const filteredDocs = docs.filter(d => featuredDocs.includes(d.id)).slice(0, 4);
 
   return (
@@ -273,11 +274,29 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="w-full max-w-6xl mx-auto px-6 py-20 md:py-28">
+      <section className="relative w-full max-w-6xl mx-auto px-6 py-20 md:py-28 overflow-hidden">
+        <motion.div
+          variants={fadeInUp}
+          initial="hidden"
+          animate="visible"
+          className="pointer-events-none select-none hidden lg:block absolute right-[-2.5rem] top-1/2 -translate-y-1/2 z-0 w-[320px] xl:w-[420px] opacity-90"
+          aria-hidden="true"
+        >
+          <Image
+            src="/dog-swe-laptop.svg"
+            alt=""
+            width={640}
+            height={640}
+            priority
+            className="h-auto w-full"
+          />
+        </motion.div>
+
         <motion.div
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
+          className="relative z-10"
         >
           <motion.h1 
             variants={fadeInUp}
@@ -423,9 +442,8 @@ export default function Home() {
       <section id="playground" className="w-full border-y border-border/50 py-20 bg-background">
         <div className="max-w-6xl mx-auto px-6">
           <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            initial="visible"
+            animate="visible"
             variants={staggerContainer}
           >
             <SectionHeader
@@ -436,124 +454,14 @@ export default function Home() {
               linkText="View All Experiments"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {loading ? (
-                <motion.div 
-                  variants={fadeInUp}
-                  className="col-span-full flex items-center justify-center gap-3 p-12 text-muted-foreground"
-                >
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Checking infrastructure status...
-                </motion.div>
-              ) : filteredWidgets.length === 0 ? (
-                <EmptyState 
-                  icon={Gamepad2}
-                  title="It&apos;s empty at the moment..."
-                  subtitle="Playground widgets will appear here when featured."
-                />
-              ) : (
-                filteredWidgets.map((widget, index) => (
-                  <BentoCard 
-                    key={widget.id}
-                    size="default"
-                    glowColor={widget.status === 'running' ? 'emerald' : 'rose'}
-                  >
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                          {widget.type === 'queue' ? (
-                            <MessageSquare className="w-5 h-5 text-muted-foreground" />
-                          ) : widget.type === 'cache' ? (
-                            <Database className="w-5 h-5 text-muted-foreground" />
-                          ) : (
-                            <Server className="w-5 h-5 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-foreground">{widget.name}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <CircleDot className={`w-3 h-3 ${widget.status === 'running' ? 'text-emerald-500' : 'text-rose-500'}`} />
-                            <span className={`text-xs font-medium uppercase tracking-wider ${widget.status === 'running' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                              {widget.status === 'running' ? 'Online' : 'Offline'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="w-full sm:w-auto">
-                        {widget.status === 'running' ? (
-                          <button 
-                            onClick={() => setActiveDemo(widget)}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-                          >
-                            <Rocket className="w-4 h-4" />
-                            Launch Demo
-                          </button>
-                        ) : (
-                          <button 
-                            onClick={() => wakeWidget(widget.id)}
-                            disabled={waking === widget.id}
-                            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                              waking === widget.id 
-                                ? 'bg-primary/50 text-primary-foreground cursor-wait' 
-                                : 'bg-card border border-border text-foreground hover:bg-accent hover:border-primary/50'
-                            }`}
-                          >
-                            {waking === widget.id ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Booting via Golang...
-                              </>
-                            ) : (
-                              <>
-                                <Power className="w-4 h-4" />
-                                Wake Container
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="text-sm text-muted-foreground pt-5 border-t border-border leading-relaxed mb-4 mt-6">
-                      {(() => {
-                        const desc = widget.description || '';
-                        if (desc.includes('Use Cases:') && desc.includes('Solution:')) {
-                          const parts = desc.split('Solution:');
-                          const useCasesText = parts[0].replace('Use Cases:', '').trim();
-                          const solutionText = parts[1].trim();
-                          
-                          // Optional: Bold specific known keywords if they appear
-                          const formatText = (text: string) => {
-                            if (text.includes('Event-Driven Architecture (EDA)')) {
-                              const [before, after] = text.split('Event-Driven Architecture (EDA)');
-                              return <>{before}<strong className="text-foreground">Event-Driven Architecture (EDA)</strong>{after}</>;
-                            }
-                            if (text.includes('FIFO task delegation')) {
-                              const [before, after] = text.split('FIFO task delegation');
-                              return <>{before}<strong className="text-foreground">FIFO task delegation</strong>{after}</>;
-                            }
-                            return text;
-                          };
-
-                          return (
-                            <div className="space-y-3">
-                              <p>
-                                <strong className="text-foreground">Use Cases:</strong> {useCasesText}
-                              </p>
-                              <p>
-                                <strong className="text-foreground">Solution:</strong> {formatText(solutionText)}
-                              </p>
-                            </div>
-                          );
-                        }
-                        return <p>{desc}</p>;
-                      })()}
-                    </div>
-                  </BentoCard>
-                ))
-              )}
-            </div>
+            <WidgetGrid
+              widgets={filteredWidgets}
+              loading={widgetsLoading}
+              waking={waking}
+              onWake={wakeWidget}
+              onLaunch={setActiveDemo}
+              emptySubtitle="No playground widgets are currently available."
+            />
             
             <div className="mt-8 text-center sm:hidden">
               <Link href="/playground" className="inline-flex items-center gap-2 text-primary font-medium">

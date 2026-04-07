@@ -62,8 +62,35 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchWidgets();
     fetchConfig();
-    const interval = setInterval(fetchWidgets, 5000); // Poll every 5 seconds
-    return () => clearInterval(interval);
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
+    const wsUrl = apiUrl.replace(/^http/, 'ws') + '/ws/demo';
+    let ws: WebSocket;
+    let reconnectTimer: NodeJS.Timeout;
+
+    const connectWs = () => {
+      ws = new WebSocket(wsUrl);
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'WIDGETS_UPDATED') {
+            fetchWidgets();
+          }
+        } catch (e) {}
+      };
+      ws.onclose = () => {
+        reconnectTimer = setTimeout(connectWs, 3000);
+      };
+    };
+    connectWs();
+
+    return () => {
+      clearTimeout(reconnectTimer);
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
+    };
   }, []);
 
   const handleSaveConfig = async (e: React.FormEvent) => {

@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/yizhe1997/systems-playground/backend/pkg/rabbitmq"
 )
 
 // StartReaper checks for idle playground widgets every minute and stops them if their Redis heartbeat has expired
@@ -31,6 +32,7 @@ func StartReaper() {
 						if err == nil {
 							cli.ContainerStop(ctx, w.ID, container.StopOptions{})
 							cli.Close()
+							rabbitmq.BroadcastEvent(rabbitmq.BroadcastMessage{Type: "WIDGETS_UPDATED"})
 						}
 					}
 				}
