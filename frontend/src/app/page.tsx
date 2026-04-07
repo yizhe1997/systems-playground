@@ -351,7 +351,7 @@ export default function Home() {
               linkText="View All Projects"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {filteredProjects.length === 0 ? (
                 <EmptyState 
                   icon={FolderOpen}
@@ -436,7 +436,7 @@ export default function Home() {
               linkText="View All Experiments"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {loading ? (
                 <motion.div 
                   variants={fadeInUp}
@@ -582,7 +582,7 @@ export default function Home() {
               linkText="View All Docs"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {filteredDocs.length === 0 ? (
                 <EmptyState 
                   icon={FileText}

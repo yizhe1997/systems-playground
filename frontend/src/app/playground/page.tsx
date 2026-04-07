@@ -77,7 +77,7 @@ export default function PlaygroundPage() {
         </motion.div>
       ) : (
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
+          className="grid grid-cols-1 md:grid-cols-2 gap-5"
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
