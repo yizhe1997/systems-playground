@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Loader2, Power } from 'lucide-react';
+import { useWidgetHeartbeat } from '@/hooks/use-widget-heartbeat';
 
 type ConsumerState = {
   crashed: boolean;
@@ -100,17 +101,15 @@ export default function RedpandaDemo({ widgetId }: { widgetId: string }) {
 
     connectWs();
 
-    const heartbeat = setInterval(() => {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-      fetch(`${apiUrl}/api/demo/widgets/${widgetId}/heartbeat`, { method: 'POST' }).catch(() => {});
-    }, 60000);
-
     return () => {
       clearTimeout(retryTimeout);
-      clearInterval(heartbeat);
       if (wsRef.current) wsRef.current.close();
     };
   }, [widgetId]);
+
+  // Keeps the container alive: immediate beat on mount, periodic beats, plus
+  // recovery beats on tab-visibility-regained and network-reconnect.
+  useWidgetHeartbeat(widgetId);
 
   const sendOrder = async () => {
     if (!isConnected) return;

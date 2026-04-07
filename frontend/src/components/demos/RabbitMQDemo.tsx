@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useWidgetHeartbeat } from '@/hooks/use-widget-heartbeat';
 
 type Job = {
   id: string;
@@ -98,20 +99,17 @@ export default function RabbitMQDemo({ widgetId }: { widgetId: string }) {
 
     connectWs();
 
-    // The frontend sends a heartbeat to keep the Scale-to-Zero NUC container alive!
-    const heartbeat = setInterval(() => {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-      fetch(`${apiUrl}/api/demo/widgets/${widgetId}/heartbeat`, { method: 'POST' }).catch(() => {});
-    }, 60000);
-
     return () => {
       clearTimeout(retryTimeout);
-      clearInterval(heartbeat);
       if (wsRef.current) {
         wsRef.current.close();
       }
     };
   }, []);
+
+  // Keeps the container alive: immediate beat on mount, periodic beats, plus
+  // recovery beats on tab-visibility-regained and network-reconnect.
+  useWidgetHeartbeat(widgetId);
 
   const sendWebhook = async (isBurst = false) => {
     if (!isConnected) return;

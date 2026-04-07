@@ -59,8 +59,10 @@ func RecordHeartbeat(ctx context.Context, containerID string) error {
 	if redisClient == nil {
 		return nil
 	}
-	// Give the container a 10-minute TTL
-	return redisClient.Set(ctx, "heartbeat:"+containerID, "active", 10*time.Minute).Err()
+	// 15-minute TTL: gives enough buffer for browser tab-throttling (which can
+	// delay the frontend's 2-minute heartbeat interval to ~5 min when backgrounded)
+	// while still scaling to zero promptly once a session genuinely ends.
+	return redisClient.Set(ctx, "heartbeat:"+containerID, "active", 15*time.Minute).Err()
 }
 
 // IsHeartbeatAlive checks if the container's heartbeat key still exists in Redis
