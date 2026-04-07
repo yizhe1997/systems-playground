@@ -23,11 +23,36 @@ export default function RedpandaDemo({ widgetId }: { widgetId: string }) {
   const [isConnected, setIsConnected] = useState(false);
   const [orderLogs, setOrderLogs] = useState<{id: string, time: number}[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
+  const sessionIdRef = useRef<string>('');
+
+  const ensureSessionId = () => {
+    if (sessionIdRef.current) return sessionIdRef.current;
+
+    const storageKey = `kafka-demo-session:${widgetId}`;
+    const existing = typeof window !== 'undefined' ? sessionStorage.getItem(storageKey) : null;
+    if (existing) {
+      sessionIdRef.current = existing;
+      return existing;
+    }
+
+    const generated = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(storageKey, generated);
+    }
+    sessionIdRef.current = generated;
+    return generated;
+  };
 
   const fetchState = async () => {
     try {
+      const sessionId = ensureSessionId();
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-      const res = await fetch(`${apiUrl}/api/demo/kafka/state`);
+      const res = await fetch(`${apiUrl}/api/demo/kafka/state`, {
+        headers: { 'X-Demo-Session': sessionId }
+      });
       const data = await res.json();
       if (data) setKafkaState(data);
     } catch (err) {
@@ -38,6 +63,7 @@ export default function RedpandaDemo({ widgetId }: { widgetId: string }) {
   useEffect(() => {
     let ws: WebSocket;
     let retryTimeout: NodeJS.Timeout;
+    const sessionId = ensureSessionId();
 
     fetchState();
 
@@ -56,7 +82,11 @@ export default function RedpandaDemo({ widgetId }: { widgetId: string }) {
           try {
             const msg = JSON.parse(event.data);
             if (msg.type === 'kafka_state_update') {
-              setKafkaState(msg.data);
+              const messageSession = msg?.data?.session_id;
+              if (!messageSession || messageSession !== sessionId) return;
+
+              const { session_id: _ignored, ...stateData } = msg.data;
+              setKafkaState(stateData);
             }
           } catch (e) {
             console.error('Error parsing WS message:', e);
@@ -86,13 +116,17 @@ export default function RedpandaDemo({ widgetId }: { widgetId: string }) {
     if (!isConnected) return;
     const id = "ORD-" + Math.random().toString(36).substring(2, 6).toUpperCase();
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
+    const sessionId = ensureSessionId();
     
     setOrderLogs(prev => [{ id, time: Date.now() }, ...prev].slice(0, 5));
 
     try {
       await fetch(`${apiUrl}/api/demo/kafka/order`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Demo-Session': sessionId,
+        },
         body: JSON.stringify({ order_id: id, amount: Math.floor(Math.random() * 100) + 10 }),
       });
     } catch (err) {
@@ -103,8 +137,12 @@ export default function RedpandaDemo({ widgetId }: { widgetId: string }) {
   const toggleService = async (service: 'inventory' | 'email' | 'analytics', isCrashed: boolean) => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
+      const sessionId = ensureSessionId();
       const action = isCrashed ? 'restart' : 'crash';
-      await fetch(`${apiUrl}/api/demo/kafka/${action}/${service}`, { method: 'POST' });
+      await fetch(`${apiUrl}/api/demo/kafka/${action}/${service}`, {
+        method: 'POST',
+        headers: { 'X-Demo-Session': sessionId },
+      });
       setKafkaState(prev => ({
         ...prev,
         [service]: { ...prev[service], crashed: !isCrashed }

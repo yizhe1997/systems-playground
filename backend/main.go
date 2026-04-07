@@ -17,7 +17,7 @@ import (
 
 func main() {
 	InitKafkaProducer()
-	
+
 	app := fiber.New(fiber.Config{
 		AppName: "Systems Playground API",
 	})
@@ -26,7 +26,7 @@ func main() {
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*", // We'll lock this down later in production
-		AllowHeaders: "Origin, Content-Type, Accept, X-Admin-Token, Idempotency-Key",
+		AllowHeaders: "Origin, Content-Type, Accept, X-Admin-Token, Idempotency-Key, X-Demo-Session",
 	}))
 
 	// --- WEBSOCKET MIDDLEWARE (Upgrade HTTP to WS) ---
@@ -76,13 +76,13 @@ func main() {
 	// 1. Fetch current jobs directly from the Redis database
 	app.Get("/api/demo/jobs", func(c *fiber.Ctx) error {
 		ctx := c.Context()
-		
+
 		// Find all keys that match our job prefix
 		keys, err := redisClient.Keys(ctx, "job:*").Result()
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch jobs"})
 		}
-		
+
 		jobs := make([]map[string]any, 0)
 		for _, key := range keys {
 			jobRecord, err := redisClient.Get(ctx, key).Result()
@@ -105,12 +105,12 @@ func main() {
 			}
 			return fmt.Sprintf("%v", timeI) > fmt.Sprintf("%v", timeJ)
 		})
-		
+
 		// Limit to max 50 jobs
 		if len(jobs) > 50 {
 			jobs = jobs[:50]
 		}
-		
+
 		return c.JSON(jobs)
 	})
 
@@ -201,7 +201,7 @@ func main() {
 			log.Printf("Error toggling widget %s: %v", id, err)
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to toggle widget container"})
 		}
-		
+
 		return c.JSON(fiber.Map{
 			"id":     id,
 			"status": newStatus,
