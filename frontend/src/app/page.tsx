@@ -61,9 +61,27 @@ type Project = {
   github_url: string;
 };
 
+const heroIllustrations = [
+  '/dog-swe-coffee.svg',
+  '/dog-swe-laptop-sleep.svg',
+  '/dog-swe-laptop.svg',
+] as const;
+
+const pickRandomHero = (exclude?: string) => {
+  if (heroIllustrations.length <= 1) return heroIllustrations[0];
+
+  let candidate = heroIllustrations[Math.floor(Math.random() * heroIllustrations.length)];
+  while (candidate === exclude) {
+    candidate = heroIllustrations[Math.floor(Math.random() * heroIllustrations.length)];
+  }
+
+  return candidate;
+};
+
 export default function Home() {
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [heroIllustration, setHeroIllustration] = useState<string>(heroIllustrations[0]);
   const { widgets, loading: widgetsLoading, waking, wakeWidget } = useWidgetsFeed();
   const [projects, setProjects] = useState<Project[]>([]);
   const [docs, setDocs] = useState<any[]>([]);
@@ -116,6 +134,16 @@ export default function Home() {
       setRequestSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    setHeroIllustration(pickRandomHero());
+
+    const intervalId = setInterval(() => {
+      setHeroIllustration((current) => pickRandomHero(current));
+    }, 1 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
@@ -274,16 +302,16 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative w-full max-w-6xl mx-auto px-6 py-20 md:py-28 overflow-hidden">
+      <section className="relative w-full max-w-6xl mx-auto px-6 py-20 md:py-28 overflow-visible">
         <motion.div
           variants={fadeInUp}
           initial="hidden"
           animate="visible"
-          className="pointer-events-none select-none hidden lg:block absolute right-[-2.5rem] top-1/2 -translate-y-1/2 z-0 w-[320px] xl:w-[420px] opacity-90"
+          className="pointer-events-none select-none hidden lg:block absolute right-0 xl:right-4 top-1/2 -translate-y-1/2 z-0 w-[320px] xl:w-[420px] opacity-90"
           aria-hidden="true"
         >
           <Image
-            src="/dog-swe-laptop.svg"
+            src={heroIllustration}
             alt=""
             width={640}
             height={640}
@@ -296,11 +324,11 @@ export default function Home() {
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
-          className="relative z-10"
+          className="relative z-10 lg:pr-[22rem] xl:pr-[28rem]"
         >
           <motion.h1 
             variants={fadeInUp}
-            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-6 text-balance"
+            className="max-w-3xl text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-6 text-balance"
           >
             Hi, I&apos;m YZ.
             <br />

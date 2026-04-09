@@ -30,7 +30,7 @@ func initRedis() {
 	}
 }
 
-// GetConfig fetches a configuration value from Redis. 
+// GetConfig fetches a configuration value from Redis.
 // If it doesn't exist, it returns the provided default value.
 func GetConfig(ctx context.Context, key string, defaultValue string) (string, error) {
 	if redisClient == nil {
