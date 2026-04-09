@@ -85,3 +85,21 @@ To switch to a different AI agent (e.g., Cursor, Claude Code, Windsurf):
 5. **Run a smoke test** — Re-run `@speckit.specify` on a small existing feature and verify the output matches the template in `.specify/templates/spec-template.md`.
 
 The constitution and all spec artifacts remain unchanged; only the agent invocation mechanism changes.
+
+---
+
+## 🧩 Monorepo Project Development
+
+Systems Playground now supports multiple showcase projects under `projects/`.
+
+When adding a project:
+
+1. Copy `projects/_template/` to `projects/<project-slug>/`.
+2. Complete the project docs (`README.md`, `ARCHITECTURE.md`) and `.env.example`.
+3. Add project run/test scripts under `scripts/`.
+4. Register your project in `frontend/src/app/projects/page.tsx` so it appears in the showcase.
+
+For full boundaries, extraction readiness, and architecture rules, see:
+
+- `docs/MONOREPO_GUIDE.md`
+- `CONTRIBUTING.md`

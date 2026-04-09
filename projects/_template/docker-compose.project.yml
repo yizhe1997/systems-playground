@@ -1,0 +1,12 @@
+services:
+  # Add project-specific services here (db, broker, etc.)
+  # Example:
+  # postgres:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_PASSWORD: postgres
+  #   ports:
+  #     - "5433:5432"
+  placeholder:
+    image: alpine:3.20
+    command: ["sh", "-c", "echo project template ready"]

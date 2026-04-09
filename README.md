@@ -3,6 +3,13 @@
 > An interactive portfolio and developer showcase by Chin Yi Zhe. 
 > Instead of just listing technologies on a resume, this project visually demonstrates backend architecture concepts (Message Queues, Caching, WebSockets) in real-time.
 
+## Documentation
+
+- `docs/DEVELOPER_GUIDE.md` — local development workflow and operating model.
+- `docs/MONOREPO_GUIDE.md` — architecture boundaries and project structure for this monorepo.
+- `CONTRIBUTING.md` — contribution standards, PR expectations, and how to add new projects.
+- `docs/DEPLOYMENT_WSL.md` — WSL and self-hosted deployment guide.
+
 ## Tech Stack
 * **Backend:** Golang (Fiber/Gin)
 * **Frontend:** Next.js / React, Tailwind CSS, Framer Motion (for animations)
