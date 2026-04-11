@@ -39,8 +39,13 @@ The monorepo is organised into three INVIOLABLE layers — **frontend** (`/front
 - Infrastructure configuration MUST NOT be embedded inside application source files.
 - Cross-layer communication MUST occur only through documented API contracts (REST/WebSocket)
   and environment variables; no shared source packages across layers.
-- New packages/modules added to `/backend` MUST reside under `backend/pkg/` or
-  `backend/internal/` and be independently testable.
+- New platform packages/modules added to `/backend` MUST reside under `backend/pkg/`
+  or `backend/internal/` and be independently testable.
+- New project-scoped packages/modules MUST reside under
+  `projects/<project-slug>/backend/` (or `projects/<project-slug>/frontend/`)
+  and be independently testable.
+- Project internals MUST NOT be imported directly by platform code or sibling
+  projects; integration MUST occur through versioned contracts and proxy/API boundaries.
 
 **Rationale**: Violating these boundaries couples release cycles, makes the Docker
 image build graph non-deterministic, and obscures the architecture that the portfolio
@@ -82,6 +87,9 @@ pattern established in ADR 002.
 - NextAuth session cookies MUST be HTTP-only and verified server-side before any
   admin proxy request is forwarded.
 - Role-based access MUST be enforced at the BFF route handler layer, not only the UI.
+- For project-scoped applications, BFF/proxy handlers MAY be implemented under
+  `projects/<project-slug>/frontend/` to preserve runnable isolation, provided
+  privileged operations remain server-side and conform to zero-trust requirements.
 
 **Rationale**: The Docker socket grants effective root on the host machine. A single
 compromised PSK exposed in the browser would give an attacker full control over
@@ -215,4 +223,4 @@ if accepted, logged in a new ADR under `docs/adrs/`.
 Use `docs/DEVELOPER_GUIDE.md` for runtime development guidance. Use
 `frontend/AGENTS.md` for AI-agent-specific Next.js guidance.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-03 | **Last Amended**: 2026-04-03
+**Version**: 1.0.1 | **Ratified**: 2026-04-03 | **Last Amended**: 2026-04-11

@@ -1,0 +1,24 @@
+# VCS
+.git/
+.gitignore
+
+# Dependencies / builds
+**/node_modules/
+**/.next/
+**/dist/
+**/build/
+**/coverage/
+
+# Logs / env
+*.log
+.env
+.env.*
+
+# Docker metadata
+**/Dockerfile*
+.dockerignore
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/

@@ -17,3 +17,22 @@ storage/
 
 # Ignore filebrowser runtime data
 wsl-reference-setup/infra/filebrowser/data/
+
+# Node / frontend
+**/node_modules/
+**/dist/
+**/build/
+**/coverage/
+*.log
+
+# Go / backend
+**/bin/
+**/obj/
+**/*.out
+
+# Editor / OS noise
+.vscode/
+.idea/
+Thumbs.db
+*.tmp
+*.swp

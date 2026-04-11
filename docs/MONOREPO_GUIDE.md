@@ -48,7 +48,10 @@ A starter template lives at `projects/_template/`.
 4. **Projects must be runnable in isolation**.
    - Each project defines its own local scripts, env examples, and test strategy.
 5. **Platform code owns platform concerns**.
-   - Control plane logic belongs in `backend/`; UI shell and BFF/proxy belong in `frontend/`.
+   - Control plane logic belongs in `backend/`; platform UI shell belongs in `frontend/`.
+   - Project-scoped apps MAY define their own BFF/proxy routes inside
+     `projects/<project-slug>/frontend/` when required for isolated runtime and extraction readiness.
+   - Platform-level routing may integrate with projects, but must not import project internals directly.
 
 ## Contribution Model for Projects
 

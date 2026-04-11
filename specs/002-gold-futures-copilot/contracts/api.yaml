@@ -1,0 +1,313 @@
+openapi: 3.0.3
+info:
+  title: Gold Futures Trading Copilot API Contract
+  version: 0.1.0
+  description: |
+    Contract for creator workflows, showroom read APIs, subscriber alert channel configuration,
+    and post-trade journal submission for v1.
+servers:
+  - url: /api/proxy
+    description: Next.js BFF proxy surface
+paths:
+  /creator/trade-plans:
+    post:
+      summary: Create a trade plan draft
+      security:
+        - CreatorSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTradePlanRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TradePlan'
+  /creator/trade-plans/{id}/grade:
+    post:
+      summary: Grade a trade plan with rubric + deterministic metrics + retrieval context
+      security:
+        - CreatorSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Grading completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreTradeEvaluationResponse'
+  /creator/trade-plans/{id}/publish:
+    post:
+      summary: Publish an approved trade plan
+      security:
+        - CreatorSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TradePlan'
+  /creator/trade-plans/{id}/status:
+    post:
+      summary: Update trade status and optionally trigger semi-automatic alert dispatch
+      security:
+        - CreatorSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTradeStatusRequest'
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TradePlan'
+  /creator/trade-plans/{id}/outcome:
+    post:
+      summary: Submit post-trade outcome and generate retrospective
+      security:
+        - CreatorSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TradeOutcomeRequest'
+      responses:
+        '200':
+          description: Outcome accepted with retrospective
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostTradeEvaluationResponse'
+  /showroom/summary:
+    get:
+      summary: Public showroom summary for anonymous users
+      responses:
+        '200':
+          description: Showroom content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShowroomSummary'
+  /subscriber/alert-channels:
+    post:
+      summary: Add or update subscriber alert channel
+      security:
+        - SubscriberSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertChannelRequest'
+      responses:
+        '200':
+          description: Channel upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertChannel'
+components:
+  securitySchemes:
+    CreatorSession:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+    SubscriberSession:
+      type: apiKey
+      in: cookie
+      name: subscriber-session-token
+  schemas:
+    CreateTradePlanRequest:
+      type: object
+      required: [instrument, sessionDate, bias, entryLow, entryHigh, stopLoss, takeProfit1]
+      properties:
+        instrument:
+          type: string
+          enum: [GC]
+        sessionDate:
+          type: string
+          format: date
+        bias:
+          type: string
+          enum: [long, short, neutral]
+        entryLow:
+          type: number
+        entryHigh:
+          type: number
+        stopLoss:
+          type: number
+        takeProfit1:
+          type: number
+        takeProfit2:
+          type: number
+          nullable: true
+        takeProfit3:
+          type: number
+          nullable: true
+        scalingPlan:
+          type: object
+          additionalProperties: true
+        invalidationNotes:
+          type: string
+        creatorNotes:
+          type: string
+    TradePlan:
+      type: object
+      required: [id, instrument, bias, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        instrument:
+          type: string
+        bias:
+          type: string
+        status:
+          type: string
+          enum: [draft, graded, published, closed, archived]
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+    UpdateTradeStatusRequest:
+      type: object
+      required: [statusEvent]
+      properties:
+        statusEvent:
+          type: string
+          enum: [entry_hit, tp_hit, sl_hit, invalidation, status_update]
+        dispatchPolicy:
+          type: string
+          enum: [auto_send, confirm_before_send]
+    TradeOutcomeRequest:
+      type: object
+      required: [entryPrice, exitPrice, positionSize, closedAt]
+      properties:
+        entryPrice:
+          type: number
+        exitPrice:
+          type: number
+        positionSize:
+          type: number
+        mae:
+          type: number
+        mfe:
+          type: number
+        creatorNotes:
+          type: string
+        closedAt:
+          type: string
+          format: date-time
+    PreTradeEvaluationResponse:
+      type: object
+      required: [decision, overallScore, ruleScores, riskFlags, recommendations]
+      properties:
+        decision:
+          type: string
+          enum: [approve, revise, reject]
+        overallScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        ruleScores:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        riskFlags:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        publicExplanation:
+          type: string
+        creatorExplanation:
+          type: string
+    PostTradeEvaluationResponse:
+      allOf:
+        - $ref: '#/components/schemas/PreTradeEvaluationResponse'
+        - type: object
+          properties:
+            lessons:
+              type: array
+              items:
+                type: string
+    ShowroomSummary:
+      type: object
+      required: [performance, strategyOverview]
+      properties:
+        performance:
+          type: object
+          additionalProperties: true
+        strategyOverview:
+          type: string
+        activePreview:
+          type: object
+          nullable: true
+          additionalProperties: true
+        latestClosedSummary:
+          type: object
+          nullable: true
+          additionalProperties: true
+    AlertChannelRequest:
+      type: object
+      required: [channelType, destination]
+      properties:
+        channelType:
+          type: string
+          enum: [telegram, discord, webhook]
+        destination:
+          type: string
+    AlertChannel:
+      type: object
+      required: [id, channelType, destination, isEnabled]
+      properties:
+        id:
+          type: string
+          format: uuid
+        channelType:
+          type: string
+        destination:
+          type: string
+        isEnabled:
+          type: boolean

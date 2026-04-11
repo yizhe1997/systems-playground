@@ -103,3 +103,10 @@ For full boundaries, extraction readiness, and architecture rules, see:
 
 - `docs/MONOREPO_GUIDE.md`
 - `CONTRIBUTING.md`
+
+### Gold Futures Copilot Project Notes
+
+- Project path: `projects/gold-futures-copilot/`
+- Start deps: `docker compose -f projects/gold-futures-copilot/docker-compose.project.yml up -d`
+- Backend check: `cd projects/gold-futures-copilot/backend && go test ./...`
+- Project test harness: `bash projects/gold-futures-copilot/scripts/test.sh`
