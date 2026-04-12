@@ -1,7 +1,444 @@
-* { box-sizing: border-box; }
+@import 'tailwindcss';
+
+@theme inline {
+  --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, monospace;
+  
+  /* Color tokens from design spec */
+  --color-background: #0a0a0a;
+  --color-surface: #111111;
+  --color-gold: #D4B896;
+  --color-primary: #E8E4DC;
+  --color-secondary: #6B6560;
+  --color-long: #4ADE80;
+  --color-short: #F87171;
+  --color-neutral: #FCD34D;
+  --color-hairline: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='12' cy='12' r='4' stroke='%23D4B896' stroke-width='1' fill='none'/%3E%3Cline x1='12' y1='2' x2='12' y2='8' stroke='%23D4B896' stroke-width='1'/%3E%3Cline x1='12' y1='16' x2='12' y2='22' stroke='%23D4B896' stroke-width='1'/%3E%3Cline x1='2' y1='12' x2='8' y2='12' stroke='%23D4B896' stroke-width='1'/%3E%3Cline x1='16' y1='12' x2='22' y2='12' stroke='%23D4B896' stroke-width='1'/%3E%3C/svg%3E") 12 12, crosshair;
+}
+
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  background: #ffffff;
-  color: #0f172a;
+  background-color: var(--color-background);
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html[data-theme='light'] {
+  --color-background: #f5f2ea;
+  --color-surface: #ffffff;
+  --color-gold: #8b6d4f;
+  --color-primary: #18130f;
+  --color-secondary: #5a5149;
+  --color-hairline: rgba(24, 19, 15, 0.16);
+}
+
+/* Dot grid background pattern */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -2;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+/* Scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 3px
+  );
+}
+
+/* Typography utilities */
+.text-gold { color: var(--color-gold); }
+.text-primary { color: var(--color-primary); }
+.text-secondary { color: var(--color-secondary); }
+.text-long { color: var(--color-long); }
+.text-short { color: var(--color-short); }
+.text-neutral-bias { color: var(--color-neutral); }
+.bg-background { background-color: var(--color-background); }
+.bg-surface { background-color: var(--color-surface); }
+.border-hairline { border-color: var(--color-hairline); }
+.border-gold { border-color: var(--color-gold); }
+
+/* Section marker styling: [ SECTION NAME ] */
+.section-marker {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+
+/* KPI Display: huge number + tiny label */
+.kpi-number {
+  font-family: var(--font-mono);
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 400;
+  line-height: 1;
+  color: var(--color-primary);
+}
+
+.kpi-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-secondary);
+  margin-top: 0.5rem;
+}
+
+/* HUD Corner Brackets */
+.hud-brackets {
+  position: relative;
+}
+
+.hud-brackets::before,
+.hud-brackets::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: var(--color-gold);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.hud-brackets::before {
+  top: 0;
+  left: 0;
+  border-width: 1px 0 0 1px;
+}
+
+.hud-brackets::after {
+  top: 0;
+  right: 0;
+  border-width: 1px 1px 0 0;
+}
+
+.hud-brackets-bottom::before,
+.hud-brackets-bottom::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: var(--color-gold);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.hud-brackets-bottom::before {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 1px 1px;
+}
+
+.hud-brackets-bottom::after {
+  bottom: 0;
+  right: 0;
+  border-width: 0 1px 1px 0;
+}
+
+/* Full corner brackets (all 4 corners) */
+.hud-frame {
+  position: relative;
+}
+
+.hud-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    /* Top-left */
+    linear-gradient(to right, var(--color-gold) 12px, transparent 12px) 0 0 / 100% 1px no-repeat,
+    linear-gradient(to bottom, var(--color-gold) 12px, transparent 12px) 0 0 / 1px 100% no-repeat,
+    /* Top-right */
+    linear-gradient(to left, var(--color-gold) 12px, transparent 12px) 100% 0 / 100% 1px no-repeat,
+    linear-gradient(to bottom, var(--color-gold) 12px, transparent 12px) 100% 0 / 1px 100% no-repeat,
+    /* Bottom-left */
+    linear-gradient(to right, var(--color-gold) 12px, transparent 12px) 0 100% / 100% 1px no-repeat,
+    linear-gradient(to top, var(--color-gold) 12px, transparent 12px) 0 100% / 1px 100% no-repeat,
+    /* Bottom-right */
+    linear-gradient(to left, var(--color-gold) 12px, transparent 12px) 100% 100% / 100% 1px no-repeat,
+    linear-gradient(to top, var(--color-gold) 12px, transparent 12px) 100% 100% / 1px 100% no-repeat;
+}
+
+/* Hairline dividers */
+.hairline-v {
+  width: 1px;
+  background-color: var(--color-hairline);
+}
+
+.hairline-h {
+  height: 1px;
+  background-color: var(--color-hairline);
+}
+
+/* Pulsing reticle animation */
+@keyframes pulse-reticle {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.6; 
+    transform: scale(1.2);
+  }
+}
+
+.pulse-reticle {
+  animation: pulse-reticle 2s ease-in-out infinite;
+}
+
+/* Sonar ping animation */
+@keyframes sonar-ping {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.sonar-ping::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--color-gold);
+  border-radius: 50%;
+  animation: sonar-ping 2s ease-out infinite;
+}
+
+/* Form inputs */
+input, textarea, select {
+  background-color: transparent;
+  border: 1px solid var(--color-hairline);
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-gold);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--color-secondary);
+  opacity: 0.6;
+}
+
+select option {
+  background-color: var(--color-surface);
+  color: var(--color-primary);
+}
+
+/* Button styles */
+.btn-primary {
+  background-color: transparent;
+  border: 1px solid var(--color-gold);
+  color: var(--color-gold);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 1rem 2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-gold);
+  color: var(--color-background);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Bias pills */
+.bias-pill {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-hairline);
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bias-pill.active-long {
+  border-color: var(--color-long);
+  color: var(--color-long);
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.bias-pill.active-short {
+  border-color: var(--color-short);
+  color: var(--color-short);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.bias-pill.active-neutral {
+  border-color: var(--color-neutral);
+  color: var(--color-neutral);
+  background: rgba(252, 211, 77, 0.1);
+}
+
+/* Channel type pills */
+.channel-pill {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--color-hairline);
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.channel-pill.active {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  background: rgba(212, 184, 150, 0.08);
+}
+
+/* Status badges */
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.active {
+  background-color: var(--color-gold);
+  box-shadow: 0 0 8px var(--color-gold);
+}
+
+.status-dot.closed {
+  background-color: var(--color-secondary);
+}
+
+.status-dot.invalidated {
+  background-color: var(--color-short);
+}
+
+/* Redacted/masked text */
+.redacted {
+  font-family: var(--font-mono);
+  color: var(--color-secondary);
+  letter-spacing: 0.1em;
+}
+
+/* Sparkline container */
+.sparkline-container {
+  height: 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.sparkline-container svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Navigation link styling */
+.nav-link {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-secondary);
+  text-decoration: none;
+  padding: 0.5rem 0;
+  transition: color 0.2s ease;
+  position: relative;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--color-gold);
+}
+
+/* Live indicator */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--color-long);
+  border-radius: 50%;
+  position: relative;
+}
+
+.live-dot.pulse {
+  animation: pulse-reticle 2s ease-in-out infinite;
+}
+
+.sidebar-shell {
+  background-color: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.theme-toggle {
+  border: 1px solid var(--color-hairline);
+  color: var(--color-secondary);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  color: var(--color-gold);
+  border-color: var(--color-gold);
 }
