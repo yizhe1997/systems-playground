@@ -1,15 +1,23 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/copilot';
 
 export const fetchTrades = async () => {
-  const res = await fetch(`${API_BASE}/trades`);
-  if (!res.ok) throw new Error('Failed to fetch trades');
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/trades`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    return null;
+  }
 };
 
 export const fetchAccounts = async () => {
-  const res = await fetch(`${API_BASE}/accounts`);
-  if (!res.ok) throw new Error('Failed to fetch accounts');
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/accounts`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    return null;
+  }
 };
 
 export const draftTrade = async (tradeData: any) => {
@@ -42,10 +50,22 @@ export const saveAccount = async (accountData: any) => {
   return res.json();
 };
 
-export const fetchRubrics = async () => {
-  const res = await fetch(`${API_BASE}/rubrics`);
-  if (!res.ok) throw new Error('Failed to fetch rubrics');
+export const deleteAccount = async (id: string) => {
+  const res = await fetch(`${API_BASE}/accounts/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete account');
   return res.json();
+};
+
+export const fetchRubrics = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/rubrics`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    return null;
+  }
 };
 
 export const saveRubric = async (rubricData: any) => {
@@ -65,5 +85,25 @@ export const journalTrade = async (journalData: any) => {
     body: JSON.stringify(journalData),
   });
   if (!res.ok) throw new Error('Failed to journal trade');
+  return res.json();
+};
+
+export const scrapeRulesFromUrls = async (urls: string[]) => {
+  const res = await fetch(`${API_BASE}/ai/scrape-rules`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ urls }),
+  });
+  if (!res.ok) throw new Error('Failed to scrape rules');
+  return res.json();
+};
+
+export const improveRulesContext = async (text: string) => {
+  const res = await fetch(`${API_BASE}/ai/improve-rules`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error('Failed to improve rules');
   return res.json();
 };

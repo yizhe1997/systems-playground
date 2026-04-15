@@ -1,4 +1,10 @@
+'use client';
+
+import { useSession } from "next-auth/react";
+
 export default function Footer() {
+  const { data: session } = useSession();
+
   return (
     <footer className="border-t border-black dark:border-white bg-white dark:bg-black mt-auto">
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-12 flex flex-col md:flex-row justify-between items-start gap-8">
@@ -10,7 +16,7 @@ export default function Footer() {
           </p>
           <div className="flex gap-4 text-[10px] font-mono uppercase tracking-widest opacity-60">
             <span>© {new Date().getFullYear()} SYSTEMS PLAYGROUND</span>
-            <span>MVP VERSION 1.0</span>
+            <span>SYSTEM VERSION 1.0</span>
           </div>
         </div>
         
@@ -23,6 +29,9 @@ export default function Footer() {
             <span className="opacity-60 mb-2">PLATFORM</span>
             <a href="/dashboard" className="hover:opacity-50 transition-opacity">DASHBOARD</a>
             <a href="/alerts" className="hover:opacity-50 transition-opacity">ALERTS</a>
+            {session && (
+              <a href="/settings" className="hover:opacity-50 transition-opacity">SETTINGS</a>
+            )}
             <a href="/contact" className="hover:opacity-50 transition-opacity">CONTACT</a>
           </div>
         </div>

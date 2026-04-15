@@ -34,12 +34,12 @@ func InitRedis() {
 
 // Structs mapping to the Next.js forms
 type AccountConfig struct {
-	ID             string  `json:"id"`
-	Type           string  `json:"type"`
-	Balance        float64 `json:"balance"`
-	DailyLossLimit float64 `json:"dailyLossLimit"`
-	DefaultRisk    string  `json:"defaultRisk"`
-	CurrentDailyPnL float64 `json:"currentDailyPnL"`
+	ID                    string  `json:"id"`
+	Type                  string  `json:"type"`
+	CurrentBalance        float64 `json:"currentBalance"`
+	CurrentDailyStopLevel float64 `json:"currentDailyStopLevel"`
+	CurrentMaxLossLevel   float64 `json:"currentMaxLossLevel"`
+	RulesContext          string  `json:"rulesContext"`
 }
 
 type Rubric struct {
@@ -60,8 +60,10 @@ type TradePlan struct {
 	TakeProfit  float64 `json:"takeProfit"`
 	Contracts   int     `json:"contracts"`
 	Notes       string  `json:"notes"`
-	Status      string  `json:"status"` // 'draft' | 'working' | 'filled' | 'closed'
-	UpdatedAt   string  `json:"updatedAt,omitempty"`
+	Status      string   `json:"status"` // 'draft' | 'working' | 'filled' | 'closed'
+	UpdatedAt   string   `json:"updatedAt,omitempty"`
+	PnL         *float64 `json:"pnl,omitempty"`
+	Outcome     string   `json:"outcome,omitempty"`
 }
 
 type AIResponse struct {

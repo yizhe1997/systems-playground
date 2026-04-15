@@ -9,6 +9,33 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (user && user.email) {
+        try {
+          const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://backend:8088/api/copilot';
+          const res = await fetch(`${API_BASE}/users/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              providerId: user.id || account?.providerAccountId || '',
+              email: user.email,
+              name: user.name || '',
+            }),
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            if (data.isDisabled) {
+              return false; // Reject sign in
+            }
+          }
+        } catch (e) {
+          console.error("Failed to sync user to backend", e);
+          // Proceed anyway so we don't break login if backend is restarting
+        }
+      }
+      return true;
+    },
     async session({ session, token }) {
       if (session?.user) {
         // If they match our explicit admin email list, tag them as ADMIN.

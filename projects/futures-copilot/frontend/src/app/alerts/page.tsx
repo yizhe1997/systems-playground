@@ -8,11 +8,11 @@ import { motion } from 'framer-motion';
 import { useSession, signIn } from 'next-auth/react';
 
 export default function AlertsPage() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as unknown as {role: string})?.role || 'ANON';
+  const isSubscribed = userRole === 'SUBSCRIBER' || userRole === 'ADMIN';
   const [mounted, setMounted] = useState(false);
   const [activeChannel, setActiveChannel] = useState<'telegram' | 'discord' | 'webhook'>('telegram');
-  const [isSubscribed, setIsSubscribed] = useState(false); // Mock subscription state
-  const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role || 'ANON';
 
   useEffect(() => { const t = setTimeout(() => setMounted(true), 0); return () => clearTimeout(t); }, []);
 
@@ -57,17 +57,17 @@ export default function AlertsPage() {
 
           {/* Config Panel */}
           <div className="md:col-span-8 relative">
-            {(!isSubscribed && userRole !== 'ADMIN') && (
+            {!isSubscribed && (
               <div className="absolute inset-0 z-20 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center [clip-path:polygon(30px_0,100%_0,100%_100%,0_100%,0_30px)]">
-                <div className="border border-black dark:border-white bg-white dark:bg-black p-8 max-w-sm">
+                <div className="border border-black dark:border-white bg-white dark:bg-black p-8 max-w-sm shadow-2xl">
                   {userRole === 'ANON' ? (
                     <>
                       <h3 className="font-mono text-xl font-bold tracking-tighter uppercase mb-4">SIGN IN REQUIRED</h3>
                       <p className="font-mono text-[10px] uppercase opacity-60 mb-6 leading-relaxed">
-                        You need to sign in to access your alert channels.
+                        You need to sign in and have an active subscription to access your alert channels.
                       </p>
                       <button 
-                        onClick={() => signIn('google')}
+                        onClick={() => signIn('google', { callbackUrl: '/alerts' })}
                         className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
                       >
                         SIGN IN VIA GOOGLE
@@ -80,7 +80,7 @@ export default function AlertsPage() {
                         You need an active subscription to configure push notifications and webhook endpoints.
                       </p>
                       <button 
-                        onClick={() => setIsSubscribed(true)}
+                        onClick={() => window.location.href = '/settings'}
                         className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
                       >
                         UPGRADE NOW ($49/MO)
@@ -95,9 +95,9 @@ export default function AlertsPage() {
               key={activeChannel}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="border border-black dark:border-white bg-white dark:bg-black p-[1px] [clip-path:polygon(30px_0,100%_0,100%_100%,0_100%,0_30px)]"
+              className="bg-black dark:bg-white p-[1px] [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]"
             >
-              <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(29px_0,100%_0,100%_100%,0_100%,0_29px)] p-8 md:p-12">
+              <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] p-8 md:p-12">
                 <h2 className="font-mono text-lg uppercase tracking-widest font-bold mb-8 flex items-center gap-3">
                   {activeChannel === 'webhook' ? <Webhook className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
                   CONFIGURE {activeChannel}

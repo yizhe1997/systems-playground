@@ -37,6 +37,27 @@ func migrateSchema() {
 	schema := `
 	CREATE EXTENSION IF NOT EXISTS vector;
 	
+	CREATE TABLE IF NOT EXISTS users (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		provider_id TEXT UNIQUE NOT NULL,
+		email TEXT UNIQUE NOT NULL,
+		name TEXT,
+		role TEXT DEFAULT 'ANON',
+		is_disabled BOOLEAN DEFAULT FALSE,
+		last_logged_in TIMESTAMP,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS subscriptions (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_id UUID REFERENCES users(id),
+		stripe_customer_id TEXT,
+		stripe_subscription_id TEXT,
+		status TEXT,
+		current_period_end TIMESTAMP,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);
+
 	CREATE TABLE IF NOT EXISTS memory_records (
 		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		source_type TEXT NOT NULL, -- 'trade_plan', 'trade_outcome', 'lesson'
@@ -50,10 +71,10 @@ func migrateSchema() {
 	CREATE TABLE IF NOT EXISTS accounts (
 		id TEXT PRIMARY KEY,
 		type TEXT NOT NULL,
-		balance NUMERIC NOT NULL,
-		daily_loss_limit NUMERIC NOT NULL,
-		default_risk TEXT NOT NULL,
-		current_daily_pnl NUMERIC NOT NULL
+		current_balance NUMERIC NOT NULL,
+		current_daily_stop_level NUMERIC NOT NULL,
+		current_max_loss_level NUMERIC NOT NULL,
+		rules_context TEXT NOT NULL
 	);
 
 	CREATE TABLE IF NOT EXISTS rubrics (
@@ -98,13 +119,4 @@ func migrateSchema() {
 	} else {
 		log.Println("✅ Postgres schema migrated")
 	}
-
-	// Insert mock accounts if none exist so foreign keys work
-	db.Exec(context.Background(), `
-		INSERT INTO accounts (id, type, balance, daily_loss_limit, default_risk, current_daily_pnl)
-		VALUES 
-		('a-001', 'TOPSTEP EVAL 50K (ACTIVE)', 51200, 1000, '1%', 200),
-		('a-002', 'TOPSTEP FUNDED 150K (BLOWN)', 148500, 3000, '1%', -3100)
-		ON CONFLICT DO NOTHING;
-	`)
 }

@@ -1,74 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { Plus, Settings2, X, CircleDot, Activity, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Mock Data
-const MOCK_ACCOUNTS = [
-  {
-    id: 'a-001',
-    type: 'TOPSTEP EVAL 50K (ACTIVE)',
-    balance: 51200,
-    dailyLossLimit: 1000,
-    currentDailyPnL: 200,
-    defaultRisk: '1%',
-  },
-  {
-    id: 'a-002',
-    type: 'TOPSTEP FUNDED 150K (BLOWN)',
-    balance: 148500,
-    dailyLossLimit: 3000,
-    currentDailyPnL: -3100,
-    defaultRisk: '1%',
-  }
-];
-
-const MOCK_TRADES = [
-  {
-    id: 't-001',
-    status: 'draft',
-    instrument: 'GC',
-    bias: 'Long',
-    entry: '2350.5',
-    stopLoss: '2345.0',
-    takeProfit: '2365.0',
-    contracts: 2,
-    riskAmount: 1100,
-    aiStatus: 'warning',
-    notes: 'Wait for 15m order block test. CPI in 30 mins.',
-  },
-  {
-    id: 't-002',
-    status: 'working',
-    instrument: 'GC',
-    bias: 'Short',
-    entry: '2380.0',
-    stopLoss: '2384.0',
-    takeProfit: '2370.0',
-    contracts: 3,
-    riskAmount: 1200,
-    aiStatus: 'approved',
-    notes: 'Supply zone formed overnight.',
-  },
-  {
-    id: 't-003',
-    status: 'filled',
-    instrument: 'GC',
-    bias: 'Long',
-    entry: '2340.0',
-    stopLoss: '2335.0',
-    takeProfit: '2355.0',
-    contracts: 1,
-    riskAmount: 500,
-    aiStatus: 'approved',
-    notes: 'London liquidity sweep.',
-  }
-];
-
-import { fetchTrades, fetchAccounts, draftTrade, updateTradeStatus, fetchRubrics, saveRubric, journalTrade, saveAccount } from './api';
+import { fetchTrades, fetchAccounts, draftTrade, updateTradeStatus, fetchRubrics, saveRubric, journalTrade, saveAccount, deleteAccount, scrapeRulesFromUrls, improveRulesContext } from './api';
 
 import { useSession } from 'next-auth/react';
 
@@ -86,16 +24,39 @@ export default function CopilotPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   
+  const accountDropdownRef = useRef<HTMLDivElement>(null);
+  const draftRubricDropdownRef = useRef<HTMLDivElement>(null);
+  const configRubricDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target as Node)) {
+        setIsAccountDropdownOpen(false);
+      }
+      if (draftRubricDropdownRef.current && !draftRubricDropdownRef.current.contains(event.target as Node)) {
+        setIsDraftRubricDropdownOpen(false);
+      }
+      if (configRubricDropdownRef.current && !configRubricDropdownRef.current.contains(event.target as Node)) {
+        setIsConfigRubricDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+  
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'ANON';
   
   // Real data state
   const [trades, setTrades] = useState<any[]>([]);
-  const [accounts, setAccounts] = useState<any[]>(MOCK_ACCOUNTS);
+  const [accounts, setAccounts] = useState<any[]>([]);
   const [rubrics, setRubrics] = useState<any[]>([]);
 
   // Forms
   const [draftForm, setDraftForm] = useState({
+    accountId: '',
     instrument: 'GC',
     bias: 'Long',
     entry: '',
@@ -116,11 +77,17 @@ export default function CopilotPage() {
   const [accountForm, setAccountForm] = useState({
     id: '',
     type: 'TOPSTEP EVAL 50K',
-    balance: 50000,
-    dailyLossLimit: 1000,
-    defaultRisk: '1%',
-    currentDailyPnL: 0
+    currentBalance: 50000,
+    currentDailyStopLevel: 49000,
+    currentMaxLossLevel: 48000,
+    rulesContext: 'Trailing EOD Max Drawdown: $2000. Daily Loss Limit: $1000.'
   });
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [aiUrlsInput, setAiUrlsInput] = useState<string[]>(['']);
+  const [isAiScraping, setIsAiScraping] = useState(false);
+  const [isAiImproving, setIsAiImproving] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
@@ -133,6 +100,7 @@ export default function CopilotPage() {
           if (!fetchedAccounts.find((a: any) => a.id === activeAccountId)) {
             setActiveAccountId(fetchedAccounts[0].id);
           }
+          setDraftForm(f => f.accountId ? f : { ...f, accountId: fetchedAccounts[0].id });
         }
         const fetchedTrades = await fetchTrades();
         if (fetchedTrades) setTrades(fetchedTrades);
@@ -161,7 +129,7 @@ export default function CopilotPage() {
     try {
       const payload = {
         ...draftForm,
-        accountId: activeAccountId,
+        accountId: draftForm.accountId || activeAccountId,
         entry: parseFloat(draftForm.entry),
         stopLoss: parseFloat(draftForm.stopLoss),
         takeProfit: parseFloat(draftForm.takeProfit),
@@ -169,7 +137,7 @@ export default function CopilotPage() {
       // In a real app we'd handle the response, AI text, etc.
       await draftTrade(payload);
       setIsDraftOpen(false);
-      setDraftForm({ instrument: 'GC', bias: 'Long', entry: '', stopLoss: '', takeProfit: '', contracts: 1, notes: '', rubricId: rubrics[0]?.id || '' });
+      setDraftForm({ accountId: draftForm.accountId || activeAccountId, instrument: 'GC', bias: 'Long', entry: '', stopLoss: '', takeProfit: '', contracts: 1, notes: '', rubricId: rubrics[0]?.id || '' });
       // Force refresh
       const refreshed = await fetchTrades();
       if (refreshed) setTrades(refreshed);
@@ -189,19 +157,65 @@ export default function CopilotPage() {
     try {
       const payload = {
         ...accountForm,
-        balance: parseFloat(accountForm.balance as any),
-        dailyLossLimit: parseFloat(accountForm.dailyLossLimit as any),
-        currentDailyPnL: parseFloat(accountForm.currentDailyPnL as any),
+        currentBalance: parseFloat(accountForm.currentBalance as any),
+        currentDailyStopLevel: parseFloat(accountForm.currentDailyStopLevel as any),
+        currentMaxLossLevel: parseFloat(accountForm.currentMaxLossLevel as any),
       };
       await saveAccount(payload);
       setIsAccountOpen(false);
       const fetchedAccounts = await fetchAccounts();
       if (fetchedAccounts) {
         setAccounts(fetchedAccounts);
-        setActiveAccountId(payload.id || fetchedAccounts[0].id);
+        setActiveAccountId(payload.id || fetchedAccounts[0]?.id || '');
       }
-      setAccountForm({ id: '', type: 'TOPSTEP EVAL 50K', balance: 50000, dailyLossLimit: 1000, defaultRisk: '1%', currentDailyPnL: 0 });
+      setAccountForm({ id: '', type: 'TOPSTEP EVAL 50K', currentBalance: 50000, currentDailyStopLevel: 49000, currentMaxLossLevel: 48000, rulesContext: 'Trailing EOD Max Drawdown: $2000. Daily Loss Limit: $1000.' });
     } catch(e) { console.error(e); }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!accountForm.id) return;
+    try {
+      await deleteAccount(accountForm.id);
+      setIsAccountOpen(false);
+      setShowDeleteConfirm(false);
+      const fetchedAccounts = await fetchAccounts();
+      setAccounts(fetchedAccounts || []);
+      if (fetchedAccounts && fetchedAccounts.length > 0) {
+        setActiveAccountId(fetchedAccounts[0].id);
+      } else {
+        setActiveAccountId('');
+      }
+      const fetchedTrades = await fetchTrades();
+      setTrades(fetchedTrades || []);
+      setAccountForm({ id: '', type: 'TOPSTEP EVAL 50K', currentBalance: 50000, currentDailyStopLevel: 49000, currentMaxLossLevel: 48000, rulesContext: 'Trailing EOD Max Drawdown: $2000. Daily Loss Limit: $1000.' });
+    } catch(e) { console.error(e); }
+  };
+
+  const handleAiScrapeUrls = async () => {
+    const urls = aiUrlsInput.map(s => s.trim()).filter(Boolean);
+    if (urls.length === 0) return;
+    setIsAiScraping(true);
+    try {
+      const res = await scrapeRulesFromUrls(urls);
+      if (res && res.context) {
+        setAccountForm({ ...accountForm, rulesContext: res.context });
+        setAiUrlsInput(['']);
+        setShowUrlInput(false);
+      }
+    } catch(e) { console.error(e); }
+    setIsAiScraping(false);
+  };
+
+  const handleAiImproveRules = async () => {
+    if (!accountForm.rulesContext) return;
+    setIsAiImproving(true);
+    try {
+      const res = await improveRulesContext(accountForm.rulesContext);
+      if (res && res.context) {
+        setAccountForm({ ...accountForm, rulesContext: res.context });
+      }
+    } catch(e) { console.error(e); }
+    setIsAiImproving(false);
   };
 
   const handleJournalSubmit = async () => {
@@ -228,11 +242,9 @@ export default function CopilotPage() {
     } catch(e) { console.error(e); }
   };
 
-  const activeAccount = accounts.find(a => a.id === activeAccountId) || accounts[0] || MOCK_ACCOUNTS[0];
+  const activeAccount = accounts.find(a => a.id === activeAccountId) || accounts[0] || null;
 
-  const filteredTrades = activeTab === 'all' 
-    ? trades 
-    : trades.filter(t => t.status === activeTab);
+  const filteredTrades = trades.filter(t => t.accountId === activeAccount?.id && (activeTab === 'all' || t.status === activeTab));
 
   // If ANON, only show top 3
   const visibleTrades = userRole === 'ANON' ? filteredTrades.slice(0, 3) : filteredTrades;
@@ -258,15 +270,15 @@ export default function CopilotPage() {
           {/* Account Box */}
           <div className="lg:col-span-4 self-end">
             <div className="border border-black dark:border-white p-6 bg-white dark:bg-black">
-              <div className="flex justify-between items-start border-b border-black dark:border-white pb-4 mb-4 relative">
+              <div ref={accountDropdownRef} className="flex justify-between items-start border-b border-black dark:border-white pb-4 mb-4 relative">
                 <button 
                   onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
                   className="font-mono text-xs uppercase tracking-widest bg-transparent flex items-center gap-2 text-black dark:text-white"
                 >
-                  {activeAccount.type} ▼
+                  {activeAccount?.type || 'NO ACCOUNT'} ▼
                 </button>
                 <AnimatePresence>
-                  {isAccountDropdownOpen && (
+                  {isAccountDropdownOpen && accounts.length > 0 && (
                     <motion.div 
                       initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                       className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col"
@@ -283,33 +295,45 @@ export default function CopilotPage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-                <button 
-                  onClick={() => setIsAccountOpen(true)}
-                  className="font-mono text-[10px] uppercase tracking-widest bg-black text-white dark:bg-white dark:text-black px-2 py-0.5 hover:opacity-80 transition-opacity"
-                >
-                  RESET / NEW
-                </button>
+                <div className="flex gap-2">
+                  {activeAccount && (
+                    <button 
+                      onClick={() => {
+                        setAccountForm(activeAccount);
+                        setIsAccountOpen(true);
+                      }}
+                      className="font-mono text-[10px] uppercase tracking-widest bg-black text-white dark:bg-white dark:text-black px-2 py-0.5 hover:opacity-80 transition-opacity"
+                    >
+                      UPDATE
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => {
+                      setAccountForm({ id: '', type: 'TOPSTEP EVAL 50K', currentBalance: 50000, currentDailyStopLevel: 49000, currentMaxLossLevel: 48000, rulesContext: 'Trailing EOD Max Drawdown: $2000. Daily Loss Limit: $1000.' });
+                      setIsAccountOpen(true);
+                    }}
+                    className="font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white px-2 py-0.5 hover:opacity-50 transition-opacity text-black dark:text-white"
+                  >
+                    + NEW
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-y-6">
                 <div>
                   <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">BALANCE</div>
-                  <div className={`font-mono text-2xl ${activeAccount.balance < 50000 ? 'text-rose-600 dark:text-rose-400' : ''}`}>
-                    ${activeAccount.balance.toLocaleString()}
+                  <div className={`font-mono text-2xl`}>
+                    ${activeAccount?.currentBalance?.toLocaleString() || 0}
                   </div>
                 </div>
                 <div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">DAILY P&L</div>
-                  <div className={`font-mono text-2xl ${activeAccount.currentDailyPnL >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                    ${activeAccount.currentDailyPnL}
+                  <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">DAILY STOP</div>
+                  <div className={`font-mono text-xl`}>
+                    ${activeAccount?.currentDailyStopLevel?.toLocaleString() || 0}
                   </div>
                 </div>
                 <div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">LOSS LIMIT</div>
-                  <div className="font-mono text-xl">${activeAccount.dailyLossLimit}</div>
-                </div>
-                <div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">DEF. RISK</div>
-                  <div className="font-mono text-xl">{activeAccount.defaultRisk}</div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">MAX LOSS FLOOR</div>
+                  <div className="font-mono text-xl">${activeAccount?.currentMaxLossLevel?.toLocaleString() || 0}</div>
                 </div>
               </div>
             </div>
@@ -495,8 +519,23 @@ export default function CopilotPage() {
 
                 <div className="p-8 flex-grow overflow-y-auto space-y-8">
 
+                {/* Account Selector */}
+                <div>
+                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">SELECT ACCOUNT</label>
+                  <select 
+                    value={draftForm.accountId || activeAccountId}
+                    onChange={(e) => setDraftForm({...draftForm, accountId: e.target.value})}
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none text-black dark:text-white"
+                  >
+                    <option value="" disabled className="bg-white dark:bg-black text-black dark:text-white">-- Select Account --</option>
+                    {accounts.map(a => (
+                      <option key={a.id} value={a.id} className="bg-white dark:bg-black text-black dark:text-white">{a.type}</option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Rubric Selector */}
-                <div className="relative">
+                <div ref={draftRubricDropdownRef} className="relative">
                   <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">GRADING RUBRIC</label>
                   <button
                     onClick={() => setIsDraftRubricDropdownOpen(!isDraftRubricDropdownOpen)}
@@ -660,7 +699,7 @@ export default function CopilotPage() {
 
                 <div className="p-8 flex-grow overflow-y-auto space-y-8">
                 
-                <div className="relative">
+                <div ref={configRubricDropdownRef} className="relative">
                   <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">SELECT OR CREATE</label>
                   <button
                     onClick={() => setIsConfigRubricDropdownOpen(!isConfigRubricDropdownOpen)}
@@ -764,7 +803,9 @@ export default function CopilotPage() {
             >
               <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
                 <div className="pl-[70px] pr-6 py-6 border-b border-black dark:border-white flex justify-between items-center bg-black text-white dark:bg-white dark:text-black">
-                  <h2 className="font-mono text-sm uppercase tracking-widest font-bold">RESET / NEW ACCOUNT</h2>
+                  <h2 className="font-mono text-sm uppercase tracking-widest font-bold">
+                    {accountForm.id ? 'ACCOUNT DETAIL' : 'NEW ACCOUNT'}
+                  </h2>
                   <button onClick={() => setIsAccountOpen(false)} className="hover:opacity-50 transition-opacity flex items-center justify-center w-5 h-5">
                     <X className="w-5 h-5" />
                   </button>
@@ -782,35 +823,149 @@ export default function CopilotPage() {
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">STARTING BALANCE</label>
+                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">CURRENT BALANCE</label>
                   <input 
                     type="number" 
                     placeholder="50000" 
-                    value={accountForm.balance}
-                    onChange={(e) => setAccountForm({...accountForm, balance: parseFloat(e.target.value) || 0})}
+                    value={accountForm.currentBalance}
+                    onChange={(e) => setAccountForm({...accountForm, currentBalance: parseFloat(e.target.value) || 0})}
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2 text-rose-600 dark:text-rose-400">DAILY LOSS LIMIT</label>
+                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">DAILY STOP LEVEL (FLOOR)</label>
                   <input 
                     type="number" 
-                    placeholder="1000" 
-                    value={accountForm.dailyLossLimit}
-                    onChange={(e) => setAccountForm({...accountForm, dailyLossLimit: parseFloat(e.target.value) || 0})}
+                    placeholder="49000" 
+                    value={accountForm.currentDailyStopLevel}
+                    onChange={(e) => setAccountForm({...accountForm, currentDailyStopLevel: parseFloat(e.target.value) || 0})}
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-rose-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                   />
                 </div>
+                <div>
+                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2 text-rose-600 dark:text-rose-400">MAX LOSS LEVEL (FLOOR)</label>
+                  <input 
+                    type="number" 
+                    placeholder="48000" 
+                    value={accountForm.currentMaxLossLevel}
+                    onChange={(e) => setAccountForm({...accountForm, currentMaxLossLevel: parseFloat(e.target.value) || 0})}
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-rose-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                  />
+                </div>
+                <div>
+                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">RULES CONTEXT</label>
+                  <textarea 
+                    placeholder="Trailing rules context..." 
+                    value={accountForm.rulesContext}
+                    onChange={(e) => setAccountForm({...accountForm, rulesContext: e.target.value})}
+                    className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 min-h-[100px] resize-y" 
+                  />
+                  <div className="mt-4 flex flex-col gap-2">
+                    <div className="flex gap-4">
+                      <button 
+                        onClick={() => setShowUrlInput(!showUrlInput)} 
+                        className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity"
+                      >
+                        [ AI: SCRAPE FROM URLS ]
+                      </button>
+                      <button 
+                        onClick={handleAiImproveRules} 
+                        disabled={isAiImproving || !accountForm.rulesContext} 
+                        className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
+                      >
+                        {isAiImproving ? 'THINKING...' : '[ AI: CLEANUP TEXT ]'}
+                      </button>
+                    </div>
+                    {showUrlInput && (
+                       <div className="flex flex-col gap-2 mt-2">
+                          {aiUrlsInput.map((url, idx) => (
+                            <div key={idx} className="flex gap-2 items-center">
+                              <input 
+                                type="text" 
+                                placeholder="Paste rule URL here..." 
+                                value={url} 
+                                onChange={(e) => {
+                                  const newUrls = [...aiUrlsInput];
+                                  newUrls[idx] = e.target.value;
+                                  setAiUrlsInput(newUrls);
+                                }} 
+                                className="flex-grow bg-transparent border-b border-black dark:border-white py-1 font-mono text-xs focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                              />
+                              {aiUrlsInput.length > 1 && (
+                                <button 
+                                  onClick={() => {
+                                    const newUrls = [...aiUrlsInput];
+                                    newUrls.splice(idx, 1);
+                                    setAiUrlsInput(newUrls);
+                                  }}
+                                  className="text-rose-500 hover:opacity-50"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          {aiUrlsInput.length < 3 && (
+                            <button 
+                              onClick={() => setAiUrlsInput([...aiUrlsInput, ''])}
+                              className="self-start font-mono text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 mt-1"
+                            >
+                              + ADD ANOTHER URL
+                            </button>
+                          )}
+                          <p className="font-mono text-[8px] text-rose-500 uppercase mt-2">Warning: This will overwrite existing context.</p>
+                          <button 
+                            onClick={handleAiScrapeUrls} 
+                            disabled={isAiScraping} 
+                            className="w-full py-3 bg-black text-white dark:bg-white dark:text-black font-mono text-[10px] uppercase tracking-widest font-bold hover:opacity-80 transition-opacity mt-2"
+                          >
+                             {isAiScraping ? 'SCRAPING...' : 'EXTRACT RULES'}
+                          </button>
+                       </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
-                <button 
-                  onClick={handleAccountSubmit}
-                  className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
-                >
-                  CREATE ACCOUNT
-                </button>
-              </div>
+              {showDeleteConfirm ? (
+                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] flex flex-col gap-4">
+                  <p className="font-mono text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold leading-relaxed">
+                    WARNING: This will permanently delete {accountForm.type} along with all trades and outcomes tied to it.
+                  </p>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handleDeleteAccount} 
+                      className="flex-1 py-4 bg-rose-600 text-white font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
+                    >
+                      CONFIRM
+                    </button>
+                    <button 
+                      onClick={() => setShowDeleteConfirm(false)} 
+                      className="flex-1 py-4 border border-black dark:border-white text-black dark:text-white font-mono text-xs uppercase tracking-widest font-bold hover:opacity-50 transition-opacity"
+                    >
+                      CANCEL
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
+                  <button 
+                    onClick={handleAccountSubmit}
+                    className={`w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity ${accountForm.id ? 'mb-4' : ''}`}
+                  >
+                    {accountForm.id ? 'UPDATE ACCOUNT' : 'CREATE ACCOUNT'}
+                  </button>
+
+                  {accountForm.id && (
+                    <button 
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="w-full py-4 bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors"
+                    >
+                      DELETE ACCOUNT
+                    </button>
+                  )}
+                </div>
+              )}
               </div>
             </motion.div>
           </>

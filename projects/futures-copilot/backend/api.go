@@ -20,6 +20,9 @@ func SetupCopilotRoutes(app *fiber.App) {
 	// 1.1 POST /api/copilot/accounts
 	api.Post("/accounts", saveAccount)
 
+	// 1.2 DELETE /api/copilot/accounts/:id
+	api.Delete("/accounts/:id", deleteAccount)
+
 	// 2. GET /api/copilot/rubric
 	api.Get("/rubrics", getRubrics)
 	
@@ -37,10 +40,111 @@ func SetupCopilotRoutes(app *fiber.App) {
 	
 	// 7. POST /api/copilot/journal
 	api.Post("/journal", journalTrade)
+
+	// 8. POST /api/copilot/ai/scrape-rules
+	api.Post("/ai/scrape-rules", scrapeRules)
+
+	// 9. POST /api/copilot/ai/improve-rules
+	api.Post("/ai/improve-rules", improveRules)
+	// 10. POST /api/copilot/users/sync
+	api.Post("/users/sync", syncUser)
+
+	// 11. PUT /api/copilot/users/disable
+	api.Put("/users/disable", disableUser)
+}
+
+func syncUser(c *fiber.Ctx) error {
+	var req struct {
+		ProviderID string `json:"providerId"`
+		Email      string `json:"email"`
+		Name       string `json:"name"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid payload"})
+	}
+
+	var role string
+	var isDisabled bool
+
+	// Upsert user
+	err := db.QueryRow(context.Background(), `
+		INSERT INTO users (provider_id, email, name, last_logged_in)
+		VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+		ON CONFLICT (email) DO UPDATE SET 
+			name = EXCLUDED.name,
+			provider_id = EXCLUDED.provider_id,
+			last_logged_in = CURRENT_TIMESTAMP
+		RETURNING role, is_disabled
+	`, req.ProviderID, req.Email, req.Name).Scan(&role, &isDisabled)
+
+	if err != nil {
+		log.Printf("Failed to sync user: %v", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to sync user"})
+	}
+
+	return c.JSON(fiber.Map{"status": "synced", "role": role, "isDisabled": isDisabled})
+}
+
+func disableUser(c *fiber.Ctx) error {
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid payload"})
+	}
+
+	_, err := db.Exec(context.Background(), "UPDATE users SET is_disabled = true WHERE email = $1", req.Email)
+	if err != nil {
+		log.Printf("Failed to disable user: %v", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to disable user"})
+	}
+
+	return c.JSON(fiber.Map{"status": "disabled"})
+}
+
+func scrapeRules(c *fiber.Ctx) error {
+	var req struct {
+		URLs []string `json:"urls"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid payload"})
+	}
+
+	// MOCK AI SCRAPE
+	time.Sleep(2 * time.Second)
+	
+	mockScraped := `// EXTRACTED VIA AI FROM BROKER DOCS //
+Trailing EOD Max Drawdown: $2500.
+Daily Loss Limit: $1500.
+Consistency Rule: No single day over 50% of total profit.
+Scaling Plan: 2 contracts per $1500 profit.
+News Rule: No trading 1m before or after high impact tier 1 news.`
+
+	return c.JSON(fiber.Map{"context": mockScraped})
+}
+
+func improveRules(c *fiber.Ctx) error {
+	var req struct {
+		Text string `json:"text"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid payload"})
+	}
+
+	// MOCK AI IMPROVEMENT
+	time.Sleep(1500 * time.Millisecond)
+
+	mockImproved := `[ AI CLEANED CONTEXT ]
+` + req.Text + `
+
+- Extracted Core constraint: Do not hold over weekends.
+- Enforced Behavioral rule: Pause trading if Daily Loss Limit is hit.`
+
+	return c.JSON(fiber.Map{"context": mockImproved})
 }
 
 func getAccounts(c *fiber.Ctx) error {
-	rows, err := db.Query(context.Background(), "SELECT id, type, balance, daily_loss_limit, default_risk, current_daily_pnl FROM accounts")
+	rows, err := db.Query(context.Background(), "SELECT id, type, current_balance, current_daily_stop_level, current_max_loss_level, rules_context FROM accounts")
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch accounts"})
 	}
@@ -49,24 +153,15 @@ func getAccounts(c *fiber.Ctx) error {
 	var accounts []AccountConfig
 	for rows.Next() {
 		var a AccountConfig
-		err := rows.Scan(&a.ID, &a.Type, &a.Balance, &a.DailyLossLimit, &a.DefaultRisk, &a.CurrentDailyPnL)
+		err := rows.Scan(&a.ID, &a.Type, &a.CurrentBalance, &a.CurrentDailyStopLevel, &a.CurrentMaxLossLevel, &a.RulesContext)
 		if err == nil {
 			accounts = append(accounts, a)
 		}
 	}
 
-	// Fallback mock if empty
-	if len(accounts) == 0 {
-		accounts = []AccountConfig{
-			{
-				ID: "a-001",
-				Type: "TOPSTEP EVAL 50K",
-				Balance: 51200,
-				DailyLossLimit: 1000,
-				DefaultRisk: "1%",
-				CurrentDailyPnL: 200,
-			},
-		}
+	// No fallback, return exactly what is in the DB
+	if accounts == nil {
+		accounts = []AccountConfig{}
 	}
 	return c.JSON(accounts)
 }
@@ -82,15 +177,15 @@ func saveAccount(c *fiber.Ctx) error {
 	}
 
 	_, err := db.Exec(context.Background(), `
-		INSERT INTO accounts (id, type, balance, daily_loss_limit, default_risk, current_daily_pnl)
+		INSERT INTO accounts (id, type, current_balance, current_daily_stop_level, current_max_loss_level, rules_context)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (id) DO UPDATE SET 
 			type = EXCLUDED.type,
-			balance = EXCLUDED.balance,
-			daily_loss_limit = EXCLUDED.daily_loss_limit,
-			default_risk = EXCLUDED.default_risk,
-			current_daily_pnl = EXCLUDED.current_daily_pnl
-	`, a.ID, a.Type, a.Balance, a.DailyLossLimit, a.DefaultRisk, a.CurrentDailyPnL)
+			current_balance = EXCLUDED.current_balance,
+			current_daily_stop_level = EXCLUDED.current_daily_stop_level,
+			current_max_loss_level = EXCLUDED.current_max_loss_level,
+			rules_context = EXCLUDED.rules_context
+	`, a.ID, a.Type, a.CurrentBalance, a.CurrentDailyStopLevel, a.CurrentMaxLossLevel, a.RulesContext)
 
 	if err != nil {
 		log.Printf("Failed to save account: %v", err)
@@ -98,6 +193,33 @@ func saveAccount(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"status": "saved", "id": a.ID})
+}
+
+func deleteAccount(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "Missing account ID"})
+	}
+
+	ctx := context.Background()
+
+	// 1. Delete associated trade outcomes (referencing trade_plans)
+	db.Exec(ctx, "DELETE FROM trade_outcomes WHERE trade_id IN (SELECT id FROM trade_plans WHERE account_id = $1)", id)
+	
+	// 2. Delete associated trade plan edits (referencing trade_plans)
+	db.Exec(ctx, "DELETE FROM trade_plan_edits WHERE trade_plan_id IN (SELECT id FROM trade_plans WHERE account_id = $1)", id)
+
+	// 3. Delete associated trade plans
+	db.Exec(ctx, "DELETE FROM trade_plans WHERE account_id = $1", id)
+
+	// 4. Delete the account
+	_, err := db.Exec(ctx, "DELETE FROM accounts WHERE id = $1", id)
+	if err != nil {
+		log.Printf("Failed to delete account: %v", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to delete account"})
+	}
+
+	return c.JSON(fiber.Map{"status": "deleted", "id": id})
 }
 
 func getRubrics(c *fiber.Ctx) error {
@@ -157,7 +279,13 @@ func saveRubric(c *fiber.Ctx) error {
 }
 
 func getTrades(c *fiber.Ctx) error {
-	rows, err := db.Query(context.Background(), "SELECT id, account_id, rubric_id, instrument, bias, entry, stop_loss, take_profit, contracts, risk_amount, status, notes FROM trade_plans ORDER BY created_at DESC")
+	query := `
+		SELECT t.id, t.account_id, t.rubric_id, t.instrument, t.bias, t.entry, t.stop_loss, t.take_profit, t.contracts, t.risk_amount, t.status, t.notes, o.pnl, o.outcome 
+		FROM trade_plans t 
+		LEFT JOIN trade_outcomes o ON o.trade_id = t.id 
+		ORDER BY t.created_at DESC
+	`
+	rows, err := db.Query(context.Background(), query)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch trades"})
 	}
@@ -167,7 +295,7 @@ func getTrades(c *fiber.Ctx) error {
 	for rows.Next() {
 		var t TradePlan
 		var riskAmount float64
-		err := rows.Scan(&t.ID, &t.AccountID, &t.RubricID, &t.Instrument, &t.Bias, &t.Entry, &t.StopLoss, &t.TakeProfit, &t.Contracts, &riskAmount, &t.Status, &t.Notes)
+		err := rows.Scan(&t.ID, &t.AccountID, &t.RubricID, &t.Instrument, &t.Bias, &t.Entry, &t.StopLoss, &t.TakeProfit, &t.Contracts, &riskAmount, &t.Status, &t.Notes, &t.PnL, &t.Outcome)
 		if err == nil {
 			trades = append(trades, t)
 		}

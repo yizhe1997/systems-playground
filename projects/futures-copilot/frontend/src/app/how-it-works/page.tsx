@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, ShieldAlert, BrainCircuit, LineChart } from 'lucide-react';
+import BrutalistImage from '@/components/BrutalistImage';
 
 export default function HowItWorksPage() {
   const [mounted, setMounted] = useState(false);
@@ -39,7 +40,7 @@ export default function HowItWorksPage() {
             </div>
             <div className="w-full bg-black dark:bg-white p-[1px] [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] min-h-[300px] md:min-h-[400px]">
               <div className="bg-white dark:bg-black w-full h-full flex items-center justify-center [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] p-6">
-                <img src="https://files.38569123.xyz/api/public/dl/lv1ljIyT?inline=true" alt="Deterministic Risk Gatekeeping" className="w-full max-w-[800px] h-auto object-contain dark:invert" />
+                <BrutalistImage src="https://files.38569123.xyz/api/public/dl/lv1ljIyT?inline=true" alt="Deterministic Risk Gatekeeping" />
               </div>
             </div>
           </section>
@@ -56,7 +57,7 @@ export default function HowItWorksPage() {
             </div>
             <div className="w-full bg-black dark:bg-white p-[1px] [clip-path:polygon(0_0,100%_0,100%_calc(100%-60px),calc(100%-60px)_100%,0_100%)] min-h-[300px] md:min-h-[400px]">
               <div className="bg-white dark:bg-black w-full h-full flex items-center justify-center [clip-path:polygon(0_0,100%_0,100%_calc(100%-60px),calc(100%-60px)_100%,0_100%)] p-6">
-                <img src="https://files.38569123.xyz/api/public/dl/uiCI4pS6?inline=true" alt="Radical Transparency" className="w-full max-w-[800px] h-auto object-contain dark:invert" />
+                <BrutalistImage src="https://files.38569123.xyz/api/public/dl/uiCI4pS6?inline=true" alt="Radical Transparency" />
               </div>
             </div>
           </section>
@@ -73,7 +74,7 @@ export default function HowItWorksPage() {
             </div>
             <div className="w-full bg-black dark:bg-white p-[1px] [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] min-h-[300px] md:min-h-[400px]">
               <div className="bg-white dark:bg-black w-full h-full flex items-center justify-center [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] p-6">
-                <img src="https://files.38569123.xyz/api/public/dl/2oG6dnPV?inline=true" alt="Post-Trade Evolution" className="w-full max-w-[800px] h-auto object-contain dark:invert" />
+                <BrutalistImage src="https://files.38569123.xyz/api/public/dl/2oG6dnPV?inline=true" alt="Post-Trade Evolution" />
               </div>
             </div>
           </section>
