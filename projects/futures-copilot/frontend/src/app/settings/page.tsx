@@ -92,7 +92,7 @@ export default function SettingsPage() {
                     You currently do not have an active subscription. Subscribe to receive instant real-time alerts and access the private trade log database.
                   </p>
                   <button className="w-full md:w-auto px-8 py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity text-center self-start">
-                    START SUBSCRIPTION ($49/MO)
+                    START SUBSCRIPTION ($2/MO)
                   </button>
                 </div>
               )}

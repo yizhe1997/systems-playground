@@ -28,6 +28,9 @@ func SetupCopilotRoutes(app *fiber.App) {
 	
 	// 3. POST /api/copilot/rubrics
 	api.Post("/rubrics", saveRubric)
+	
+	// 3.1 DELETE /api/copilot/rubrics/:id
+	api.Delete("/rubrics/:id", deleteRubric)
 
 	// 4. GET /api/copilot/trades
 	api.Get("/trades", getTrades)
@@ -239,13 +242,7 @@ func getRubrics(c *fiber.Ctx) error {
 	}
 
 	if len(rubrics) == 0 {
-		// Mock fallback
-		return c.JSON([]Rubric{{
-			ID: "r-default",
-			Name: "Default Gold Strategy",
-			Rules: "1. Only trade 15m Supply/Demand zones.\n2. Must have 1:2 R:R minimum.\n3. Do not risk more than 1.5% of daily loss limit.\n4. Avoid taking new setups during 10:00 AM news.",
-			PineScript: "",
-		}})
+		return c.JSON([]Rubric{})
 	}
 
 	return c.JSON(rubrics)
@@ -278,6 +275,21 @@ func saveRubric(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"status": "saved", "id": req.ID})
 }
 
+func deleteRubric(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "Missing rubric ID"})
+	}
+
+	_, err := db.Exec(context.Background(), "DELETE FROM rubrics WHERE id = $1", id)
+	if err != nil {
+		log.Printf("Failed to delete rubric: %v", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to delete rubric"})
+	}
+
+	return c.JSON(fiber.Map{"status": "deleted"})
+}
+
 func getTrades(c *fiber.Ctx) error {
 	query := `
 		SELECT t.id, t.account_id, t.rubric_id, t.instrument, t.bias, t.entry, t.stop_loss, t.take_profit, t.contracts, t.risk_amount, t.status, t.notes, o.pnl, o.outcome 
@@ -287,6 +299,7 @@ func getTrades(c *fiber.Ctx) error {
 	`
 	rows, err := db.Query(context.Background(), query)
 	if err != nil {
+		log.Printf("Error fetching trades: %v", err)
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch trades"})
 	}
 	defer rows.Close()
@@ -298,7 +311,13 @@ func getTrades(c *fiber.Ctx) error {
 		err := rows.Scan(&t.ID, &t.AccountID, &t.RubricID, &t.Instrument, &t.Bias, &t.Entry, &t.StopLoss, &t.TakeProfit, &t.Contracts, &riskAmount, &t.Status, &t.Notes, &t.PnL, &t.Outcome)
 		if err == nil {
 			trades = append(trades, t)
+		} else {
+			log.Printf("Scan error in getTrades: %v", err)
 		}
+	}
+
+	if trades == nil {
+		trades = []TradePlan{}
 	}
 
 	return c.JSON(trades)
@@ -332,6 +351,11 @@ func draftTrade(c *fiber.Ctx) error {
 		aiFeedback = fmt.Sprintf("Risk ($%.2f) is dangerously close to your daily loss limit. Reduce size.", riskAmount)
 	}
 
+	var rubricID interface{} = plan.RubricID
+	if plan.RubricID == nil || *plan.RubricID == "" {
+		rubricID = nil
+	}
+
 	// 3. Save to Postgres
 	_, err := db.Exec(context.Background(), `
 		INSERT INTO trade_plans (id, account_id, rubric_id, instrument, bias, entry, stop_loss, take_profit, contracts, risk_amount, status, notes)
@@ -346,7 +370,7 @@ func draftTrade(c *fiber.Ctx) error {
 			risk_amount = EXCLUDED.risk_amount,
 			notes = EXCLUDED.notes,
 			updated_at = CURRENT_TIMESTAMP
-	`, plan.ID, plan.AccountID, plan.RubricID, plan.Instrument, plan.Bias, plan.Entry, plan.StopLoss, plan.TakeProfit, plan.Contracts, riskAmount, plan.Status, plan.Notes)
+	`, plan.ID, plan.AccountID, rubricID, plan.Instrument, plan.Bias, plan.Entry, plan.StopLoss, plan.TakeProfit, plan.Contracts, riskAmount, plan.Status, plan.Notes)
 
 	// Temporal log of edits
 	if plan.Status != "draft" {
@@ -409,13 +433,6 @@ func journalTrade(c *fiber.Ctx) error {
 	
 	// Save Outcome to Postgres
 	_, err = db.Exec(context.Background(), `
-		CREATE TABLE IF NOT EXISTS trade_outcomes (
-			trade_id TEXT PRIMARY KEY,
-			pnl NUMERIC NOT NULL,
-			outcome TEXT NOT NULL,
-			reflection TEXT NOT NULL,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-		);
 		INSERT INTO trade_outcomes (trade_id, pnl, outcome, reflection) VALUES ($1, $2, $3, $4)
 	`, req.TradeID, req.PnL, req.Outcome, req.Reflection)
 

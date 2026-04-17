@@ -78,6 +78,14 @@ export const saveRubric = async (rubricData: any) => {
   return res.json();
 };
 
+export const deleteRubric = async (id: string) => {
+  const res = await fetch(`${API_BASE}/rubrics/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete rubric');
+  return res.json();
+};
+
 export const journalTrade = async (journalData: any) => {
   const res = await fetch(`${API_BASE}/journal`, {
     method: 'POST',

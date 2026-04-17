@@ -50,20 +50,20 @@ type Rubric struct {
 }
 
 type TradePlan struct {
-	ID          string  `json:"id"`
-	AccountID   string  `json:"accountId"`
-	RubricID    string  `json:"rubricId"`
-	Instrument  string  `json:"instrument"`
+	ID          string   `json:"id"`
+	AccountID   string   `json:"accountId"`
+	RubricID    *string  `json:"rubricId"`
+	Instrument  string   `json:"instrument"`
 	Bias        string  `json:"bias"`
 	Entry       float64 `json:"entry"`
 	StopLoss    float64 `json:"stopLoss"`
 	TakeProfit  float64 `json:"takeProfit"`
 	Contracts   int     `json:"contracts"`
-	Notes       string  `json:"notes"`
+	Notes       *string  `json:"notes"`
 	Status      string   `json:"status"` // 'draft' | 'working' | 'filled' | 'closed'
 	UpdatedAt   string   `json:"updatedAt,omitempty"`
 	PnL         *float64 `json:"pnl,omitempty"`
-	Outcome     string   `json:"outcome,omitempty"`
+	Outcome     *string  `json:"outcome,omitempty"`
 }
 
 type AIResponse struct {

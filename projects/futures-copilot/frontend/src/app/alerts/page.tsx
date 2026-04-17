@@ -8,8 +8,8 @@ import { motion } from 'framer-motion';
 import { useSession, signIn } from 'next-auth/react';
 
 export default function AlertsPage() {
-  const { data: session } = useSession();
-  const userRole = (session?.user as unknown as {role: string})?.role || 'ANON';
+  const { data: session, status } = useSession();
+  const userRole = (session?.user as any)?.role || 'USER'; // Default to USER if logged in but role is missing
   const isSubscribed = userRole === 'SUBSCRIBER' || userRole === 'ADMIN';
   const [mounted, setMounted] = useState(false);
   const [activeChannel, setActiveChannel] = useState<'telegram' | 'discord' | 'webhook'>('telegram');
@@ -17,6 +17,9 @@ export default function AlertsPage() {
   useEffect(() => { const t = setTimeout(() => setMounted(true), 0); return () => clearTimeout(t); }, []);
 
   if (!mounted) return null;
+
+  // We should wait until auth status is known before showing block screens
+  const showBlocker = status !== 'loading' && !isSubscribed;
 
   return (
     <div className="w-full relative">
@@ -57,10 +60,12 @@ export default function AlertsPage() {
 
           {/* Config Panel */}
           <div className="md:col-span-8 relative">
-            {!isSubscribed && (
+            {status === 'loading' ? (
+              <div className="absolute inset-0 z-20 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center" />
+            ) : showBlocker ? (
               <div className="absolute inset-0 z-20 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center [clip-path:polygon(30px_0,100%_0,100%_100%,0_100%,0_30px)]">
                 <div className="border border-black dark:border-white bg-white dark:bg-black p-8 max-w-sm shadow-2xl">
-                  {userRole === 'ANON' ? (
+                  {status === 'unauthenticated' ? (
                     <>
                       <h3 className="font-mono text-xl font-bold tracking-tighter uppercase mb-4">SIGN IN REQUIRED</h3>
                       <p className="font-mono text-[10px] uppercase opacity-60 mb-6 leading-relaxed">
@@ -75,21 +80,21 @@ export default function AlertsPage() {
                     </>
                   ) : (
                     <>
-                      <h3 className="font-mono text-xl font-bold tracking-tighter uppercase mb-4">PRO ACCESS REQUIRED</h3>
+                      <h3 className="font-mono text-xl font-bold tracking-tighter uppercase mb-4">SUBSCRIPTION REQUIRED</h3>
                       <p className="font-mono text-[10px] uppercase opacity-60 mb-6 leading-relaxed">
                         You need an active subscription to configure push notifications and webhook endpoints.
                       </p>
                       <button 
-                        onClick={() => window.location.href = '/settings'}
+                        onClick={() => setIsPricingOpen(true)}
                         className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
                       >
-                        UPGRADE NOW ($49/MO)
+                        UPGRADE NOW ($2/MO)
                       </button>
                     </>
                   )}
                 </div>
               </div>
-            )}
+            ) : null}
             
             <motion.div 
               key={activeChannel}

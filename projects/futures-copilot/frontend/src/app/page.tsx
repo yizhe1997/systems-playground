@@ -155,12 +155,9 @@ export default function ShowroomPage() {
                   {userRole === 'ANON' ? (
                     <>
                       <p className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">WANT TRADE ALERTS BEFORE MARKET OPENS?</p>
-                      <button 
-                        onClick={() => setIsPricingOpen(true)}
-                        className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity inline-flex items-center gap-2"
-                      >
+                      <Link href="/pricing" className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity inline-flex items-center gap-2">
                         SUBSCRIBE FOR NOTIFICATIONS <ArrowUpRight className="w-4 h-4" />
-                      </button>
+                      </Link>
                     </>
                   ) : (
                     <>
@@ -225,62 +222,6 @@ export default function ShowroomPage() {
           </div>
         </div>
       </main>
-
-      {/* Slide-out Pricing Modal */}
-      <AnimatePresence>
-        {isPricingOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-sm z-[99]"
-              onClick={() => setIsPricingOpen(false)}
-            />
-            <motion.div
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 h-full w-full max-w-md bg-black dark:bg-white p-[1px] [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] z-[100]"
-            >
-              <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
-                <div className="pl-[70px] pr-6 py-6 border-b border-black dark:border-white flex justify-between items-center bg-black text-white dark:bg-white dark:text-black">
-                  <h2 className="font-mono text-sm uppercase tracking-widest font-bold">SUBSCRIBE TO ALERTS</h2>
-                  <button onClick={() => setIsPricingOpen(false)} className="hover:opacity-50 transition-opacity">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="p-8 flex-grow overflow-y-auto flex flex-col">
-                  <h3 className="font-mono text-4xl font-bold tracking-tighter uppercase mb-2">$49 / MO</h3>
-                  <p className="font-mono text-xs uppercase opacity-60 mb-8 leading-relaxed">
-                    Gain instant real-time notifications for every trade lifecycle event.
-                  </p>
-
-                  <div className="space-y-4 mb-12">
-                    {[
-                      'Instant Discord / Telegram Pings',
-                      'Access to private Trade Log Database',
-                      'See real-time entries, SL, & TP adjustments',
-                      'Post-Trade AI Retrospectives'
-                    ].map((feature, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <div className="mt-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-0.5">
-                          <Check className="w-3 h-3" />
-                        </div>
-                        <span className="font-mono text-xs uppercase leading-relaxed">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="border border-black dark:border-white p-6 bg-[#f8f8f8] dark:bg-[#111] mt-auto">
-                    <p className="font-mono text-[10px] uppercase opacity-60 mb-4 text-center">SECURE PAYMENT VIA STRIPE</p>
-                    <button className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity">
-                      START SUBSCRIPTION
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

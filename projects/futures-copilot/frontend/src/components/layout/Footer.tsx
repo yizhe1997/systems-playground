@@ -24,6 +24,7 @@ export default function Footer() {
           <div className="flex flex-col gap-3">
             <span className="opacity-60 mb-2">RESOURCES</span>
             <a href="/how-it-works" className="hover:opacity-50 transition-opacity">HOW IT WORKS</a>
+            <a href="/pricing" className="hover:opacity-50 transition-opacity">PRICING & FAQ</a>
           </div>
           <div className="flex flex-col gap-3">
             <span className="opacity-60 mb-2">PLATFORM</span>

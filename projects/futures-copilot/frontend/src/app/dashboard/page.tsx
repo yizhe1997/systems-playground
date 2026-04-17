@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes';
 import { Plus, Settings2, X, CircleDot, Activity, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { fetchTrades, fetchAccounts, draftTrade, updateTradeStatus, fetchRubrics, saveRubric, journalTrade, saveAccount, deleteAccount, scrapeRulesFromUrls, improveRulesContext } from './api';
+import { fetchTrades, fetchAccounts, draftTrade, updateTradeStatus, fetchRubrics, saveRubric, deleteRubric, journalTrade, saveAccount, deleteAccount, scrapeRulesFromUrls, improveRulesContext } from './api';
 
 import { useSession } from 'next-auth/react';
 
@@ -17,6 +17,7 @@ export default function CopilotPage() {
   const [isRubricOpen, setIsRubricOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
+  const [isDraftAccountDropdownOpen, setIsDraftAccountDropdownOpen] = useState(false);
   const [isDraftRubricDropdownOpen, setIsDraftRubricDropdownOpen] = useState(false);
   const [isConfigRubricDropdownOpen, setIsConfigRubricDropdownOpen] = useState(false);
   const [journalTradeId, setJournalTradeId] = useState<string | null>(null);
@@ -25,6 +26,7 @@ export default function CopilotPage() {
   const [mounted, setMounted] = useState(false);
   
   const accountDropdownRef = useRef<HTMLDivElement>(null);
+  const draftAccountDropdownRef = useRef<HTMLDivElement>(null);
   const draftRubricDropdownRef = useRef<HTMLDivElement>(null);
   const configRubricDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -32,6 +34,9 @@ export default function CopilotPage() {
     function handleClickOutside(event: MouseEvent) {
       if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target as Node)) {
         setIsAccountDropdownOpen(false);
+      }
+      if (draftAccountDropdownRef.current && !draftAccountDropdownRef.current.contains(event.target as Node)) {
+        setIsDraftAccountDropdownOpen(false);
       }
       if (draftRubricDropdownRef.current && !draftRubricDropdownRef.current.contains(event.target as Node)) {
         setIsDraftRubricDropdownOpen(false);
@@ -84,6 +89,7 @@ export default function CopilotPage() {
   });
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteRubricConfirm, setShowDeleteRubricConfirm] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [aiUrlsInput, setAiUrlsInput] = useState<string[]>(['']);
   const [isAiScraping, setIsAiScraping] = useState(false);
@@ -117,13 +123,10 @@ export default function CopilotPage() {
     };
 
     loadData();
-    // Poll for updates every 5s
-    const poll = setInterval(loadData, 5000);
     return () => {
       clearTimeout(timer);
-      clearInterval(poll);
     };
-  }, [activeAccountId]);
+  }, []);
 
   const handleDraftSubmit = async () => {
     try {
@@ -150,6 +153,20 @@ export default function CopilotPage() {
       setIsRubricOpen(false);
       const fetchedRubrics = await fetchRubrics();
       if (fetchedRubrics) setRubrics(fetchedRubrics);
+    } catch(e) { console.error(e); }
+  };
+
+  const handleDeleteRubric = async () => {
+    if (!rubricForm.id) return;
+    try {
+      await deleteRubric(rubricForm.id);
+      setShowDeleteRubricConfirm(false);
+      setIsRubricOpen(false);
+      const fetchedRubrics = await fetchRubrics();
+      if (fetchedRubrics) {
+        setRubrics(fetchedRubrics);
+        if (fetchedRubrics.length > 0) setRubricForm(fetchedRubrics[0]);
+      }
     } catch(e) { console.error(e); }
   };
 
@@ -296,26 +313,28 @@ export default function CopilotPage() {
                   )}
                 </AnimatePresence>
                 <div className="flex gap-2">
-                  {activeAccount && (
+                  {userRole === 'ADMIN' && (
                     <button 
                       onClick={() => {
                         setAccountForm(activeAccount);
                         setIsAccountOpen(true);
                       }}
-                      className="font-mono text-[10px] uppercase tracking-widest bg-black text-white dark:bg-white dark:text-black px-2 py-0.5 hover:opacity-80 transition-opacity"
+                      className="font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white px-2 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
                     >
                       UPDATE
                     </button>
                   )}
-                  <button 
-                    onClick={() => {
-                      setAccountForm({ id: '', type: 'TOPSTEP EVAL 50K', currentBalance: 50000, currentDailyStopLevel: 49000, currentMaxLossLevel: 48000, rulesContext: 'Trailing EOD Max Drawdown: $2000. Daily Loss Limit: $1000.' });
-                      setIsAccountOpen(true);
-                    }}
-                    className="font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white px-2 py-0.5 hover:opacity-50 transition-opacity text-black dark:text-white"
-                  >
-                    + NEW
-                  </button>
+                  {userRole === 'ADMIN' && (
+                    <button 
+                      onClick={() => {
+                        setAccountForm({ id: '', type: 'TOPSTEP EVAL 50K', currentBalance: 50000, currentDailyStopLevel: 49000, currentMaxLossLevel: 48000, rulesContext: 'Trailing EOD Max Drawdown: $2000. Daily Loss Limit: $1000.' });
+                        setIsAccountOpen(true);
+                      }}
+                      className="font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white px-2 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                    >
+                      + NEW
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-y-6">
@@ -366,7 +385,7 @@ export default function CopilotPage() {
                 </button>
                 <button 
                   onClick={() => { setEditTradeId(null); setIsDraftOpen(true); }}
-                  className="flex items-center gap-2 px-4 py-2 bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-2 px-4 py-2 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   DRAFT NEW SETUP
@@ -520,18 +539,34 @@ export default function CopilotPage() {
                 <div className="p-8 flex-grow overflow-y-auto space-y-8">
 
                 {/* Account Selector */}
-                <div>
+                <div ref={draftAccountDropdownRef} className="relative">
                   <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">SELECT ACCOUNT</label>
-                  <select 
-                    value={draftForm.accountId || activeAccountId}
-                    onChange={(e) => setDraftForm({...draftForm, accountId: e.target.value})}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none text-black dark:text-white"
+                  <button
+                    onClick={() => setIsDraftAccountDropdownOpen(!isDraftAccountDropdownOpen)}
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
                   >
-                    <option value="" disabled className="bg-white dark:bg-black text-black dark:text-white">-- Select Account --</option>
-                    {accounts.map(a => (
-                      <option key={a.id} value={a.id} className="bg-white dark:bg-black text-black dark:text-white">{a.type}</option>
-                    ))}
-                  </select>
+                    <span>{accounts.find(a => a.id === (draftForm.accountId || activeAccountId))?.type || 'SELECT ACCOUNT'}</span>
+                    <span>▼</span>
+                  </button>
+                  
+                  <AnimatePresence>
+                    {isDraftAccountDropdownOpen && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col max-h-[200px] overflow-y-auto"
+                      >
+                        {accounts.map(a => (
+                          <button
+                            key={a.id}
+                            onClick={() => { setDraftForm({...draftForm, accountId: a.id}); setIsDraftAccountDropdownOpen(false); }}
+                            className="text-left px-4 py-3 font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b last:border-b-0 border-black dark:border-white opacity-80 hover:opacity-100"
+                          >
+                            {a.type}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Rubric Selector */}
@@ -575,7 +610,7 @@ export default function CopilotPage() {
                         placeholder="e.g. GC, NQ, ES" 
                         value={draftForm.instrument}
                         onChange={(e) => setDraftForm({...draftForm, instrument: e.target.value})}
-                        className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 uppercase" 
+                        className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 uppercase" 
                       />
                     </div>
                   </div>
@@ -603,7 +638,7 @@ export default function CopilotPage() {
                       placeholder="e.g. 2350.5" 
                       value={draftForm.entry}
                       onChange={(e) => setDraftForm({...draftForm, entry: e.target.value})}
-                      className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                      className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                     />
                   </div>
                   <div>
@@ -613,7 +648,7 @@ export default function CopilotPage() {
                       placeholder="Price" 
                       value={draftForm.stopLoss}
                       onChange={(e) => setDraftForm({...draftForm, stopLoss: e.target.value})}
-                      className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-rose-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                      className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                     />
                   </div>
                   <div>
@@ -623,7 +658,7 @@ export default function CopilotPage() {
                       placeholder="Price" 
                       value={draftForm.takeProfit}
                       onChange={(e) => setDraftForm({...draftForm, takeProfit: e.target.value})}
-                      className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-emerald-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                      className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                     />
                   </div>
                 </div>
@@ -636,7 +671,7 @@ export default function CopilotPage() {
                     placeholder="1" 
                     value={draftForm.contracts}
                     onChange={(e) => setDraftForm({...draftForm, contracts: parseInt(e.target.value) || 1})}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                   />
                 </div>
 
@@ -648,19 +683,25 @@ export default function CopilotPage() {
                     rows={4}
                     value={draftForm.notes}
                     onChange={(e) => setDraftForm({...draftForm, notes: e.target.value})}
-                    className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs uppercase leading-relaxed focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-none" 
+                    className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs uppercase leading-relaxed focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y" 
                   />
                 </div>
 
               </div>
 
-              <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
+              <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] grid grid-cols-2 gap-4">
                 <button 
                   onClick={handleDraftSubmit}
-                  className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity flex justify-center items-center gap-2"
+                  className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold flex justify-center items-center gap-2"
                 >
                   <Activity className="w-4 h-4" />
-                  RUN AI RISK CHECK
+                  AI RISK CHECK
+                </button>
+                <button 
+                  onClick={handleDraftSubmit}
+                  className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold flex justify-center items-center gap-2"
+                >
+                  CREATE DRAFT
                 </button>
               </div>
               </div>
@@ -741,7 +782,7 @@ export default function CopilotPage() {
                     type="text" 
                     value={rubricForm.name}
                     onChange={(e) => setRubricForm({...rubricForm, name: e.target.value})}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 uppercase" 
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 uppercase" 
                   />
                 </div>
 
@@ -755,7 +796,7 @@ export default function CopilotPage() {
                     rows={8}
                     value={rubricForm.rules}
                     onChange={(e) => setRubricForm({...rubricForm, rules: e.target.value})}
-                    className="w-full bg-transparent border border-black dark:border-white p-4 font-mono text-xs uppercase leading-relaxed focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-none" 
+                    className="w-full bg-transparent border border-black dark:border-white p-4 font-mono text-xs uppercase leading-relaxed focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y" 
                   />
                 </div>
 
@@ -769,19 +810,49 @@ export default function CopilotPage() {
                     rows={8}
                     value={rubricForm.pinescript}
                     onChange={(e) => setRubricForm({...rubricForm, pinescript: e.target.value})}
-                    className="w-full bg-[#f8f8f8] dark:bg-[#111] border border-black dark:border-white p-4 font-mono text-[10px] leading-relaxed focus:outline-none focus:border-blue-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-none" 
+                    className="w-full bg-[#f8f8f8] dark:bg-[#111] border border-black dark:border-white p-4 font-mono text-[10px] leading-relaxed focus:outline-none focus:border-blue-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y" 
                   />
                 </div>
               </div>
 
-              <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
-                <button 
-                  onClick={handleRubricSubmit}
-                  className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
-                >
-                  SAVE RUBRIC
-                </button>
-              </div>
+              {showDeleteRubricConfirm ? (
+                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] flex flex-col gap-4">
+                  <p className="font-mono text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold leading-relaxed">
+                    WARNING: This will permanently delete {rubricForm.name}.
+                  </p>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handleDeleteRubric} 
+                      className="flex-1 py-4 bg-rose-600 text-white font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
+                    >
+                      CONFIRM
+                    </button>
+                    <button 
+                      onClick={() => setShowDeleteRubricConfirm(false)}
+                      className="flex-1 py-4 border border-black dark:border-white font-mono text-xs uppercase tracking-widest font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                    >
+                      CANCEL
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] flex gap-4">
+                  <button 
+                    onClick={handleRubricSubmit}
+                    className="flex-1 py-4 bg-black text-white border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                  >
+                    SAVE RUBRIC
+                  </button>
+                  {rubricForm.id && rubrics.length > 1 && (
+                    <button 
+                      onClick={() => setShowDeleteRubricConfirm(true)}
+                      className="flex-none px-6 border border-rose-600 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 dark:hover:text-white transition-colors"
+                    >
+                      DELETE
+                    </button>
+                  )}
+                </div>
+              )}
               </div>
             </motion.div>
           </>
@@ -819,7 +890,7 @@ export default function CopilotPage() {
                     placeholder="e.g. TOPSTEP EVAL 50K" 
                     value={accountForm.type}
                     onChange={(e) => setAccountForm({...accountForm, type: e.target.value})}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                   />
                 </div>
                 <div>
@@ -829,7 +900,7 @@ export default function CopilotPage() {
                     placeholder="50000" 
                     value={accountForm.currentBalance}
                     onChange={(e) => setAccountForm({...accountForm, currentBalance: parseFloat(e.target.value) || 0})}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                   />
                 </div>
                 <div>
@@ -839,17 +910,17 @@ export default function CopilotPage() {
                     placeholder="49000" 
                     value={accountForm.currentDailyStopLevel}
                     onChange={(e) => setAccountForm({...accountForm, currentDailyStopLevel: parseFloat(e.target.value) || 0})}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-rose-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2 text-rose-600 dark:text-rose-400">MAX LOSS LEVEL (FLOOR)</label>
+                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">MAX LOSS LEVEL (FLOOR)</label>
                   <input 
                     type="number" 
                     placeholder="48000" 
                     value={accountForm.currentMaxLossLevel}
                     onChange={(e) => setAccountForm({...accountForm, currentMaxLossLevel: parseFloat(e.target.value) || 0})}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none focus:border-rose-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                   />
                 </div>
                 <div>
@@ -858,7 +929,7 @@ export default function CopilotPage() {
                     placeholder="Trailing rules context..." 
                     value={accountForm.rulesContext}
                     onChange={(e) => setAccountForm({...accountForm, rulesContext: e.target.value})}
-                    className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 min-h-[100px] resize-y" 
+                    className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 min-h-[100px] resize-y" 
                   />
                   <div className="mt-4 flex flex-col gap-2">
                     <div className="flex gap-4">
@@ -889,7 +960,7 @@ export default function CopilotPage() {
                                   newUrls[idx] = e.target.value;
                                   setAiUrlsInput(newUrls);
                                 }} 
-                                className="flex-grow bg-transparent border-b border-black dark:border-white py-1 font-mono text-xs focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                                className="flex-grow bg-transparent border-b border-black dark:border-white py-1 font-mono text-xs focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                               />
                               {aiUrlsInput.length > 1 && (
                                 <button 
@@ -1004,7 +1075,7 @@ export default function CopilotPage() {
                     placeholder="e.g. 500 or -300" 
                     value={journalData.pnl}
                     onChange={(e) => setJournalData({...journalData, pnl: e.target.value})}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-3xl focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-3xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50" 
                   />
                 </div>
 
@@ -1036,7 +1107,7 @@ export default function CopilotPage() {
                     rows={6}
                     value={journalData.reflection}
                     onChange={(e) => setJournalData({...journalData, reflection: e.target.value})}
-                    className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs uppercase leading-relaxed focus:outline-none focus:border-amber-500 rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-none" 
+                    className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs uppercase leading-relaxed focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y" 
                   />
                 </div>
               </div>
