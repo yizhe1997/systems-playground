@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShieldAlert, Trash2, Edit3, UserCheck, UserX } from 'lucide-react';
+import { ShieldAlert, Edit3, UserCheck, UserX } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const MOCK_SUBSCRIBERS = [

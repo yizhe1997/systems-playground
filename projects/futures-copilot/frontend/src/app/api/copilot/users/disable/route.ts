@@ -16,7 +16,7 @@ export async function PUT(request: Request) {
     }
 
     return NextResponse.json({ status: 'disabled' });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

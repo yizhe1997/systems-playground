@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTheme } from 'next-themes';
-import { Bell, Webhook, MessageCircle, Save } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Webhook, MessageCircle, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { useSession, signIn } from 'next-auth/react';
 
 export default function AlertsPage() {
+  const router = useRouter();
   const { data: session, status } = useSession();
-  const userRole = (session?.user as any)?.role || 'USER'; // Default to USER if logged in but role is missing
+  const userRole = (session?.user as { role?: string })?.role || 'USER';
   const isSubscribed = userRole === 'SUBSCRIBER' || userRole === 'ADMIN';
   const [mounted, setMounted] = useState(false);
   const [activeChannel, setActiveChannel] = useState<'telegram' | 'discord' | 'webhook'>('telegram');
@@ -85,7 +86,7 @@ export default function AlertsPage() {
                         You need an active subscription to configure push notifications and webhook endpoints.
                       </p>
                       <button 
-                        onClick={() => setIsPricingOpen(true)}
+                        onClick={() => router.push('/pricing')}
                         className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
                       >
                         UPGRADE NOW ($2/MO)

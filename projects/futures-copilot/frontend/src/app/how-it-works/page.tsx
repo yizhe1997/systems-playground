@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Activity, ShieldAlert, BrainCircuit, LineChart } from 'lucide-react';
+import { ShieldAlert, BrainCircuit, LineChart } from 'lucide-react';
 import BrutalistImage from '@/components/BrutalistImage';
 
 export default function HowItWorksPage() {

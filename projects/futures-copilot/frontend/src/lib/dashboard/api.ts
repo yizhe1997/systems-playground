@@ -1,26 +1,18 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/copilot';
 
-export const fetchTrades = async () => {
-  try {
-    const res = await fetch(`${API_BASE}/trades`);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (err) {
-    return null;
-  }
+export const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch data');
+  return res.json();
 };
 
-export const fetchAccounts = async () => {
-  try {
-    const res = await fetch(`${API_BASE}/accounts`);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (err) {
-    return null;
-  }
+export const API_ENDPOINTS = {
+  trades: `${API_BASE}/trades`,
+  accounts: `${API_BASE}/accounts`,
+  rubrics: `${API_BASE}/rubrics`,
 };
 
-export const draftTrade = async (tradeData: any) => {
+export const draftTrade = async (tradeData: unknown) => {
   const res = await fetch(`${API_BASE}/draft`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -40,7 +32,7 @@ export const updateTradeStatus = async (id: string, status: string) => {
   return res.json();
 };
 
-export const saveAccount = async (accountData: any) => {
+export const saveAccount = async (accountData: unknown) => {
   const res = await fetch(`${API_BASE}/accounts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -58,17 +50,7 @@ export const deleteAccount = async (id: string) => {
   return res.json();
 };
 
-export const fetchRubrics = async () => {
-  try {
-    const res = await fetch(`${API_BASE}/rubrics`);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (err) {
-    return null;
-  }
-};
-
-export const saveRubric = async (rubricData: any) => {
+export const saveRubric = async (rubricData: unknown) => {
   const res = await fetch(`${API_BASE}/rubrics`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -86,7 +68,7 @@ export const deleteRubric = async (id: string) => {
   return res.json();
 };
 
-export const journalTrade = async (journalData: any) => {
+export const journalTrade = async (journalData: unknown) => {
   const res = await fetch(`${API_BASE}/journal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -103,7 +85,7 @@ export const scrapeRulesFromUrls = async (urls: string[]) => {
     body: JSON.stringify({ urls }),
   });
   if (!res.ok) throw new Error('Failed to scrape rules');
-  return res.json();
+  return res.json() as Promise<{ context?: string }>;
 };
 
 export const improveRulesContext = async (text: string) => {
@@ -113,5 +95,5 @@ export const improveRulesContext = async (text: string) => {
     body: JSON.stringify({ text }),
   });
   if (!res.ok) throw new Error('Failed to improve rules');
-  return res.json();
+  return res.json() as Promise<{ context?: string }>;
 };

@@ -32,6 +32,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+      </head>
       <body className="min-h-screen flex flex-col bg-white dark:bg-black text-black dark:text-white font-sans transition-colors duration-0 cursor-none" suppressHydrationWarning>
         <Providers>
           <Cursor />

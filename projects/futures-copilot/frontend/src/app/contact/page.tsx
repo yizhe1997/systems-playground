@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Mail, MessageSquare, Globe } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Mail } from 'lucide-react';
 
 export default function ContactPage() {
   const [mounted, setMounted] = useState(false);

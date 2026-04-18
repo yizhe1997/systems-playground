@@ -9,7 +9,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       if (user && user.email) {
         try {
           const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://backend:8088/api/copilot';
@@ -36,16 +36,16 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async session({ session, token }) {
+    async session({ session }) {
       if (session?.user) {
         // If they match our explicit admin email list, tag them as ADMIN.
         const adminEmails = (process.env.ADMIN_EMAILS || "hello@systemsplayground.com").split(",");
         
         if (session.user.email && adminEmails.includes(session.user.email.toLowerCase())) {
-          (session.user as any).role = "ADMIN";
+          (session.user as { role: string }).role = "ADMIN";
         } else {
           // Everyone else is just an ANON for now until they buy a sub
-          (session.user as any).role = "ANON";
+          (session.user as { role: string }).role = "ANON";
         }
       }
       return session;
