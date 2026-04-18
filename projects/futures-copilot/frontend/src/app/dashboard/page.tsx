@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardControlBar } from './components/DashboardControlBar';
 import { TradeGrid } from './components/TradeGrid';
+import { DashboardPagination } from './components/DashboardPagination';
 import { DraftTradePanel } from './components/panels/DraftTradePanel';
 import { RubricConfigPanel } from './components/panels/RubricConfigPanel';
 import { AccountPanel } from './components/panels/AccountPanel';
@@ -29,6 +30,15 @@ export default function CopilotPage() {
     mutateRubrics,
     userRole,
     mounted,
+    createdFrom,
+    setCreatedFrom,
+    createdTo,
+    setCreatedTo,
+    page,
+    setPage,
+    pageSize,
+    totalTrades,
+    totalPages,
   } = data;
 
   const mutations = useDashboardMutations({
@@ -85,6 +95,12 @@ export default function CopilotPage() {
     handleUpdateStatus,
   } = mutations;
 
+  const clearFilters = () => {
+    setActiveTab('all');
+    setCreatedFrom('');
+    setCreatedTo('');
+  };
+
   if (!mounted) return null;
 
   return (
@@ -101,8 +117,13 @@ export default function CopilotPage() {
 
         <DashboardControlBar
           activeTab={activeTab}
+          createdFrom={createdFrom}
+          createdTo={createdTo}
           userRole={userRole}
           onTabChange={setActiveTab}
+          onCreatedFromChange={setCreatedFrom}
+          onCreatedToChange={setCreatedTo}
+          onClearFilters={clearFilters}
           onOpenRubric={() => setIsRubricOpen(true)}
           onOpenDraft={openNewDraftPanel}
         />
@@ -113,6 +134,14 @@ export default function CopilotPage() {
           onOpenDraftPanel={openDraftPanel}
           onUpdateStatus={handleUpdateStatus}
           onOpenJournal={setJournalTradeId}
+        />
+
+        <DashboardPagination
+          page={page}
+          totalPages={totalPages}
+          totalTrades={totalTrades}
+          pageSize={pageSize}
+          onPageChange={setPage}
         />
       </main>
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { Activity, CircleDot, Play, Settings2, X } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { Trade, UserRole } from '../types';
 
 interface TradeCardProps {
@@ -14,13 +13,7 @@ interface TradeCardProps {
 
 export function TradeCard({ trade, userRole, onOpenDraftPanel, onUpdateStatus, onOpenJournal }: TradeCardProps) {
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      className="bg-black dark:bg-white p-[1px] [clip-path:polygon(0_0,100%_0,100%_calc(100%-60px),calc(100%-60px)_100%,0_100%)] flex flex-col"
-    >
+    <div className="bg-black dark:bg-white p-[1px] [clip-path:polygon(0_0,100%_0,100%_calc(100%-60px),calc(100%-60px)_100%,0_100%)] flex flex-col">
       <div className="bg-white dark:bg-black flex-grow flex flex-col [clip-path:polygon(0_0,100%_0,100%_calc(100%-60px),calc(100%-60px)_100%,0_100%)]">
         <div className={`border-b border-black dark:border-white p-3 flex justify-between items-center text-white ${trade.bias === 'Long' ? 'bg-emerald-600 dark:bg-emerald-700' : trade.bias === 'Short' ? 'bg-rose-600 dark:bg-rose-700' : 'bg-black dark:bg-white dark:text-black'}`}>
           <div className="font-mono text-xs uppercase tracking-widest font-bold flex items-center gap-2">
@@ -117,6 +110,6 @@ export function TradeCard({ trade, userRole, onOpenDraftPanel, onUpdateStatus, o
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

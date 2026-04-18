@@ -29,6 +29,7 @@ type TradePlan struct {
 	Contracts  int      `json:"contracts"`
 	Notes      *string  `json:"notes"`
 	Status     string   `json:"status"`
+	CreatedAt  string   `json:"createdAt,omitempty"`
 	UpdatedAt  string   `json:"updatedAt,omitempty"`
 	PnL        *float64 `json:"pnl,omitempty"`
 	Outcome    *string  `json:"outcome,omitempty"`

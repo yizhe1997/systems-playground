@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -10,6 +11,70 @@ import (
 )
 
 func getTrades(c *fiber.Ctx) error {
+	pageQuery := c.Query("page")
+	pageSizeQuery := c.Query("pageSize")
+
+	if pageQuery != "" || pageSizeQuery != "" {
+		page := 1
+		pageSize := 6
+
+		if pageQuery != "" {
+			parsedPage, err := strconv.Atoi(pageQuery)
+			if err != nil || parsedPage <= 0 {
+				return jsonError(c, fiber.StatusBadRequest, "Invalid page")
+			}
+			page = parsedPage
+		}
+
+		if pageSizeQuery != "" {
+			parsedPageSize, err := strconv.Atoi(pageSizeQuery)
+			if err != nil || parsedPageSize <= 0 {
+				return jsonError(c, fiber.StatusBadRequest, "Invalid pageSize")
+			}
+			pageSize = parsedPageSize
+		}
+
+		createdFrom := c.Query("createdFrom")
+		if createdFrom != "" {
+			if _, err := time.Parse("2006-01-02", createdFrom); err != nil {
+				return jsonError(c, fiber.StatusBadRequest, "Invalid createdFrom")
+			}
+		}
+
+		createdTo := c.Query("createdTo")
+		if createdTo != "" {
+			if _, err := time.Parse("2006-01-02", createdTo); err != nil {
+				return jsonError(c, fiber.StatusBadRequest, "Invalid createdTo")
+			}
+		}
+
+		if createdFrom != "" && createdTo != "" {
+			fromDate, _ := time.Parse("2006-01-02", createdFrom)
+			toDate, _ := time.Parse("2006-01-02", createdTo)
+			if fromDate.After(toDate) {
+				return jsonError(c, fiber.StatusBadRequest, "createdFrom must be on or before createdTo")
+			}
+		}
+
+		result, err := listTradesPaginated(context.Background(), page, pageSize, TradeFilters{
+			AccountID:   c.Query("accountId"),
+			Status:      c.Query("status"),
+			CreatedFrom: createdFrom,
+			CreatedTo:   createdTo,
+		})
+		if err != nil {
+			return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to fetch paginated trades", err)
+		}
+
+		return c.JSON(fiber.Map{
+			"items":      result.Items,
+			"total":      result.Total,
+			"page":       result.Page,
+			"pageSize":   result.PageSize,
+			"totalPages": result.TotalPages,
+		})
+	}
+
 	trades, err := listTrades(context.Background())
 	if err != nil {
 		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to fetch trades", err)

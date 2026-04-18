@@ -24,6 +24,15 @@ export interface Trade {
   notes?: string;
   rubricId?: string;
   riskAmount?: number;
+  createdAt?: string;
+}
+
+export interface PaginatedTradesResponse {
+  items: Trade[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 export interface Rubric {

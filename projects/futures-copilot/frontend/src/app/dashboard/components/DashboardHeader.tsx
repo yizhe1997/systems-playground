@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Account, UserRole } from '../types';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 
 interface DashboardHeaderProps {
   activeAccount: Account | null;
@@ -55,7 +56,8 @@ export function DashboardHeader({
               onClick={() => setIsAccountDropdownOpen(prev => !prev)}
               className="font-mono text-xs uppercase tracking-widest bg-transparent flex items-center gap-2 text-black dark:text-white"
             >
-              {activeAccount?.type || 'NO ACCOUNT'} ▼
+              <span>{activeAccount?.type || 'NO ACCOUNT'}</span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${isAccountDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
               {isAccountDropdownOpen && accounts.length > 0 && (

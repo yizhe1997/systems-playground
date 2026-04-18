@@ -45,7 +45,7 @@ const (
 	disableUserQuery = "UPDATE users SET is_disabled = true WHERE email = $1"
 
 	selectTradesQuery = `
-		SELECT t.id, t.account_id, t.rubric_id, t.instrument, t.bias, t.entry, t.stop_loss, t.take_profit, t.contracts, t.risk_amount, t.status, t.notes, o.pnl, o.outcome 
+		SELECT t.id, t.account_id, t.rubric_id, t.instrument, t.bias, t.entry, t.stop_loss, t.take_profit, t.contracts, t.risk_amount, t.status, t.notes, t.created_at, o.pnl, o.outcome 
 		FROM trade_plans t 
 		LEFT JOIN trade_outcomes o ON o.trade_id = t.id 
 		ORDER BY t.created_at DESC

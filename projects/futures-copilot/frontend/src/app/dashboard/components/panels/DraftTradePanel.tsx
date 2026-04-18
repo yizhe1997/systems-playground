@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, X } from 'lucide-react';
+import { Activity, ChevronDown, X } from 'lucide-react';
 import { Account, DraftFormState, Rubric } from '../../types';
 
 interface DraftTradePanelProps {
@@ -88,7 +88,7 @@ export function DraftTradePanel({
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
                   >
                     <span>{accounts.find(account => account.id === (draftForm.accountId || activeAccountId))?.type || 'SELECT ACCOUNT'}</span>
-                    <span>▼</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isDraftAccountDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   <AnimatePresence>
@@ -123,7 +123,7 @@ export function DraftTradePanel({
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
                   >
                     <span>{rubrics.find(rubric => rubric.id === draftForm.rubricId)?.name || 'SELECT RUBRIC'}</span>
-                    <span>▼</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isDraftRubricDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   <AnimatePresence>

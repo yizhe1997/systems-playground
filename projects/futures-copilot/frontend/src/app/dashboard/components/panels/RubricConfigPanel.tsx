@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { Rubric, RubricFormState } from '../../types';
 import { DEFAULT_RUBRIC_FORM } from '../../constants';
 
@@ -88,8 +88,8 @@ export function RubricConfigPanel({
                     onClick={() => setIsConfigRubricDropdownOpen(prev => !prev)}
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
                   >
-                    <span>{rubricForm.id === '' ? '-- CREATE NEW --' : rubrics.find(rubric => rubric.id === rubricForm.id)?.name || 'SELECT RUBRIC'}</span>
-                    <span>▼</span>
+                    <span>{rubricForm.id === '' ? 'CREATE NEW' : rubrics.find(rubric => rubric.id === rubricForm.id)?.name || 'SELECT RUBRIC'}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isConfigRubricDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   <AnimatePresence>
@@ -107,7 +107,7 @@ export function RubricConfigPanel({
                           }}
                           className="text-left px-4 py-3 font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b border-black dark:border-white font-bold"
                         >
-                          -- CREATE NEW --
+                          CREATE NEW
                         </button>
                         {rubrics.map(rubric => (
                           <button
