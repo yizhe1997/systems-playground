@@ -12,6 +12,7 @@ interface AccountPanelProps {
   aiUrlsInput: string[];
   isAiScraping: boolean;
   isAiImproving: boolean;
+  availableAiProviders: string[];
   onClose: () => void;
   onAccountFormChange: (next: AccountFormState) => void;
   onShowDeleteConfirmChange: (next: boolean) => void;
@@ -31,6 +32,7 @@ export function AccountPanel({
   aiUrlsInput,
   isAiScraping,
   isAiImproving,
+  availableAiProviders,
   onClose,
   onAccountFormChange,
   onShowDeleteConfirmChange,
@@ -41,6 +43,14 @@ export function AccountPanel({
   onSubmit,
   onDelete,
 }: AccountPanelProps) {
+  const hasAvailableAI = availableAiProviders.length > 0;
+  const normalizedAccountType = accountForm.type.trim();
+  const canSubmitAccount =
+    normalizedAccountType.length > 0 &&
+    Number(accountForm.currentBalance) > 0 &&
+    Number(accountForm.currentDailyStopLevel) > 0 &&
+    Number(accountForm.currentMaxLossLevel) > 0;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -71,47 +81,82 @@ export function AccountPanel({
 
               <div className="p-8 flex-grow overflow-y-auto space-y-8">
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">ACCOUNT TYPE</label>
+                  <label
+                    data-cursor-text="Name format: [Broker Name] [Account Type] [Account Size], e.g. Topstep Express Funded Account 50K."
+                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                  >
+                    ACCOUNT TYPE
+                  </label>
                   <input
                     type="text"
-                    placeholder="e.g. TOPSTEP EVAL 50K"
+                    placeholder="e.g. TOPSTEP Express Funded Account 50K"
                     value={accountForm.type}
                     onChange={event => onAccountFormChange({ ...accountForm, type: event.target.value })}
+                    required
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">CURRENT BALANCE</label>
+                  <label
+                    data-cursor-text="Enter the current account balance from your broker dashboard."
+                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                  >
+                    CURRENT BALANCE
+                  </label>
                   <input
                     type="number"
                     placeholder="50000"
                     value={accountForm.currentBalance}
                     onChange={event => onAccountFormChange({ ...accountForm, currentBalance: parseFloat(event.target.value) || 0 })}
+                    min={0.01}
+                    step="any"
+                    required
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">DAILY STOP LEVEL (FLOOR)</label>
+                  <label
+                    data-cursor-text="Enter the broker-defined daily stop floor for this account type."
+                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                  >
+                    DAILY STOP LEVEL (FLOOR)
+                  </label>
                   <input
                     type="number"
                     placeholder="49000"
                     value={accountForm.currentDailyStopLevel}
                     onChange={event => onAccountFormChange({ ...accountForm, currentDailyStopLevel: parseFloat(event.target.value) || 0 })}
+                    min={0.01}
+                    step="any"
+                    required
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">MAX LOSS LEVEL (FLOOR)</label>
+                  <label
+                    data-cursor-text="Enter the broker-defined max loss floor for this account type."
+                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                  >
+                    MAX LOSS LEVEL (FLOOR)
+                  </label>
                   <input
                     type="number"
                     placeholder="48000"
                     value={accountForm.currentMaxLossLevel}
                     onChange={event => onAccountFormChange({ ...accountForm, currentMaxLossLevel: parseFloat(event.target.value) || 0 })}
+                    min={0.01}
+                    step="any"
+                    required
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">RULES CONTEXT</label>
+                  <label
+                    data-cursor-text="Add broker rules that apply specifically to the account type you selected."
+                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                  >
+                    RULES CONTEXT
+                  </label>
                   <textarea
                     placeholder="Trailing rules context..."
                     value={accountForm.rulesContext}
@@ -119,22 +164,25 @@ export function AccountPanel({
                     className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 min-h-[100px] resize-y"
                   />
                   <div className="mt-4 flex flex-col gap-2">
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() => onShowUrlInputChange(!showUrlInput)}
-                        className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity"
-                      >
-                        [ AI: SCRAPE FROM URLS ]
-                      </button>
-                      <button
-                        onClick={onAiImproveRules}
-                        disabled={isAiImproving || !accountForm.rulesContext}
-                        className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
-                      >
-                        {isAiImproving ? 'THINKING...' : '[ AI: CLEANUP TEXT ]'}
-                      </button>
-                    </div>
-                    {showUrlInput && (
+                    {hasAvailableAI && (
+                      <div className="flex gap-4">
+                        <button
+                          onClick={() => onShowUrlInputChange(!showUrlInput)}
+                          disabled={!normalizedAccountType}
+                          className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
+                        >
+                          [ AI: SCRAPE FROM URLS ]
+                        </button>
+                        <button
+                          onClick={onAiImproveRules}
+                          disabled={isAiImproving || !accountForm.rulesContext || !normalizedAccountType}
+                          className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
+                        >
+                          {isAiImproving ? 'THINKING...' : '[ AI: CLEANUP TEXT ]'}
+                        </button>
+                      </div>
+                    )}
+                    {hasAvailableAI && showUrlInput && (
                       <div className="flex flex-col gap-2 mt-2">
                         {aiUrlsInput.map((url, idx) => (
                           <div key={idx} className="flex gap-2 items-center">
@@ -174,8 +222,8 @@ export function AccountPanel({
                         <p className="font-mono text-[8px] text-rose-500 uppercase mt-2">Warning: This will overwrite existing context.</p>
                         <button
                           onClick={onAiScrapeUrls}
-                          disabled={isAiScraping}
-                          className="w-full py-3 bg-black text-white dark:bg-white dark:text-black font-mono text-[10px] uppercase tracking-widest font-bold hover:opacity-80 transition-opacity mt-2"
+                          disabled={isAiScraping || !normalizedAccountType}
+                          className="w-full py-3 bg-black text-white dark:bg-white dark:text-black font-mono text-[10px] uppercase tracking-widest font-bold hover:opacity-80 transition-opacity mt-2 disabled:opacity-30"
                         >
                           {isAiScraping ? 'SCRAPING...' : 'EXTRACT RULES'}
                         </button>
@@ -183,6 +231,7 @@ export function AccountPanel({
                     )}
                   </div>
                 </div>
+
               </div>
 
               {showDeleteConfirm ? (
@@ -209,7 +258,8 @@ export function AccountPanel({
                 <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
                   <button
                     onClick={onSubmit}
-                    className={`w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold ${accountForm.id ? 'mb-4' : ''}`}
+                    disabled={!canSubmitAccount}
+                    className={`w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold disabled:opacity-30 ${accountForm.id ? 'mb-4' : ''}`}
                   >
                     {accountForm.id ? 'UPDATE ACCOUNT' : 'CREATE ACCOUNT'}
                   </button>

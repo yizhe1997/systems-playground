@@ -67,14 +67,8 @@ export function RubricConfigPanel({
           >
             <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
               <div className="pl-[70px] pr-6 py-6 border-b border-black dark:border-white flex justify-between items-center bg-black text-white dark:bg-white dark:text-black">
-                <h2 className="font-mono text-sm uppercase tracking-widest font-bold flex items-center gap-4">
+                <h2 className="font-mono text-sm uppercase tracking-widest font-bold">
                   RUBRIC CONFIG
-                  <button
-                    onClick={() => onRubricFormChange(DEFAULT_RUBRIC_FORM)}
-                    className="px-2 py-0.5 bg-white text-black dark:bg-black dark:text-white text-[10px] hover:opacity-80 transition-opacity"
-                  >
-                    + NEW
-                  </button>
                 </h2>
                 <button onClick={onClose} className="hover:opacity-50 transition-opacity flex items-center justify-center w-5 h-5">
                   <X className="w-5 h-5" />
@@ -152,21 +146,7 @@ export function RubricConfigPanel({
                   />
                 </div>
 
-                <div>
-                  <label
-                    className="block w-fit font-mono text-[10px] uppercase tracking-widest opacity-60 mb-4 text-black dark:text-white"
-                    data-cursor-text="Paste custom Pine Script logic or indicators (e.g., Institutional Supply/Demand) to give the AI context on how your technical levels are generated."
-                  >
-                    PINE SCRIPT LOGIC (OPTIONAL)
-                  </label>
-                  <textarea
-                    placeholder="// Paste indicator logic here..."
-                    rows={8}
-                    value={rubricForm.pinescript}
-                    onChange={event => onRubricFormChange({ ...rubricForm, pinescript: event.target.value })}
-                    className="w-full bg-transparent border border-black dark:border-white p-4 font-mono text-[10px] leading-relaxed focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y"
-                  />
-                </div>
+
               </div>
 
               {showDeleteRubricConfirm ? (

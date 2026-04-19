@@ -6,7 +6,12 @@ import (
 
 // SetupCopilotRoutes registers all API endpoints
 func SetupCopilotRoutes(app *fiber.App) {
-	api := app.Group("/api/copilot")
+	registerCopilotRoutes(app, "/api")
+	registerCopilotRoutes(app, "/api/copilot")
+}
+
+func registerCopilotRoutes(app *fiber.App, basePath string) {
+	api := app.Group(basePath)
 	accounts := api.Group("/accounts")
 	rubrics := api.Group("/rubrics")
 	trades := api.Group("/trades")
@@ -27,9 +32,12 @@ func SetupCopilotRoutes(app *fiber.App) {
 	api.Post("/draft", draftTrade)
 	api.Post("/journal", journalTrade)
 
-	ai.Post("/scrape-rules", scrapeRules)
-	ai.Post("/improve-rules", improveRules)
+	ai.Post("/scrape-account-rules", requireTrustedAdminRequest(scrapeAccountRules))
+	ai.Post("/improve-account-rules", requireTrustedAdminRequest(improveAccountRules))
+	ai.Get("/availability", requireTrustedAdminRequest(getAIAvailability))
+	ai.Get("/config", requireTrustedAdminRequest(getAIProviderConfig))
+	ai.Put("/config", requireTrustedAdminRequest(updateAIProviderConfig))
 
-	users.Post("/sync", syncUser)
-	users.Put("/disable", disableUser)
+	users.Post("/sync", requireTrustedInternalRequest(syncUser))
+	users.Put("/disable", requireTrustedAdminRequest(disableUser))
 }

@@ -44,7 +44,7 @@ export function DashboardPagination({ page, totalPages, totalTrades, pageSize, o
         <button
           onClick={() => onPageChange(1)}
           disabled={page <= 1}
-          className="w-9 h-9 border border-black dark:border-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center justify-center"
+          className="w-9 h-9 border border-black dark:border-white disabled:opacity-40 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center justify-center"
           aria-label="First page"
         >
           <ChevronsLeft className="w-4 h-4" />
@@ -53,7 +53,7 @@ export function DashboardPagination({ page, totalPages, totalTrades, pageSize, o
         <button
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={page <= 1}
-          className="w-9 h-9 border border-black dark:border-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center justify-center"
+          className="w-9 h-9 border border-black dark:border-white disabled:opacity-40 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center justify-center"
           aria-label="Previous page"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -94,7 +94,7 @@ export function DashboardPagination({ page, totalPages, totalTrades, pageSize, o
         <button
           onClick={() => onPageChange(Math.min(safeTotalPages, page + 1))}
           disabled={page >= safeTotalPages}
-          className="w-9 h-9 border border-black dark:border-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center justify-center"
+          className="w-9 h-9 border border-black dark:border-white disabled:opacity-40 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center justify-center"
           aria-label="Next page"
         >
           <ChevronRight className="w-4 h-4" />
@@ -103,7 +103,7 @@ export function DashboardPagination({ page, totalPages, totalTrades, pageSize, o
         <button
           onClick={() => onPageChange(safeTotalPages)}
           disabled={page >= safeTotalPages}
-          className="w-9 h-9 border border-black dark:border-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center justify-center"
+          className="w-9 h-9 border border-black dark:border-white disabled:opacity-40 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex items-center justify-center"
           aria-label="Last page"
         >
           <ChevronsRight className="w-4 h-4" />

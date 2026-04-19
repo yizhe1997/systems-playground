@@ -1,4 +1,15 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/copilot';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api';
+
+export interface AIFeatureConfig {
+  key: string;
+  provider: string;
+  model: string;
+}
+
+export interface AIProviderConfigPayload {
+  features: AIFeatureConfig[];
+  timeoutMs: number;
+}
 
 export const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -78,22 +89,51 @@ export const journalTrade = async (journalData: unknown) => {
   return res.json();
 };
 
-export const scrapeRulesFromUrls = async (urls: string[]) => {
-  const res = await fetch(`${API_BASE}/ai/scrape-rules`, {
+export const scrapeRulesFromUrls = async (urls: string[], accountType: string) => {
+  const res = await fetch('/api/copilot/ai/scrape-account-rules', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ urls }),
+    body: JSON.stringify({ urls, accountType }),
   });
   if (!res.ok) throw new Error('Failed to scrape rules');
   return res.json() as Promise<{ context?: string }>;
 };
 
-export const improveRulesContext = async (text: string) => {
-  const res = await fetch(`${API_BASE}/ai/improve-rules`, {
+export const improveRulesContext = async (text: string, accountType: string) => {
+  const res = await fetch('/api/copilot/ai/improve-account-rules', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, accountType }),
   });
   if (!res.ok) throw new Error('Failed to improve rules');
   return res.json() as Promise<{ context?: string }>;
+};
+
+export const getAIAvailability = async () => {
+  const res = await fetch('/api/copilot/ai/availability', { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch AI availability');
+  return res.json() as Promise<{ availableProviders?: string[] }>;
+};
+
+export const getAIProviderConfig = async () => {
+  const res = await fetch('/api/copilot/ai/config', { cache: 'no-store' });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to fetch AI provider config (${res.status}): ${text || 'no response body'}`);
+  }
+  return res.json() as Promise<AIProviderConfigPayload & { updatedAt?: string; availableProviders?: string[] }>;
+};
+
+export const saveAIProviderConfig = async (payload: AIProviderConfigPayload) => {
+  const res = await fetch('/api/copilot/ai/config', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to save AI provider config (${res.status}): ${text || 'no response body'}`);
+  }
+  return res.json() as Promise<{ status: string }>;
 };

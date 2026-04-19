@@ -1,44 +1,133 @@
 package main
 
 import (
-	"time"
+	"context"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func scrapeRules(c *fiber.Ctx) error {
+func getAIAvailability(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{"availableProviders": availableAIProviders()})
+}
+
+func getAIProviderConfig(c *fiber.Ctx) error {
+	config, err := aiProviderConfigRepo.GetAIProviderConfig(context.Background())
+	if err != nil {
+		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to fetch AI provider config", err)
+	}
+
+	return c.JSON(fiber.Map{
+		"features": []AIFeatureConfig{
+			{Key: "scrapeRules", Provider: config.ScrapeRulesProvider, Model: config.ScrapeRulesModel},
+			{Key: "cleanupText", Provider: config.CleanupTextProvider, Model: config.CleanupTextModel},
+		},
+		"timeoutMs":          config.TimeoutMs,
+		"updatedAt":          config.UpdatedAt,
+		"availableProviders": config.AvailableProviders,
+	})
+}
+
+func updateAIProviderConfig(c *fiber.Ctx) error {
+	var req updateAIProviderConfigRequest
+	if err := parseRequestBody(c, &req, "Invalid payload"); err != nil {
+		return err
+	}
+
+	if validationMessage := validateAIProviderConfig(req); validationMessage != "" {
+		return jsonError(c, fiber.StatusBadRequest, validationMessage)
+	}
+
+	availableProviders := availableAIProviders()
+
+	var config AIProviderConfig
+	config.TimeoutMs = req.TimeoutMs
+	config.AvailableProviders = availableProviders
+
+	for _, f := range req.Features {
+		if !isProviderAvailable(f.Provider, availableProviders) {
+			return jsonError(c, fiber.StatusBadRequest, "Provider "+f.Provider+" is not available (missing API key)")
+		}
+		switch f.Key {
+		case "scrapeRules":
+			config.ScrapeRulesProvider = f.Provider
+			config.ScrapeRulesModel = f.Model
+		case "cleanupText":
+			config.CleanupTextProvider = f.Provider
+			config.CleanupTextModel = f.Model
+		}
+	}
+
+	if err := aiProviderConfigRepo.SaveAIProviderConfig(context.Background(), config); err != nil {
+		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to save AI provider config", err)
+	}
+
+	return c.JSON(fiber.Map{"status": "saved"})
+}
+
+func scrapeAccountRules(c *fiber.Ctx) error {
 	var req scrapeRulesRequest
 	if err := parseRequestBody(c, &req, "Invalid payload"); err != nil {
 		return err
 	}
+	if len(req.URLs) == 0 {
+		return jsonError(c, fiber.StatusBadRequest, "Missing urls")
+	}
+	if strings.TrimSpace(req.AccountType) == "" {
+		return jsonError(c, fiber.StatusBadRequest, "Missing accountType")
+	}
 
-	// MOCK AI SCRAPE
-	time.Sleep(2 * time.Second)
+	config, err := aiProviderConfigRepo.GetAIProviderConfig(context.Background())
+	if err != nil {
+		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to resolve AI provider config", err)
+	}
 
-	mockScraped := `// EXTRACTED VIA AI FROM BROKER DOCS //
-Trailing EOD Max Drawdown: $2500.
-Daily Loss Limit: $1500.
-Consistency Rule: No single day over 50% of total profit.
-Scaling Plan: 2 contracts per $1500 profit.
-News Rule: No trading 1m before or after high impact tier 1 news.`
+	compiledSource, err := compileURLSourceText(req.URLs)
+	if err != nil {
+		return logAndJSONError(c, fiber.StatusBadGateway, "Failed to fetch source urls", err)
+	}
 
-	return c.JSON(fiber.Map{"context": mockScraped})
+	contextText, err := extractAccountRulesSummary(
+		config.ScrapeRulesProvider,
+		config.ScrapeRulesModel,
+		config.TimeoutMs,
+		req.AccountType,
+		compiledSource,
+	)
+	if err != nil {
+		return logAndJSONError(c, fiber.StatusBadGateway, "Failed to extract rules context", err)
+	}
+
+	return c.JSON(fiber.Map{"context": contextText})
 }
 
-func improveRules(c *fiber.Ctx) error {
+func improveAccountRules(c *fiber.Ctx) error {
 	var req improveRulesRequest
 	if err := parseRequestBody(c, &req, "Invalid payload"); err != nil {
 		return err
 	}
+	if strings.TrimSpace(req.Text) == "" {
+		return jsonError(c, fiber.StatusBadRequest, "Missing text")
+	}
+	if strings.TrimSpace(req.AccountType) == "" {
+		return jsonError(c, fiber.StatusBadRequest, "Missing accountType")
+	}
 
-	// MOCK AI IMPROVEMENT
-	time.Sleep(1500 * time.Millisecond)
+	config, err := aiProviderConfigRepo.GetAIProviderConfig(context.Background())
+	if err != nil {
+		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to resolve AI provider config", err)
+	}
 
-	mockImproved := `[ AI CLEANED CONTEXT ]
-` + req.Text + `
+	contextText, err := extractAccountRulesSummary(
+		config.CleanupTextProvider,
+		config.CleanupTextModel,
+		config.TimeoutMs,
+		req.AccountType,
+		req.Text,
+	)
+	if err != nil {
+		return logAndJSONError(c, fiber.StatusBadGateway, "Failed to improve rules context", err)
+	}
 
-- Extracted Core constraint: Do not hold over weekends.
-- Enforced Behavioral rule: Pause trading if Daily Loss Limit is hit.`
-
-	return c.JSON(fiber.Map{"context": mockImproved})
+	return c.JSON(fiber.Map{"context": contextText})
 }

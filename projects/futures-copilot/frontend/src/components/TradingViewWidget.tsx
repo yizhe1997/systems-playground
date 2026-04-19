@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useId } from 'react';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/lib/theme-context';
 
 declare global {
   interface Window {
@@ -17,7 +17,7 @@ export default function TradingViewWidget({ symbol = "COMEX:GC1!" }: { symbol?: 
   const id = useId().replace(/:/g, '');
 
   useEffect(() => {
-    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const isDark = theme === 'dark';
 
     const initWidget = () => {
       if (!container.current) return;

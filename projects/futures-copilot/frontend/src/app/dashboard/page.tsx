@@ -79,6 +79,7 @@ export default function CopilotPage() {
     setAiUrlsInput,
     isAiScraping,
     isAiImproving,
+    availableAiProviders,
     openDraftPanel,
     openNewDraftPanel,
     closeDraftPanel,
@@ -184,6 +185,7 @@ export default function CopilotPage() {
         onAiUrlsInputChange={setAiUrlsInput}
         onAiImproveRules={handleAiImproveRules}
         onAiScrapeUrls={handleAiScrapeUrls}
+        availableAiProviders={availableAiProviders}
         onSubmit={handleAccountSubmit}
         onDelete={handleDeleteAccount}
       />

@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { CalendarDays, ChevronDown, Plus, Settings2 } from 'lucide-react';
+import { ChevronDown, Plus, Settings2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { DashboardTab, UserRole } from '../types';
 
@@ -92,12 +92,11 @@ export function DashboardControlBar({
         <div className="min-w-[300px]">
           <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">Date Range</label>
           <div className="flex items-center gap-2 border border-black dark:border-white px-3 py-2">
-            <CalendarDays className="w-4 h-4 opacity-70" />
             <input
               type="date"
               value={createdFrom}
               onChange={event => onCreatedFromChange(event.target.value)}
-              className="w-full bg-transparent font-mono text-xs uppercase tracking-widest focus:outline-none"
+              className="bg-transparent font-mono text-xs uppercase tracking-widest focus:outline-none [&::-webkit-calendar-picker-indicator]:cursor-pointer dark:[&::-webkit-calendar-picker-indicator]:invert"
               aria-label="Created from date"
             />
             <span className="font-mono text-[10px] uppercase tracking-widest opacity-60">to</span>
@@ -105,7 +104,7 @@ export function DashboardControlBar({
               type="date"
               value={createdTo}
               onChange={event => onCreatedToChange(event.target.value)}
-              className="w-full bg-transparent font-mono text-xs uppercase tracking-widest focus:outline-none"
+              className="bg-transparent font-mono text-xs uppercase tracking-widest focus:outline-none [&::-webkit-calendar-picker-indicator]:cursor-pointer dark:[&::-webkit-calendar-picker-indicator]:invert"
               aria-label="Created to date"
             />
           </div>

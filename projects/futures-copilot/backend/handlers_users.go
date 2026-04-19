@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -24,6 +25,10 @@ func syncUser(c *fiber.Ctx) error {
 }
 
 func disableUser(c *fiber.Ctx) error {
+	if strings.ToUpper(strings.TrimSpace(c.Get(internalUserRoleHeader))) == "ADMIN" {
+		return jsonError(c, fiber.StatusForbidden, "Admin accounts cannot be deleted")
+	}
+
 	var req disableUserRequest
 	if err := parseRequestBody(c, &req, "Invalid payload"); err != nil {
 		return err

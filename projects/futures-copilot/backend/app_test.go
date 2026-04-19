@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -82,6 +83,54 @@ func (m mockUsersRepo) DisableUserByEmail(ctx context.Context, email string) err
 	return nil
 }
 
+type mockAIProviderConfigRepo struct {
+	getFn  func(context.Context) (AIProviderConfig, error)
+	saveFn func(context.Context, AIProviderConfig) error
+}
+
+func (m mockAIProviderConfigRepo) GetAIProviderConfig(ctx context.Context) (AIProviderConfig, error) {
+	if m.getFn != nil {
+		return m.getFn(ctx)
+	}
+
+	return defaultAIProviderConfig(), nil
+}
+
+func (m mockAIProviderConfigRepo) SaveAIProviderConfig(ctx context.Context, config AIProviderConfig) error {
+	if m.saveFn != nil {
+		return m.saveFn(ctx, config)
+	}
+
+	return nil
+}
+
+func configureInternalAPISecret(t *testing.T) string {
+	t.Helper()
+
+	const secret = "test-internal-secret"
+	original, existed := os.LookupEnv("INTERNAL_API_SHARED_SECRET")
+	if err := os.Setenv("INTERNAL_API_SHARED_SECRET", secret); err != nil {
+		t.Fatalf("Setenv() error = %v", err)
+	}
+
+	t.Cleanup(func() {
+		if existed {
+			_ = os.Setenv("INTERNAL_API_SHARED_SECRET", original)
+			return
+		}
+		_ = os.Unsetenv("INTERNAL_API_SHARED_SECRET")
+	})
+
+	return secret
+}
+
+func addInternalRequestHeaders(req *http.Request, secret string, role string) {
+	req.Header.Set(internalAPISecretHeader, secret)
+	if role != "" {
+		req.Header.Set(internalUserRoleHeader, role)
+	}
+}
+
 func TestNewAppHealthcheck(t *testing.T) {
 	app := newApp()
 
@@ -152,6 +201,48 @@ func TestSaveAccountInvalidPayload(t *testing.T) {
 	assertJSONError(t, res, http.StatusBadRequest, "Missing account type")
 }
 
+func TestSaveAccountMissingCurrentBalance(t *testing.T) {
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/accounts", strings.NewReader(`{"type":"TOPSTEP EVAL 50K","currentDailyStopLevel":49000,"currentMaxLossLevel":48000}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusBadRequest, "Missing current balance")
+}
+
+func TestSaveAccountMissingDailyStopLevel(t *testing.T) {
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/accounts", strings.NewReader(`{"type":"TOPSTEP EVAL 50K","currentBalance":50000,"currentMaxLossLevel":48000}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusBadRequest, "Missing daily stop level")
+}
+
+func TestSaveAccountMissingMaxLossLevel(t *testing.T) {
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/accounts", strings.NewReader(`{"type":"TOPSTEP EVAL 50K","currentBalance":50000,"currentDailyStopLevel":49000}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusBadRequest, "Missing max loss level")
+}
+
 func TestDeleteAccountMissingID(t *testing.T) {
 	app := newApp()
 
@@ -181,10 +272,12 @@ func TestSaveRubricInvalidPayload(t *testing.T) {
 }
 
 func TestSyncUserInvalidPayload(t *testing.T) {
+	secret := configureInternalAPISecret(t)
 	app := newApp()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/copilot/users/sync", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "")
 
 	res, err := app.Test(req)
 	if err != nil {
@@ -195,17 +288,19 @@ func TestSyncUserInvalidPayload(t *testing.T) {
 }
 
 func TestDisableUserInvalidPayload(t *testing.T) {
+	secret := configureInternalAPISecret(t)
 	app := newApp()
 
 	req := httptest.NewRequest(http.MethodPut, "/api/copilot/users/disable", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "ADMIN")
 
 	res, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("app.Test() error = %v", err)
 	}
 
-	assertJSONError(t, res, http.StatusBadRequest, "Missing email")
+	assertJSONError(t, res, http.StatusForbidden, "Admin accounts cannot be deleted")
 }
 
 func TestGetAccountsSuccessWithInjectedRepo(t *testing.T) {
@@ -272,6 +367,7 @@ func TestSaveRubricSuccessWithInjectedRepo(t *testing.T) {
 }
 
 func TestSyncUserSuccessWithInjectedRepo(t *testing.T) {
+	secret := configureInternalAPISecret(t)
 	original := usersRepo
 	usersRepo = mockUsersRepo{
 		syncFn: func(_ context.Context, req syncUserRequest) (string, bool, error) {
@@ -286,6 +382,7 @@ func TestSyncUserSuccessWithInjectedRepo(t *testing.T) {
 	app := newApp()
 	req := httptest.NewRequest(http.MethodPost, "/api/copilot/users/sync", strings.NewReader(`{"providerId":"p-1","email":"alice@example.com","name":"Alice"}`))
 	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "")
 
 	res, err := app.Test(req)
 	if err != nil {
@@ -303,6 +400,187 @@ func TestSyncUserSuccessWithInjectedRepo(t *testing.T) {
 	if body["role"] != "ADMIN" {
 		t.Fatalf("unexpected response: %#v", body)
 	}
+}
+
+func TestGetAIProviderConfigSuccessWithInjectedRepo(t *testing.T) {
+	secret := configureInternalAPISecret(t)
+	original := aiProviderConfigRepo
+	aiProviderConfigRepo = mockAIProviderConfigRepo{
+		getFn: func(context.Context) (AIProviderConfig, error) {
+			return AIProviderConfig{
+				ScrapeRulesProvider: "openrouter",
+				ScrapeRulesModel:    "google/gemini-2.0-flash-001",
+				CleanupTextProvider: "gemini",
+				CleanupTextModel:    "gemini-2.0-flash",
+				TimeoutMs:           15000,
+			}, nil
+		},
+	}
+	t.Cleanup(func() { aiProviderConfigRepo = original })
+
+	app := newApp()
+	req := httptest.NewRequest(http.MethodGet, "/api/copilot/ai/config", nil)
+	addInternalRequestHeaders(req, secret, "ADMIN")
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want %d", res.StatusCode, http.StatusOK)
+	}
+}
+
+func TestGetAIProviderConfigUnauthorizedWithoutInternalSecret(t *testing.T) {
+	configureInternalAPISecret(t)
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/copilot/ai/config", nil)
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusUnauthorized, "Unauthorized")
+}
+
+func TestUpdateAIProviderConfigForbiddenForNonAdminRole(t *testing.T) {
+	secret := configureInternalAPISecret(t)
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodPut, "/api/copilot/ai/config", strings.NewReader(`{"features":[{"key":"scrapeRules","provider":"openrouter","model":"google/gemini-2.0-flash-001"},{"key":"cleanupText","provider":"gemini","model":"gemini-2.0-flash"}],"timeoutMs":15000}`))
+	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "ANON")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusForbidden, "Forbidden")
+}
+
+func TestUpdateAIProviderConfigInvalidPayload(t *testing.T) {
+	secret := configureInternalAPISecret(t)
+	app := newApp()
+	req := httptest.NewRequest(http.MethodPut, "/api/copilot/ai/config", strings.NewReader(`{"features":[],"timeoutMs":15000}`))
+	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "ADMIN")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusBadRequest, "Missing features")
+}
+
+func TestScrapeAccountRulesForbiddenForNonAdminRole(t *testing.T) {
+	secret := configureInternalAPISecret(t)
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/ai/scrape-account-rules", strings.NewReader(`{"urls":["https://example.com/rules"],"accountType":"TOPSTEP EVAL 50K"}`))
+	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "ANON")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusForbidden, "Forbidden")
+}
+
+func TestScrapeAccountRulesInvalidPayload(t *testing.T) {
+	secret := configureInternalAPISecret(t)
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/ai/scrape-account-rules", strings.NewReader(`{"urls":[]}`))
+	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "ADMIN")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusBadRequest, "Missing urls")
+}
+
+func TestImproveAccountRulesInvalidPayload(t *testing.T) {
+	secret := configureInternalAPISecret(t)
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/ai/improve-account-rules", strings.NewReader(`{"text":"","accountType":"TOPSTEP EVAL 50K"}`))
+	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "ADMIN")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusBadRequest, "Missing text")
+}
+
+func TestImproveAccountRulesProviderNotConfigured(t *testing.T) {
+	secret := configureInternalAPISecret(t)
+	app := newApp()
+
+	original := aiProviderConfigRepo
+	aiProviderConfigRepo = mockAIProviderConfigRepo{
+		getFn: func(context.Context) (AIProviderConfig, error) {
+			return AIProviderConfig{
+				CleanupTextProvider: "mock",
+				CleanupTextModel:    "mock-fast",
+				TimeoutMs:           15000,
+			}, nil
+		},
+	}
+	t.Cleanup(func() { aiProviderConfigRepo = original })
+
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/ai/improve-account-rules", strings.NewReader(`{"text":"daily loss limit 1500","accountType":"TOPSTEP EVAL 50K"}`))
+	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "ADMIN")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusBadGateway, "Failed to improve rules context")
+}
+
+func TestScrapeAccountRulesMissingAccountType(t *testing.T) {
+	secret := configureInternalAPISecret(t)
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/ai/scrape-account-rules", strings.NewReader(`{"urls":["https://example.com/rules"]}`))
+	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "ADMIN")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusBadRequest, "Missing accountType")
+}
+
+func TestImproveAccountRulesMissingAccountType(t *testing.T) {
+	secret := configureInternalAPISecret(t)
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/ai/improve-account-rules", strings.NewReader(`{"text":"daily loss limit 1500"}`))
+	req.Header.Set("Content-Type", "application/json")
+	addInternalRequestHeaders(req, secret, "ADMIN")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusBadRequest, "Missing accountType")
 }
 
 func assertJSONError(t *testing.T, res *http.Response, wantStatus int, wantError string) {

@@ -11,10 +11,9 @@ type AccountConfig struct {
 }
 
 type Rubric struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Rules      string `json:"rules"`
-	PineScript string `json:"pinescript"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Rules string `json:"rules"`
 }
 
 type TradePlan struct {
@@ -39,4 +38,21 @@ type AIResponse struct {
 	Decision   string  `json:"decision"`
 	RiskAmount float64 `json:"riskAmount"`
 	Feedback   string  `json:"feedback"`
+}
+
+type AIFeatureConfig struct {
+	Key      string `json:"key"`
+	Provider string `json:"provider"`
+	Model    string `json:"model"`
+}
+
+// AIProviderConfig is the internal flat representation (matches DB columns).
+type AIProviderConfig struct {
+	ScrapeRulesProvider string   `json:"-"`
+	ScrapeRulesModel    string   `json:"-"`
+	CleanupTextProvider string   `json:"-"`
+	CleanupTextModel    string   `json:"-"`
+	TimeoutMs           int      `json:"-"`
+	UpdatedAt           string   `json:"-"`
+	AvailableProviders  []string `json:"-"`
 }

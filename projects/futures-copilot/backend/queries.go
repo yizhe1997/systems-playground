@@ -3,6 +3,24 @@ package main
 const (
 	selectAccountsQuery = "SELECT id, type, current_balance, current_daily_stop_level, current_max_loss_level, rules_context FROM accounts"
 
+	selectAIProviderConfigQuery = `
+		SELECT scrape_rules_provider, scrape_rules_model, cleanup_text_provider, cleanup_text_model, timeout_ms, updated_at
+		FROM ai_provider_config
+		WHERE id = TRUE
+	`
+
+	upsertAIProviderConfigQuery = `
+		INSERT INTO ai_provider_config (id, scrape_rules_provider, scrape_rules_model, cleanup_text_provider, cleanup_text_model, timeout_ms, updated_at)
+		VALUES (TRUE, $1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+		ON CONFLICT (id) DO UPDATE SET
+			scrape_rules_provider = EXCLUDED.scrape_rules_provider,
+			scrape_rules_model = EXCLUDED.scrape_rules_model,
+			cleanup_text_provider = EXCLUDED.cleanup_text_provider,
+			cleanup_text_model = EXCLUDED.cleanup_text_model,
+			timeout_ms = EXCLUDED.timeout_ms,
+			updated_at = CURRENT_TIMESTAMP
+	`
+
 	upsertAccountQuery = `
 		INSERT INTO accounts (id, type, current_balance, current_daily_stop_level, current_max_loss_level, rules_context)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -19,15 +37,14 @@ const (
 	deleteTradePlansByAccountQuery     = "DELETE FROM trade_plans WHERE account_id = $1"
 	deleteAccountQuery                 = "DELETE FROM accounts WHERE id = $1"
 
-	selectRubricsQuery = "SELECT id, name, rules, pinescript FROM rubrics ORDER BY created_at DESC"
+	selectRubricsQuery = "SELECT id, name, rules FROM rubrics ORDER BY created_at DESC"
 
 	upsertRubricQuery = `
-		INSERT INTO rubrics (id, name, rules, pinescript)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO rubrics (id, name, rules)
+		VALUES ($1, $2, $3)
 		ON CONFLICT (id) DO UPDATE SET 
 			name = EXCLUDED.name,
-			rules = EXCLUDED.rules,
-			pinescript = EXCLUDED.pinescript
+			rules = EXCLUDED.rules
 	`
 
 	deleteRubricQuery = "DELETE FROM rubrics WHERE id = $1"

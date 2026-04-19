@@ -39,7 +39,6 @@ export interface Rubric {
   id: string;
   name: string;
   rules: string;
-  pinescript: string;
 }
 
 export interface DraftFormState {
@@ -58,7 +57,6 @@ export interface RubricFormState {
   id: string;
   name: string;
   rules: string;
-  pinescript: string;
 }
 
 export interface AccountFormState {
@@ -68,6 +66,18 @@ export interface AccountFormState {
   currentDailyStopLevel: number;
   currentMaxLossLevel: number;
   rulesContext: string;
+}
+
+export interface AIFeatureConfig {
+  key: string;
+  provider: string;
+  model: string;
+}
+
+export interface AIProviderConfigState {
+  features: AIFeatureConfig[];
+  timeoutMs: number;
+  availableProviders?: string[];
 }
 
 export interface JournalDataState {

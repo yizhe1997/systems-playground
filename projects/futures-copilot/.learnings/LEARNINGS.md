@@ -6,6 +6,29 @@ Corrections, insights, and knowledge gaps captured during development.
 
 ---
 
+## [LRN-20260418-002] correction
+
+**Logged**: 2026-04-18T00:00:00Z
+**Priority**: medium
+**Status**: pending
+**Area**: frontend
+
+### Summary
+AI configuration belongs in app settings, not the trading account panel.
+
+### Details
+The trading account panel is for prop-firm or brokerage account parameters, while AI routing/provider configuration is global application behavior. The user corrected this distinction and requested that AI provider/model assignment live in `/settings` and be configurable per feature.
+
+### Suggested Action
+Keep AI execution actions near their features, but centralize AI routing/configuration in admin settings and model assignment per feature.
+
+### Metadata
+- Source: user_feedback
+- Related Files: frontend/src/app/settings/page.tsx, frontend/src/app/dashboard/components/panels/AccountPanel.tsx
+- Tags: ui-architecture, ai-config, admin-settings
+
+---
+
 ## [LRN-20260418-001] best_practice
 
 **Logged**: 2026-04-18T14:35:00Z

@@ -18,7 +18,6 @@ export const DEFAULT_RUBRIC_FORM: RubricFormState = {
   id: '',
   name: 'New Rubric',
   rules: '',
-  pinescript: '',
 };
 
 export const DEFAULT_ACCOUNT_FORM: AccountFormState = {

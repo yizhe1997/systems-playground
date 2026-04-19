@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   deleteAccount,
   deleteRubric,
   draftTrade,
+  getAIAvailability,
   improveRulesContext,
   journalTrade,
   saveAccount,
@@ -70,6 +71,38 @@ export function useDashboardMutations({
   const [aiUrlsInput, setAiUrlsInput] = useState<string[]>(['']);
   const [isAiScraping, setIsAiScraping] = useState(false);
   const [isAiImproving, setIsAiImproving] = useState(false);
+  const [availableAiProviders, setAvailableAiProviders] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAIAvailability() {
+      if (!isAccountOpen) {
+        return;
+      }
+
+      try {
+        const availability = await getAIAvailability();
+        if (cancelled) {
+          return;
+        }
+
+        const realProviders = (availability.availableProviders || []).filter(provider => provider !== 'mock');
+        setAvailableAiProviders(realProviders);
+      } catch (error) {
+        if (!cancelled) {
+          console.error(error);
+          setAvailableAiProviders([]);
+        }
+      }
+    }
+
+    loadAIAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAccountOpen]);
 
   // Panel navigation helpers
   const openDraftPanel = (trade: Trade) => {
@@ -177,12 +210,38 @@ export function useDashboardMutations({
   };
 
   const handleAccountSubmit = async () => {
+    const type = accountForm.type.trim();
+    const currentBalance = Number(accountForm.currentBalance);
+    const dailyStopLevel = Number(accountForm.currentDailyStopLevel);
+    const maxLossLevel = Number(accountForm.currentMaxLossLevel);
+
+    if (!type) {
+      window.alert('Account type is required.');
+      return;
+    }
+
+    if (!Number.isFinite(currentBalance) || currentBalance <= 0) {
+      window.alert('Current balance is required and must be greater than 0.');
+      return;
+    }
+
+    if (!Number.isFinite(dailyStopLevel) || dailyStopLevel <= 0) {
+      window.alert('Daily stop level is required and must be greater than 0.');
+      return;
+    }
+
+    if (!Number.isFinite(maxLossLevel) || maxLossLevel <= 0) {
+      window.alert('Max loss level is required and must be greater than 0.');
+      return;
+    }
+
     try {
       const payload = {
         ...accountForm,
-        currentBalance: Number(accountForm.currentBalance),
-        currentDailyStopLevel: Number(accountForm.currentDailyStopLevel),
-        currentMaxLossLevel: Number(accountForm.currentMaxLossLevel),
+        type,
+        currentBalance,
+        currentDailyStopLevel: dailyStopLevel,
+        currentMaxLossLevel: maxLossLevel,
       };
       const res = await saveAccount(payload);
       setIsAccountOpen(false);
@@ -221,10 +280,11 @@ export function useDashboardMutations({
 
   const handleAiScrapeUrls = async () => {
     const urls = aiUrlsInput.map(s => s.trim()).filter(Boolean);
-    if (urls.length === 0) return;
+    const accountType = accountForm.type.trim();
+    if (urls.length === 0 || !accountType) return;
     setIsAiScraping(true);
     try {
-      const res = await scrapeRulesFromUrls(urls);
+      const res = await scrapeRulesFromUrls(urls, accountType);
       if (res && res.context) {
         setAccountForm({ ...accountForm, rulesContext: res.context });
         setAiUrlsInput(['']);
@@ -237,10 +297,11 @@ export function useDashboardMutations({
   };
 
   const handleAiImproveRules = async () => {
-    if (!accountForm.rulesContext) return;
+    const accountType = accountForm.type.trim();
+    if (!accountForm.rulesContext || !accountType) return;
     setIsAiImproving(true);
     try {
-      const res = await improveRulesContext(accountForm.rulesContext);
+      const res = await improveRulesContext(accountForm.rulesContext, accountType);
       if (res && res.context) {
         setAccountForm({ ...accountForm, rulesContext: res.context });
       }
@@ -307,6 +368,7 @@ export function useDashboardMutations({
     setAiUrlsInput,
     isAiScraping,
     isAiImproving,
+    availableAiProviders,
     // Panel helpers
     openDraftPanel,
     openNewDraftPanel,

@@ -11,11 +11,18 @@ type disableUserRequest struct {
 }
 
 type scrapeRulesRequest struct {
-	URLs []string `json:"urls"`
+	URLs        []string `json:"urls"`
+	AccountType string   `json:"accountType"`
 }
 
 type improveRulesRequest struct {
-	Text string `json:"text"`
+	Text        string `json:"text"`
+	AccountType string `json:"accountType"`
+}
+
+type updateAIProviderConfigRequest struct {
+	Features  []AIFeatureConfig `json:"features"`
+	TimeoutMs int               `json:"timeoutMs"`
 }
 
 type updateTradeStatusRequest struct {

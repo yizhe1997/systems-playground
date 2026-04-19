@@ -1,5 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { fetchInternalBackend } from "@/lib/server/internal-api";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -12,8 +13,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (user && user.email) {
         try {
-          const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://backend:8088/api/copilot';
-          const res = await fetch(`${API_BASE}/users/sync`, {
+          const res = await fetchInternalBackend('/users/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -22,7 +22,7 @@ export const authOptions: NextAuthOptions = {
               name: user.name || '',
             }),
           });
-          
+
           if (res.ok) {
             const data = await res.json();
             if (data.isDisabled) {
@@ -39,9 +39,12 @@ export const authOptions: NextAuthOptions = {
     async session({ session }) {
       if (session?.user) {
         // If they match our explicit admin email list, tag them as ADMIN.
-        const adminEmails = (process.env.ADMIN_EMAILS || "hello@systemsplayground.com").split(",");
+        const adminEmails = (process.env.ADMIN_EMAILS || "hello@systemsplayground.com")
+          .split(",")
+          .map(email => email.trim().replace(/^['\"]+|['\"]+$/g, '').toLowerCase())
+          .filter(Boolean);
         
-        if (session.user.email && adminEmails.includes(session.user.email.toLowerCase())) {
+        if (session.user.email && adminEmails.includes(session.user.email.trim().toLowerCase())) {
           (session.user as { role: string }).role = "ADMIN";
         } else {
           // Everyone else is just an ANON for now until they buy a sub

@@ -20,7 +20,7 @@ func (PostgresRubricsRepository) ListRubrics(ctx context.Context) ([]Rubric, err
 	rubrics := make([]Rubric, 0)
 	for rows.Next() {
 		var rubric Rubric
-		if err := rows.Scan(&rubric.ID, &rubric.Name, &rubric.Rules, &rubric.PineScript); err != nil {
+		if err := rows.Scan(&rubric.ID, &rubric.Name, &rubric.Rules); err != nil {
 			continue
 		}
 
@@ -31,7 +31,7 @@ func (PostgresRubricsRepository) ListRubrics(ctx context.Context) ([]Rubric, err
 }
 
 func (PostgresRubricsRepository) SaveRubricConfig(ctx context.Context, rubric Rubric) error {
-	_, err := db.Exec(ctx, upsertRubricQuery, rubric.ID, rubric.Name, rubric.Rules, rubric.PineScript)
+	_, err := db.Exec(ctx, upsertRubricQuery, rubric.ID, rubric.Name, rubric.Rules)
 	return err
 }
 

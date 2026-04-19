@@ -83,7 +83,7 @@ export function DashboardHeader({
               )}
             </AnimatePresence>
             <div className="flex gap-2">
-              {userRole === 'ADMIN' && (
+              {userRole === 'ADMIN' && activeAccount && (
                 <button
                   onClick={onOpenUpdateAccount}
                   className="font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white px-2 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"

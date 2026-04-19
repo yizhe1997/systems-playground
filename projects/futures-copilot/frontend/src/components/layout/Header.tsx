@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/lib/theme-context';
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from "next-auth/react";
 

@@ -50,7 +50,7 @@ services:
     env_file:
       - ./frontend/.env
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8088/api/copilot
+      NEXT_PUBLIC_API_URL: http://localhost:8088/api
       PORT: 8087
     depends_on:
       - futures-copilot-backend
