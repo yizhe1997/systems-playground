@@ -11,9 +11,12 @@ interface RubricConfigPanelProps {
   rubrics: Rubric[];
   rubricForm: RubricFormState;
   showDeleteRubricConfirm: boolean;
+  isAiImproving: boolean;
+  availableAiProviders: string[];
   onClose: () => void;
   onRubricFormChange: (next: RubricFormState) => void;
   onShowDeleteConfirmChange: (next: boolean) => void;
+  onAiImproveRules: () => void;
   onSave: () => void;
   onDelete: () => void;
 }
@@ -23,9 +26,12 @@ export function RubricConfigPanel({
   rubrics,
   rubricForm,
   showDeleteRubricConfirm,
+  isAiImproving,
+  availableAiProviders,
   onClose,
   onRubricFormChange,
   onShowDeleteConfirmChange,
+  onAiImproveRules,
   onSave,
   onDelete,
 }: RubricConfigPanelProps) {
@@ -67,7 +73,10 @@ export function RubricConfigPanel({
           >
             <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
               <div className="pl-[70px] pr-6 py-6 border-b border-black dark:border-white flex justify-between items-center bg-black text-white dark:bg-white dark:text-black">
-                <h2 className="font-mono text-sm uppercase tracking-widest font-bold">
+                <h2
+                  className="font-mono text-sm uppercase tracking-widest font-bold"
+                  data-cursor-text="Rubrics define how each trade setup is evaluated. Use them to score setup quality and confluence consistency."
+                >
                   RUBRIC CONFIG
                 </h2>
                 <button onClick={onClose} className="hover:opacity-50 transition-opacity flex items-center justify-center w-5 h-5">
@@ -144,6 +153,17 @@ export function RubricConfigPanel({
                     onChange={event => onRubricFormChange({ ...rubricForm, rules: event.target.value })}
                     className="w-full bg-transparent border border-black dark:border-white p-4 font-mono text-xs uppercase leading-relaxed focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y"
                   />
+                  {availableAiProviders.length > 0 && (
+                    <div className="mt-3">
+                      <button
+                        onClick={onAiImproveRules}
+                        disabled={isAiImproving || !rubricForm.rules}
+                        className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
+                      >
+                        {isAiImproving ? 'THINKING...' : '[ AI: IMPROVE WRITING ]'}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
 
@@ -163,26 +183,26 @@ export function RubricConfigPanel({
                     </button>
                     <button
                       onClick={() => onShowDeleteConfirmChange(false)}
-                      className="flex-1 py-4 border border-black dark:border-white font-mono text-xs uppercase tracking-widest font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                      className="flex-1 py-4 border border-black dark:border-white text-black dark:text-white font-mono text-xs uppercase tracking-widest font-bold hover:opacity-50 transition-opacity"
                     >
                       CANCEL
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] flex gap-4">
+                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
                   <button
                     onClick={onSave}
-                    className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold"
+                    className={`w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold ${rubricForm.id ? 'mb-4' : ''}`}
                   >
                     SAVE RUBRIC
                   </button>
-                  {rubricForm.id && rubrics.length > 1 && (
+                  {rubricForm.id && (
                     <button
                       onClick={() => onShowDeleteConfirmChange(true)}
-                      className="flex-none px-6 border border-rose-600 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 dark:hover:text-white transition-colors"
+                      className="w-full py-4 bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors"
                     >
-                      DELETE
+                      DELETE RUBRIC
                     </button>
                   )}
                 </div>

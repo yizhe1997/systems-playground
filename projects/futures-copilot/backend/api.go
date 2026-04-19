@@ -34,6 +34,7 @@ func registerCopilotRoutes(app *fiber.App, basePath string) {
 
 	ai.Post("/scrape-account-rules", requireTrustedAdminRequest(scrapeAccountRules))
 	ai.Post("/improve-account-rules", requireTrustedAdminRequest(improveAccountRules))
+	ai.Post("/improve-text", requireTrustedAdminRequest(improveText))
 	ai.Get("/availability", requireTrustedAdminRequest(getAIAvailability))
 	ai.Get("/config", requireTrustedAdminRequest(getAIProviderConfig))
 	ai.Put("/config", requireTrustedAdminRequest(updateAIProviderConfig))

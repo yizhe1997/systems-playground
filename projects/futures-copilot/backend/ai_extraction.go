@@ -96,6 +96,189 @@ func extractAccountRulesSummary(provider, model string, timeoutMs int, accountTy
 	return result, nil
 }
 
+const improveWritingSystemPrompt = `You are a professional writing assistant for futures traders.
+
+Task:
+- Improve the clarity, conciseness, and structure of the provided text.
+- Preserve all factual content, trading-specific terminology, and the author's intent.
+- Fix grammar, remove filler words, and ensure logical flow.
+
+Output requirements:
+- Plain text only.
+- No markdown fences.
+- No meta commentary (e.g., "here is the improved version").
+- Use readable line breaks.
+- If the input uses bullet points, keep them. If it is prose, keep it prose.
+- Return only the improved text with no preamble.`
+
+func improveGeneralText(provider, model string, timeoutMs int, text string) (string, error) {
+	if strings.TrimSpace(text) == "" {
+		return "", errors.New("empty text")
+	}
+
+	provider = strings.TrimSpace(provider)
+	if provider == "" || provider == "mock" {
+		return "", errors.New("real AI provider is not configured")
+	}
+
+	if timeoutMs <= 0 {
+		timeoutMs = 15000
+	}
+
+	cleanText := normalizeInlineText(text)
+	if len(cleanText) > 8000 {
+		cleanText = cleanText[:8000]
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutMs)*time.Millisecond)
+	defer cancel()
+
+	// Reuse the same provider call infrastructure with a different system prompt injected via the user prompt wrapper.
+	// We temporarily swap the system prompt by calling providers directly.
+	var result string
+	var err error
+	switch provider {
+	case "openrouter":
+		result, err = callImproveTextOpenRouter(ctx, model, cleanText)
+	case "gemini":
+		result, err = callImproveTextGemini(ctx, model, cleanText)
+	case "anthropic":
+		result, err = callImproveTextAnthropic(ctx, model, cleanText)
+	default:
+		return "", fmt.Errorf("unsupported provider: %s", provider)
+	}
+	if err != nil {
+		return "", err
+	}
+
+	result = normalizeModelOutput(result)
+	if result == "" {
+		return "", errors.New("AI returned empty result")
+	}
+
+	return result, nil
+}
+
+func callImproveTextOpenRouter(ctx context.Context, model, text string) (string, error) {
+	apiKey := os.Getenv("OPENROUTER_API_KEY")
+	if apiKey == "" {
+		return "", errors.New("OPENROUTER_API_KEY not set")
+	}
+
+	payload := map[string]any{
+		"model": model,
+		"messages": []map[string]string{
+			{"role": "system", "content": improveWritingSystemPrompt},
+			{"role": "user", "content": text},
+		},
+	}
+	b, _ := json.Marshal(payload)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://openrouter.ai/api/v1/chat/completions", bytes.NewReader(b))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	var result struct {
+		Choices []struct {
+			Message struct{ Content string } `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil || len(result.Choices) == 0 {
+		return "", errors.New("unexpected response from openrouter")
+	}
+	return result.Choices[0].Message.Content, nil
+}
+
+func callImproveTextGemini(ctx context.Context, model, text string) (string, error) {
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		return "", errors.New("GEMINI_API_KEY not set")
+	}
+
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, apiKey)
+	payload := map[string]any{
+		"system_instruction": map[string]any{
+			"parts": []map[string]string{{"text": improveWritingSystemPrompt}},
+		},
+		"contents": []map[string]any{
+			{"parts": []map[string]string{{"text": text}}},
+		},
+	}
+	b, _ := json.Marshal(payload)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(b))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	var result struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct{ Text string } `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil || len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
+		return "", errors.New("unexpected response from gemini")
+	}
+	return result.Candidates[0].Content.Parts[0].Text, nil
+}
+
+func callImproveTextAnthropic(ctx context.Context, model, text string) (string, error) {
+	apiKey := os.Getenv("ANTHROPIC_API_KEY")
+	if apiKey == "" {
+		return "", errors.New("ANTHROPIC_API_KEY not set")
+	}
+
+	payload := map[string]any{
+		"model":      model,
+		"max_tokens": 2048,
+		"system":     improveWritingSystemPrompt,
+		"messages": []map[string]string{
+			{"role": "user", "content": text},
+		},
+	}
+	b, _ := json.Marshal(payload)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.anthropic.com/v1/messages", bytes.NewReader(b))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", apiKey)
+	req.Header.Set("anthropic-version", "2023-06-01")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	var result struct {
+		Content []struct{ Text string } `json:"content"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil || len(result.Content) == 0 {
+		return "", errors.New("unexpected response from anthropic")
+	}
+	return result.Content[0].Text, nil
+}
+
 func compileURLSourceText(urls []string) (string, error) {
 	parts := make([]string, 0, len(urls))
 

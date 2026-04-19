@@ -109,6 +109,16 @@ export const improveRulesContext = async (text: string, accountType: string) => 
   return res.json() as Promise<{ context?: string }>;
 };
 
+export const improveText = async (text: string) => {
+  const res = await fetch('/api/copilot/ai/improve-text', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error('Failed to improve text');
+  return res.json() as Promise<{ text?: string }>;
+};
+
 export const getAIAvailability = async () => {
   const res = await fetch('/api/copilot/ai/availability', { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch AI availability');

@@ -7,6 +7,7 @@ import {
   draftTrade,
   getAIAvailability,
   improveRulesContext,
+  improveText,
   journalTrade,
   saveAccount,
   saveRubric,
@@ -18,6 +19,7 @@ import {
   AccountFormState,
   DraftFormState,
   JournalDataState,
+  PaginatedTradesResponse,
   Rubric,
   RubricFormState,
   Trade,
@@ -71,13 +73,15 @@ export function useDashboardMutations({
   const [aiUrlsInput, setAiUrlsInput] = useState<string[]>(['']);
   const [isAiScraping, setIsAiScraping] = useState(false);
   const [isAiImproving, setIsAiImproving] = useState(false);
+  const [isAiImprovingRubric, setIsAiImprovingRubric] = useState(false);
+  const [isAiImprovingDraft, setIsAiImprovingDraft] = useState(false);
   const [availableAiProviders, setAvailableAiProviders] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadAIAvailability() {
-      if (!isAccountOpen) {
+      if (!isAccountOpen && !isRubricOpen && !isDraftOpen) {
         return;
       }
 
@@ -102,7 +106,7 @@ export function useDashboardMutations({
     return () => {
       cancelled = true;
     };
-  }, [isAccountOpen]);
+  }, [isAccountOpen, isRubricOpen, isDraftOpen]);
 
   // Panel navigation helpers
   const openDraftPanel = (trade: Trade) => {
@@ -162,14 +166,46 @@ export function useDashboardMutations({
   // Mutation handlers
   const handleDraftSubmit = async () => {
     try {
+      const entry = parseFloat(draftForm.entry);
+      const stopLoss = parseFloat(draftForm.stopLoss);
+      const takeProfit = parseFloat(draftForm.takeProfit);
+
+      if (!Number.isFinite(entry) || !Number.isFinite(stopLoss) || !Number.isFinite(takeProfit)) {
+        window.alert('Entry zone, stop loss, and take profit must all be valid numbers.');
+        return;
+      }
+
       const payload = {
         ...draftForm,
         accountId: draftForm.accountId || normalizedActiveAccountId,
-        entry: parseFloat(draftForm.entry),
-        stopLoss: parseFloat(draftForm.stopLoss),
-        takeProfit: parseFloat(draftForm.takeProfit),
+        entry,
+        stopLoss,
+        takeProfit,
       };
-      mutateTrades([...trades, { ...payload, id: 'temp-draft', status: 'draft', riskAmount: 0 }], false);
+
+      mutateTrades(current => {
+        const currentPage = current as PaginatedTradesResponse | undefined;
+        if (!currentPage || !Array.isArray(currentPage.items)) {
+          return current;
+        }
+
+        const optimisticTrade: Trade = {
+          ...payload,
+          id: 'temp-draft',
+          status: 'draft',
+          riskAmount: 0,
+        };
+        const nextTotal = (currentPage.total || 0) + 1;
+        const nextPageSize = currentPage.pageSize || 1;
+
+        return {
+          ...currentPage,
+          items: [optimisticTrade, ...currentPage.items].slice(0, nextPageSize),
+          total: nextTotal,
+          totalPages: Math.max(1, Math.ceil(nextTotal / nextPageSize)),
+        };
+      }, false);
+
       await draftTrade(payload);
       setIsDraftOpen(false);
       setEditTradeId(null);
@@ -311,6 +347,34 @@ export function useDashboardMutations({
     setIsAiImproving(false);
   };
 
+  const handleAiImproveRubricRules = async () => {
+    if (!rubricForm.rules) return;
+    setIsAiImprovingRubric(true);
+    try {
+      const res = await improveText(rubricForm.rules);
+      if (res && res.text) {
+        setRubricForm({ ...rubricForm, rules: res.text });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+    setIsAiImprovingRubric(false);
+  };
+
+  const handleAiImproveDraftNotes = async () => {
+    if (!draftForm.notes) return;
+    setIsAiImprovingDraft(true);
+    try {
+      const res = await improveText(draftForm.notes);
+      if (res && res.text) {
+        setDraftForm({ ...draftForm, notes: res.text });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+    setIsAiImprovingDraft(false);
+  };
+
   const handleJournalSubmit = async () => {
     if (!journalTradeId) return;
     try {
@@ -368,6 +432,8 @@ export function useDashboardMutations({
     setAiUrlsInput,
     isAiScraping,
     isAiImproving,
+    isAiImprovingRubric,
+    isAiImprovingDraft,
     availableAiProviders,
     // Panel helpers
     openDraftPanel,
@@ -383,6 +449,8 @@ export function useDashboardMutations({
     handleDeleteAccount,
     handleAiScrapeUrls,
     handleAiImproveRules,
+    handleAiImproveRubricRules,
+    handleAiImproveDraftNotes,
     handleJournalSubmit,
     handleUpdateStatus,
   };

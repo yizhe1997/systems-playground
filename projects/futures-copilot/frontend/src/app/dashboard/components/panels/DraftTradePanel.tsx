@@ -12,8 +12,11 @@ interface DraftTradePanelProps {
   accounts: Account[];
   rubrics: Rubric[];
   draftForm: DraftFormState;
+  isAiImproving: boolean;
+  availableAiProviders: string[];
   onClose: () => void;
   onDraftFormChange: (next: DraftFormState) => void;
+  onAiImproveNotes: () => void;
   onSubmit: () => void;
 }
 
@@ -24,10 +27,34 @@ export function DraftTradePanel({
   accounts,
   rubrics,
   draftForm,
+  isAiImproving,
+  availableAiProviders,
   onClose,
   onDraftFormChange,
+  onAiImproveNotes,
   onSubmit,
 }: DraftTradePanelProps) {
+  const sanitizeDecimalInput = (value: string) => value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  const preventInvalidIntegerKeys = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (['e', 'E', '+', '-', '.'].includes(event.key)) {
+      event.preventDefault();
+    }
+  };
+  const handlePriceBlur = (key: 'entry' | 'stopLoss' | 'takeProfit') => {
+    const rawValue = draftForm[key];
+    if (!rawValue) {
+      return;
+    }
+
+    const parsedValue = parseFloat(rawValue);
+    if (!Number.isFinite(parsedValue)) {
+      onDraftFormChange({ ...draftForm, [key]: '' });
+      return;
+    }
+
+    onDraftFormChange({ ...draftForm, [key]: parsedValue.toFixed(2) });
+  };
+
   const [isDraftAccountDropdownOpen, setIsDraftAccountDropdownOpen] = useState(false);
   const [isDraftRubricDropdownOpen, setIsDraftRubricDropdownOpen] = useState(false);
 
@@ -186,9 +213,11 @@ export function DraftTradePanel({
                     <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">ENTRY ZONE</label>
                     <input
                       type="text"
-                      placeholder="e.g. 2350.5"
+                      inputMode="decimal"
+                      placeholder="0.00"
                       value={draftForm.entry}
-                      onChange={event => onDraftFormChange({ ...draftForm, entry: event.target.value })}
+                      onChange={event => onDraftFormChange({ ...draftForm, entry: sanitizeDecimalInput(event.target.value) })}
+                      onBlur={() => handlePriceBlur('entry')}
                       className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                     />
                   </div>
@@ -196,9 +225,11 @@ export function DraftTradePanel({
                     <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2 text-rose-600 dark:text-rose-400">STOP LOSS</label>
                     <input
                       type="text"
-                      placeholder="Price"
+                      inputMode="decimal"
+                      placeholder="0.00"
                       value={draftForm.stopLoss}
-                      onChange={event => onDraftFormChange({ ...draftForm, stopLoss: event.target.value })}
+                      onChange={event => onDraftFormChange({ ...draftForm, stopLoss: sanitizeDecimalInput(event.target.value) })}
+                      onBlur={() => handlePriceBlur('stopLoss')}
                       className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                     />
                   </div>
@@ -206,9 +237,11 @@ export function DraftTradePanel({
                     <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2 text-emerald-600 dark:text-emerald-400">TAKE PROFIT</label>
                     <input
                       type="text"
-                      placeholder="Price"
+                      inputMode="decimal"
+                      placeholder="0.00"
                       value={draftForm.takeProfit}
-                      onChange={event => onDraftFormChange({ ...draftForm, takeProfit: event.target.value })}
+                      onChange={event => onDraftFormChange({ ...draftForm, takeProfit: sanitizeDecimalInput(event.target.value) })}
+                      onBlur={() => handlePriceBlur('takeProfit')}
                       className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                     />
                   </div>
@@ -221,6 +254,10 @@ export function DraftTradePanel({
                     placeholder="1"
                     value={draftForm.contracts}
                     onChange={event => onDraftFormChange({ ...draftForm, contracts: parseInt(event.target.value, 10) || 1 })}
+                    onKeyDown={preventInvalidIntegerKeys}
+                    inputMode="numeric"
+                    min={1}
+                    step={1}
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                   />
                 </div>
@@ -234,6 +271,17 @@ export function DraftTradePanel({
                     onChange={event => onDraftFormChange({ ...draftForm, notes: event.target.value })}
                     className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs uppercase leading-relaxed focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y"
                   />
+                  {availableAiProviders.length > 0 && (
+                    <div className="mt-3">
+                      <button
+                        onClick={onAiImproveNotes}
+                        disabled={isAiImproving || !draftForm.notes}
+                        className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
+                      >
+                        {isAiImproving ? 'THINKING...' : '[ AI: IMPROVE WRITING ]'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

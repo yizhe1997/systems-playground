@@ -20,6 +20,10 @@ type improveRulesRequest struct {
 	AccountType string `json:"accountType"`
 }
 
+type improveTextRequest struct {
+	Text string `json:"text"`
+}
+
 type updateAIProviderConfigRequest struct {
 	Features  []AIFeatureConfig `json:"features"`
 	TimeoutMs int               `json:"timeoutMs"`

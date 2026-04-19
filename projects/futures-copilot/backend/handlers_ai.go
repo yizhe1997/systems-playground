@@ -101,6 +101,33 @@ func scrapeAccountRules(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"context": contextText})
 }
 
+func improveText(c *fiber.Ctx) error {
+	var req improveTextRequest
+	if err := parseRequestBody(c, &req, "Invalid payload"); err != nil {
+		return err
+	}
+	if strings.TrimSpace(req.Text) == "" {
+		return jsonError(c, fiber.StatusBadRequest, "Missing text")
+	}
+
+	config, err := aiProviderConfigRepo.GetAIProviderConfig(context.Background())
+	if err != nil {
+		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to resolve AI provider config", err)
+	}
+
+	improved, err := improveGeneralText(
+		config.CleanupTextProvider,
+		config.CleanupTextModel,
+		config.TimeoutMs,
+		req.Text,
+	)
+	if err != nil {
+		return logAndJSONError(c, fiber.StatusBadGateway, "Failed to improve text", err)
+	}
+
+	return c.JSON(fiber.Map{"text": improved})
+}
+
 func improveAccountRules(c *fiber.Ctx) error {
 	var req improveRulesRequest
 	if err := parseRequestBody(c, &req, "Invalid payload"); err != nil {

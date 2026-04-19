@@ -79,6 +79,8 @@ export default function CopilotPage() {
     setAiUrlsInput,
     isAiScraping,
     isAiImproving,
+    isAiImprovingRubric,
+    isAiImprovingDraft,
     availableAiProviders,
     openDraftPanel,
     openNewDraftPanel,
@@ -92,6 +94,8 @@ export default function CopilotPage() {
     handleDeleteAccount,
     handleAiScrapeUrls,
     handleAiImproveRules,
+    handleAiImproveRubricRules,
+    handleAiImproveDraftNotes,
     handleJournalSubmit,
     handleUpdateStatus,
   } = mutations;
@@ -153,8 +157,11 @@ export default function CopilotPage() {
         accounts={accounts}
         rubrics={rubrics}
         draftForm={draftForm}
+        isAiImproving={isAiImprovingDraft}
+        availableAiProviders={availableAiProviders}
         onClose={closeDraftPanel}
         onDraftFormChange={setDraftForm}
+        onAiImproveNotes={handleAiImproveDraftNotes}
         onSubmit={handleDraftSubmit}
       />
 
@@ -163,9 +170,12 @@ export default function CopilotPage() {
         rubrics={rubrics}
         rubricForm={rubricForm}
         showDeleteRubricConfirm={showDeleteRubricConfirm}
+        isAiImproving={isAiImprovingRubric}
+        availableAiProviders={availableAiProviders}
         onClose={() => setIsRubricOpen(false)}
         onRubricFormChange={setRubricForm}
         onShowDeleteConfirmChange={setShowDeleteRubricConfirm}
+        onAiImproveRules={handleAiImproveRubricRules}
         onSave={handleRubricSubmit}
         onDelete={handleDeleteRubric}
       />

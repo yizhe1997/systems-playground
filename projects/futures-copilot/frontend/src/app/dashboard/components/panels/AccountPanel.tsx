@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { AccountFormState } from '../../types';
@@ -43,6 +44,64 @@ export function AccountPanel({
   onSubmit,
   onDelete,
 }: AccountPanelProps) {
+  const sanitizeDecimalInput = (value: string) => value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  const formatMoneyInput = (value: number) => (Number.isFinite(value) ? value.toFixed(2) : '');
+
+  const [currentBalanceInput, setCurrentBalanceInput] = useState(formatMoneyInput(accountForm.currentBalance));
+  const [dailyStopInput, setDailyStopInput] = useState(formatMoneyInput(accountForm.currentDailyStopLevel));
+  const [maxLossInput, setMaxLossInput] = useState(formatMoneyInput(accountForm.currentMaxLossLevel));
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setCurrentBalanceInput(formatMoneyInput(accountForm.currentBalance));
+    setDailyStopInput(formatMoneyInput(accountForm.currentDailyStopLevel));
+    setMaxLossInput(formatMoneyInput(accountForm.currentMaxLossLevel));
+  }, [isOpen, accountForm.id]);
+
+  const handleMoneyInputChange = (
+    value: string,
+    setter: (value: string) => void,
+    key: 'currentBalance' | 'currentDailyStopLevel' | 'currentMaxLossLevel'
+  ) => {
+    const sanitizedValue = sanitizeDecimalInput(value);
+    setter(sanitizedValue);
+    onAccountFormChange({
+      ...accountForm,
+      [key]: sanitizedValue === '' ? 0 : parseFloat(sanitizedValue) || 0,
+    });
+  };
+
+  const handleMoneyInputBlur = (
+    value: string,
+    setter: (value: string) => void,
+    key: 'currentBalance' | 'currentDailyStopLevel' | 'currentMaxLossLevel'
+  ) => {
+    if (!value) {
+      setter('');
+      return;
+    }
+
+    const parsedValue = parseFloat(value);
+    if (!Number.isFinite(parsedValue)) {
+      setter('');
+      onAccountFormChange({
+        ...accountForm,
+        [key]: 0,
+      });
+      return;
+    }
+
+    const formattedValue = parsedValue.toFixed(2);
+    setter(formattedValue);
+    onAccountFormChange({
+      ...accountForm,
+      [key]: parsedValue,
+    });
+  };
+
   const hasAvailableAI = availableAiProviders.length > 0;
   const normalizedAccountType = accountForm.type.trim();
   const canSubmitAccount =
@@ -104,12 +163,12 @@ export function AccountPanel({
                     CURRENT BALANCE
                   </label>
                   <input
-                    type="number"
-                    placeholder="50000"
-                    value={accountForm.currentBalance}
-                    onChange={event => onAccountFormChange({ ...accountForm, currentBalance: parseFloat(event.target.value) || 0 })}
-                    min={0.01}
-                    step="any"
+                    type="text"
+                    placeholder="50000.00"
+                    value={currentBalanceInput}
+                    onChange={event => handleMoneyInputChange(event.target.value, setCurrentBalanceInput, 'currentBalance')}
+                    onBlur={() => handleMoneyInputBlur(currentBalanceInput, setCurrentBalanceInput, 'currentBalance')}
+                    inputMode="decimal"
                     required
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                   />
@@ -122,12 +181,12 @@ export function AccountPanel({
                     DAILY STOP LEVEL (FLOOR)
                   </label>
                   <input
-                    type="number"
-                    placeholder="49000"
-                    value={accountForm.currentDailyStopLevel}
-                    onChange={event => onAccountFormChange({ ...accountForm, currentDailyStopLevel: parseFloat(event.target.value) || 0 })}
-                    min={0.01}
-                    step="any"
+                    type="text"
+                    placeholder="49000.00"
+                    value={dailyStopInput}
+                    onChange={event => handleMoneyInputChange(event.target.value, setDailyStopInput, 'currentDailyStopLevel')}
+                    onBlur={() => handleMoneyInputBlur(dailyStopInput, setDailyStopInput, 'currentDailyStopLevel')}
+                    inputMode="decimal"
                     required
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                   />
@@ -140,12 +199,12 @@ export function AccountPanel({
                     MAX LOSS LEVEL (FLOOR)
                   </label>
                   <input
-                    type="number"
-                    placeholder="48000"
-                    value={accountForm.currentMaxLossLevel}
-                    onChange={event => onAccountFormChange({ ...accountForm, currentMaxLossLevel: parseFloat(event.target.value) || 0 })}
-                    min={0.01}
-                    step="any"
+                    type="text"
+                    placeholder="48000.00"
+                    value={maxLossInput}
+                    onChange={event => handleMoneyInputChange(event.target.value, setMaxLossInput, 'currentMaxLossLevel')}
+                    onBlur={() => handleMoneyInputBlur(maxLossInput, setMaxLossInput, 'currentMaxLossLevel')}
+                    inputMode="decimal"
                     required
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                   />

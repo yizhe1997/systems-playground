@@ -51,13 +51,13 @@ export function DashboardHeader({
 
       <div className="lg:col-span-4 self-end">
         <div className="border border-black dark:border-white p-6 bg-white dark:bg-black">
-          <div ref={accountDropdownRef} className="flex justify-between items-start border-b border-black dark:border-white pb-4 mb-4 relative">
+          <div ref={accountDropdownRef} className="flex items-start gap-3 border-b border-black dark:border-white pb-4 mb-4 relative">
             <button
               onClick={() => setIsAccountDropdownOpen(prev => !prev)}
-              className="font-mono text-xs uppercase tracking-widest bg-transparent flex items-center gap-2 text-black dark:text-white"
+              className="flex-1 min-w-0 font-mono text-xs uppercase tracking-widest bg-transparent flex items-start justify-between gap-2 text-black dark:text-white"
             >
-              <span>{activeAccount?.type || 'NO ACCOUNT'}</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${isAccountDropdownOpen ? 'rotate-180' : ''}`} />
+              <span className="block flex-1 min-w-0 text-left break-words leading-tight">{activeAccount?.type || 'NO ACCOUNT'}</span>
+              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isAccountDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
               {isAccountDropdownOpen && accounts.length > 0 && (
@@ -82,11 +82,11 @@ export function DashboardHeader({
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-start shrink-0 self-start">
               {userRole === 'ADMIN' && activeAccount && (
                 <button
                   onClick={onOpenUpdateAccount}
-                  className="font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white px-2 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                  className="h-6 px-2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
                 >
                   UPDATE
                 </button>
@@ -94,7 +94,7 @@ export function DashboardHeader({
               {userRole === 'ADMIN' && (
                 <button
                   onClick={onOpenNewAccount}
-                  className="font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white px-2 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                  className="h-6 px-2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
                 >
                   + NEW
                 </button>

@@ -13,6 +13,26 @@ interface JournalPanelProps {
 }
 
 export function JournalPanel({ tradeId, journalData, onJournalDataChange, onClose, onSubmit }: JournalPanelProps) {
+  const sanitizeSignedDecimalInput = (value: string) => {
+    const sanitized = value.replace(/[^0-9.-]/g, '');
+    const withoutExtraMinus = sanitized.replace(/(?!^)-/g, '');
+    return withoutExtraMinus.replace(/(\..*)\./g, '$1');
+  };
+
+  const handlePnlBlur = () => {
+    if (!journalData.pnl) {
+      return;
+    }
+
+    const parsedValue = parseFloat(journalData.pnl);
+    if (!Number.isFinite(parsedValue)) {
+      onJournalDataChange({ ...journalData, pnl: '' });
+      return;
+    }
+
+    onJournalDataChange({ ...journalData, pnl: parsedValue.toFixed(2) });
+  };
+
   return (
     <AnimatePresence>
       {tradeId && (
@@ -46,10 +66,12 @@ export function JournalPanel({ tradeId, journalData, onJournalDataChange, onClos
                 <div>
                   <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">ACTUAL P&L ($)</label>
                   <input
-                    type="number"
-                    placeholder="e.g. 500 or -300"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="e.g. 500.00 or -300.00"
                     value={journalData.pnl}
-                    onChange={event => onJournalDataChange({ ...journalData, pnl: event.target.value })}
+                    onChange={event => onJournalDataChange({ ...journalData, pnl: sanitizeSignedDecimalInput(event.target.value) })}
+                    onBlur={handlePnlBlur}
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-3xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
                   />
                 </div>
