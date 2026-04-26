@@ -7,34 +7,14 @@ import { AlertTriangle, ChevronDown, CreditCard, UserX } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getAIProviderConfig, saveAIProviderConfig } from '@/lib/dashboard/api';
 import { AIProviderConfigState } from '../dashboard/types';
-
-const AI_FEATURES: { key: string; label: string }[] = [
-  { key: 'scrapeRules', label: 'Scrape From URLs' },
-  { key: 'cleanupText', label: 'Cleanup Text' },
-];
-
-const MODEL_PRESETS: Record<string, string[]> = {
-  openrouter: [
-    'openrouter/free',
-    'google/gemini-2.0-flash-001',
-    'google/gemini-2.0-flash-lite-001',
-  ],
-  gemini: [
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-  ],
-  anthropic: [
-    'claude-3-5-haiku-latest',
-    'claude-3-5-sonnet-latest',
-  ],
-};
+import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
+  const { toast } = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [selectedFeatureKey, setSelectedFeatureKey] = useState('scrapeRules');
+  const [selectedFeatureKey, setSelectedFeatureKey] = useState('');
   const [featureDropdownOpen, setFeatureDropdownOpen] = useState(false);
   const [providerDropdownOpen, setProviderDropdownOpen] = useState(false);
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
@@ -45,17 +25,15 @@ export default function SettingsPage() {
     features: [],
     timeoutMs: 15000,
     availableProviders: [],
+    modelPresets: {},
   });
   const [isAiConfigLoading, setIsAiConfigLoading] = useState(false);
   const [isAiConfigSaving, setIsAiConfigSaving] = useState(false);
-  const [aiConfigMessage, setAiConfigMessage] = useState('');
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 0);
     if (status === 'unauthenticated') {
       router.push('/');
     }
-    return () => clearTimeout(t);
   }, [status, router]);
 
   const role = (session?.user as unknown as { role?: string })?.role || 'ANON';
@@ -66,9 +44,8 @@ export default function SettingsPage() {
     let cancelled = false;
 
     async function loadAIConfig() {
-      if (!mounted || !session || !isAdmin) return;
+      if (!session || !isAdmin) return;
       setIsAiConfigLoading(true);
-      setAiConfigMessage('');
       try {
         const config = await getAIProviderConfig();
         if (cancelled) return;
@@ -76,11 +53,16 @@ export default function SettingsPage() {
           features: config.features || [],
           timeoutMs: config.timeoutMs,
           availableProviders: (config.availableProviders || []).filter(p => p !== 'mock'),
+          modelPresets: config.modelPresets || {},
         });
+
+        if ((config.features || []).length > 0) {
+          setSelectedFeatureKey(config.features[0].key);
+        }
       } catch (error) {
         if (!cancelled) {
           console.error(error);
-          setAiConfigMessage('Failed to load AI routing settings.');
+          toast('Failed to load AI routing settings.', 'error');
         }
       } finally {
         if (!cancelled) {
@@ -94,7 +76,21 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [mounted, session, isAdmin]);
+  }, [session, isAdmin, toast]);
+
+  useEffect(() => {
+    if (aiConfig.features.length === 0) {
+      if (selectedFeatureKey !== '') {
+        setSelectedFeatureKey('');
+      }
+      return;
+    }
+
+    const exists = aiConfig.features.some(f => f.key === selectedFeatureKey);
+    if (!exists) {
+      setSelectedFeatureKey(aiConfig.features[0].key);
+    }
+  }, [aiConfig.features, selectedFeatureKey]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -112,7 +108,7 @@ export default function SettingsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (!mounted || status === 'loading' || !session) return null;
+  if (status === 'loading' || !session) return null;
 
   const handleDisableUser = async () => {
     const confirm = window.confirm("Are you sure you want to delete your account? This will log you out and prevent future access.");
@@ -128,6 +124,7 @@ export default function SettingsPage() {
       signOut({ callbackUrl: '/' });
     } catch(e) {
       console.error(e);
+      toast('Failed to disable account.', 'error');
       setIsDeleting(false);
     }
   };
@@ -136,8 +133,9 @@ export default function SettingsPage() {
     switch (provider) {
       case 'openrouter':
         return 'OpenRouter';
+      case 'google':
       case 'gemini':
-        return 'Gemini (Direct)';
+        return 'Google AI Studio (Direct)';
       case 'anthropic':
         return 'Anthropic (Direct)';
       default:
@@ -147,7 +145,6 @@ export default function SettingsPage() {
 
   const handleSaveAIConfig = async () => {
     setIsAiConfigSaving(true);
-    setAiConfigMessage('');
 
     try {
       await saveAIProviderConfig({
@@ -155,10 +152,10 @@ export default function SettingsPage() {
         timeoutMs: aiConfig.timeoutMs,
       });
 
-      setAiConfigMessage('AI feature routing updated. New requests will use these assignments.');
+      toast('AI feature routing updated.', 'success');
     } catch (error) {
       console.error(error);
-      setAiConfigMessage('Failed to save AI feature routing.');
+      toast('Failed to save AI feature routing.', 'error');
     }
 
     setIsAiConfigSaving(false);
@@ -167,7 +164,9 @@ export default function SettingsPage() {
   const selectedFeature = aiConfig.features.find(f => f.key === selectedFeatureKey);
   const selectedProvider = selectedFeature?.provider ?? '';
   const selectedModel = selectedFeature?.model ?? '';
-  const modelPresets = MODEL_PRESETS[selectedProvider] ?? [];
+  const modelPresets = aiConfig.modelPresets?.[selectedProvider] ?? [];
+  const uniqueModelPresets = Array.from(new Set(modelPresets));
+  const selectedFeatureTimeoutMs = selectedFeature?.timeoutMs ?? aiConfig.timeoutMs;
 
   return (
     <div className="w-full relative min-h-screen">
@@ -278,7 +277,7 @@ export default function SettingsPage() {
                         onClick={() => setFeatureDropdownOpen(prev => !prev)}
                         className="w-full bg-transparent border border-black dark:border-white px-4 py-3 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
                       >
-                        <span>{AI_FEATURES.find(f => f.key === selectedFeatureKey)?.label ?? selectedFeatureKey}</span>
+                        <span>{aiConfig.features.find(f => f.key === selectedFeatureKey)?.label ?? selectedFeatureKey ?? 'Select feature'}</span>
                         <ChevronDown className={`w-4 h-4 transition-transform ${featureDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
                       <AnimatePresence>
@@ -289,7 +288,7 @@ export default function SettingsPage() {
                             exit={{ opacity: 0, y: -8 }}
                             className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col"
                           >
-                            {AI_FEATURES.map(f => (
+                            {aiConfig.features.map(f => (
                               <button
                                 key={f.key}
                                 onClick={() => { setSelectedFeatureKey(f.key); setFeatureDropdownOpen(false); }}
@@ -299,7 +298,7 @@ export default function SettingsPage() {
                                     : 'hover:bg-black/5 dark:hover:bg-white/10'
                                 }`}
                               >
-                                {f.label}
+                                {f.label || f.key}
                               </button>
                             ))}
                           </motion.div>
@@ -360,14 +359,14 @@ export default function SettingsPage() {
                         <ChevronDown className={`w-4 h-4 transition-transform ${modelDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
                       <AnimatePresence>
-                        {modelDropdownOpen && modelPresets.length > 0 && (
+                        {modelDropdownOpen && uniqueModelPresets.length > 0 && (
                           <motion.div
                             initial={{ opacity: 0, y: -8 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -8 }}
                             className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col"
                           >
-                            {modelPresets.map(model => (
+                            {uniqueModelPresets.map(model => (
                               <button
                                 key={model}
                                 onClick={() => {
@@ -398,8 +397,15 @@ export default function SettingsPage() {
                         type="number"
                         min={1000}
                         step={500}
-                        value={aiConfig.timeoutMs}
-                        onChange={e => setAiConfig(cur => ({ ...cur, timeoutMs: Number(e.target.value) || 15000 }))}
+                        value={selectedFeatureTimeoutMs}
+                        onChange={e => {
+                          const timeoutMs = Number(e.target.value) || 15000;
+                          setAiConfig(cur => ({
+                            ...cur,
+                            timeoutMs,
+                            features: cur.features.map(f => f.key === selectedFeatureKey ? { ...f, timeoutMs } : f),
+                          }));
+                        }}
                         className="w-full bg-transparent border border-black dark:border-white py-3 px-4 font-mono text-xs tracking-widest focus:outline-none"
                       />
                     </div>
@@ -412,9 +418,6 @@ export default function SettingsPage() {
                       {isAiConfigSaving ? 'Saving...' : 'Save AI Routing'}
                     </button>
                   </>
-                )}
-                {aiConfigMessage && (
-                  <p className="font-mono text-[10px] uppercase tracking-widest opacity-70">{aiConfigMessage}</p>
                 )}
               </div>
             </section>

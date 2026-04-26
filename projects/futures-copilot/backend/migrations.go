@@ -37,9 +37,9 @@ var schemaMigrations = []string{
 	CREATE TABLE IF NOT EXISTS ai_provider_config (
 		id BOOLEAN PRIMARY KEY DEFAULT TRUE,
 		scrape_rules_provider TEXT NOT NULL DEFAULT 'openrouter',
-		scrape_rules_model TEXT NOT NULL DEFAULT 'google/gemini-2.0-flash-001',
+		scrape_rules_model TEXT NOT NULL DEFAULT 'google/gemini-2.5-pro',
 		cleanup_text_provider TEXT NOT NULL DEFAULT 'openrouter',
-		cleanup_text_model TEXT NOT NULL DEFAULT 'google/gemini-2.0-flash-001',
+		cleanup_text_model TEXT NOT NULL DEFAULT 'google/gemini-2.5-flash',
 		timeout_ms INTEGER NOT NULL DEFAULT 15000,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		CHECK (id = TRUE)
@@ -48,14 +48,37 @@ var schemaMigrations = []string{
 	INSERT INTO ai_provider_config (id)
 	VALUES (TRUE)
 	ON CONFLICT (id) DO NOTHING;`,
-	`ALTER TABLE ai_provider_config ADD COLUMN IF NOT EXISTS scrape_rules_provider TEXT;`,
-	`ALTER TABLE ai_provider_config ADD COLUMN IF NOT EXISTS scrape_rules_model TEXT;`,
-	`ALTER TABLE ai_provider_config ADD COLUMN IF NOT EXISTS cleanup_text_provider TEXT;`,
-	`ALTER TABLE ai_provider_config ADD COLUMN IF NOT EXISTS cleanup_text_model TEXT;`,
-	`UPDATE ai_provider_config SET scrape_rules_provider = COALESCE(scrape_rules_provider, primary_provider, 'openrouter');`,
-	`UPDATE ai_provider_config SET scrape_rules_model = COALESCE(scrape_rules_model, primary_model, 'google/gemini-2.0-flash-001');`,
-	`UPDATE ai_provider_config SET cleanup_text_provider = COALESCE(cleanup_text_provider, primary_provider, 'openrouter');`,
-	`UPDATE ai_provider_config SET cleanup_text_model = COALESCE(cleanup_text_model, primary_model, 'google/gemini-2.0-flash-001');`,
+	`
+	CREATE TABLE IF NOT EXISTS ai_feature_configs (
+		feature_key TEXT PRIMARY KEY,
+		label TEXT NOT NULL,
+		provider TEXT NOT NULL,
+		model TEXT NOT NULL,
+		timeout_ms INTEGER NOT NULL DEFAULT 15000,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);`,
+	`
+	INSERT INTO ai_feature_configs (feature_key, label, provider, model, timeout_ms)
+	VALUES
+		('` + AIFeatureKeyAccountRulesContextScrapeRules + `', '` + AIFeatureLabelAccountRulesContextScrapeRules + `', COALESCE((SELECT scrape_rules_provider FROM ai_provider_config WHERE id = TRUE), 'openrouter'), COALESCE((SELECT scrape_rules_model FROM ai_provider_config WHERE id = TRUE), 'google/gemini-2.5-pro'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE id = TRUE), 15000)),
+		('` + AIFeatureKeyAccountRulesContextCleanupText + `', '` + AIFeatureLabelAccountRulesContextCleanupText + `', COALESCE((SELECT cleanup_text_provider FROM ai_provider_config WHERE id = TRUE), 'openrouter'), COALESCE((SELECT cleanup_text_model FROM ai_provider_config WHERE id = TRUE), 'google/gemini-2.5-flash'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE id = TRUE), 15000)),
+		('` + AIFeatureKeyRubricRulesImproveText + `', '` + AIFeatureLabelRubricRulesImproveText + `', COALESCE((SELECT scrape_rules_provider FROM ai_provider_config WHERE id = TRUE), 'openrouter'), COALESCE((SELECT scrape_rules_model FROM ai_provider_config WHERE id = TRUE), 'google/gemini-2.5-pro'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE id = TRUE), 15000)),
+		('` + AIFeatureKeyDraftContextNotesImproveText + `', '` + AIFeatureLabelDraftContextNotesImproveText + `', COALESCE((SELECT cleanup_text_provider FROM ai_provider_config WHERE id = TRUE), 'openrouter'), COALESCE((SELECT cleanup_text_model FROM ai_provider_config WHERE id = TRUE), 'google/gemini-2.5-flash'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE id = TRUE), 15000))
+	ON CONFLICT (feature_key) DO NOTHING;`,
+	`
+	CREATE TABLE IF NOT EXISTS ai_model_presets (
+		provider TEXT NOT NULL,
+		model TEXT NOT NULL,
+		sort_order INTEGER NOT NULL DEFAULT 0,
+		PRIMARY KEY (provider, model)
+	);`,
+	`INSERT INTO ai_model_presets (provider, model, sort_order) VALUES ('openrouter', 'openrouter/free', 1) ON CONFLICT (provider, model) DO NOTHING;`,
+	`INSERT INTO ai_model_presets (provider, model, sort_order) VALUES ('openrouter', 'google/gemini-2.5-pro', 2) ON CONFLICT (provider, model) DO NOTHING;`,
+	`INSERT INTO ai_model_presets (provider, model, sort_order) VALUES ('openrouter', 'google/gemini-2.5-flash', 3) ON CONFLICT (provider, model) DO NOTHING;`,
+	`INSERT INTO ai_model_presets (provider, model, sort_order) VALUES ('google', 'gemini-2.5-pro', 1) ON CONFLICT (provider, model) DO NOTHING;`,
+	`INSERT INTO ai_model_presets (provider, model, sort_order) VALUES ('google', 'gemini-2.5-flash', 2) ON CONFLICT (provider, model) DO NOTHING;`,
+	`INSERT INTO ai_model_presets (provider, model, sort_order) VALUES ('anthropic', 'claude-3-5-sonnet-latest', 1) ON CONFLICT (provider, model) DO NOTHING;`,
+	`INSERT INTO ai_model_presets (provider, model, sort_order) VALUES ('anthropic', 'claude-3-5-haiku-latest', 2) ON CONFLICT (provider, model) DO NOTHING;`,
 	`
 	CREATE TABLE IF NOT EXISTS accounts (
 		id TEXT PRIMARY KEY,
@@ -63,7 +86,9 @@ var schemaMigrations = []string{
 		current_balance NUMERIC NOT NULL,
 		current_daily_stop_level NUMERIC NOT NULL,
 		current_max_loss_level NUMERIC NOT NULL,
-		rules_context TEXT NOT NULL
+		rules_context TEXT NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		deleted_at TIMESTAMP
 	);`,
 	`
 	CREATE TABLE IF NOT EXISTS rubrics (
@@ -71,9 +96,16 @@ var schemaMigrations = []string{
 		name TEXT NOT NULL,
 		rules TEXT NOT NULL,
 		pinescript TEXT,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		deleted_at TIMESTAMP
 	);`,
-	`ALTER TABLE rubrics DROP COLUMN IF EXISTS pinescript;`,
+	`
+	CREATE TABLE IF NOT EXISTS instruments (
+		code TEXT PRIMARY KEY,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		deleted_at TIMESTAMP
+	);`,
+	`ALTER TABLE IF EXISTS instruments ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;`,
 
 	`
 	CREATE TABLE IF NOT EXISTS trade_plans (
@@ -89,6 +121,10 @@ var schemaMigrations = []string{
 		risk_amount NUMERIC NOT NULL,
 		status TEXT NOT NULL,
 		notes TEXT,
+		ai_setup_grade_status TEXT NOT NULL DEFAULT 'not_requested',
+		ai_setup_findings TEXT,
+		invalidation_reason TEXT,
+		invalidated_at TIMESTAMP,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);`,

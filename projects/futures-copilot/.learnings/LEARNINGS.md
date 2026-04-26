@@ -56,3 +56,26 @@ Keep lightweight request validation in handlers (or shared validator helpers) so
 - **Notes**: Added request validation helpers and route tests covering the fast-fail path.
 
 ---
+
+## [LRN-20260425-003] correction
+
+**Logged**: 2026-04-25T06:00:00Z
+**Priority**: high
+**Status**: pending
+**Area**: backend
+
+### Summary
+Do not globally force provider routing in a way that breaks unrelated model flows.
+
+### Details
+User clarified the goal was to ensure BYOK usage for Google AI Studio routing via `provider.only`, not to unintentionally break free/non-Google model behavior. Prior implementation forced routing too broadly and caused regressions.
+
+### Suggested Action
+Apply `provider.only` via env-configured OpenRouter payload routing with scoped behavior (`OPENROUTER_PROVIDER_ONLY_GOOGLE_MODELS`) so only Google-family model slugs are restricted to Google AI Studio.
+
+### Metadata
+- Source: user_feedback
+- Related Files: backend/ai_extraction.go, backend/.env, backend/.env.example
+- Tags: openrouter, byok, provider-routing, regression-prevention
+
+---

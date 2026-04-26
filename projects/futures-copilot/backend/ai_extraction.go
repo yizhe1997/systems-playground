@@ -96,22 +96,52 @@ func extractAccountRulesSummary(provider, model string, timeoutMs int, accountTy
 	return result, nil
 }
 
-const improveWritingSystemPrompt = `You are a professional writing assistant for futures traders.
+const improveRubricRulesSystemPrompt = `You are an expert futures trading strategy editor.
 
 Task:
-- Improve the clarity, conciseness, and structure of the provided text.
-- Preserve all factual content, trading-specific terminology, and the author's intent.
-- Fix grammar, remove filler words, and ensure logical flow.
+- Read and understand the provided rubric text describing trading rules and confluences.
+- Rewrite it to be clearer, more actionable, and easier to evaluate consistently.
+- Preserve the original strategy intent and constraints.
+- Keep all valid trading logic; do not invent new strategy rules.
+- Convert vague language into explicit, testable checklist-style statements when possible.
 
 Output requirements:
 - Plain text only.
 - No markdown fences.
 - No meta commentary (e.g., "here is the improved version").
-- Use readable line breaks.
-- If the input uses bullet points, keep them. If it is prose, keep it prose.
-- Return only the improved text with no preamble.`
+- Use readable sections and line breaks.
+- Prefer concise bullet points for rules.
+- Return only the improved rubric text with no preamble.`
 
-func improveGeneralText(provider, model string, timeoutMs int, text string) (string, error) {
+const improveDraftContextNotesSystemPrompt = `You are an execution-focused futures trade note editor.
+
+Task:
+- Read and understand the provided draft trade context notes.
+- Rewrite them to be clearer for real-time execution and review.
+- Preserve all factual setup details, uncertainty, and trader intent.
+- Keep trading terminology accurate.
+- Emphasize signal quality, risk context, invalidation cues, and execution-relevant details.
+
+Output requirements:
+- Plain text only.
+- No markdown fences.
+- No meta commentary (e.g., "here is the improved version").
+- Use concise, readable lines.
+- Keep it practical for pre-trade decision making.
+- Return only the improved notes with no preamble.`
+
+func improveSystemPromptForFeature(featureKey string) string {
+	switch strings.TrimSpace(featureKey) {
+	case AIFeatureKeyRubricRulesImproveText:
+		return improveRubricRulesSystemPrompt
+	case AIFeatureKeyDraftContextNotesImproveText:
+		return improveDraftContextNotesSystemPrompt
+	default:
+		return improveDraftContextNotesSystemPrompt
+	}
+}
+
+func improveGeneralText(provider, model string, timeoutMs int, featureKey string, text string) (string, error) {
 	if strings.TrimSpace(text) == "" {
 		return "", errors.New("empty text")
 	}
@@ -124,6 +154,8 @@ func improveGeneralText(provider, model string, timeoutMs int, text string) (str
 	if timeoutMs <= 0 {
 		timeoutMs = 15000
 	}
+
+	systemPrompt := improveSystemPromptForFeature(featureKey)
 
 	cleanText := normalizeInlineText(text)
 	if len(cleanText) > 8000 {
@@ -139,11 +171,11 @@ func improveGeneralText(provider, model string, timeoutMs int, text string) (str
 	var err error
 	switch provider {
 	case "openrouter":
-		result, err = callImproveTextOpenRouter(ctx, model, cleanText)
-	case "gemini":
-		result, err = callImproveTextGemini(ctx, model, cleanText)
+		result, err = callImproveTextOpenRouter(ctx, model, systemPrompt, cleanText)
+	case "google", "gemini":
+		result, err = callImproveTextGemini(ctx, model, systemPrompt, cleanText)
 	case "anthropic":
-		result, err = callImproveTextAnthropic(ctx, model, cleanText)
+		result, err = callImproveTextAnthropic(ctx, model, systemPrompt, cleanText)
 	default:
 		return "", fmt.Errorf("unsupported provider: %s", provider)
 	}
@@ -159,7 +191,7 @@ func improveGeneralText(provider, model string, timeoutMs int, text string) (str
 	return result, nil
 }
 
-func callImproveTextOpenRouter(ctx context.Context, model, text string) (string, error) {
+func callImproveTextOpenRouter(ctx context.Context, model, systemPrompt, text string) (string, error) {
 	apiKey := os.Getenv("OPENROUTER_API_KEY")
 	if apiKey == "" {
 		return "", errors.New("OPENROUTER_API_KEY not set")
@@ -168,10 +200,15 @@ func callImproveTextOpenRouter(ctx context.Context, model, text string) (string,
 	payload := map[string]any{
 		"model": model,
 		"messages": []map[string]string{
-			{"role": "system", "content": improveWritingSystemPrompt},
+			{"role": "system", "content": systemPrompt},
 			{"role": "user", "content": text},
 		},
 	}
+
+	if providerPrefs := buildOpenRouterProviderPreferences(model); len(providerPrefs) > 0 {
+		payload["provider"] = providerPrefs
+	}
+
 	b, _ := json.Marshal(payload)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://openrouter.ai/api/v1/chat/completions", bytes.NewReader(b))
 	if err != nil {
@@ -185,20 +222,24 @@ func callImproveTextOpenRouter(ctx context.Context, model, text string) (string,
 		return "", err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 2_000_000))
+	if err != nil {
+		return "", err
+	}
 
-	var result struct {
-		Choices []struct {
-			Message struct{ Content string } `json:"message"`
-		} `json:"choices"`
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("openrouter error (%d): %s", resp.StatusCode, string(body))
 	}
-	if err := json.Unmarshal(body, &result); err != nil || len(result.Choices) == 0 {
-		return "", errors.New("unexpected response from openrouter")
+
+	content, err := extractOpenRouterMessageContent(body)
+	if err != nil {
+		return "", fmt.Errorf("unexpected response from openrouter: %w", err)
 	}
-	return result.Choices[0].Message.Content, nil
+
+	return content, nil
 }
 
-func callImproveTextGemini(ctx context.Context, model, text string) (string, error) {
+func callImproveTextGemini(ctx context.Context, model, systemPrompt, text string) (string, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
 		return "", errors.New("GEMINI_API_KEY not set")
@@ -207,7 +248,7 @@ func callImproveTextGemini(ctx context.Context, model, text string) (string, err
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, apiKey)
 	payload := map[string]any{
 		"system_instruction": map[string]any{
-			"parts": []map[string]string{{"text": improveWritingSystemPrompt}},
+			"parts": []map[string]string{{"text": systemPrompt}},
 		},
 		"contents": []map[string]any{
 			{"parts": []map[string]string{{"text": text}}},
@@ -240,7 +281,7 @@ func callImproveTextGemini(ctx context.Context, model, text string) (string, err
 	return result.Candidates[0].Content.Parts[0].Text, nil
 }
 
-func callImproveTextAnthropic(ctx context.Context, model, text string) (string, error) {
+func callImproveTextAnthropic(ctx context.Context, model, systemPrompt, text string) (string, error) {
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
 		return "", errors.New("ANTHROPIC_API_KEY not set")
@@ -249,7 +290,7 @@ func callImproveTextAnthropic(ctx context.Context, model, text string) (string, 
 	payload := map[string]any{
 		"model":      model,
 		"max_tokens": 2048,
-		"system":     improveWritingSystemPrompt,
+		"system":     systemPrompt,
 		"messages": []map[string]string{
 			{"role": "user", "content": text},
 		},
@@ -397,7 +438,7 @@ func requestSummaryFromProvider(ctx context.Context, provider, model, userPrompt
 	switch provider {
 	case "openrouter":
 		return callOpenRouterSummary(ctx, model, userPrompt)
-	case "gemini":
+	case "google", "gemini":
 		return callGeminiSummary(ctx, model, userPrompt)
 	case "anthropic":
 		return callAnthropicSummary(ctx, model, userPrompt)
@@ -419,6 +460,10 @@ func callOpenRouterSummary(ctx context.Context, model, userPrompt string) (strin
 			{"role": "user", "content": userPrompt},
 		},
 		"temperature": 0.1,
+	}
+
+	if providerPrefs := buildOpenRouterProviderPreferences(model); len(providerPrefs) > 0 {
+		body["provider"] = providerPrefs
 	}
 
 	reqBody, _ := json.Marshal(body)
@@ -444,21 +489,114 @@ func callOpenRouterSummary(ctx context.Context, model, userPrompt string) (strin
 		return "", fmt.Errorf("openrouter error (%d): %s", resp.StatusCode, string(respBody))
 	}
 
+	content, err := extractOpenRouterMessageContent(respBody)
+	if err != nil {
+		return "", err
+	}
+
+	return content, nil
+}
+
+func extractOpenRouterMessageContent(respBody []byte) (string, error) {
 	var parsed struct {
 		Choices []struct {
 			Message struct {
-				Content string `json:"content"`
+				Content any `json:"content"`
 			} `json:"message"`
 		} `json:"choices"`
 	}
 	if err := json.Unmarshal(respBody, &parsed); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse openrouter response: %w; body=%s", err, string(respBody))
 	}
 	if len(parsed.Choices) == 0 {
-		return "", errors.New("openrouter returned no choices")
+		return "", fmt.Errorf("openrouter returned no choices: %s", string(respBody))
 	}
 
-	return parsed.Choices[0].Message.Content, nil
+	contentAny := parsed.Choices[0].Message.Content
+	switch content := contentAny.(type) {
+	case string:
+		if strings.TrimSpace(content) == "" {
+			return "", fmt.Errorf("openrouter returned empty content string: %s", string(respBody))
+		}
+		return content, nil
+	case []any:
+		parts := make([]string, 0, len(content))
+		for _, item := range content {
+			obj, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			text, _ := obj["text"].(string)
+			if strings.TrimSpace(text) != "" {
+				parts = append(parts, text)
+			}
+		}
+		joined := strings.TrimSpace(strings.Join(parts, "\n"))
+		if joined == "" {
+			return "", fmt.Errorf("openrouter returned non-text content array: %s", string(respBody))
+		}
+		return joined, nil
+	default:
+		return "", fmt.Errorf("openrouter returned unsupported content shape (%T): %s", contentAny, string(respBody))
+	}
+}
+
+func buildOpenRouterProviderPreferences(model string) map[string]any {
+	prefs := map[string]any{}
+
+	// Global provider restriction (applies to all OpenRouter requests)
+	globalOnly := splitCSV(strings.TrimSpace(os.Getenv("OPENROUTER_PROVIDER_ONLY")))
+	if len(globalOnly) > 0 {
+		prefs["only"] = globalOnly
+	}
+
+	// Scoped provider restriction for Google-family models only.
+	// This avoids impacting non-Google/free model flows.
+	if len(globalOnly) == 0 {
+		googleOnly := splitCSV(strings.TrimSpace(os.Getenv("OPENROUTER_PROVIDER_ONLY_GOOGLE_MODELS")))
+		if len(googleOnly) > 0 && isGoogleFamilyModel(model) {
+			prefs["only"] = googleOnly
+		}
+	}
+
+	if len(prefs) == 0 {
+		return nil
+	}
+
+	allowFallbacksRaw := strings.TrimSpace(os.Getenv("OPENROUTER_PROVIDER_ALLOW_FALLBACKS"))
+	if allowFallbacksRaw != "" {
+		allowFallbacks := strings.EqualFold(allowFallbacksRaw, "true") || allowFallbacksRaw == "1"
+		prefs["allow_fallbacks"] = allowFallbacks
+	}
+
+	return prefs
+}
+
+func splitCSV(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		v := strings.TrimSpace(p)
+		if v == "" {
+			continue
+		}
+		out = append(out, v)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func isGoogleFamilyModel(model string) bool {
+	m := strings.ToLower(strings.TrimSpace(model))
+	if m == "" {
+		return false
+	}
+	return strings.HasPrefix(m, "google/") || strings.Contains(m, "gemma") || strings.Contains(m, "gemini")
 }
 
 func callGeminiSummary(ctx context.Context, model, userPrompt string) (string, error) {

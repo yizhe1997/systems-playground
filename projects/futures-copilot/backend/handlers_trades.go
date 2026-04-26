@@ -84,10 +84,24 @@ func getTrades(c *fiber.Ctx) error {
 }
 
 func draftTrade(c *fiber.Ctx) error {
-	var plan TradePlan
-	if err := parseRequestBody(c, &plan, "Invalid trade payload"); err != nil {
+	var req draftTradeRequest
+	if err := parseRequestBody(c, &req, "Invalid trade payload"); err != nil {
 		return err
 	}
+
+	plan := TradePlan{
+		ID:         req.ID,
+		AccountID:  req.AccountID,
+		RubricID:   req.RubricID,
+		Instrument: req.Instrument,
+		Bias:       req.Bias,
+		Entry:      req.Entry,
+		StopLoss:   req.StopLoss,
+		TakeProfit: req.TakeProfit,
+		Contracts:  req.Contracts,
+		Notes:      req.Notes,
+	}
+
 	if validationMessage := validateDraftTrade(plan); validationMessage != "" {
 		return jsonError(c, fiber.StatusBadRequest, validationMessage)
 	}
@@ -98,15 +112,29 @@ func draftTrade(c *fiber.Ctx) error {
 	plan.Status = "draft"
 
 	riskAmount := computeRiskMath(plan)
+	gradeStatus := "not_requested"
+	if req.RunAISetupGrade {
+		gradeStatus = "queued"
+	}
 
-	// MOCK AI GRADING
-	time.Sleep(1 * time.Second)
-
-	aiResponse := buildDraftAIResponse(riskAmount)
-
-	if err := saveDraftTrade(context.Background(), plan, riskAmount); err != nil {
+	if err := saveDraftTrade(context.Background(), plan, riskAmount, gradeStatus, nil); err != nil {
 		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to save trade", err)
 	}
+
+	if req.RunAISetupGrade {
+		if err := enqueueAISetupGradeJob(context.Background(), plan.ID); err != nil {
+			log.Printf("Failed to enqueue AI setup grading for %s: %v", plan.ID, err)
+			_ = setTradeAISetupGradeResult(context.Background(), plan.ID, "failed", "Failed to queue AI setup grade. Please retry.")
+		}
+	}
+
+	aiResponse := buildDraftAIResponse(riskAmount)
+	if req.RunAISetupGrade {
+		aiResponse.Decision = "queued"
+		aiResponse.Feedback = "Draft saved. AI setup grade has been queued and will be available shortly."
+	}
+
+	plan.AISetupGradeStatus = gradeStatus
 
 	return c.JSON(fiber.Map{
 		"trade":      plan,
@@ -130,6 +158,50 @@ func updateTradeStatus(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"id": id, "status": req.Status})
+}
+
+func regradeTradeSetup(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return jsonError(c, fiber.StatusBadRequest, "Trade ID is required")
+	}
+
+	if err := setTradeAISetupGradeStatus(context.Background(), id, "queued"); err != nil {
+		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to update grade status", err)
+	}
+
+	if err := enqueueAISetupGradeJob(context.Background(), id); err != nil {
+		log.Printf("Failed to enqueue regrade for %s: %v", id, err)
+		_ = setTradeAISetupGradeResult(context.Background(), id, "failed", "Failed to queue AI setup grade. Please retry.")
+		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to enqueue grade job", err)
+	}
+
+	return c.JSON(fiber.Map{"id": id, "aiSetupGradeStatus": "queued"})
+}
+
+func invalidateTrade(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if id == "" {
+		return jsonError(c, fiber.StatusBadRequest, "Trade ID is required")
+	}
+
+	var req invalidateTradeRequest
+	if err := parseRequestBody(c, &req, "Invalid payload"); err != nil {
+		return err
+	}
+	if validationMessage := validateInvalidateTrade(req); validationMessage != "" {
+		return jsonError(c, fiber.StatusBadRequest, validationMessage)
+	}
+
+	updated, err := invalidateTradePlan(context.Background(), id, req.Reason)
+	if err != nil {
+		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to invalidate trade", err)
+	}
+	if !updated {
+		return jsonError(c, fiber.StatusBadRequest, "Only draft, working, or filled trades can be invalidated")
+	}
+
+	return c.JSON(fiber.Map{"id": id, "status": "invalidated"})
 }
 
 func journalTrade(c *fiber.Ctx) error {

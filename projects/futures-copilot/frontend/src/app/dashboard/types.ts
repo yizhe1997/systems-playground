@@ -1,4 +1,4 @@
-export type DashboardTab = 'all' | 'draft' | 'working' | 'filled';
+export type DashboardTab = 'all' | 'draft' | 'working' | 'filled' | 'closed' | 'invalidated';
 
 export type UserRole = 'ADMIN' | 'ANON' | string;
 
@@ -9,6 +9,7 @@ export interface Account {
   currentDailyStopLevel: number;
   currentMaxLossLevel: number;
   rulesContext?: string;
+  createdAt?: string;
 }
 
 export interface Trade {
@@ -16,7 +17,7 @@ export interface Trade {
   accountId: string;
   instrument: string;
   bias: 'Long' | 'Short' | string;
-  status: 'draft' | 'working' | 'filled' | string;
+  status: 'draft' | 'working' | 'filled' | 'closed' | 'invalidated' | string;
   entry: number;
   stopLoss: number;
   takeProfit: number;
@@ -24,6 +25,10 @@ export interface Trade {
   notes?: string;
   rubricId?: string;
   riskAmount?: number;
+  aiSetupGradeStatus?: 'not_requested' | 'queued' | 'grading' | 'ready' | 'failed' | string;
+  aiSetupFindings?: string;
+  invalidationReason?: string;
+  invalidatedAt?: string;
   createdAt?: string;
 }
 
@@ -41,6 +46,11 @@ export interface Rubric {
   rules: string;
 }
 
+export interface InstrumentDefinition {
+  code: string;
+  createdAt?: string;
+}
+
 export interface DraftFormState {
   accountId: string;
   instrument: string;
@@ -51,6 +61,8 @@ export interface DraftFormState {
   contracts: number;
   notes: string;
   rubricId: string;
+  runAiSetupGrade: boolean;
+  aiSetupFindings?: string;
 }
 
 export interface RubricFormState {
@@ -70,14 +82,17 @@ export interface AccountFormState {
 
 export interface AIFeatureConfig {
   key: string;
+  label?: string;
   provider: string;
   model: string;
+  timeoutMs?: number;
 }
 
 export interface AIProviderConfigState {
   features: AIFeatureConfig[];
   timeoutMs: number;
   availableProviders?: string[];
+  modelPresets?: Record<string, string[]>;
 }
 
 export interface JournalDataState {

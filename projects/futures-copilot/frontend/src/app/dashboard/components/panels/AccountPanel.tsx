@@ -103,6 +103,7 @@ export function AccountPanel({
   };
 
   const hasAvailableAI = availableAiProviders.length > 0;
+  const isBusy = isAiScraping || isAiImproving;
   const normalizedAccountType = accountForm.type.trim();
   const canSubmitAccount =
     normalizedAccountType.length > 0 &&
@@ -119,7 +120,7 @@ export function AccountPanel({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-sm z-[99]"
-            onClick={onClose}
+            onClick={isBusy ? undefined : onClose}
           />
           <motion.div
             initial={{ x: '100%' }}
@@ -133,7 +134,7 @@ export function AccountPanel({
                 <h2 className="font-mono text-sm uppercase tracking-widest font-bold">
                   {accountForm.id ? 'ACCOUNT DETAIL' : 'NEW ACCOUNT'}
                 </h2>
-                <button onClick={onClose} className="hover:opacity-50 transition-opacity flex items-center justify-center w-5 h-5">
+                <button disabled={isBusy} onClick={onClose} className="hover:opacity-50 transition-opacity flex items-center justify-center w-5 h-5 disabled:opacity-30">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -227,14 +228,14 @@ export function AccountPanel({
                       <div className="flex gap-4">
                         <button
                           onClick={() => onShowUrlInputChange(!showUrlInput)}
-                          disabled={!normalizedAccountType}
+                          disabled={isBusy || !normalizedAccountType}
                           className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
                         >
                           [ AI: SCRAPE FROM URLS ]
                         </button>
                         <button
                           onClick={onAiImproveRules}
-                          disabled={isAiImproving || !accountForm.rulesContext || !normalizedAccountType}
+                          disabled={isBusy || !accountForm.rulesContext || !normalizedAccountType}
                           className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
                         >
                           {isAiImproving ? 'THINKING...' : '[ AI: CLEANUP TEXT ]'}
@@ -263,7 +264,8 @@ export function AccountPanel({
                                   nextUrls.splice(idx, 1);
                                   onAiUrlsInputChange(nextUrls);
                                 }}
-                                className="text-rose-500 hover:opacity-50"
+                                disabled={isBusy}
+                                className="text-rose-500 hover:opacity-50 disabled:opacity-30"
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -273,7 +275,8 @@ export function AccountPanel({
                         {aiUrlsInput.length < 3 && (
                           <button
                             onClick={() => onAiUrlsInputChange([...aiUrlsInput, ''])}
-                            className="self-start font-mono text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 mt-1"
+                            disabled={isBusy}
+                            className="self-start font-mono text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 mt-1 disabled:opacity-30"
                           >
                             + ADD ANOTHER URL
                           </button>
@@ -281,7 +284,7 @@ export function AccountPanel({
                         <p className="font-mono text-[8px] text-rose-500 uppercase mt-2">Warning: This will overwrite existing context.</p>
                         <button
                           onClick={onAiScrapeUrls}
-                          disabled={isAiScraping || !normalizedAccountType}
+                          disabled={isBusy || !normalizedAccountType}
                           className="w-full py-3 bg-black text-white dark:bg-white dark:text-black font-mono text-[10px] uppercase tracking-widest font-bold hover:opacity-80 transition-opacity mt-2 disabled:opacity-30"
                         >
                           {isAiScraping ? 'SCRAPING...' : 'EXTRACT RULES'}
@@ -294,30 +297,33 @@ export function AccountPanel({
               </div>
 
               {showDeleteConfirm ? (
-                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] flex flex-col gap-4">
+                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
                   <p className="font-mono text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold leading-relaxed">
                     WARNING: This will permanently delete {accountForm.type} along with all trades and outcomes tied to it.
                   </p>
-                  <div className="flex gap-2">
+                  <button
+                    onClick={onDelete}
+                    disabled={isBusy}
+                    className={`w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold disabled:opacity-30 ${accountForm.id ? 'mb-4' : ''}`}
+                  >
+                    CONFIRM
+                  </button>
+
+                  {accountForm.id && (
                     <button
-                      onClick={onDelete}
-                      className="flex-1 py-4 bg-rose-600 text-white font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
-                    >
-                      CONFIRM
-                    </button>
-                    <button
-                      onClick={() => onShowDeleteConfirmChange(false)}
-                      className="flex-1 py-4 border border-black dark:border-white text-black dark:text-white font-mono text-xs uppercase tracking-widest font-bold hover:opacity-50 transition-opacity"
+                      onClick={() => onShowDeleteConfirmChange(true)}
+                      disabled={isBusy}
+                      className="w-full py-4 bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors disabled:opacity-30"
                     >
                       CANCEL
                     </button>
-                  </div>
+                  )}
                 </div>
               ) : (
                 <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
                   <button
                     onClick={onSubmit}
-                    disabled={!canSubmitAccount}
+                    disabled={isBusy || !canSubmitAccount}
                     className={`w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold disabled:opacity-30 ${accountForm.id ? 'mb-4' : ''}`}
                   >
                     {accountForm.id ? 'UPDATE ACCOUNT' : 'CREATE ACCOUNT'}
@@ -326,7 +332,8 @@ export function AccountPanel({
                   {accountForm.id && (
                     <button
                       onClick={() => onShowDeleteConfirmChange(true)}
-                      className="w-full py-4 bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors"
+                      disabled={isBusy}
+                      className="w-full py-4 bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors disabled:opacity-30"
                     >
                       DELETE ACCOUNT
                     </button>

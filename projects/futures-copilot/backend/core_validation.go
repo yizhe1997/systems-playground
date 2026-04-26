@@ -27,6 +27,14 @@ func validateRubric(rubric Rubric) string {
 	return ""
 }
 
+func validateInstrumentDefinition(instrument InstrumentDefinition) string {
+	if strings.TrimSpace(instrument.Code) == "" {
+		return "Missing instrument code"
+	}
+
+	return ""
+}
+
 func validateSyncUserRequest(req syncUserRequest) string {
 	if req.ProviderID == "" || req.Email == "" {
 		return "Missing user fields"
@@ -47,16 +55,25 @@ func validateAIProviderConfig(req updateAIProviderConfigRequest) string {
 	if len(req.Features) == 0 {
 		return "Missing features"
 	}
+	seenKeys := map[string]struct{}{}
 	for _, f := range req.Features {
+		key := strings.TrimSpace(f.Key)
+		if key == "" {
+			return "Missing feature key"
+		}
+		if _, exists := seenKeys[key]; exists {
+			return "Duplicate feature key " + key
+		}
+		seenKeys[key] = struct{}{}
 		if strings.TrimSpace(f.Provider) == "" {
-			return "Missing provider for feature " + f.Key
+			return "Missing provider for feature " + key
 		}
 		if strings.TrimSpace(f.Model) == "" {
-			return "Missing model for feature " + f.Key
+			return "Missing model for feature " + key
 		}
-	}
-	if req.TimeoutMs <= 0 {
-		return "Invalid timeoutMs"
+		if f.TimeoutMs <= 0 && req.TimeoutMs <= 0 {
+			return "Missing timeoutMs for feature " + key
+		}
 	}
 	return ""
 }

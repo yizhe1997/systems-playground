@@ -1,14 +1,21 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api';
 
+export interface InstrumentPayload {
+  code: string;
+}
+
 export interface AIFeatureConfig {
   key: string;
+  label?: string;
   provider: string;
   model: string;
+  timeoutMs?: number;
 }
 
 export interface AIProviderConfigPayload {
   features: AIFeatureConfig[];
   timeoutMs: number;
+  modelPresets?: Record<string, string[]>;
 }
 
 export const fetcher = async (url: string) => {
@@ -21,6 +28,7 @@ export const API_ENDPOINTS = {
   trades: `${API_BASE}/trades`,
   accounts: `${API_BASE}/accounts`,
   rubrics: `${API_BASE}/rubrics`,
+  instruments: `${API_BASE}/instruments`,
 };
 
 export const draftTrade = async (tradeData: unknown) => {
@@ -79,6 +87,42 @@ export const deleteRubric = async (id: string) => {
   return res.json();
 };
 
+export const saveInstrument = async (instrumentData: InstrumentPayload) => {
+  const res = await fetch(`${API_BASE}/instruments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(instrumentData),
+  });
+  if (!res.ok) throw new Error('Failed to save instrument');
+  return res.json();
+};
+
+export const deleteInstrument = async (code: string) => {
+  const res = await fetch(`${API_BASE}/instruments/${encodeURIComponent(code)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete instrument');
+  return res.json();
+};
+
+export const regradeTradeSetup = async (id: string) => {
+  const res = await fetch(`${API_BASE}/trades/${id}/regrade`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to enqueue regrade');
+  return res.json();
+};
+
+export const invalidateTrade = async (id: string, reason: string) => {
+  const res = await fetch(`${API_BASE}/trades/${id}/invalidate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) throw new Error('Failed to invalidate trade');
+  return res.json();
+};
+
 export const journalTrade = async (journalData: unknown) => {
   const res = await fetch(`${API_BASE}/journal`, {
     method: 'POST',
@@ -109,11 +153,11 @@ export const improveRulesContext = async (text: string, accountType: string) => 
   return res.json() as Promise<{ context?: string }>;
 };
 
-export const improveText = async (text: string) => {
+export const improveText = async (text: string, featureKey: string) => {
   const res = await fetch('/api/copilot/ai/improve-text', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, featureKey }),
   });
   if (!res.ok) throw new Error('Failed to improve text');
   return res.json() as Promise<{ text?: string }>;

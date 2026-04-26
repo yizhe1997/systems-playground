@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { ShieldAlert, Edit3, UserCheck, UserX } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -11,12 +10,6 @@ const MOCK_SUBSCRIBERS = [
 ];
 
 export default function AdminSubscribersPage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { const t = setTimeout(() => setMounted(true), 0); return () => clearTimeout(t); }, []);
-
-  if (!mounted) return null;
-
   return (
     <div className="w-full relative">
       <main className="max-w-[1200px] mx-auto relative px-4 md:px-8 py-12 lg:py-24">

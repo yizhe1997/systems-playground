@@ -4,7 +4,7 @@ export const DEFAULT_RULES_CONTEXT = 'Trailing EOD Max Drawdown: $2000. Daily Lo
 
 export const DEFAULT_DRAFT_FORM: DraftFormState = {
   accountId: '',
-  instrument: 'GC',
+  instrument: '',
   bias: 'Long',
   entry: '',
   stopLoss: '',
@@ -12,6 +12,7 @@ export const DEFAULT_DRAFT_FORM: DraftFormState = {
   contracts: 1,
   notes: '',
   rubricId: '',
+  runAiSetupGrade: false,
 };
 
 export const DEFAULT_RUBRIC_FORM: RubricFormState = {

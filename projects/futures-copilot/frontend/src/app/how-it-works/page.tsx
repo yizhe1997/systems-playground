@@ -1,15 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { ShieldAlert, BrainCircuit, LineChart } from 'lucide-react';
 import BrutalistImage from '@/components/BrutalistImage';
 
 export default function HowItWorksPage() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setMounted(true), 0); return () => clearTimeout(t); }, []);
-
-  if (!mounted) return null;
-
   return (
     <div className="w-full relative">
       <main className="max-w-[1000px] mx-auto relative px-4 md:px-8 py-12 lg:py-24">

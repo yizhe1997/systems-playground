@@ -64,6 +64,33 @@ func (m mockRubricsRepo) DeleteRubricByID(ctx context.Context, id string) error 
 	return nil
 }
 
+type mockInstrumentsRepo struct {
+	listFn   func(context.Context) ([]InstrumentDefinition, error)
+	saveFn   func(context.Context, InstrumentDefinition) error
+	deleteFn func(context.Context, string) error
+}
+
+func (m mockInstrumentsRepo) ListInstruments(ctx context.Context) ([]InstrumentDefinition, error) {
+	if m.listFn != nil {
+		return m.listFn(ctx)
+	}
+	return []InstrumentDefinition{}, nil
+}
+
+func (m mockInstrumentsRepo) SaveInstrument(ctx context.Context, instrument InstrumentDefinition) error {
+	if m.saveFn != nil {
+		return m.saveFn(ctx, instrument)
+	}
+	return nil
+}
+
+func (m mockInstrumentsRepo) DeleteInstrument(ctx context.Context, code string) error {
+	if m.deleteFn != nil {
+		return m.deleteFn(ctx, code)
+	}
+	return nil
+}
+
 type mockUsersRepo struct {
 	syncFn    func(context.Context, syncUserRequest) (string, bool, error)
 	disableFn func(context.Context, string) error
@@ -271,6 +298,20 @@ func TestSaveRubricInvalidPayload(t *testing.T) {
 	assertJSONError(t, res, http.StatusBadRequest, "Missing rubric fields")
 }
 
+func TestSaveInstrumentInvalidPayload(t *testing.T) {
+	app := newApp()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/instruments", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	assertJSONError(t, res, http.StatusBadRequest, "Missing instrument code")
+}
+
 func TestSyncUserInvalidPayload(t *testing.T) {
 	secret := configureInternalAPISecret(t)
 	app := newApp()
@@ -366,6 +407,61 @@ func TestSaveRubricSuccessWithInjectedRepo(t *testing.T) {
 	}
 }
 
+func TestGetInstrumentsSuccessWithInjectedRepo(t *testing.T) {
+	original := instrumentsRepo
+	instrumentsRepo = mockInstrumentsRepo{
+		listFn: func(context.Context) ([]InstrumentDefinition, error) {
+			return []InstrumentDefinition{{Code: "COMEX:GC1!"}}, nil
+		},
+	}
+	t.Cleanup(func() { instrumentsRepo = original })
+
+	app := newApp()
+	req := httptest.NewRequest(http.MethodGet, "/api/copilot/instruments", nil)
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want %d", res.StatusCode, http.StatusOK)
+	}
+
+	var body []InstrumentDefinition
+	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
+		t.Fatalf("Decode() error = %v", err)
+	}
+	if len(body) != 1 || body[0].Code != "COMEX:GC1!" {
+		t.Fatalf("unexpected instruments response: %#v", body)
+	}
+}
+
+func TestSaveInstrumentSuccessWithInjectedRepo(t *testing.T) {
+	original := instrumentsRepo
+	instrumentsRepo = mockInstrumentsRepo{
+		saveFn: func(_ context.Context, instrument InstrumentDefinition) error {
+			if instrument.Code != "GC" {
+				t.Fatalf("unexpected instrument code: %q", instrument.Code)
+			}
+			return nil
+		},
+	}
+	t.Cleanup(func() { instrumentsRepo = original })
+
+	app := newApp()
+	req := httptest.NewRequest(http.MethodPost, "/api/copilot/instruments", strings.NewReader(`{"code":"gc"}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test() error = %v", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want %d", res.StatusCode, http.StatusOK)
+	}
+}
+
 func TestSyncUserSuccessWithInjectedRepo(t *testing.T) {
 	secret := configureInternalAPISecret(t)
 	original := usersRepo
@@ -448,7 +544,7 @@ func TestUpdateAIProviderConfigForbiddenForNonAdminRole(t *testing.T) {
 	secret := configureInternalAPISecret(t)
 	app := newApp()
 
-	req := httptest.NewRequest(http.MethodPut, "/api/copilot/ai/config", strings.NewReader(`{"features":[{"key":"scrapeRules","provider":"openrouter","model":"google/gemini-2.0-flash-001"},{"key":"cleanupText","provider":"gemini","model":"gemini-2.0-flash"}],"timeoutMs":15000}`))
+	req := httptest.NewRequest(http.MethodPut, "/api/copilot/ai/config", strings.NewReader(`{"features":[{"key":"accountRulesContextScrapeRules","provider":"openrouter","model":"google/gemini-2.0-flash-001"},{"key":"accountRulesContextCleanupText","provider":"gemini","model":"gemini-2.0-flash"}],"timeoutMs":15000}`))
 	req.Header.Set("Content-Type", "application/json")
 	addInternalRequestHeaders(req, secret, "ANON")
 

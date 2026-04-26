@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, ChevronDown, X } from 'lucide-react';
-import { Account, DraftFormState, Rubric } from '../../types';
+import { ChevronDown, X } from 'lucide-react';
+import { Account, DraftFormState, InstrumentDefinition, Rubric } from '../../types';
 
 interface DraftTradePanelProps {
   isOpen: boolean;
@@ -11,6 +11,7 @@ interface DraftTradePanelProps {
   activeAccountId: string;
   accounts: Account[];
   rubrics: Rubric[];
+  instruments: InstrumentDefinition[];
   draftForm: DraftFormState;
   isAiImproving: boolean;
   availableAiProviders: string[];
@@ -26,6 +27,7 @@ export function DraftTradePanel({
   activeAccountId,
   accounts,
   rubrics,
+  instruments,
   draftForm,
   isAiImproving,
   availableAiProviders,
@@ -40,6 +42,7 @@ export function DraftTradePanel({
       event.preventDefault();
     }
   };
+
   const handlePriceBlur = (key: 'entry' | 'stopLoss' | 'takeProfit') => {
     const rawValue = draftForm[key];
     if (!rawValue) {
@@ -57,9 +60,11 @@ export function DraftTradePanel({
 
   const [isDraftAccountDropdownOpen, setIsDraftAccountDropdownOpen] = useState(false);
   const [isDraftRubricDropdownOpen, setIsDraftRubricDropdownOpen] = useState(false);
+  const [isDraftInstrumentDropdownOpen, setIsDraftInstrumentDropdownOpen] = useState(false);
 
   const draftAccountDropdownRef = useRef<HTMLDivElement>(null);
   const draftRubricDropdownRef = useRef<HTMLDivElement>(null);
+  const draftInstrumentDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -70,6 +75,9 @@ export function DraftTradePanel({
       }
       if (draftRubricDropdownRef.current && !draftRubricDropdownRef.current.contains(event.target as Node)) {
         setIsDraftRubricDropdownOpen(false);
+      }
+      if (draftInstrumentDropdownRef.current && !draftInstrumentDropdownRef.current.contains(event.target as Node)) {
+        setIsDraftInstrumentDropdownOpen(false);
       }
     }
 
@@ -178,19 +186,48 @@ export function DraftTradePanel({
                   </AnimatePresence>
                 </div>
 
+                <div ref={draftInstrumentDropdownRef} className="relative">
+                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">INSTRUMENT</label>
+                  <button
+                    onClick={() => setIsDraftInstrumentDropdownOpen(prev => !prev)}
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
+                  >
+                    <span>{instruments.find(instrument => instrument.code === draftForm.instrument)?.code || 'SELECT INSTRUMENT'}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isDraftInstrumentDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {isDraftInstrumentDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col max-h-[220px] overflow-y-auto"
+                      >
+                        {instruments.length === 0 ? (
+                          <div className="px-4 py-3 font-mono text-xs uppercase tracking-widest opacity-60">
+                            NO INSTRUMENTS. USE INSTRUMENT CONFIG PANEL.
+                          </div>
+                        ) : (
+                          instruments.map(instrument => (
+                            <button
+                              key={instrument.code}
+                              onClick={() => {
+                                onDraftFormChange({ ...draftForm, instrument: instrument.code });
+                                setIsDraftInstrumentDropdownOpen(false);
+                              }}
+                              className="text-left px-4 py-3 font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b last:border-b-0 border-black dark:border-white opacity-80 hover:opacity-100"
+                            >
+                              {instrument.code}
+                            </button>
+                          ))
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <div>
-                  <div className="grid grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">INSTRUMENT</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. GC, NQ, ES"
-                        value={draftForm.instrument}
-                        onChange={event => onDraftFormChange({ ...draftForm, instrument: event.target.value })}
-                        className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 uppercase"
-                      />
-                    </div>
-                  </div>
                   <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">BIAS</label>
                   <div className="grid grid-cols-2 gap-4">
                     <button
@@ -263,7 +300,12 @@ export function DraftTradePanel({
                 </div>
 
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">CONTEXT / NOTES</label>
+                  <label
+                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                    data-cursor-text="Capture any context around this setup: trade-specific or general conditions (e.g. clean R:R, no-news session, market tone, confidence, execution constraints)."
+                  >
+                    CONTEXT / NOTES
+                  </label>
                   <textarea
                     placeholder="S&D Zone details, news events, time of day..."
                     rows={4}
@@ -282,20 +324,43 @@ export function DraftTradePanel({
                       </button>
                     </div>
                   )}
+
+                  {editTradeId && (
+                    <div className="mt-6">
+                      <label
+                        className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                        data-cursor-text="Setup grade findings will appear here after the async grading job completes."
+                      >
+                        AI SETUP GRADE FINDINGS
+                      </label>
+                      <textarea
+                        rows={5}
+                        readOnly
+                        value={draftForm.aiSetupFindings || ''}
+                        placeholder="Grading in progress or not yet requested..."
+                        className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs uppercase leading-relaxed focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y"
+                      />
+                    </div>
+                  )}
+
+                  <label className="mt-4 flex items-start gap-3 font-mono text-[10px] uppercase tracking-widest opacity-80 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={draftForm.runAiSetupGrade}
+                      onChange={event => onDraftFormChange({ ...draftForm, runAiSetupGrade: event.target.checked })}
+                      className="mt-[1px] h-3 w-3 accent-black dark:accent-white"
+                    />
+                    <span>
+                      RUN AI SETUP GRADE AFTER CREATE (ASYNC)
+                    </span>
+                  </label>
                 </div>
               </div>
 
-              <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] grid grid-cols-2 gap-4">
+              <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
                 <button
                   onClick={onSubmit}
-                  className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold flex justify-center items-center gap-2"
-                >
-                  <Activity className="w-4 h-4" />
-                  AI RISK CHECK
-                </button>
-                <button
-                  onClick={onSubmit}
-                  className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold flex justify-center items-center gap-2"
+                  className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold"
                 >
                   CREATE DRAFT
                 </button>

@@ -8,6 +8,7 @@ import (
 func main() {
 	InitRedis()
 	InitPostgres() // Fire up pgvector
+	startAISetupGradeWorker()
 
 	app := newApp()
 

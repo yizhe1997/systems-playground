@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 import { API_ENDPOINTS, fetcher } from '@/lib/dashboard/api';
-import { Account, DashboardTab, PaginatedTradesResponse, Rubric, Trade } from '../types';
+import { Account, DashboardTab, InstrumentDefinition, PaginatedTradesResponse, Rubric, Trade } from '../types';
 
 export function useDashboardData(activeTab: DashboardTab) {
   const [activeAccountId, setActiveAccountId] = useState('a-001');
@@ -12,16 +12,17 @@ export function useDashboardData(activeTab: DashboardTab) {
   const [createdTo, setCreatedTo] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 6;
-  const [mounted, setMounted] = useState(false);
 
   const { data: session } = useSession();
   const userRole = (session?.user as { role?: string } | undefined)?.role || 'ANON';
 
   const { data: rawAccounts, mutate: mutateAccounts } = useSWR(API_ENDPOINTS.accounts, fetcher, { fallbackData: [] });
   const { data: rawRubrics, mutate: mutateRubrics } = useSWR(API_ENDPOINTS.rubrics, fetcher, { fallbackData: [] });
+  const { data: rawInstruments, mutate: mutateInstruments } = useSWR(API_ENDPOINTS.instruments, fetcher, { fallbackData: [] });
 
   const accounts = (rawAccounts || []) as Account[];
   const rubrics = (rawRubrics || []) as Rubric[];
+  const instruments = (rawInstruments || []) as InstrumentDefinition[];
 
   const normalizedActiveAccountId = accounts.some(a => a.id === activeAccountId)
     ? activeAccountId
@@ -76,11 +77,6 @@ export function useDashboardData(activeTab: DashboardTab) {
   const visibleTrades = trades;
 
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 0);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     setPage(1);
   }, [activeTab, normalizedActiveAccountId, createdFrom, createdTo]);
 
@@ -88,9 +84,11 @@ export function useDashboardData(activeTab: DashboardTab) {
     accounts,
     trades,
     rubrics,
+    instruments,
     mutateAccounts,
     mutateTrades,
     mutateRubrics,
+    mutateInstruments,
     activeAccountId,
     setActiveAccountId,
     normalizedActiveAccountId,
@@ -107,6 +105,5 @@ export function useDashboardData(activeTab: DashboardTab) {
     totalTrades: tradesPage.total,
     totalPages: tradesPage.totalPages,
     userRole,
-    mounted,
   };
 }

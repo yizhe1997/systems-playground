@@ -1,69 +1,139 @@
 # FUTURES COPILOT: CORE ARCHITECTURE & FEATURES
 
-## The Goal
-A deterministic, AI-assisted trade journaling and risk-management platform for Prop Firm traders. It prevents emotional blow-ups by enforcing mathematically rigid risk parameters and providing LLM-driven "over-the-shoulder" behavioral checks before a trade is entered.
+## Goal
+A deterministic, AI-assisted trade journaling and risk-management platform for Prop Firm traders. The system reduces emotional/impulsive entries by combining hard risk math with AI-assisted setup grading and retrospective pattern analysis.
 
-## System Architecture
-*   **Frontend**: Next.js (App Router), React 19, Tailwind CSS, Framer Motion, NextAuth (Google SSO).
-*   **Backend**: Go (Fiber), REST API, UUID generation.
-*   **Database**: Postgres (w/ pgvector for future RAG retrospectives).
-*   **Aesthetic**: Brutalist Swiss UI, high contrast B&W, 1px sharp chamfered borders (`clip-path`), mono typography, no rounded corners.
-
----
-
-## 1. Trade Lifecycle (The Core Loop)
-
-1. **DRAFT STATE (The Guardrail)**: 
-   * User clicks "Draft New Setup" and enters intended `Instrument`, `Entry`, `Stop Loss`, `Target`, `Contracts`, and picks a `Rubric`.
-   * **The AI Check**: The backend calculates the exact monetary risk. It passes the trade parameters, the active Account's `rules_context`, and the chosen `Rubric` to the LLM. 
-   * **Outcome**: The trade is saved as `draft`. The UI displays the AI's approval/rejection decision and reasoning. The user must manually choose to proceed.
-
-2. **WORKING STATE (The Radar)**:
-   * Once a draft is submitted to the market (limit order placed), it is marked as `working`.
-   * The "Live Radar" on the dashboard tracks this order. Users can edit levels if they adjust their working order in their broker.
-
-3. **FILLED STATE (The Position)**:
-   * When the broker fills the order, the user marks it `filled`. 
-   * The Copilot locks the Entry. Only SL/TP targets can be updated (e.g., trailing a stop).
-
-4. **CLOSED / JOURNALED STATE (The Retrospective)**:
-   * The trade closes. User logs the final PnL, Outcome (WIN/LOSS), and a textual reflection.
-   * Moved to the historical `trade_outcomes` table for future AI analysis.
+## Architecture Snapshot (Current + Target)
+* **Frontend**: Next.js (App Router), React 19, Tailwind CSS, Framer Motion.
+* **Backend**: Go (Fiber), REST APIs, async job-friendly architecture.
+* **Data**: Postgres + `pgvector` (already enabled in Docker stack), Redis for queue/state.
+* **UI Style**: Brutalist Swiss (high-contrast B/W, sharp borders, no rounded corners).
 
 ---
 
-## 2. Prop Firm Account Management (The "State vs Logic" Paradigm)
+## ADR: Phase Strategy Decision
 
-Prop firms (Topstep, Apex, MyFundedFutures) have incredibly complex, mutating rules (e.g., Intraday Trailing Drawdowns that lock at $0 once a certain profit is hit). 
-Hardcoding these relational rules into a database schema is brittle and mathematically dangerous. 
+### Decision
+We will **move directly toward Phase B capabilities** (semantic retrieval + AI setup grading), but with a **minimal Phase A foundation** to avoid fragile behavior.
 
-Instead, Futures Copilot separates **Current State** (deterministic math) from **Broker Logic** (AI context).
+### Why
+1. `pgvector` is already provisioned in infra and migration path.
+2. The product value comes from contextual grading and historical similarity, not manual-only checks.
+3. A tiny foundation step (normalization + queue + status lifecycle) prevents a brittle “LLM-on-submit” experience.
 
-### The Account Data Model:
-*   `type`: Name of the account (e.g., "Topstep 50k Express").
-*   **Current State Guardrails (Dumb Math)**:
-    *   `current_balance`: The exact balance *right now*.
-    *   `current_daily_stop_level`: The monetary floor for the day (e.g., if balance is $51,000 and max daily loss is $1000, this is $50,000).
-    *   `current_max_loss_level`: The absolute monetary floor before the account is blown.
-*   **Broker Logic (Unstructured AI Context)**:
-    *   `rules_context` (TEXT): A blob of scraped or pasted text explaining the broker's rules (e.g., "Max loss trails up until initial balance + $2k, then locks at $0").
-
-### Updating Accounts:
-Because the `current_max_loss_level` trails and moves based on the specific broker's `rules_context`, the **Account must be highly updatable by the user**. 
-The dashboard must allow the user to easily update their `current_balance` and `current_max_loss_level` at the start/end of every trading session.
+### Guardrail
+Use a **hybrid** evaluator:
+* deterministic checks for hard constraints (risk $, account limits, required fields), and
+* vector retrieval for soft/contextual pattern matching (similar setups, behavior notes, rubric text fit).
 
 ---
 
-## 3. Rubrics (Behavioral Enforcement)
+## 1) Trade Lifecycle (Canonical Flow)
 
-Rubrics are user-defined checklists and rulesets (e.g., "Golden Zone Strategy").
-*   Users define plain-text rules (e.g., "Only trade between 9:30 AM and 11:00 AM EST", "Must have 15m divergence").
-*   When a trade is drafted, the backend explicitly instructs the LLM to grade the setup against these rules.
+1. **DRAFT (Guardrail Stage)**
+   * User enters `instrument`, `entry`, `stop_loss`, `target`, `contracts`, rubric, and optional context notes.
+   * Draft is saved quickly and deterministically.
+   * Optional AI setup grading can run async.
+
+2. **WORKING (Radar Stage)**
+   * User submits setup to market; order is `working`.
+   * Dashboard Live Radar tracks working orders.
+
+3. **FILLED (Position Stage)**
+   * Order fill is confirmed; trade is `filled`.
+   * Entry is effectively locked for integrity; management updates focus on SL/TP adjustments.
+   * Replay is available from **filled trade cards** in dashboard.
+
+4. **JOURNALED (Retrospective Stage)**
+   * User records final PnL/outcome/reflection.
+   * Record becomes part of historical corpus for retrieval and pattern analysis.
+
+> Note: prior wording “Closed / Journaled” is unified as **Journaled** for consistency in product language.
 
 ---
 
-## 4. UI / UX Principles
+## 2) Account Model: State vs Logic
 
-*   **No "Appy" feel**: Hide scrollbars where possible. Rely on layout over boxes.
-*   **Live Charts**: Use the native TradingView Advanced Chart iframe widget (`tv.js`) tied directly to the active `working` or `filled` trade's ticker for zero-latency monitoring.
-*   **Speed**: Forms should slide in via `framer-motion` modals (`clip-path` chamfered) from the right without page reloads.
+Prop firm rules mutate and are often too nuanced for brittle relational modeling alone.
+
+### Deterministic State (hard math)
+* `current_balance`
+* `current_daily_stop_level`
+* `current_max_loss_level`
+
+### Rules Logic (context input)
+* `rules_context` (free text)
+  * e.g., trailing drawdown behavior, lock rules, session constraints.
+
+Accounts are intentionally highly editable so users can update reality quickly at session boundaries.
+
+---
+
+## 3) Rubrics and AI Setup Grading
+
+Rubrics remain user-defined plain-text strategy constraints.
+
+### UX/flow (agreed)
+* `Create Draft` remains immediate.
+* Optional checkbox: `Run AI Setup Grade`.
+* If checked, backend enqueues grading job (non-blocking).
+* UI status lifecycle: `queued` → `grading` → `ready` (or `failed`).
+* Findings are written back into the draft panel “AI Risk Findings” box.
+
+### Suggested grading output contract
+* `setup_grade` (0-100)
+* `risk_flags[]`
+* `rubric_match_summary`
+* `similar_setups_summary`
+* `recommendation` (`take` | `reduce_size` | `skip`)
+* `findings_text`
+
+---
+
+## 4) Phased Delivery Plan (Do Not Forget ✅)
+
+### Phase A (Minimal Foundation — keep this small)
+**Objective**: Stabilize data and async workflow primitives needed for reliable AI.
+
+1. Canonical instrument normalization + TradingView symbol mapping consistency.
+2. Async grading job model + Redis queue plumbing.
+3. Grading status fields on draft (`queued/grading/ready/failed`).
+4. Deterministic risk pre-check always runs before enqueue.
+
+**Exit criteria**: Draft creation is instant; grading jobs execute asynchronously with clear status and retries.
+
+### Phase B (Primary Value Phase — start immediately after A-min)
+**Objective**: Retrieval-assisted setup grading using existing pgvector stack.
+
+1. Embed journaled trades, rubric text, and high-signal notes.
+2. Hybrid retrieval:
+   * SQL filters (instrument/session/basic constraints), then
+   * vector similarity search (behavioral/pattern context).
+3. Compose LLM grading prompt from:
+   * deterministic risk snapshot,
+   * account `rules_context`,
+   * rubric,
+   * retrieved similar examples.
+4. Persist structured grading output + explanation for UI display.
+
+**Exit criteria**: AI grading is explainable, reproducible enough for review, and meaningfully references historical analogs.
+
+### Phase C (Optimization + Learning Loop)
+**Objective**: Improve quality, latency, and trader trust.
+
+1. Feedback loop from user overrides/acceptance.
+2. Better retrieval ranking and de-dup logic.
+3. Cost/latency instrumentation, caching, and prompt regression tests.
+4. Dashboard insights summarizing recurring mistakes and winning patterns.
+
+**Exit criteria**: Lower latency, higher relevance, and visible behavior-change metrics.
+
+---
+
+## 5) UI/UX Principles (Current)
+
+* No “appy” clutter: lean layout and strong hierarchy.
+* Panel-first interactions (slide-in right panels, minimal route churn).
+* Live chart radar for active monitoring.
+* Replay available from dashboard `filled` trade cards (not landing page).
+* Strict numeric input handling (sanitize on change, normalize on blur).

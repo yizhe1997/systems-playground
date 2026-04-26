@@ -36,7 +36,8 @@ func (PostgresRubricsRepository) SaveRubricConfig(ctx context.Context, rubric Ru
 }
 
 func (PostgresRubricsRepository) DeleteRubricByID(ctx context.Context, id string) error {
-	_, err := db.Exec(ctx, deleteRubricQuery, id)
+	// Soft delete: mark as deleted without removing data
+	_, err := db.Exec(ctx, softDeleteRubricQuery, id)
 	return err
 }
 

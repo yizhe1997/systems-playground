@@ -3,13 +3,17 @@
 import { useEffect, useState } from 'react';
 import {
   deleteAccount,
+  deleteInstrument,
   deleteRubric,
   draftTrade,
   getAIAvailability,
   improveRulesContext,
   improveText,
+  invalidateTrade,
   journalTrade,
+  regradeTradeSetup,
   saveAccount,
+  saveInstrument,
   saveRubric,
   scrapeRulesFromUrls,
   updateTradeStatus,
@@ -18,6 +22,7 @@ import {
   Account,
   AccountFormState,
   DraftFormState,
+  InstrumentDefinition,
   JournalDataState,
   PaginatedTradesResponse,
   Rubric,
@@ -31,34 +36,43 @@ import {
   DEFAULT_RUBRIC_FORM,
 } from '../constants';
 import { KeyedMutator } from 'swr';
+import { useToast } from '@/hooks/use-toast';
+
+const AI_FEATURE_KEY_RUBRIC_RULES_IMPROVE_TEXT = 'rubricRulesImproveText';
+const AI_FEATURE_KEY_DRAFT_CONTEXT_NOTES_IMPROVE_TEXT = 'draftContextNotesImproveText';
 
 interface UseDashboardMutationsInput {
-  trades: Trade[];
+  instruments: InstrumentDefinition[];
   rubrics: Rubric[];
   normalizedActiveAccountId: string;
   activeAccount: Account | null;
   setActiveAccountId: (id: string) => void;
   mutateAccounts: KeyedMutator<unknown>;
+  mutateInstruments: KeyedMutator<unknown>;
   mutateTrades: KeyedMutator<unknown>;
   mutateRubrics: KeyedMutator<unknown>;
 }
 
 export function useDashboardMutations({
-  trades,
+  instruments,
   rubrics,
   normalizedActiveAccountId,
   activeAccount,
   setActiveAccountId,
   mutateAccounts,
+  mutateInstruments,
   mutateTrades,
   mutateRubrics,
 }: UseDashboardMutationsInput) {
+  const { toast } = useToast();
   // Panel open state
   const [isDraftOpen, setIsDraftOpen] = useState(false);
   const [editTradeId, setEditTradeId] = useState<string | null>(null);
   const [isRubricOpen, setIsRubricOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [journalTradeId, setJournalTradeId] = useState<string | null>(null);
+  const [invalidateTradeTarget, setInvalidateTradeTarget] = useState<Trade | null>(null);
+  const [invalidateReasonText, setInvalidateReasonText] = useState('');
 
   // Form state
   const [draftForm, setDraftForm] = useState<DraftFormState>(DEFAULT_DRAFT_FORM);
@@ -75,6 +89,7 @@ export function useDashboardMutations({
   const [isAiImproving, setIsAiImproving] = useState(false);
   const [isAiImprovingRubric, setIsAiImprovingRubric] = useState(false);
   const [isAiImprovingDraft, setIsAiImprovingDraft] = useState(false);
+  const [isSavingInstrument, setIsSavingInstrument] = useState(false);
   const [availableAiProviders, setAvailableAiProviders] = useState<string[]>([]);
 
   useEffect(() => {
@@ -121,6 +136,8 @@ export function useDashboardMutations({
       contracts: trade.contracts,
       notes: trade.notes || '',
       rubricId: trade.rubricId || '',
+      runAiSetupGrade: false,
+      aiSetupFindings: trade.aiSetupFindings || undefined,
     });
     setIsDraftOpen(true);
   };
@@ -130,6 +147,7 @@ export function useDashboardMutations({
     setDraftForm({
       ...DEFAULT_DRAFT_FORM,
       accountId: normalizedActiveAccountId,
+      instrument: instruments[0]?.code || '',
       rubricId: rubrics[0]?.id || '',
     });
     setIsDraftOpen(true);
@@ -138,6 +156,15 @@ export function useDashboardMutations({
   const closeDraftPanel = () => {
     setIsDraftOpen(false);
     setEditTradeId(null);
+  };
+
+  const openInvalidateTradePanel = (trade: Trade) => {
+    setInvalidateTradeTarget(trade);
+    setInvalidateReasonText('');
+  };
+
+  const closeInvalidateTradePanel = () => {
+    setInvalidateTradeTarget(null);
   };
 
   const openUpdateAccountPanel = () => {
@@ -183,7 +210,7 @@ export function useDashboardMutations({
         takeProfit,
       };
 
-      mutateTrades(current => {
+      mutateTrades((current: unknown) => {
         const currentPage = current as PaginatedTradesResponse | undefined;
         if (!currentPage || !Array.isArray(currentPage.items)) {
           return current;
@@ -212,11 +239,14 @@ export function useDashboardMutations({
       setDraftForm({
         ...DEFAULT_DRAFT_FORM,
         accountId: draftForm.accountId || normalizedActiveAccountId,
+        instrument: draftForm.instrument || instruments[0]?.code || '',
         rubricId: rubrics[0]?.id || '',
       });
       mutateTrades();
+      toast(editTradeId ? 'Trade updated.' : 'Trade drafted.', 'success');
     } catch (error) {
       console.error(error);
+      toast('Failed to save trade.', 'error');
     }
   };
 
@@ -225,8 +255,10 @@ export function useDashboardMutations({
       await saveRubric(rubricForm);
       setIsRubricOpen(false);
       mutateRubrics();
+      toast('Rubric saved.', 'success');
     } catch (error) {
       console.error(error);
+      toast('Failed to save rubric.', 'error');
     }
   };
 
@@ -240,8 +272,10 @@ export function useDashboardMutations({
       if (fetchedRubrics && (fetchedRubrics as Rubric[]).length > 0) {
         setRubricForm((fetchedRubrics as Rubric[])[0]);
       }
+      toast('Rubric deleted.', 'success');
     } catch (error) {
       console.error(error);
+      toast('Failed to delete rubric.', 'error');
     }
   };
 
@@ -288,8 +322,10 @@ export function useDashboardMutations({
       setAccountForm(DEFAULT_ACCOUNT_FORM);
       setShowUrlInput(false);
       setAiUrlsInput(['']);
+      toast('Account saved.', 'success');
     } catch (error) {
       console.error(error);
+      toast('Failed to save account.', 'error');
     }
   };
 
@@ -309,8 +345,10 @@ export function useDashboardMutations({
       setAccountForm(DEFAULT_ACCOUNT_FORM);
       setShowUrlInput(false);
       setAiUrlsInput(['']);
+      toast('Account deleted.', 'success');
     } catch (error) {
       console.error(error);
+      toast('Failed to delete account.', 'error');
     }
   };
 
@@ -325,9 +363,11 @@ export function useDashboardMutations({
         setAccountForm({ ...accountForm, rulesContext: res.context });
         setAiUrlsInput(['']);
         setShowUrlInput(false);
+        toast('Rules context extracted.', 'success');
       }
     } catch (error) {
       console.error(error);
+      toast('Failed to scrape URLs.', 'error');
     }
     setIsAiScraping(false);
   };
@@ -340,9 +380,11 @@ export function useDashboardMutations({
       const res = await improveRulesContext(accountForm.rulesContext, accountType);
       if (res && res.context) {
         setAccountForm({ ...accountForm, rulesContext: res.context });
+        toast('Rules context improved.', 'success');
       }
     } catch (error) {
       console.error(error);
+      toast('Failed to improve rules.', 'error');
     }
     setIsAiImproving(false);
   };
@@ -351,12 +393,14 @@ export function useDashboardMutations({
     if (!rubricForm.rules) return;
     setIsAiImprovingRubric(true);
     try {
-      const res = await improveText(rubricForm.rules);
+      const res = await improveText(rubricForm.rules, AI_FEATURE_KEY_RUBRIC_RULES_IMPROVE_TEXT);
       if (res && res.text) {
         setRubricForm({ ...rubricForm, rules: res.text });
+        toast('Rubric rules improved.', 'success');
       }
     } catch (error) {
       console.error(error);
+      toast('Failed to improve rubric rules.', 'error');
     }
     setIsAiImprovingRubric(false);
   };
@@ -365,14 +409,49 @@ export function useDashboardMutations({
     if (!draftForm.notes) return;
     setIsAiImprovingDraft(true);
     try {
-      const res = await improveText(draftForm.notes);
+      const res = await improveText(draftForm.notes, AI_FEATURE_KEY_DRAFT_CONTEXT_NOTES_IMPROVE_TEXT);
       if (res && res.text) {
         setDraftForm({ ...draftForm, notes: res.text });
+        toast('Notes improved.', 'success');
       }
     } catch (error) {
       console.error(error);
+      toast('Failed to improve notes.', 'error');
     }
     setIsAiImprovingDraft(false);
+  };
+
+  const handleSaveInstrument = async (instrument: InstrumentDefinition, previousCode?: string) => {
+    setIsSavingInstrument(true);
+    try {
+      if (previousCode && previousCode !== instrument.code) {
+        await deleteInstrument(previousCode);
+      }
+
+      await saveInstrument({
+        code: instrument.code,
+      });
+      await mutateInstruments();
+      toast(`Instrument ${instrument.code} saved.`, 'success');
+    } catch (error) {
+      console.error(error);
+      toast('Failed to save instrument.', 'error');
+      throw error;
+    } finally {
+      setIsSavingInstrument(false);
+    }
+  };
+
+  const handleDeleteInstrument = async (code: string) => {
+    try {
+      await deleteInstrument(code);
+      await mutateInstruments();
+      toast(`Instrument ${code} deleted.`, 'success');
+    } catch (error) {
+      console.error(error);
+      toast('Failed to delete instrument.', 'error');
+      throw error;
+    }
   };
 
   const handleJournalSubmit = async () => {
@@ -387,8 +466,10 @@ export function useDashboardMutations({
       setJournalTradeId(null);
       setJournalData(DEFAULT_JOURNAL_DATA);
       mutateTrades();
+      toast('Trade journaled.', 'success');
     } catch (error) {
       console.error(error);
+      toast('Failed to journal trade.', 'error');
     }
   };
 
@@ -398,7 +479,46 @@ export function useDashboardMutations({
       mutateTrades();
     } catch (error) {
       console.error(error);
+      toast('Failed to update trade status.', 'error');
     }
+  };
+
+  const handleRegrade = async (id: string) => {
+    try {
+      await regradeTradeSetup(id);
+      mutateTrades();
+      toast('Regrade queued.', 'success');
+    } catch (error) {
+      console.error(error);
+      toast('Failed to enqueue regrade.', 'error');
+    }
+  };
+
+  const handleInvalidateTrade = async (id: string, reason: string) => {
+    try {
+      await invalidateTrade(id, reason);
+      mutateTrades();
+      toast('Trade invalidated.', 'success');
+    } catch (error) {
+      console.error(error);
+      toast('Failed to invalidate trade.', 'error');
+    }
+  };
+
+  const handleInvalidateSubmit = async () => {
+    if (!invalidateTradeTarget) {
+      return;
+    }
+
+    const reason = invalidateReasonText.trim();
+
+    if (!reason) {
+      window.alert('Please provide an invalidation reason.');
+      return;
+    }
+
+    await handleInvalidateTrade(invalidateTradeTarget.id, reason);
+    closeInvalidateTradePanel();
   };
 
   return {
@@ -412,6 +532,9 @@ export function useDashboardMutations({
     setIsAccountOpen,
     journalTradeId,
     setJournalTradeId,
+    invalidateTradeTarget,
+    invalidateReasonText,
+    setInvalidateReasonText,
     // Form state
     draftForm,
     setDraftForm,
@@ -434,11 +557,14 @@ export function useDashboardMutations({
     isAiImproving,
     isAiImprovingRubric,
     isAiImprovingDraft,
+    isSavingInstrument,
     availableAiProviders,
     // Panel helpers
     openDraftPanel,
     openNewDraftPanel,
     closeDraftPanel,
+    openInvalidateTradePanel,
+    closeInvalidateTradePanel,
     openUpdateAccountPanel,
     openNewAccountPanel,
     // Mutation handlers
@@ -451,7 +577,12 @@ export function useDashboardMutations({
     handleAiImproveRules,
     handleAiImproveRubricRules,
     handleAiImproveDraftNotes,
+    handleSaveInstrument,
+    handleDeleteInstrument,
     handleJournalSubmit,
     handleUpdateStatus,
+    handleRegrade,
+    handleInvalidateTrade,
+    handleInvalidateSubmit,
   };
 }

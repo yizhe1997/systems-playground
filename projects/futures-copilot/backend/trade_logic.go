@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 const draftRiskWarningThreshold = 800.0
 
@@ -87,6 +90,14 @@ func validateTradeStatusUpdate(req updateTradeStatusRequest) string {
 func validateJournalTrade(req journalTradeRequest) string {
 	if req.TradeID == "" || req.Outcome == "" {
 		return "Missing journal fields"
+	}
+
+	return ""
+}
+
+func validateInvalidateTrade(req invalidateTradeRequest) string {
+	if strings.TrimSpace(req.Reason) == "" {
+		return "Invalidation reason is required"
 	}
 
 	return ""

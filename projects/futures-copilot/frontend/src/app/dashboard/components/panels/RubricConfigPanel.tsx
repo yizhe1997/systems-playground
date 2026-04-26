@@ -170,24 +170,24 @@ export function RubricConfigPanel({
               </div>
 
               {showDeleteRubricConfirm ? (
-                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] flex flex-col gap-4">
+                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
                   <p className="font-mono text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold leading-relaxed">
                     WARNING: This will permanently delete {rubricForm.name}.
                   </p>
-                  <div className="flex gap-2">
+                  {rubricForm.id && (
                     <button
                       onClick={onDelete}
-                      className="flex-1 py-4 bg-rose-600 text-white font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
+                      className={`w-full py-4 bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors ${rubricForm.id ? 'mb-4' : ''}`}
                     >
                       CONFIRM
                     </button>
-                    <button
-                      onClick={() => onShowDeleteConfirmChange(false)}
-                      className="flex-1 py-4 border border-black dark:border-white text-black dark:text-white font-mono text-xs uppercase tracking-widest font-bold hover:opacity-50 transition-opacity"
-                    >
-                      CANCEL
-                    </button>
-                  </div>
+                  )}
+                  <button
+                    onClick={() => onShowDeleteConfirmChange(false)}
+                    className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold"
+                  >
+                    CANCEL
+                  </button>
                 </div>
               ) : (
                 <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">

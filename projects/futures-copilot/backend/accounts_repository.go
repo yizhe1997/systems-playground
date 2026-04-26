@@ -1,6 +1,9 @@
 package main
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type AccountsRepository interface {
 	ListAccounts(ctx context.Context) ([]AccountConfig, error)
@@ -20,10 +23,11 @@ func (PostgresAccountsRepository) ListAccounts(ctx context.Context) ([]AccountCo
 	accounts := make([]AccountConfig, 0)
 	for rows.Next() {
 		var account AccountConfig
-		if err := rows.Scan(&account.ID, &account.Type, &account.CurrentBalance, &account.CurrentDailyStopLevel, &account.CurrentMaxLossLevel, &account.RulesContext); err != nil {
+		var createdAt time.Time
+		if err := rows.Scan(&account.ID, &account.Type, &account.CurrentBalance, &account.CurrentDailyStopLevel, &account.CurrentMaxLossLevel, &account.RulesContext, &createdAt); err != nil {
 			continue
 		}
-
+		account.CreatedAt = createdAt.Format(time.RFC3339)
 		accounts = append(accounts, account)
 	}
 
@@ -36,12 +40,8 @@ func (PostgresAccountsRepository) SaveAccountConfig(ctx context.Context, account
 }
 
 func (PostgresAccountsRepository) DeleteAccountByID(ctx context.Context, id string) error {
-	// Preserve explicit cascade intent from prior implementation.
-	db.Exec(ctx, deleteTradeOutcomesByAccountQuery, id)
-	db.Exec(ctx, deleteTradePlanEditsByAccountQuery, id)
-	db.Exec(ctx, deleteTradePlansByAccountQuery, id)
-
-	_, err := db.Exec(ctx, deleteAccountQuery, id)
+	// Soft delete: mark as deleted without removing data
+	_, err := db.Exec(ctx, softDeleteAccountQuery, id)
 	return err
 }
 

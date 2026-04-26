@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Webhook, MessageCircle, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -12,12 +12,7 @@ export default function AlertsPage() {
   const { data: session, status } = useSession();
   const userRole = (session?.user as { role?: string })?.role || 'USER';
   const isSubscribed = userRole === 'SUBSCRIBER' || userRole === 'ADMIN';
-  const [mounted, setMounted] = useState(false);
   const [activeChannel, setActiveChannel] = useState<'telegram' | 'discord' | 'webhook'>('telegram');
-
-  useEffect(() => { const t = setTimeout(() => setMounted(true), 0); return () => clearTimeout(t); }, []);
-
-  if (!mounted) return null;
 
   // We should wait until auth status is known before showing block screens
   const showBlocker = status !== 'loading' && !isSubscribed;

@@ -8,6 +8,7 @@ type AccountConfig struct {
 	CurrentDailyStopLevel float64 `json:"currentDailyStopLevel"`
 	CurrentMaxLossLevel   float64 `json:"currentMaxLossLevel"`
 	RulesContext          string  `json:"rulesContext"`
+	CreatedAt             string  `json:"createdAt"`
 }
 
 type Rubric struct {
@@ -16,22 +17,31 @@ type Rubric struct {
 	Rules string `json:"rules"`
 }
 
+type InstrumentDefinition struct {
+	Code      string `json:"code"`
+	CreatedAt string `json:"createdAt,omitempty"`
+}
+
 type TradePlan struct {
-	ID         string   `json:"id"`
-	AccountID  string   `json:"accountId"`
-	RubricID   *string  `json:"rubricId"`
-	Instrument string   `json:"instrument"`
-	Bias       string   `json:"bias"`
-	Entry      float64  `json:"entry"`
-	StopLoss   float64  `json:"stopLoss"`
-	TakeProfit float64  `json:"takeProfit"`
-	Contracts  int      `json:"contracts"`
-	Notes      *string  `json:"notes"`
-	Status     string   `json:"status"`
-	CreatedAt  string   `json:"createdAt,omitempty"`
-	UpdatedAt  string   `json:"updatedAt,omitempty"`
-	PnL        *float64 `json:"pnl,omitempty"`
-	Outcome    *string  `json:"outcome,omitempty"`
+	ID                 string   `json:"id"`
+	AccountID          string   `json:"accountId"`
+	RubricID           *string  `json:"rubricId"`
+	Instrument         string   `json:"instrument"`
+	Bias               string   `json:"bias"`
+	Entry              float64  `json:"entry"`
+	StopLoss           float64  `json:"stopLoss"`
+	TakeProfit         float64  `json:"takeProfit"`
+	Contracts          int      `json:"contracts"`
+	Notes              *string  `json:"notes"`
+	Status             string   `json:"status"`
+	AISetupGradeStatus string   `json:"aiSetupGradeStatus,omitempty"`
+	AISetupFindings    *string  `json:"aiSetupFindings,omitempty"`
+	InvalidationReason *string  `json:"invalidationReason,omitempty"`
+	InvalidatedAt      *string  `json:"invalidatedAt,omitempty"`
+	CreatedAt          string   `json:"createdAt,omitempty"`
+	UpdatedAt          string   `json:"updatedAt,omitempty"`
+	PnL                *float64 `json:"pnl,omitempty"`
+	Outcome            *string  `json:"outcome,omitempty"`
 }
 
 type AIResponse struct {
@@ -41,18 +51,24 @@ type AIResponse struct {
 }
 
 type AIFeatureConfig struct {
-	Key      string `json:"key"`
-	Provider string `json:"provider"`
-	Model    string `json:"model"`
+	Key       string `json:"key"`
+	Label     string `json:"label,omitempty"`
+	Provider  string `json:"provider"`
+	Model     string `json:"model"`
+	TimeoutMs int    `json:"timeoutMs,omitempty"`
 }
 
 // AIProviderConfig is the internal flat representation (matches DB columns).
 type AIProviderConfig struct {
-	ScrapeRulesProvider string   `json:"-"`
-	ScrapeRulesModel    string   `json:"-"`
-	CleanupTextProvider string   `json:"-"`
-	CleanupTextModel    string   `json:"-"`
-	TimeoutMs           int      `json:"-"`
-	UpdatedAt           string   `json:"-"`
-	AvailableProviders  []string `json:"-"`
+	Features           []AIFeatureConfig   `json:"-"`
+	ModelPresets       map[string][]string `json:"-"`
+	TimeoutMs          int                 `json:"-"`
+	UpdatedAt          string              `json:"-"`
+	AvailableProviders []string            `json:"-"`
+
+	// Legacy fields kept for compatibility with existing tests/callers.
+	ScrapeRulesProvider string `json:"-"`
+	ScrapeRulesModel    string `json:"-"`
+	CleanupTextProvider string `json:"-"`
+	CleanupTextModel    string `json:"-"`
 }

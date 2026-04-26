@@ -1,14 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Mail } from 'lucide-react';
 
 export default function ContactPage() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setMounted(true), 0); return () => clearTimeout(t); }, []);
-
-  if (!mounted) return null;
-
   return (
     <div className="w-full relative">
       <main className="max-w-[800px] mx-auto relative px-4 md:px-8 py-12 lg:py-24">

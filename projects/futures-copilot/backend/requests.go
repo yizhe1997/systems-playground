@@ -11,17 +11,20 @@ type disableUserRequest struct {
 }
 
 type scrapeRulesRequest struct {
+	FeatureKey  string   `json:"featureKey"`
 	URLs        []string `json:"urls"`
 	AccountType string   `json:"accountType"`
 }
 
 type improveRulesRequest struct {
+	FeatureKey  string `json:"featureKey"`
 	Text        string `json:"text"`
 	AccountType string `json:"accountType"`
 }
 
 type improveTextRequest struct {
-	Text string `json:"text"`
+	FeatureKey string `json:"featureKey"`
+	Text       string `json:"text"`
 }
 
 type updateAIProviderConfigRequest struct {
@@ -31,6 +34,24 @@ type updateAIProviderConfigRequest struct {
 
 type updateTradeStatusRequest struct {
 	Status string `json:"status"`
+}
+
+type invalidateTradeRequest struct {
+	Reason string `json:"reason"`
+}
+
+type draftTradeRequest struct {
+	ID              string  `json:"id"`
+	AccountID       string  `json:"accountId"`
+	RubricID        *string `json:"rubricId"`
+	Instrument      string  `json:"instrument"`
+	Bias            string  `json:"bias"`
+	Entry           float64 `json:"entry"`
+	StopLoss        float64 `json:"stopLoss"`
+	TakeProfit      float64 `json:"takeProfit"`
+	Contracts       int     `json:"contracts"`
+	Notes           *string `json:"notes"`
+	RunAISetupGrade bool    `json:"runAiSetupGrade"`
 }
 
 type journalTradeRequest struct {

@@ -33,17 +33,11 @@ func listTrades(ctx context.Context) ([]TradePlan, error) {
 
 	trades := make([]TradePlan, 0)
 	for rows.Next() {
-		var trade TradePlan
-		var riskAmount float64
-		var createdAt time.Time
-
-		if err := rows.Scan(&trade.ID, &trade.AccountID, &trade.RubricID, &trade.Instrument, &trade.Bias, &trade.Entry, &trade.StopLoss, &trade.TakeProfit, &trade.Contracts, &riskAmount, &trade.Status, &trade.Notes, &createdAt, &trade.PnL, &trade.Outcome); err != nil {
+		trade, err := scanTradePlanRow(rows)
+		if err != nil {
 			log.Printf("Scan error in getTrades: %v", err)
 			continue
 		}
-
-		trade.CreatedAt = createdAt.Format(time.RFC3339)
-
 		trades = append(trades, trade)
 	}
 
@@ -93,7 +87,7 @@ func listTradesPaginated(ctx context.Context, page int, pageSize int, filters Tr
 	limitPlaceholder := argIndex
 	offsetPlaceholder := argIndex + 1
 	selectQuery := `
-		SELECT t.id, t.account_id, t.rubric_id, t.instrument, t.bias, t.entry, t.stop_loss, t.take_profit, t.contracts, t.risk_amount, t.status, t.notes, t.created_at, o.pnl, o.outcome 
+		SELECT t.id, t.account_id, t.rubric_id, t.instrument, t.bias, t.entry, t.stop_loss, t.take_profit, t.contracts, t.risk_amount, t.status, t.notes, t.ai_setup_grade_status, t.ai_setup_findings, t.invalidation_reason, t.invalidated_at, t.created_at, o.pnl, o.outcome 
 		FROM trade_plans t 
 		LEFT JOIN trade_outcomes o ON o.trade_id = t.id
 	` + whereClause + fmt.Sprintf(" ORDER BY t.created_at DESC LIMIT $%d OFFSET $%d", limitPlaceholder, offsetPlaceholder)
@@ -109,17 +103,11 @@ func listTradesPaginated(ctx context.Context, page int, pageSize int, filters Tr
 
 	items := make([]TradePlan, 0)
 	for rows.Next() {
-		var trade TradePlan
-		var riskAmount float64
-		var createdAt time.Time
-
-		if err := rows.Scan(&trade.ID, &trade.AccountID, &trade.RubricID, &trade.Instrument, &trade.Bias, &trade.Entry, &trade.StopLoss, &trade.TakeProfit, &trade.Contracts, &riskAmount, &trade.Status, &trade.Notes, &createdAt, &trade.PnL, &trade.Outcome); err != nil {
+		trade, err := scanTradePlanRow(rows)
+		if err != nil {
 			log.Printf("Scan error in getTrades paginated: %v", err)
 			continue
 		}
-
-		trade.CreatedAt = createdAt.Format(time.RFC3339)
-
 		items = append(items, trade)
 	}
 
@@ -137,8 +125,61 @@ func listTradesPaginated(ctx context.Context, page int, pageSize int, filters Tr
 	}, nil
 }
 
-func saveDraftTrade(ctx context.Context, plan TradePlan, riskAmount float64) error {
-	_, err := db.Exec(ctx, upsertTradePlanQuery, plan.ID, plan.AccountID, nullableString(plan.RubricID), plan.Instrument, plan.Bias, plan.Entry, plan.StopLoss, plan.TakeProfit, plan.Contracts, riskAmount, plan.Status, plan.Notes)
+func scanTradePlanRow(scanner interface {
+	Scan(dest ...any) error
+}) (TradePlan, error) {
+	var trade TradePlan
+	var riskAmount float64
+	var invalidatedAt *time.Time
+	var createdAt time.Time
+
+	if err := scanner.Scan(&trade.ID, &trade.AccountID, &trade.RubricID, &trade.Instrument, &trade.Bias, &trade.Entry, &trade.StopLoss, &trade.TakeProfit, &trade.Contracts, &riskAmount, &trade.Status, &trade.Notes, &trade.AISetupGradeStatus, &trade.AISetupFindings, &trade.InvalidationReason, &invalidatedAt, &createdAt, &trade.PnL, &trade.Outcome); err != nil {
+		return TradePlan{}, err
+	}
+
+	trade.CreatedAt = createdAt.Format(time.RFC3339)
+	if invalidatedAt != nil {
+		formatted := invalidatedAt.Format(time.RFC3339)
+		trade.InvalidatedAt = &formatted
+	}
+	return trade, nil
+}
+
+func getTradeByID(ctx context.Context, id string) (TradePlan, error) {
+	var trade TradePlan
+	var invalidatedAt *time.Time
+	var createdAt time.Time
+	if err := db.QueryRow(ctx, selectTradeByIDQuery, id).Scan(
+		&trade.ID,
+		&trade.AccountID,
+		&trade.RubricID,
+		&trade.Instrument,
+		&trade.Bias,
+		&trade.Entry,
+		&trade.StopLoss,
+		&trade.TakeProfit,
+		&trade.Contracts,
+		&trade.Status,
+		&trade.Notes,
+		&trade.AISetupGradeStatus,
+		&trade.AISetupFindings,
+		&trade.InvalidationReason,
+		&invalidatedAt,
+		&createdAt,
+	); err != nil {
+		return TradePlan{}, err
+	}
+
+	trade.CreatedAt = createdAt.Format(time.RFC3339)
+	if invalidatedAt != nil {
+		formatted := invalidatedAt.Format(time.RFC3339)
+		trade.InvalidatedAt = &formatted
+	}
+	return trade, nil
+}
+
+func saveDraftTrade(ctx context.Context, plan TradePlan, riskAmount float64, aiSetupGradeStatus string, aiSetupFindings *string) error {
+	_, err := db.Exec(ctx, upsertTradePlanQuery, plan.ID, plan.AccountID, nullableString(plan.RubricID), plan.Instrument, plan.Bias, plan.Entry, plan.StopLoss, plan.TakeProfit, plan.Contracts, riskAmount, plan.Status, plan.Notes, aiSetupGradeStatus, aiSetupFindings)
 	return err
 }
 
@@ -149,6 +190,25 @@ func setTradeStatus(ctx context.Context, id string, status string) error {
 
 func closeTrade(ctx context.Context, id string) error {
 	_, err := db.Exec(ctx, closeTradeQuery, id)
+	return err
+}
+
+func invalidateTradePlan(ctx context.Context, id string, reason string) (bool, error) {
+	result, err := db.Exec(ctx, invalidateTradeQuery, reason, id)
+	if err != nil {
+		return false, err
+	}
+
+	return result.RowsAffected() > 0, nil
+}
+
+func setTradeAISetupGradeStatus(ctx context.Context, id string, status string) error {
+	_, err := db.Exec(ctx, updateTradeAISetupGradeStatusQuery, status, id)
+	return err
+}
+
+func setTradeAISetupGradeResult(ctx context.Context, id string, status string, findings string) error {
+	_, err := db.Exec(ctx, updateTradeAISetupGradeResultQuery, status, findings, id)
 	return err
 }
 

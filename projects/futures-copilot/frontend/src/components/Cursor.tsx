@@ -5,13 +5,11 @@ import { motion } from 'framer-motion';
 
 export default function Cursor() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [mounted, setMounted] = useState(false);
   const [tooltipText, setTooltipText] = useState<string | null>(null);
   const [isRightHalf, setIsRightHalf] = useState(false);
   const [isBottomHalf, setIsBottomHalf] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 0);
     const updateMousePosition = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
       setIsRightHalf(e.clientX > window.innerWidth / 2);
@@ -31,12 +29,9 @@ export default function Cursor() {
     
     window.addEventListener('mousemove', updateMousePosition);
     return () => {
-      clearTimeout(t);
       window.removeEventListener('mousemove', updateMousePosition);
     };
   }, []);
-
-  if (!mounted) return null;
 
   // The cursor box is 24x24 (w-6 h-6), centered at mousePosition
   const cursorLeft = mousePosition.x - 12;

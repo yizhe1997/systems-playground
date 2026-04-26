@@ -14,9 +14,11 @@ func registerCopilotRoutes(app *fiber.App, basePath string) {
 	api := app.Group(basePath)
 	accounts := api.Group("/accounts")
 	rubrics := api.Group("/rubrics")
+	instruments := api.Group("/instruments")
 	trades := api.Group("/trades")
 	ai := api.Group("/ai")
 	users := api.Group("/users")
+	stats := api.Group("/stats")
 
 	accounts.Get("", getAccounts)
 	accounts.Post("", saveAccount)
@@ -26,8 +28,16 @@ func registerCopilotRoutes(app *fiber.App, basePath string) {
 	rubrics.Post("", saveRubric)
 	rubrics.Delete("/:id", deleteRubric)
 
+	instruments.Get("", getInstruments)
+	instruments.Post("", saveInstrument)
+	instruments.Delete("/:code", deleteInstrument)
+
 	trades.Get("", getTrades)
 	trades.Put("/:id/status", updateTradeStatus)
+	trades.Post("/:id/regrade", regradeTradeSetup)
+	trades.Post("/:id/invalidate", invalidateTrade)
+
+	stats.Get("/trades", getTradeStats)
 
 	api.Post("/draft", draftTrade)
 	api.Post("/journal", journalTrade)

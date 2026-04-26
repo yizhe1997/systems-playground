@@ -15,10 +15,11 @@ interface DashboardControlBarProps {
   onCreatedToChange: (value: string) => void;
   onClearFilters: () => void;
   onOpenRubric: () => void;
+  onOpenInstruments: () => void;
   onOpenDraft: () => void;
 }
 
-const TABS: DashboardTab[] = ['all', 'draft', 'working', 'filled'];
+const TABS: DashboardTab[] = ['all', 'draft', 'working', 'filled', 'closed', 'invalidated'];
 
 export function DashboardControlBar({
   activeTab,
@@ -30,6 +31,7 @@ export function DashboardControlBar({
   onCreatedToChange,
   onClearFilters,
   onOpenRubric,
+  onOpenInstruments,
   onOpenDraft,
 }: DashboardControlBarProps) {
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -128,6 +130,13 @@ export function DashboardControlBar({
             >
               <Settings2 className="w-4 h-4" />
               RUBRIC CONFIG
+            </button>
+            <button
+              onClick={onOpenInstruments}
+              className="flex items-center gap-2 px-4 py-2 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+            >
+              <Settings2 className="w-4 h-4" />
+              INSTRUMENT CONFIG
             </button>
             <button
               onClick={onOpenDraft}

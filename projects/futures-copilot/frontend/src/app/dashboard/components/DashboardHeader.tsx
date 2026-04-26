@@ -25,6 +25,16 @@ export function DashboardHeader({
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const accountDropdownRef = useRef<HTMLDivElement>(null);
 
+  const formatAccountLabel = (account: Account) => {
+    if (!account.createdAt) return account.type;
+    const d = new Date(account.createdAt);
+    const label = d.toLocaleString('en-GB', {
+      day: '2-digit', month: '2-digit', year: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).replace(',', '');
+    return `${account.type} - ${label}`;
+  };
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target as Node)) {
@@ -56,7 +66,7 @@ export function DashboardHeader({
               onClick={() => setIsAccountDropdownOpen(prev => !prev)}
               className="flex-1 min-w-0 font-mono text-xs uppercase tracking-widest bg-transparent flex items-start justify-between gap-2 text-black dark:text-white"
             >
-              <span className="block flex-1 min-w-0 text-left break-words leading-tight">{activeAccount?.type || 'NO ACCOUNT'}</span>
+              <span className="block flex-1 min-w-0 text-left break-words leading-tight">{activeAccount ? formatAccountLabel(activeAccount) : 'NO ACCOUNT'}</span>
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isAccountDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
@@ -76,7 +86,7 @@ export function DashboardHeader({
                       }}
                       className="text-left px-4 py-3 font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b last:border-b-0 border-black dark:border-white opacity-80 hover:opacity-100"
                     >
-                      {account.type}
+                      {formatAccountLabel(account)}
                     </button>
                   ))}
                 </motion.div>

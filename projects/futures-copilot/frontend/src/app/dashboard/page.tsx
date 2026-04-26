@@ -7,19 +7,25 @@ import { TradeGrid } from './components/TradeGrid';
 import { DashboardPagination } from './components/DashboardPagination';
 import { DraftTradePanel } from './components/panels/DraftTradePanel';
 import { RubricConfigPanel } from './components/panels/RubricConfigPanel';
+import { InstrumentConfigPanel } from './components/panels/InstrumentConfigPanel';
 import { AccountPanel } from './components/panels/AccountPanel';
 import { JournalPanel } from './components/panels/JournalPanel';
-import { DashboardTab } from './types';
+import { InvalidateTradePanel } from './components/panels/InvalidateTradePanel';
+import { ReplayTradePanel } from './components/panels/ReplayTradePanel';
+import { DashboardTab, Trade } from './types';
 import { useDashboardData } from './hooks/useDashboardData';
 import { useDashboardMutations } from './hooks/useDashboardMutations';
 
 export default function CopilotPage() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('all');
+  const [replayTrade, setReplayTrade] = useState<Trade | null>(null);
+  const [isInstrumentOpen, setIsInstrumentOpen] = useState(false);
 
   const data = useDashboardData(activeTab);
   const {
     accounts,
     rubrics,
+    instruments,
     visibleTrades,
     activeAccount,
     activeAccountId,
@@ -27,9 +33,9 @@ export default function CopilotPage() {
     normalizedActiveAccountId,
     mutateTrades,
     mutateAccounts,
+    mutateInstruments,
     mutateRubrics,
     userRole,
-    mounted,
     createdFrom,
     setCreatedFrom,
     createdTo,
@@ -42,12 +48,13 @@ export default function CopilotPage() {
   } = data;
 
   const mutations = useDashboardMutations({
-    trades: data.trades,
     rubrics,
+    instruments,
     normalizedActiveAccountId,
     activeAccount,
     setActiveAccountId,
     mutateAccounts,
+    mutateInstruments,
     mutateTrades,
     mutateRubrics,
   });
@@ -61,6 +68,9 @@ export default function CopilotPage() {
     setIsAccountOpen,
     journalTradeId,
     setJournalTradeId,
+    invalidateTradeTarget,
+    invalidateReasonText,
+    setInvalidateReasonText,
     draftForm,
     setDraftForm,
     rubricForm,
@@ -81,10 +91,13 @@ export default function CopilotPage() {
     isAiImproving,
     isAiImprovingRubric,
     isAiImprovingDraft,
+    isSavingInstrument,
     availableAiProviders,
     openDraftPanel,
     openNewDraftPanel,
     closeDraftPanel,
+    openInvalidateTradePanel,
+    closeInvalidateTradePanel,
     openUpdateAccountPanel,
     openNewAccountPanel,
     handleDraftSubmit,
@@ -96,8 +109,12 @@ export default function CopilotPage() {
     handleAiImproveRules,
     handleAiImproveRubricRules,
     handleAiImproveDraftNotes,
+    handleSaveInstrument,
+    handleDeleteInstrument,
     handleJournalSubmit,
     handleUpdateStatus,
+    handleRegrade,
+    handleInvalidateSubmit,
   } = mutations;
 
   const clearFilters = () => {
@@ -105,8 +122,6 @@ export default function CopilotPage() {
     setCreatedFrom('');
     setCreatedTo('');
   };
-
-  if (!mounted) return null;
 
   return (
     <div className="w-full">
@@ -130,6 +145,7 @@ export default function CopilotPage() {
           onCreatedToChange={setCreatedTo}
           onClearFilters={clearFilters}
           onOpenRubric={() => setIsRubricOpen(true)}
+          onOpenInstruments={() => setIsInstrumentOpen(true)}
           onOpenDraft={openNewDraftPanel}
         />
 
@@ -137,8 +153,11 @@ export default function CopilotPage() {
           trades={visibleTrades}
           userRole={userRole}
           onOpenDraftPanel={openDraftPanel}
+          onOpenReplay={setReplayTrade}
           onUpdateStatus={handleUpdateStatus}
           onOpenJournal={setJournalTradeId}
+          onRegrade={handleRegrade}
+          onOpenInvalidatePanel={openInvalidateTradePanel}
         />
 
         <DashboardPagination
@@ -156,6 +175,7 @@ export default function CopilotPage() {
         activeAccountId={activeAccountId}
         accounts={accounts}
         rubrics={rubrics}
+        instruments={instruments}
         draftForm={draftForm}
         isAiImproving={isAiImprovingDraft}
         availableAiProviders={availableAiProviders}
@@ -178,6 +198,15 @@ export default function CopilotPage() {
         onAiImproveRules={handleAiImproveRubricRules}
         onSave={handleRubricSubmit}
         onDelete={handleDeleteRubric}
+      />
+
+      <InstrumentConfigPanel
+        isOpen={isInstrumentOpen}
+        instruments={instruments}
+        isSaving={isSavingInstrument}
+        onClose={() => setIsInstrumentOpen(false)}
+        onSave={handleSaveInstrument}
+        onDelete={handleDeleteInstrument}
       />
 
       <AccountPanel
@@ -206,6 +235,20 @@ export default function CopilotPage() {
         onJournalDataChange={setJournalData}
         onClose={() => setJournalTradeId(null)}
         onSubmit={handleJournalSubmit}
+      />
+
+      <ReplayTradePanel
+        trade={replayTrade}
+        instruments={instruments}
+        onClose={() => setReplayTrade(null)}
+      />
+
+      <InvalidateTradePanel
+        trade={invalidateTradeTarget}
+        reasonText={invalidateReasonText}
+        onReasonTextChange={setInvalidateReasonText}
+        onClose={closeInvalidateTradePanel}
+        onSubmit={handleInvalidateSubmit}
       />
     </div>
   );

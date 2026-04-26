@@ -20,7 +20,15 @@ func jsonError(c *fiber.Ctx, status int, message string) error {
 
 func logAndJSONError(c *fiber.Ctx, status int, message string, err error) error {
 	if err != nil {
-		log.Printf("%s: %v", message, err)
+		log.Printf(
+			"level=error req_id=%s method=%s path=%s status=%d message=%q error=%q",
+			c.Locals("requestid"),
+			c.Method(),
+			c.OriginalURL(),
+			status,
+			message,
+			err.Error(),
+		)
 	}
 
 	return jsonError(c, status, message)
