@@ -60,7 +60,7 @@ export function DashboardHeader({
       </div>
 
       <div className="lg:col-span-4 self-end">
-        <div className="border border-black dark:border-white p-6 bg-white dark:bg-black">
+        <div className="group border border-black dark:border-white p-6 bg-white dark:bg-black">
           <div ref={accountDropdownRef} className="flex items-start gap-3 border-b border-black dark:border-white pb-4 mb-4 relative">
             <button
               onClick={() => setIsAccountDropdownOpen(prev => !prev)}
@@ -93,14 +93,6 @@ export function DashboardHeader({
               )}
             </AnimatePresence>
             <div className="flex gap-2 items-start shrink-0 self-start">
-              {userRole === 'ADMIN' && activeAccount && (
-                <button
-                  onClick={onOpenUpdateAccount}
-                  className="h-6 px-2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
-                >
-                  UPDATE
-                </button>
-              )}
               {userRole === 'ADMIN' && (
                 <button
                   onClick={onOpenNewAccount}
@@ -112,7 +104,7 @@ export function DashboardHeader({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-y-6">
+          <div className="grid grid-cols-2 gap-y-6 items-end">
             <div>
               <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">BALANCE</div>
               <div className="font-mono text-2xl">${activeAccount?.currentBalance?.toLocaleString() || 0}</div>
@@ -124,6 +116,16 @@ export function DashboardHeader({
             <div>
               <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">MAX LOSS FLOOR</div>
               <div className="font-mono text-xl">${activeAccount?.currentMaxLossLevel?.toLocaleString() || 0}</div>
+            </div>
+            <div className="justify-self-end self-end h-6 flex items-end">
+              {userRole === 'ADMIN' && activeAccount && (
+                <button
+                  onClick={onOpenUpdateAccount}
+                  className="font-mono text-[10px] uppercase tracking-[0.2em] text-black dark:text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                >
+                  → UPDATE
+                </button>
+              )}
             </div>
           </div>
         </div>

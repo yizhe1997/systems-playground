@@ -137,6 +137,7 @@ func scanTradePlanRow(scanner interface {
 		return TradePlan{}, err
 	}
 
+	trade.RiskAmount = riskAmount
 	trade.CreatedAt = createdAt.Format(time.RFC3339)
 	if invalidatedAt != nil {
 		formatted := invalidatedAt.Format(time.RFC3339)
@@ -147,6 +148,7 @@ func scanTradePlanRow(scanner interface {
 
 func getTradeByID(ctx context.Context, id string) (TradePlan, error) {
 	var trade TradePlan
+	var riskAmount float64
 	var invalidatedAt *time.Time
 	var createdAt time.Time
 	if err := db.QueryRow(ctx, selectTradeByIDQuery, id).Scan(
@@ -159,6 +161,7 @@ func getTradeByID(ctx context.Context, id string) (TradePlan, error) {
 		&trade.StopLoss,
 		&trade.TakeProfit,
 		&trade.Contracts,
+		&riskAmount,
 		&trade.Status,
 		&trade.Notes,
 		&trade.AISetupGradeStatus,
@@ -170,6 +173,7 @@ func getTradeByID(ctx context.Context, id string) (TradePlan, error) {
 		return TradePlan{}, err
 	}
 
+	trade.RiskAmount = riskAmount
 	trade.CreatedAt = createdAt.Format(time.RFC3339)
 	if invalidatedAt != nil {
 		formatted := invalidatedAt.Format(time.RFC3339)

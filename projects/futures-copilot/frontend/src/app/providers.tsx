@@ -6,6 +6,8 @@ import { ThemeProvider } from '@/lib/theme-context';
 import { ToastContext, useToastState } from '@/hooks/use-toast';
 import { Toaster } from '@/components/Toaster';
 
+type Theme = 'light' | 'dark';
+
 function ToastProvider({ children }: { children: React.ReactNode }) {
   const value = useToastState();
   return (
@@ -16,10 +18,10 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export default function Providers({ children, initialTheme }: { children: React.ReactNode; initialTheme: Theme }) {
   return (
     <SessionProvider>
-      <ThemeProvider>
+      <ThemeProvider initialTheme={initialTheme}>
         <ToastProvider>
           {children}
         </ToastProvider>

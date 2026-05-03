@@ -9,7 +9,10 @@ const draftRiskWarningThreshold = 800.0
 
 // computeRiskMath calculates deterministic risk based on instrument point value.
 func computeRiskMath(plan TradePlan) float64 {
-	multiplier := instrumentMultiplier(plan.Instrument)
+	multiplier := plan.PointValue
+	if multiplier <= 0 {
+		multiplier = 10.0 // fallback default
+	}
 
 	distance := plan.Entry - plan.StopLoss
 	if plan.Bias == "Short" {

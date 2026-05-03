@@ -25,7 +25,7 @@ func (PostgresInstrumentsRepository) ListInstruments(ctx context.Context) ([]Ins
 	for rows.Next() {
 		var instrument InstrumentDefinition
 		var createdAt time.Time
-		if err := rows.Scan(&instrument.Code, &createdAt); err != nil {
+		if err := rows.Scan(&instrument.Code, &instrument.PointValue, &createdAt); err != nil {
 			continue
 		}
 		instrument.CreatedAt = createdAt.Format(time.RFC3339)
@@ -36,7 +36,7 @@ func (PostgresInstrumentsRepository) ListInstruments(ctx context.Context) ([]Ins
 }
 
 func (PostgresInstrumentsRepository) SaveInstrument(ctx context.Context, instrument InstrumentDefinition) error {
-	_, err := db.Exec(ctx, upsertInstrumentQuery, instrument.Code)
+	_, err := db.Exec(ctx, upsertInstrumentQuery, instrument.Code, instrument.PointValue)
 	return err
 }
 

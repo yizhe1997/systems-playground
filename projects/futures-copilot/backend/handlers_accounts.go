@@ -26,7 +26,7 @@ func saveAccount(c *fiber.Ctx) error {
 	}
 
 	if account.ID == "" {
-		account.ID = "a-" + uuid.New().String()[:8]
+		account.ID = uuid.New().String()
 	}
 
 	if err := accountsRepo.SaveAccountConfig(context.Background(), account); err != nil {

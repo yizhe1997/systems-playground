@@ -107,11 +107,24 @@ func draftTrade(c *fiber.Ctx) error {
 	}
 
 	if plan.ID == "" {
-		plan.ID = "t-" + uuid.New().String()[:8]
+		plan.ID = uuid.New().String()
 	}
 	plan.Status = "draft"
 
+	// Fetch instrument point value for risk calculation
+	instruments, _ := instrumentsRepo.ListInstruments(context.Background())
+	for _, inst := range instruments {
+		if inst.Code == plan.Instrument {
+			plan.PointValue = inst.PointValue
+			break
+		}
+	}
+	if plan.PointValue <= 0 {
+		plan.PointValue = 10.0 // fallback default
+	}
+
 	riskAmount := computeRiskMath(plan)
+	plan.RiskAmount = riskAmount
 	gradeStatus := "not_requested"
 	if req.RunAISetupGrade {
 		gradeStatus = "queued"

@@ -98,7 +98,7 @@ export function DashboardControlBar({
               type="date"
               value={createdFrom}
               onChange={event => onCreatedFromChange(event.target.value)}
-              className="bg-transparent font-mono text-xs uppercase tracking-widest focus:outline-none [&::-webkit-calendar-picker-indicator]:cursor-pointer dark:[&::-webkit-calendar-picker-indicator]:invert"
+              className="bg-transparent font-mono text-xs uppercase tracking-widest text-black dark:text-white focus:outline-none [color-scheme:light] dark:[color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-80 dark:[&::-webkit-calendar-picker-indicator]:opacity-100"
               aria-label="Created from date"
             />
             <span className="font-mono text-[10px] uppercase tracking-widest opacity-60">to</span>
@@ -106,7 +106,7 @@ export function DashboardControlBar({
               type="date"
               value={createdTo}
               onChange={event => onCreatedToChange(event.target.value)}
-              className="bg-transparent font-mono text-xs uppercase tracking-widest focus:outline-none [&::-webkit-calendar-picker-indicator]:cursor-pointer dark:[&::-webkit-calendar-picker-indicator]:invert"
+              className="bg-transparent font-mono text-xs uppercase tracking-widest text-black dark:text-white focus:outline-none [color-scheme:light] dark:[color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-80 dark:[&::-webkit-calendar-picker-indicator]:opacity-100"
               aria-label="Created to date"
             />
           </div>

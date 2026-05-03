@@ -18,8 +18,9 @@ type Rubric struct {
 }
 
 type InstrumentDefinition struct {
-	Code      string `json:"code"`
-	CreatedAt string `json:"createdAt,omitempty"`
+	Code       string  `json:"code"`
+	PointValue float64 `json:"pointValue"`
+	CreatedAt  string  `json:"createdAt,omitempty"`
 }
 
 type TradePlan struct {
@@ -32,6 +33,7 @@ type TradePlan struct {
 	StopLoss           float64  `json:"stopLoss"`
 	TakeProfit         float64  `json:"takeProfit"`
 	Contracts          int      `json:"contracts"`
+	RiskAmount         float64  `json:"riskAmount"`
 	Notes              *string  `json:"notes"`
 	Status             string   `json:"status"`
 	AISetupGradeStatus string   `json:"aiSetupGradeStatus,omitempty"`
@@ -42,6 +44,7 @@ type TradePlan struct {
 	UpdatedAt          string   `json:"updatedAt,omitempty"`
 	PnL                *float64 `json:"pnl,omitempty"`
 	Outcome            *string  `json:"outcome,omitempty"`
+	PointValue         float64  `json:"-"` // Internal use only, not exposed in API
 }
 
 type AIResponse struct {

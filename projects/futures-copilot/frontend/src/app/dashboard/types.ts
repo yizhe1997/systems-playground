@@ -48,6 +48,7 @@ export interface Rubric {
 
 export interface InstrumentDefinition {
   code: string;
+  pointValue: number;
   createdAt?: string;
 }
 

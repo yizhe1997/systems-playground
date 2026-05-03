@@ -58,6 +58,33 @@ export function DraftTradePanel({
     onDraftFormChange({ ...draftForm, [key]: parsedValue.toFixed(2) });
   };
 
+  const getValidationError = (): string | null => {
+    if (!(draftForm.accountId || activeAccountId)) {
+      return 'Account is required';
+    }
+    if (!draftForm.instrument) {
+      return 'Instrument is required';
+    }
+    if (!draftForm.bias) {
+      return 'Bias (Long/Short) is required';
+    }
+    if (!draftForm.entry || draftForm.entry <= 0) {
+      return 'Entry price is required and must be > 0';
+    }
+    if (!draftForm.stopLoss || draftForm.stopLoss <= 0) {
+      return 'Stop Loss is required and must be > 0';
+    }
+    if (!draftForm.takeProfit || draftForm.takeProfit <= 0) {
+      return 'Take Profit is required and must be > 0';
+    }
+    if (!draftForm.contracts || draftForm.contracts <= 0) {
+      return 'Contracts must be > 0';
+    }
+    return null;
+  };
+
+  const validationError = getValidationError();
+
   const [isDraftAccountDropdownOpen, setIsDraftAccountDropdownOpen] = useState(false);
   const [isDraftRubricDropdownOpen, setIsDraftRubricDropdownOpen] = useState(false);
   const [isDraftInstrumentDropdownOpen, setIsDraftInstrumentDropdownOpen] = useState(false);
@@ -108,7 +135,7 @@ export function DraftTradePanel({
             <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
               <div className="pl-[70px] pr-6 py-6 border-b border-black dark:border-white flex justify-between items-center bg-black text-white dark:bg-white dark:text-black">
                 <h2 className="font-mono text-sm uppercase tracking-widest font-bold">
-                  {editTradeId ? `EDIT SETUP [${editTradeId}]` : 'DRAFT NEW SETUP'}
+                  {editTradeId ? 'EDIT SETUP' : 'DRAFT NEW SETUP'}
                 </h2>
                 <button onClick={onClose} className="hover:opacity-50 transition-opacity flex items-center justify-center w-5 h-5">
                   <X className="w-5 h-5" />
@@ -357,10 +384,16 @@ export function DraftTradePanel({
                 </div>
               </div>
 
-              <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
+              <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] space-y-3">
+                {validationError && (
+                  <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-700 px-4 py-3 font-mono text-[10px] uppercase tracking-widest text-rose-700 dark:text-rose-300">
+                    {validationError}
+                  </div>
+                )}
                 <button
                   onClick={onSubmit}
-                  className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold"
+                  disabled={!!validationError}
+                  className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   CREATE DRAFT
                 </button>

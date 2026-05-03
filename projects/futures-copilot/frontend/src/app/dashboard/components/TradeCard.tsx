@@ -10,47 +10,48 @@ interface TradeCardProps {
   userRole: UserRole;
   onOpenDraftPanel: (trade: Trade) => void;
   onOpenReplay: (trade: Trade) => void;
+  onOpenTradeDetail: (trade: Trade) => void;
   onUpdateStatus: (id: string, newStatus: string) => void;
   onOpenJournal: (id: string) => void;
   onRegrade: (id: string) => void;
   onOpenInvalidatePanel: (trade: Trade) => void;
 }
 
-const GRADE_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  queued:  { label: 'GRADE QUEUED', className: 'border-black/30 dark:border-white/30 text-black/50 dark:text-white/50' },
-  grading: { label: 'GRADING...',   className: 'border-amber-500 text-amber-600 dark:text-amber-400 animate-pulse' },
-  ready:   { label: 'GRADED',       className: 'border-emerald-500 text-emerald-600 dark:text-emerald-400' },
-  failed:  { label: 'GRADE FAILED', className: 'border-rose-500 text-rose-600 dark:text-rose-400' },
+const GRADE_STATUS_CONFIG: Record<string, { label: string; detail: string; className: string }> = {
+  not_requested: { label: 'Not Run', detail: 'Awaiting manual trigger', className: 'border-black/15 dark:border-white/15 text-black/45 dark:text-white/45' },
+  queued: { label: 'Queued', detail: 'Job is waiting in line', className: 'border-black/30 dark:border-white/30 text-black/60 dark:text-white/60' },
+  grading: { label: 'Grading', detail: 'AI is processing now', className: 'border-amber-500/60 text-amber-600 dark:text-amber-400' },
+  ready: { label: 'Completed', detail: 'Open trade detail', className: 'border-emerald-500/60 text-emerald-600 dark:text-emerald-400' },
+  failed: { label: 'Failed', detail: 'Retry from the action menu', className: 'border-rose-500/60 text-rose-600 dark:text-rose-400' },
 };
 
-function GradeStatusBadge({ status }: { status: string }) {
-  const config = GRADE_STATUS_CONFIG[status];
-  if (!config) return null;
-  return (
-    <div className="px-6 pb-4">
-      <span className={`inline-block font-mono text-[9px] uppercase tracking-widest px-2 py-[3px] border ${config.className}`}>
-        {config.label}
-      </span>
-    </div>
-  );
+function formatDateTime(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hour}:${minute}`.toUpperCase();
 }
 
-export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onUpdateStatus, onOpenJournal, onRegrade, onOpenInvalidatePanel }: TradeCardProps) {
+export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onOpenTradeDetail, onUpdateStatus, onOpenJournal, onRegrade, onOpenInvalidatePanel }: TradeCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const gradeStatus = trade.aiSetupGradeStatus;
+  const gradeStatus = trade.aiSetupGradeStatus || 'not_requested';
+  const gradeConfig = GRADE_STATUS_CONFIG[gradeStatus] || GRADE_STATUS_CONFIG.not_requested;
   const canRegrade = trade.status === 'draft' && (!gradeStatus || gradeStatus === 'not_requested' || gradeStatus === 'failed');
   const isGrading = gradeStatus === 'queued' || gradeStatus === 'grading';
+  const isGradeReady = gradeStatus === 'ready';
   const canInvalidate = trade.status === 'draft' || trade.status === 'working' || trade.status === 'filled';
   const actionable = trade.status === 'draft' || trade.status === 'working' || trade.status === 'filled' || trade.status === 'closed';
 
-  const formattedDate = trade.createdAt
-    ? new Date(trade.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
-    : null;
-
-  const formattedInvalidatedAt = trade.invalidatedAt
-    ? new Date(trade.invalidatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
-    : null;
+  const formattedDate = formatDateTime(trade.createdAt);
+  const formattedInvalidatedAt = formatDateTime(trade.invalidatedAt);
 
   const toggleMenu = () => {
     setIsMenuOpen(prev => !prev);
@@ -67,7 +68,6 @@ export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onU
         <div className="bg-white dark:bg-black flex-grow flex flex-col [clip-path:polygon(0_0,100%_0,100%_calc(100%-60px),calc(100%-60px)_100%,0_100%)]">
         <div className={`border-b border-black dark:border-white p-3 flex justify-between items-center text-white ${trade.bias === 'Long' ? 'bg-emerald-600 dark:bg-emerald-700' : trade.bias === 'Short' ? 'bg-rose-600 dark:bg-rose-700' : 'bg-black dark:bg-white dark:text-black'}`}>
           <div className="font-mono text-xs uppercase tracking-widest font-bold flex items-center gap-2">
-            <span className="opacity-70">{trade.id}</span>
             <span>{trade.bias} {trade.instrument}</span>
           </div>
           <div className="font-mono text-[10px] uppercase tracking-widest flex items-center gap-1.5 opacity-90">
@@ -93,7 +93,7 @@ export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onU
             </div>
             <div>
               <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">RISK</div>
-              <div className="font-mono text-2xl">${trade.riskAmount ?? 0}</div>
+              <div className="font-mono text-2xl">${(trade.riskAmount ?? 0).toFixed(2)}</div>
             </div>
             <div>
               <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">STOP LOSS</div>
@@ -105,10 +105,27 @@ export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onU
             </div>
           </div>
 
-          {formattedDate && (
-            <div className="border-t border-black dark:border-white pt-4">
-              <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">CREATED</div>
-              <div className="font-mono text-xs uppercase tracking-widest">{formattedDate}</div>
+          {(formattedDate || gradeConfig) && (
+            <div className="border-t border-black dark:border-white pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {formattedDate && (
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">CREATED AT</div>
+                  <div className="font-mono text-xs uppercase tracking-widest leading-relaxed">{formattedDate}</div>
+                </div>
+              )}
+
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">AI GRADING</div>
+                <button
+                  type="button"
+                  disabled={!isGradeReady}
+                  onClick={() => isGradeReady && onOpenTradeDetail(trade)}
+                  className={`w-full text-left border px-3 py-3 transition-colors ${gradeConfig.className} ${isGradeReady ? 'hover:bg-emerald-600/10 dark:hover:bg-emerald-400/10 cursor-pointer' : 'cursor-default'} ${isGrading ? 'animate-pulse' : ''}`}
+                >
+                  <div className="font-mono text-[10px] uppercase tracking-[0.25em]">{gradeConfig.label}</div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest opacity-70 mt-1">{gradeConfig.detail}</div>
+                </button>
+              </div>
             </div>
           )}
 
@@ -219,11 +236,6 @@ export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onU
             )}
           </AnimatePresence>
         </div>
-
-        {gradeStatus && gradeStatus !== 'not_requested' && (
-          <GradeStatusBadge status={gradeStatus} />
-        )}
-
       </div>
       </div>
 

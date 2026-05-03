@@ -40,8 +40,9 @@ export function InvalidateTradePanel({
             <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
               <div className="pl-[70px] pr-6 py-6 border-b border-black dark:border-white flex justify-between items-center bg-black text-white dark:bg-white dark:text-black">
                 <div className="flex items-center gap-3">
-                  <h2 className="font-mono text-sm uppercase tracking-widest font-bold">INVALIDATE TRADE</h2>
-                  <span className="font-mono text-[10px] opacity-60">[{trade.id}]</span>
+                  <h2 className="font-mono text-sm uppercase tracking-widest font-bold">
+                    INVALIDATE TRADE [${trade.id}]
+                  </h2>
                 </div>
                 <button onClick={onClose} className="hover:opacity-50 transition-opacity flex items-center justify-center w-5 h-5">
                   <X className="w-5 h-5" />

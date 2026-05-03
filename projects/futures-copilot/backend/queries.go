@@ -6,13 +6,13 @@ const (
 	selectAIProviderConfigQuery = `
 		SELECT timeout_ms, updated_at
 		FROM ai_provider_config
-		WHERE id = TRUE
+		WHERE config_key = 'default'
 	`
 
 	upsertAIProviderConfigQuery = `
-		INSERT INTO ai_provider_config (id, timeout_ms, updated_at)
-		VALUES (TRUE, $1, CURRENT_TIMESTAMP)
-		ON CONFLICT (id) DO UPDATE SET
+		INSERT INTO ai_provider_config (config_key, timeout_ms, updated_at)
+		VALUES ('default', $1, CURRENT_TIMESTAMP)
+		ON CONFLICT (config_key) DO UPDATE SET
 			timeout_ms = EXCLUDED.timeout_ms,
 			updated_at = CURRENT_TIMESTAMP
 	`
@@ -56,10 +56,7 @@ const (
 			rules_context = EXCLUDED.rules_context
 	`
 
-	deleteTradeOutcomesByAccountQuery  = "DELETE FROM trade_outcomes WHERE trade_id IN (SELECT id FROM trade_plans WHERE account_id = $1)"
-	deleteTradePlanEditsByAccountQuery = "DELETE FROM trade_plan_edits WHERE trade_plan_id IN (SELECT id FROM trade_plans WHERE account_id = $1)"
-	deleteTradePlansByAccountQuery     = "DELETE FROM trade_plans WHERE account_id = $1"
-	softDeleteAccountQuery             = "UPDATE accounts SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL"
+	softDeleteAccountQuery = "UPDATE accounts SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL"
 
 	selectRubricsQuery = "SELECT id, name, rules FROM rubrics WHERE deleted_at IS NULL ORDER BY created_at DESC"
 
@@ -75,16 +72,17 @@ const (
 	softDeleteRubricQuery = "UPDATE rubrics SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND deleted_at IS NULL"
 
 	selectInstrumentsQuery = `
-		SELECT code, COALESCE(created_at, CURRENT_TIMESTAMP)
+		SELECT code, COALESCE(point_value, 10.0), COALESCE(created_at, CURRENT_TIMESTAMP)
 		FROM instruments
 		WHERE deleted_at IS NULL
 		ORDER BY code ASC
 	`
 
 	upsertInstrumentQuery = `
-		INSERT INTO instruments (code)
-		VALUES ($1)
+		INSERT INTO instruments (code, point_value)
+		VALUES ($1, $2)
 		ON CONFLICT (code) DO UPDATE SET
+			point_value = EXCLUDED.point_value,
 			deleted_at = NULL
 	`
 
@@ -132,7 +130,7 @@ const (
 
 	updateTradeAISetupGradeStatusQuery = "UPDATE trade_plans SET ai_setup_grade_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2"
 	updateTradeAISetupGradeResultQuery = "UPDATE trade_plans SET ai_setup_grade_status = $1, ai_setup_findings = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3"
-	selectTradeByIDQuery               = "SELECT id, account_id, rubric_id, instrument, bias, entry, stop_loss, take_profit, contracts, status, notes, ai_setup_grade_status, ai_setup_findings, invalidation_reason, invalidated_at, created_at FROM trade_plans WHERE id = $1"
+	selectTradeByIDQuery               = "SELECT id, account_id, rubric_id, instrument, bias, entry, stop_loss, take_profit, contracts, risk_amount, status, notes, ai_setup_grade_status, ai_setup_findings, invalidation_reason, invalidated_at, created_at FROM trade_plans WHERE id = $1"
 
 	insertTradeOutcomeQuery = `
 		INSERT INTO trade_outcomes (trade_id, pnl, outcome, reflection) VALUES ($1, $2, $3, $4)

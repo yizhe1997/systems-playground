@@ -9,13 +9,14 @@ interface TradeGridProps {
   userRole: UserRole;
   onOpenDraftPanel: (trade: Trade) => void;
   onOpenReplay: (trade: Trade) => void;
+  onOpenTradeDetail: (trade: Trade) => void;
   onUpdateStatus: (id: string, newStatus: string) => void;
   onOpenJournal: (id: string) => void;
   onRegrade: (id: string) => void;
   onOpenInvalidatePanel: (trade: Trade) => void;
 }
 
-export function TradeGrid({ trades, userRole, onOpenDraftPanel, onOpenReplay, onUpdateStatus, onOpenJournal, onRegrade, onOpenInvalidatePanel }: TradeGridProps) {
+export function TradeGrid({ trades, userRole, onOpenDraftPanel, onOpenReplay, onOpenTradeDetail, onUpdateStatus, onOpenJournal, onRegrade, onOpenInvalidatePanel }: TradeGridProps) {
   if (trades.length === 0) {
     return (
       <div className="border border-black dark:border-white p-8 md:p-12 text-center bg-[#f8f8f8] dark:bg-[#111]">
@@ -41,6 +42,7 @@ export function TradeGrid({ trades, userRole, onOpenDraftPanel, onOpenReplay, on
           userRole={userRole}
           onOpenDraftPanel={onOpenDraftPanel}
           onOpenReplay={onOpenReplay}
+          onOpenTradeDetail={onOpenTradeDetail}
           onUpdateStatus={onUpdateStatus}
           onOpenJournal={onOpenJournal}
           onRegrade={onRegrade}

@@ -17,10 +17,12 @@ interface InstrumentConfigPanelProps {
 
 interface InstrumentFormState {
   code: string;
+  pointValue: string;
 }
 
 const DEFAULT_INSTRUMENT_FORM: InstrumentFormState = {
   code: '',
+  pointValue: '10',
 };
 
 export function InstrumentConfigPanel({
@@ -65,6 +67,7 @@ export function InstrumentConfigPanel({
     setSelectedCode(instrument.code);
     setForm({
       code: instrument.code,
+      pointValue: String(instrument.pointValue || 10),
     });
     setShowDeleteConfirm(false);
   };
@@ -77,21 +80,28 @@ export function InstrumentConfigPanel({
 
   const handleSave = async () => {
     const code = normalizeInstrumentCode(form.code);
+    const pointValue = parseFloat(form.pointValue) || 10;
 
     if (!code) {
       window.alert('Instrument code is required.');
       return;
     }
 
+    if (pointValue <= 0) {
+      window.alert('Point value must be greater than 0.');
+      return;
+    }
+
     await onSave(
       {
         code,
+        pointValue,
       },
       selectedCode || undefined,
     );
 
     setSelectedCode(code);
-    setForm({ code });
+    setForm({ code, pointValue: String(pointValue) });
     setShowDeleteConfirm(false);
   };
 
@@ -184,6 +194,20 @@ export function InstrumentConfigPanel({
                     className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 uppercase"
                     placeholder="COMEX:MGC1!"
                   />
+                </div>
+
+                <div>
+                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2" data-cursor-text="Per-tick point value. Used to calculate risk: distance × pointValue × contracts">POINT VALUE (GAIN PER TICK)</label>
+                  <input
+                    type="number"
+                    placeholder="10"
+                    value={form.pointValue}
+                    onChange={e => setForm({ ...form, pointValue: e.target.value })}
+                    step="0.1"
+                    min="0"
+                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
+                  />
+                  <div className="font-mono text-[9px] uppercase tracking-widest opacity-50 mt-2">Examples: GC=100, NQ=20, ES=50, DAX=25</div>
                 </div>
               </div>
 

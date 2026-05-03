@@ -7,7 +7,7 @@ import { API_ENDPOINTS, fetcher } from '@/lib/dashboard/api';
 import { Account, DashboardTab, InstrumentDefinition, PaginatedTradesResponse, Rubric, Trade } from '../types';
 
 export function useDashboardData(activeTab: DashboardTab) {
-  const [activeAccountId, setActiveAccountId] = useState('a-001');
+  const [activeAccountId, setActiveAccountId] = useState('');
   const [createdFrom, setCreatedFrom] = useState('');
   const [createdTo, setCreatedTo] = useState('');
   const [page, setPage] = useState(1);

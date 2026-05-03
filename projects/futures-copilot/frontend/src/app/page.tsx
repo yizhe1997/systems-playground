@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, Activity, SearchX, ChevronDown } from 'lucide-react';
+import { ArrowUpRight, Activity, SearchX, ChevronDown, Zap } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import useSWR from 'swr';
@@ -229,19 +229,14 @@ export default function ShowroomPage() {
           
           {/* Active Trade */}
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <h2 className="font-mono text-sm uppercase tracking-widest font-bold">LIVE RADAR</h2>
-            </div>
-
             <div className="flex flex-col gap-0">
               <div className="border border-black dark:border-white border-b-0 bg-white dark:bg-black flex flex-col">
                 
                 {/* Header */}
                 <div className={`p-4 flex justify-between items-center text-white ${activeTrade ? (activeTrade.bias === 'Long' ? 'bg-emerald-600 dark:bg-emerald-700' : 'bg-rose-600 dark:bg-rose-700') : 'bg-black dark:bg-white dark:text-black'}`}>
                   <div className="font-mono text-sm uppercase tracking-widest font-bold flex items-center gap-3">
-                    <Activity className="w-4 h-4" />
-                    <span>{activeTrade ? `${activeTrade.bias} ${activeTrade.instrument}` : 'NO WORKING TRADE'}</span>
+                    <Zap className="w-4 h-4 animate-pulse" />
+                    <span>LIVE RADAR</span>
                   </div>
                   <div className="font-mono text-[10px] uppercase tracking-widest">
                     [{activeTrade ? activeTrade.status : 'idle'}]
@@ -312,7 +307,7 @@ export default function ShowroomPage() {
                         </div>
                         <h3 className="font-mono text-sm md:text-base uppercase tracking-widest font-bold">No Working Trades</h3>
                         <p className="font-mono text-[10px] md:text-xs uppercase tracking-widest opacity-70 max-w-xl leading-relaxed">
-                          There are no active working trades right now. Open a draft and move it to working to see live radar.
+                          There are no active working trades right now.
                         </p>
                       </div>
                     </div>
@@ -326,7 +321,7 @@ export default function ShowroomPage() {
                   {userRole === 'ANON' ? (
                     <>
                       <p className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">WANT TRADE ALERTS BEFORE MARKET OPENS?</p>
-                      <Link href="/pricing" className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity inline-flex items-center gap-2">
+                      <Link href="/pricing" className="px-6 py-3 border border-black dark:border-white font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors inline-flex items-center gap-2">
                         SUBSCRIBE FOR NOTIFICATIONS <ArrowUpRight className="w-4 h-4" />
                       </Link>
                     </>

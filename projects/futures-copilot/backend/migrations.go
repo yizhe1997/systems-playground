@@ -8,7 +8,7 @@ var schemaMigrations = []string{
 		provider_id TEXT UNIQUE NOT NULL,
 		email TEXT UNIQUE NOT NULL,
 		name TEXT,
-		role TEXT DEFAULT 'ANON',
+		role TEXT DEFAULT 'ANON' CHECK (role IN ('ANON', 'ADMIN')),
 		is_disabled BOOLEAN DEFAULT FALSE,
 		last_logged_in TIMESTAMP,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -23,31 +23,22 @@ var schemaMigrations = []string{
 		current_period_end TIMESTAMP,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);`,
-	`
-	CREATE TABLE IF NOT EXISTS memory_records (
-		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-		source_type TEXT NOT NULL, -- 'trade_plan', 'trade_outcome', 'lesson'
-		source_id TEXT NOT NULL,
-		content TEXT NOT NULL,
-		metadata JSONB,
-		embedding vector(1536), -- OpenAI text-embedding-3-small dimension
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);`,
+
 	`
 	CREATE TABLE IF NOT EXISTS ai_provider_config (
-		id BOOLEAN PRIMARY KEY DEFAULT TRUE,
+		config_key TEXT PRIMARY KEY DEFAULT 'default',
 		scrape_rules_provider TEXT NOT NULL DEFAULT 'openrouter',
 		scrape_rules_model TEXT NOT NULL DEFAULT 'google/gemini-2.5-pro',
 		cleanup_text_provider TEXT NOT NULL DEFAULT 'openrouter',
 		cleanup_text_model TEXT NOT NULL DEFAULT 'google/gemini-2.5-flash',
 		timeout_ms INTEGER NOT NULL DEFAULT 15000,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		CHECK (id = TRUE)
+		CHECK (config_key = 'default')
 	);`,
 	`
-	INSERT INTO ai_provider_config (id)
-	VALUES (TRUE)
-	ON CONFLICT (id) DO NOTHING;`,
+	INSERT INTO ai_provider_config (config_key)
+	VALUES ('default')
+	ON CONFLICT (config_key) DO NOTHING;`,
 	`
 	CREATE TABLE IF NOT EXISTS ai_feature_configs (
 		feature_key TEXT PRIMARY KEY,
@@ -60,10 +51,10 @@ var schemaMigrations = []string{
 	`
 	INSERT INTO ai_feature_configs (feature_key, label, provider, model, timeout_ms)
 	VALUES
-		('` + AIFeatureKeyAccountRulesContextScrapeRules + `', '` + AIFeatureLabelAccountRulesContextScrapeRules + `', COALESCE((SELECT scrape_rules_provider FROM ai_provider_config WHERE id = TRUE), 'openrouter'), COALESCE((SELECT scrape_rules_model FROM ai_provider_config WHERE id = TRUE), 'google/gemini-2.5-pro'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE id = TRUE), 15000)),
-		('` + AIFeatureKeyAccountRulesContextCleanupText + `', '` + AIFeatureLabelAccountRulesContextCleanupText + `', COALESCE((SELECT cleanup_text_provider FROM ai_provider_config WHERE id = TRUE), 'openrouter'), COALESCE((SELECT cleanup_text_model FROM ai_provider_config WHERE id = TRUE), 'google/gemini-2.5-flash'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE id = TRUE), 15000)),
-		('` + AIFeatureKeyRubricRulesImproveText + `', '` + AIFeatureLabelRubricRulesImproveText + `', COALESCE((SELECT scrape_rules_provider FROM ai_provider_config WHERE id = TRUE), 'openrouter'), COALESCE((SELECT scrape_rules_model FROM ai_provider_config WHERE id = TRUE), 'google/gemini-2.5-pro'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE id = TRUE), 15000)),
-		('` + AIFeatureKeyDraftContextNotesImproveText + `', '` + AIFeatureLabelDraftContextNotesImproveText + `', COALESCE((SELECT cleanup_text_provider FROM ai_provider_config WHERE id = TRUE), 'openrouter'), COALESCE((SELECT cleanup_text_model FROM ai_provider_config WHERE id = TRUE), 'google/gemini-2.5-flash'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE id = TRUE), 15000))
+		('` + AIFeatureKeyAccountRulesContextScrapeRules + `', '` + AIFeatureLabelAccountRulesContextScrapeRules + `', COALESCE((SELECT scrape_rules_provider FROM ai_provider_config WHERE config_key = 'default'), 'openrouter'), COALESCE((SELECT scrape_rules_model FROM ai_provider_config WHERE config_key = 'default'), 'google/gemini-2.5-pro'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE config_key = 'default'), 15000)),
+		('` + AIFeatureKeyAccountRulesContextCleanupText + `', '` + AIFeatureLabelAccountRulesContextCleanupText + `', COALESCE((SELECT cleanup_text_provider FROM ai_provider_config WHERE config_key = 'default'), 'openrouter'), COALESCE((SELECT cleanup_text_model FROM ai_provider_config WHERE config_key = 'default'), 'google/gemini-2.5-flash'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE config_key = 'default'), 15000)),
+		('` + AIFeatureKeyRubricRulesImproveText + `', '` + AIFeatureLabelRubricRulesImproveText + `', COALESCE((SELECT scrape_rules_provider FROM ai_provider_config WHERE config_key = 'default'), 'openrouter'), COALESCE((SELECT scrape_rules_model FROM ai_provider_config WHERE config_key = 'default'), 'google/gemini-2.5-pro'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE config_key = 'default'), 15000)),
+		('` + AIFeatureKeyDraftContextNotesImproveText + `', '` + AIFeatureLabelDraftContextNotesImproveText + `', COALESCE((SELECT cleanup_text_provider FROM ai_provider_config WHERE config_key = 'default'), 'openrouter'), COALESCE((SELECT cleanup_text_model FROM ai_provider_config WHERE config_key = 'default'), 'google/gemini-2.5-flash'), COALESCE((SELECT timeout_ms FROM ai_provider_config WHERE config_key = 'default'), 15000))
 	ON CONFLICT (feature_key) DO NOTHING;`,
 	`
 	CREATE TABLE IF NOT EXISTS ai_model_presets (
@@ -81,7 +72,7 @@ var schemaMigrations = []string{
 	`INSERT INTO ai_model_presets (provider, model, sort_order) VALUES ('anthropic', 'claude-3-5-haiku-latest', 2) ON CONFLICT (provider, model) DO NOTHING;`,
 	`
 	CREATE TABLE IF NOT EXISTS accounts (
-		id TEXT PRIMARY KEY,
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		type TEXT NOT NULL,
 		current_balance NUMERIC NOT NULL,
 		current_daily_stop_level NUMERIC NOT NULL,
@@ -102,6 +93,7 @@ var schemaMigrations = []string{
 	`
 	CREATE TABLE IF NOT EXISTS instruments (
 		code TEXT PRIMARY KEY,
+		point_value NUMERIC NOT NULL DEFAULT 10.0,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		deleted_at TIMESTAMP
 	);`,
@@ -109,19 +101,19 @@ var schemaMigrations = []string{
 
 	`
 	CREATE TABLE IF NOT EXISTS trade_plans (
-		id TEXT PRIMARY KEY,
-		account_id TEXT REFERENCES accounts(id) ON DELETE CASCADE,
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
 		rubric_id UUID REFERENCES rubrics(id) ON DELETE SET NULL,
-		instrument TEXT NOT NULL,
-		bias TEXT NOT NULL,
+		instrument TEXT NOT NULL REFERENCES instruments(code),
+		bias TEXT NOT NULL CHECK (bias IN ('Long', 'Short')),
 		entry NUMERIC NOT NULL,
 		stop_loss NUMERIC NOT NULL,
 		take_profit NUMERIC NOT NULL,
 		contracts INTEGER NOT NULL,
 		risk_amount NUMERIC NOT NULL,
-		status TEXT NOT NULL,
+		status TEXT NOT NULL CHECK (status IN ('draft', 'working', 'filled', 'closed', 'invalidated')),
 		notes TEXT,
-		ai_setup_grade_status TEXT NOT NULL DEFAULT 'not_requested',
+		ai_setup_grade_status TEXT NOT NULL DEFAULT 'not_requested' CHECK (ai_setup_grade_status IN ('not_requested', 'queued', 'grading', 'ready', 'failed')),
 		ai_setup_findings TEXT,
 		invalidation_reason TEXT,
 		invalidated_at TIMESTAMP,
@@ -132,7 +124,7 @@ var schemaMigrations = []string{
 	-- History tracking for temporal edits
 	CREATE TABLE IF NOT EXISTS trade_plan_edits (
 		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-		trade_plan_id TEXT REFERENCES trade_plans(id) ON DELETE CASCADE,
+		trade_plan_id UUID REFERENCES trade_plans(id) ON DELETE CASCADE,
 		previous_entry NUMERIC,
 		previous_stop_loss NUMERIC,
 		previous_take_profit NUMERIC,
@@ -140,9 +132,9 @@ var schemaMigrations = []string{
 	);`,
 	`
 	CREATE TABLE IF NOT EXISTS trade_outcomes (
-		trade_id TEXT PRIMARY KEY REFERENCES trade_plans(id) ON DELETE CASCADE,
+		trade_id UUID PRIMARY KEY REFERENCES trade_plans(id) ON DELETE CASCADE,
 		pnl NUMERIC NOT NULL,
-		outcome TEXT NOT NULL,
+		outcome TEXT NOT NULL CHECK (outcome IN ('WIN', 'LOSS', 'BREAKEVEN')),
 		reflection TEXT NOT NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);`,

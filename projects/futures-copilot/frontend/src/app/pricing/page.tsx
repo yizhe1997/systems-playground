@@ -36,6 +36,15 @@ function FAQItem({ question, answer }: { question: string, answer: string }) {
 export default function PricingPage() {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
 
+  const features = [
+    'Early Morning Trade Setups',
+    'Real-Time Fill & Alert Notifications',
+    'AI-Assisted Trade Journal & Context',
+    'Post-Trade AI Retrospectives',
+    'Daily Loss Limit Enforcement',
+    'Access to All Past Trade Setups',
+  ];
+
   return (
     <div className="w-full relative min-h-screen">
       <main className="max-w-[800px] mx-auto relative px-4 md:px-8 py-12 lg:py-24">
@@ -49,6 +58,13 @@ export default function PricingPage() {
           </p>
         </div>
 
+        <div className="mb-16 border border-black dark:border-white p-4 md:p-5 bg-[#f8f8f8] dark:bg-[#111] text-center">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-60 mb-2">Pilot Promotion</div>
+          <p className="font-mono text-xs uppercase leading-relaxed">
+            A $0 promo code can be applied at checkout during the pilot, so you can still go through the normal paid flow without being charged.
+          </p>
+        </div>
+
         {/* Toggle */}
         <div className="flex justify-center mb-16">
           <div className="flex border border-black dark:border-white p-1">
@@ -58,11 +74,11 @@ export default function PricingPage() {
             >
               MONTHLY
             </button>
-            <button 
-              onClick={() => setBilling('annual')}
-              className={`px-6 py-3 font-mono text-[10px] uppercase tracking-widest font-bold transition-colors ${billing === 'annual' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:opacity-50'}`}
+            <button
+              disabled
+              className="px-6 py-3 font-mono text-[10px] uppercase tracking-widest font-bold transition-colors opacity-40 line-through decoration-2 cursor-not-allowed"
             >
-              ANNUAL <span className="text-emerald-500 ml-1">(SAVE 50%)</span>
+              ANNUAL <span className="ml-1">(SAVE 50%)</span>
             </button>
           </div>
         </div>
@@ -82,16 +98,9 @@ export default function PricingPage() {
             </div>
 
             <div className="space-y-6 flex-grow mb-12">
-              {[
-                'Early Morning Trade Setups',
-                'Real-Time Fill & Alert Notifications',
-                'AI-Assisted Trade Journal & Context',
-                'Post-Trade AI Retrospectives',
-                'Daily Loss Limit Enforcement',
-                'Access to All Past Trade Setups'
-              ].map((feature, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <div className="mt-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-0.5 shrink-0">
+              {features.map((feature, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <div className="text-black dark:text-white p-0.5 shrink-0">
                     <Check className="w-4 h-4" />
                   </div>
                   <span className="font-mono text-xs uppercase leading-relaxed">{feature}</span>
@@ -99,7 +108,7 @@ export default function PricingPage() {
               ))}
             </div>
 
-            <button className="w-full py-5 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity mt-auto">
+            <button className="w-full py-5 border border-black dark:border-white font-mono text-xs uppercase tracking-widest font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors mt-auto">
               SECURE PAYMENT VIA STRIPE
             </button>
 

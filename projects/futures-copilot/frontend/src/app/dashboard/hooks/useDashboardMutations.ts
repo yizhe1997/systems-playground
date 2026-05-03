@@ -41,6 +41,13 @@ import { useToast } from '@/hooks/use-toast';
 const AI_FEATURE_KEY_RUBRIC_RULES_IMPROVE_TEXT = 'rubricRulesImproveText';
 const AI_FEATURE_KEY_DRAFT_CONTEXT_NOTES_IMPROVE_TEXT = 'draftContextNotesImproveText';
 
+function computeOptimisticRiskAmount({ pointValue, bias, entry, stopLoss, contracts }: { pointValue: number; bias: string; entry: number; stopLoss: number; contracts: number }) {
+  const multiplier = pointValue > 0 ? pointValue : 10;
+  const rawDistance = bias === 'Short' ? stopLoss - entry : entry - stopLoss;
+  const distance = Math.max(rawDistance, 0);
+  return distance * multiplier * contracts;
+}
+
 interface UseDashboardMutationsInput {
   instruments: InstrumentDefinition[];
   rubrics: Rubric[];
@@ -216,11 +223,20 @@ export function useDashboardMutations({
           return current;
         }
 
+        const instrumentObj = instruments.find(i => i.code === payload.instrument);
+        const optimisticRiskAmount = computeOptimisticRiskAmount({
+          pointValue: instrumentObj?.pointValue ?? 10,
+          bias: payload.bias,
+          entry: payload.entry,
+          stopLoss: payload.stopLoss,
+          contracts: payload.contracts,
+        });
+
         const optimisticTrade: Trade = {
           ...payload,
           id: 'temp-draft',
           status: 'draft',
-          riskAmount: 0,
+          riskAmount: optimisticRiskAmount,
         };
         const nextTotal = (currentPage.total || 0) + 1;
         const nextPageSize = currentPage.pageSize || 1;

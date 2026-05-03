@@ -2,10 +2,28 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Webhook, MessageCircle, Save } from 'lucide-react';
+import { Webhook, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { useSession, signIn } from 'next-auth/react';
+
+function TelegramIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+      <path d="M9.78 18.65c-.39 0-.32-.15-.45-.52l-1.12-3.67 8.58-5.41" />
+      <path d="M9.78 18.65c.3 0 .44-.14.62-.3l1.56-1.52-1.95-1.17" />
+      <path d="M9.99 15.66 14.7 19.1c.54.3.93.15 1.06-.5L18.7 4.7c.2-.8-.3-1.15-.82-.92L3.05 9.5c-1 .4-1 .96-.18 1.2l3.8 1.18L15.45 6c.42-.25.8-.12.48.16" />
+    </svg>
+  );
+}
+
+function DiscordIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+      <path d="M20.317 4.369A19.791 19.791 0 0 0 15.885 3c-.191.328-.403.769-.554 1.116a18.27 18.27 0 0 0-5.487 0A11.655 11.655 0 0 0 9.29 3a19.736 19.736 0 0 0-4.433 1.369C2.05 8.55 1.285 12.629 1.668 16.65a19.9 19.9 0 0 0 5.43 2.755c.443-.613.836-1.262 1.174-1.941-.645-.247-1.26-.554-1.838-.914.154-.114.305-.231.452-.351a14.146 14.146 0 0 0 12.228 0c.148.12.299.237.452.351-.578.36-1.194.667-1.839.914.338.679.731 1.328 1.174 1.941a19.86 19.86 0 0 0 5.431-2.755c.449-4.66-.765-8.702-3.586-12.281zM8.02 14.37c-1.183 0-2.157-1.085-2.157-2.419 0-1.334.955-2.419 2.157-2.419 1.212 0 2.176 1.095 2.157 2.419 0 1.334-.955 2.419-2.157 2.419zm7.974 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.334.955-2.419 2.157-2.419 1.212 0 2.176 1.095 2.157 2.419 0 1.334-.945 2.419-2.157 2.419z" />
+    </svg>
+  );
+}
 
 export default function AlertsPage() {
   const router = useRouter();
@@ -38,13 +56,13 @@ export default function AlertsPage() {
               onClick={() => setActiveChannel('telegram')}
               className={`p-6 border border-black dark:border-white text-left transition-colors flex items-center gap-4 ${activeChannel === 'telegram' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'bg-white dark:bg-black hover:opacity-70'}`}
             >
-              <MessageCircle className="w-4 h-4" /> Telegram
+              <TelegramIcon className="w-4 h-4" /> Telegram
             </button>
             <button 
               onClick={() => setActiveChannel('discord')}
               className={`p-6 border border-black dark:border-white text-left transition-colors flex items-center gap-4 ${activeChannel === 'discord' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'bg-white dark:bg-black hover:opacity-70'}`}
             >
-              <MessageCircle className="w-4 h-4" /> Discord
+              <DiscordIcon className="w-4 h-4" /> Discord
             </button>
             <button 
               onClick={() => setActiveChannel('webhook')}
@@ -71,7 +89,8 @@ export default function AlertsPage() {
                         onClick={() => signIn('google', { callbackUrl: '/alerts' })}
                         className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
                       >
-                        SIGN IN VIA GOOGLE
+                        <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
+                        SIGN IN
                       </button>
                     </>
                   ) : (
@@ -84,7 +103,7 @@ export default function AlertsPage() {
                         onClick={() => router.push('/pricing')}
                         className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
                       >
-                        UPGRADE NOW ($2/MO)
+                        UPGRADE NOW
                       </button>
                     </>
                   )}
@@ -100,7 +119,7 @@ export default function AlertsPage() {
             >
               <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] p-8 md:p-12">
                 <h2 className="font-mono text-lg uppercase tracking-widest font-bold mb-8 flex items-center gap-3">
-                  {activeChannel === 'webhook' ? <Webhook className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
+                  {activeChannel === 'webhook' ? <Webhook className="w-5 h-5" /> : activeChannel === 'telegram' ? <TelegramIcon className="w-5 h-5" /> : <DiscordIcon className="w-5 h-5" />}
                   CONFIGURE {activeChannel}
                 </h2>
 
@@ -134,7 +153,7 @@ export default function AlertsPage() {
                     </div>
                   </div>
 
-                  <button className="w-full py-4 mt-8 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity flex justify-center items-center gap-2">
+                  <button className="w-full py-4 mt-8 border border-black dark:border-white font-mono text-xs uppercase tracking-widest font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex justify-center items-center gap-2">
                     <Save className="w-4 h-4" />
                     SAVE CONFIGURATION
                   </button>

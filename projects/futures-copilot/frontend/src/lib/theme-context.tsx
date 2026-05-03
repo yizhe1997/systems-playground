@@ -17,24 +17,20 @@ function applyThemeClass(theme: Theme) {
   root.classList.add(theme);
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') {
-      return 'light';
-    }
-
-    const stored = window.localStorage.getItem('theme');
-    return stored === 'dark' ? 'dark' : 'light';
-  });
+export function ThemeProvider({ children, initialTheme = 'light' }: { children: React.ReactNode; initialTheme?: Theme }) {
+  const [theme, setThemeState] = useState<Theme>(initialTheme);
 
   useEffect(() => {
     applyThemeClass(theme);
+    document.documentElement.style.colorScheme = theme;
   }, [theme]);
 
   const setTheme = (nextTheme: Theme) => {
     setThemeState(nextTheme);
     window.localStorage.setItem('theme', nextTheme);
+    document.cookie = `theme=${nextTheme}; path=/; max-age=31536000; samesite=lax`;
     applyThemeClass(nextTheme);
+    document.documentElement.style.colorScheme = nextTheme;
   };
 
   const value = useMemo(() => ({ theme, setTheme }), [theme]);

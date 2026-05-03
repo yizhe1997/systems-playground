@@ -12,6 +12,7 @@ import { AccountPanel } from './components/panels/AccountPanel';
 import { JournalPanel } from './components/panels/JournalPanel';
 import { InvalidateTradePanel } from './components/panels/InvalidateTradePanel';
 import { ReplayTradePanel } from './components/panels/ReplayTradePanel';
+import { TradeDetailPanel } from './components/panels/TradeDetailPanel';
 import { DashboardTab, Trade } from './types';
 import { useDashboardData } from './hooks/useDashboardData';
 import { useDashboardMutations } from './hooks/useDashboardMutations';
@@ -19,6 +20,7 @@ import { useDashboardMutations } from './hooks/useDashboardMutations';
 export default function CopilotPage() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('all');
   const [replayTrade, setReplayTrade] = useState<Trade | null>(null);
+  const [detailTrade, setDetailTrade] = useState<Trade | null>(null);
   const [isInstrumentOpen, setIsInstrumentOpen] = useState(false);
 
   const data = useDashboardData(activeTab);
@@ -154,6 +156,7 @@ export default function CopilotPage() {
           userRole={userRole}
           onOpenDraftPanel={openDraftPanel}
           onOpenReplay={setReplayTrade}
+          onOpenTradeDetail={setDetailTrade}
           onUpdateStatus={handleUpdateStatus}
           onOpenJournal={setJournalTradeId}
           onRegrade={handleRegrade}
@@ -241,6 +244,11 @@ export default function CopilotPage() {
         trade={replayTrade}
         instruments={instruments}
         onClose={() => setReplayTrade(null)}
+      />
+
+      <TradeDetailPanel
+        trade={detailTrade}
+        onClose={() => setDetailTrade(null)}
       />
 
       <InvalidateTradePanel
