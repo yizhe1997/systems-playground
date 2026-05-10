@@ -44,6 +44,220 @@ interface StatsResponse {
   instruments: string[];
 }
 
+type TrendGranularity = 'daily' | 'weekly';
+
+interface TrendPoint {
+  label: string;
+  tradeCount: number;
+  winRate: number;
+}
+
+function getTradeOutcomeScore(pnl?: number | null) {
+  const numericPnl = pnl ?? 0;
+  if (numericPnl > 0) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function getBucketDate(date: Date, granularity: TrendGranularity) {
+  const bucket = new Date(date);
+  bucket.setHours(0, 0, 0, 0);
+
+  if (granularity === 'weekly') {
+    const day = bucket.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    bucket.setDate(bucket.getDate() + diff);
+  }
+
+  return bucket;
+}
+
+function formatTrendLabel(date: Date, granularity: TrendGranularity) {
+  if (granularity === 'weekly') {
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+    }).toUpperCase();
+  }
+
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+  }).toUpperCase();
+}
+
+function buildTrendSeries(trades: Trade[], instrument: string, granularity: TrendGranularity): TrendPoint[] {
+  const filteredTrades = trades
+    .filter(trade => trade.status === 'closed' || trade.status === 'filled')
+    .filter(trade => instrument === 'ALL' || trade.instrument === instrument)
+    .filter(trade => trade.createdAt)
+    .sort((a, b) => new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime());
+
+  const grouped = new Map<string, { date: Date; total: number; wins: number }>();
+
+  filteredTrades.forEach(trade => {
+    const createdAt = new Date(trade.createdAt as string);
+
+    if (Number.isNaN(createdAt.getTime())) {
+      return;
+    }
+
+    const bucketDate = getBucketDate(createdAt, granularity);
+    const key = bucketDate.toISOString();
+    const existing = grouped.get(key) ?? { date: bucketDate, total: 0, wins: 0 };
+
+    existing.total += 1;
+    existing.wins += getTradeOutcomeScore(trade.riskAmount);
+
+    grouped.set(key, existing);
+  });
+
+  return Array.from(grouped.values())
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .slice(-10)
+    .map(bucket => ({
+      label: formatTrendLabel(bucket.date, granularity),
+      tradeCount: bucket.total,
+      winRate: bucket.total > 0 ? Math.round((bucket.wins / bucket.total) * 100) : 0,
+    }));
+}
+
+function PerformanceTrendChart({ data }: { data: TrendPoint[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="border border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] px-6 py-12 text-center">
+        <p className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">Performance Cadence</p>
+        <p className="font-mono text-xs uppercase tracking-widest opacity-70 leading-relaxed">
+          Not enough closed trades yet to plot a time-series view.
+        </p>
+      </div>
+    );
+  }
+
+  const width = 1000;
+  const height = 300;
+  const padding = { top: 20, right: 20, bottom: 44, left: 44 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const maxTradeCount = Math.max(...data.map(point => point.tradeCount), 1);
+
+  const getX = (index: number) => {
+    if (data.length === 1) {
+      return padding.left + chartWidth / 2;
+    }
+
+    return padding.left + (index / (data.length - 1)) * chartWidth;
+  };
+
+  const getY = (value: number) => padding.top + ((100 - value) / 100) * chartHeight;
+
+  const path = data
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${getX(index)} ${getY(point.winRate)}`)
+    .join(' ');
+
+  return (
+    <div className="bg-black dark:bg-white p-[1px] [clip-path:polygon(36px_0,100%_0,100%_100%,0_100%,0_36px)]">
+      <div className="bg-white dark:bg-black [clip-path:polygon(36px_0,100%_0,100%_100%,0_100%,0_36px)] p-6 md:p-8">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">Performance Cadence</div>
+            <p className="font-mono text-xs uppercase tracking-widest opacity-80 leading-relaxed">
+              Win rate plotted over time for the selected instrument, with trade volume bars underneath.
+            </p>
+          </div>
+          <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 whitespace-nowrap">
+            Last {data.length} periods
+          </div>
+        </div>
+
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full overflow-visible" role="img" aria-label="Win rate trend chart">
+          {[0, 50, 100].map(value => (
+            <g key={value}>
+              <line
+                x1={padding.left}
+                x2={width - padding.right}
+                y1={getY(value)}
+                y2={getY(value)}
+                className="stroke-black/15 dark:stroke-white/15"
+                strokeWidth="1"
+              />
+              <text
+                x={padding.left - 12}
+                y={getY(value) + 4}
+                textAnchor="end"
+                className="fill-black/45 dark:fill-white/45 text-[10px] font-mono uppercase tracking-widest"
+              >
+                {value}
+              </text>
+            </g>
+          ))}
+
+          {data.map((point, index) => {
+            const x = getX(index);
+            const barHeight = (point.tradeCount / maxTradeCount) * (chartHeight * 0.42);
+            const barWidth = data.length === 1 ? 88 : Math.max(chartWidth / data.length - 14, 28);
+
+            return (
+              <g key={`${point.label}-${index}`}>
+                <line
+                  x1={x}
+                  x2={x}
+                  y1={padding.top}
+                  y2={height - padding.bottom}
+                  className="stroke-black/8 dark:stroke-white/8"
+                  strokeWidth="1"
+                />
+                <rect
+                  x={x - barWidth / 2}
+                  y={height - padding.bottom - barHeight}
+                  width={barWidth}
+                  height={barHeight}
+                  className="fill-black/10 dark:fill-white/10"
+                  rx="2"
+                />
+                <text
+                  x={x}
+                  y={height - padding.bottom + 18}
+                  textAnchor="middle"
+                  className="fill-black/60 dark:fill-white/60 text-[10px] font-mono uppercase tracking-widest"
+                >
+                  {point.label}
+                </text>
+                <text
+                  x={x}
+                  y={height - padding.bottom - barHeight - 8}
+                  textAnchor="middle"
+                  className="fill-black/45 dark:fill-white/45 text-[10px] font-mono uppercase tracking-widest"
+                >
+                  {point.tradeCount}
+                </text>
+              </g>
+            );
+          })}
+
+          <path d={path} fill="none" className="stroke-black dark:stroke-white" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+
+          {data.map((point, index) => (
+            <g key={`dot-${point.label}-${index}`}>
+              <circle cx={getX(index)} cy={getY(point.winRate)} r="6" className="fill-white dark:fill-black stroke-black dark:stroke-white" strokeWidth="2" />
+              <text
+                x={getX(index)}
+                y={getY(point.winRate) - 14}
+                textAnchor="middle"
+                className="fill-black dark:fill-white text-[10px] font-mono uppercase tracking-widest"
+              >
+                {point.winRate}%
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 import { useSession } from 'next-auth/react';
 
 export default function ShowroomPage() {
@@ -51,6 +265,7 @@ export default function ShowroomPage() {
   const [isLiveWidgetScriptReady, setIsLiveWidgetScriptReady] = useState(true);
   const [selectedInstrument, setSelectedInstrument] = useState<string>('ALL');
   const [isStatsDropdownOpen, setIsStatsDropdownOpen] = useState(false);
+  const [trendGranularity, setTrendGranularity] = useState<TrendGranularity>('daily');
   const statsDropdownRef = useRef<HTMLDivElement>(null);
   const { data: session } = useSession();
   const userRole = (session?.user as { role?: string })?.role || 'ANON';
@@ -82,6 +297,7 @@ export default function ShowroomPage() {
   const instruments = (rawInstruments || []) as InstrumentDefinition[];
   const stats = (statsResponse as StatsResponse | undefined)?.stats || { winRate: 0, avgRR: 0, totalTrades: 0, profitFactor: 0 };
   const availableInstruments = instruments.map(i => i.code);
+  const trendSeries = buildTrendSeries(trades, selectedInstrument, trendGranularity);
 
   const workingTrade = trades.find(trade => trade.status === 'working');
   const activeTrade: ActiveTrade | null = (() => {
@@ -151,58 +367,78 @@ export default function ShowroomPage() {
 
         {/* Stats Strip */}
         <div className="mb-24">
-          <div ref={statsDropdownRef} className="relative w-[220px] max-w-full mb-6">
-            <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">Instruments</label>
-            <button
-              onClick={() => setIsStatsDropdownOpen(prev => !prev)}
-              className="w-full bg-transparent border border-black dark:border-white px-3 py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
-            >
-              <span>{selectedInstrument}</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${isStatsDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-6">
+            <div ref={statsDropdownRef} className="relative w-[220px] max-w-full">
+              <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">Instruments</label>
+              <button
+                onClick={() => setIsStatsDropdownOpen(prev => !prev)}
+                className="w-full bg-transparent border border-black dark:border-white px-3 py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
+              >
+                <span>{selectedInstrument}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${isStatsDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-            <AnimatePresence>
-              {isStatsDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col"
-                >
-                  <button
-                    onClick={() => {
-                      setSelectedInstrument('ALL');
-                      setIsStatsDropdownOpen(false);
-                    }}
-                    className={`text-left px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors border-b border-black dark:border-white ${
-                      selectedInstrument === 'ALL'
-                        ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
-                        : 'hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black opacity-80 hover:opacity-100'
-                    }`}
+              <AnimatePresence>
+                {isStatsDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col"
                   >
-                    ALL
-                  </button>
-                  {availableInstruments.map((instrument, index) => (
                     <button
-                      key={instrument}
                       onClick={() => {
-                        setSelectedInstrument(instrument);
+                        setSelectedInstrument('ALL');
                         setIsStatsDropdownOpen(false);
                       }}
-                      className={`text-left px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors ${
-                        index < availableInstruments.length - 1 ? 'border-b border-black dark:border-white' : ''
-                      } ${
-                        selectedInstrument === instrument
+                      className={`text-left px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors border-b border-black dark:border-white ${
+                        selectedInstrument === 'ALL'
                           ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
                           : 'hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black opacity-80 hover:opacity-100'
                       }`}
                     >
-                      {instrument}
+                      ALL
                     </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    {availableInstruments.map((instrument, index) => (
+                      <button
+                        key={instrument}
+                        onClick={() => {
+                          setSelectedInstrument(instrument);
+                          setIsStatsDropdownOpen(false);
+                        }}
+                        className={`text-left px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors ${
+                          index < availableInstruments.length - 1 ? 'border-b border-black dark:border-white' : ''
+                        } ${
+                          selectedInstrument === instrument
+                            ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
+                            : 'hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black opacity-80 hover:opacity-100'
+                        }`}
+                      >
+                        {instrument}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">Cadence</div>
+              <div className="inline-flex border border-black dark:border-white p-1">
+                <button
+                  onClick={() => setTrendGranularity('daily')}
+                  className={`px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors ${trendGranularity === 'daily' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:opacity-60'}`}
+                >
+                  Daily
+                </button>
+                <button
+                  onClick={() => setTrendGranularity('weekly')}
+                  className={`px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors ${trendGranularity === 'weekly' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:opacity-60'}`}
+                >
+                  Weekly
+                </button>
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-black dark:bg-white border border-black dark:border-white">
             <div className="bg-white dark:bg-black p-6 text-center">
@@ -221,6 +457,10 @@ export default function ShowroomPage() {
               <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">LOGGED TRADES</div>
               <div className="text-3xl font-mono">{stats.totalTrades}</div>
             </div>
+          </div>
+
+          <div className="mt-6">
+            <PerformanceTrendChart data={trendSeries} />
           </div>
         </div>
 

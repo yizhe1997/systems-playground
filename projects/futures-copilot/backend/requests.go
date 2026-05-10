@@ -10,6 +10,23 @@ type disableUserRequest struct {
 	Email string `json:"email"`
 }
 
+type saveAlertChannelRequest struct {
+	UserEmail         string `json:"userEmail"`
+	Channel           string `json:"channel"`
+	Destination       string `json:"destination"`
+	Enabled           bool   `json:"enabled"`
+	NotifyNewDraft    bool   `json:"notifyNewDraft"`
+	NotifyLimitFilled bool   `json:"notifyLimitFilled"`
+	NotifyClosed      bool   `json:"notifyClosed"`
+	NotifyInvalidated bool   `json:"notifyInvalidated"`
+}
+
+type testAlertChannelRequest struct {
+	UserEmail   string `json:"userEmail"`
+	Channel     string `json:"channel"`
+	Destination string `json:"destination"`
+}
+
 type scrapeRulesRequest struct {
 	FeatureKey  string   `json:"featureKey"`
 	URLs        []string `json:"urls"`

@@ -19,6 +19,7 @@ func registerCopilotRoutes(app *fiber.App, basePath string) {
 	ai := api.Group("/ai")
 	users := api.Group("/users")
 	stats := api.Group("/stats")
+	alerts := api.Group("/alerts")
 
 	accounts.Get("", getAccounts)
 	accounts.Post("", saveAccount)
@@ -51,4 +52,8 @@ func registerCopilotRoutes(app *fiber.App, basePath string) {
 
 	users.Post("/sync", requireTrustedInternalRequest(syncUser))
 	users.Put("/disable", requireTrustedAdminRequest(disableUser))
+
+	alerts.Get("", requireTrustedInternalRequest(getAlertChannels))
+	alerts.Post("", requireTrustedInternalRequest(saveAlertChannel))
+	alerts.Post("/test", requireTrustedInternalRequest(testAlertChannel))
 }

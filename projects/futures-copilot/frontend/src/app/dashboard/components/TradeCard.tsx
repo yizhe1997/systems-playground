@@ -17,14 +17,6 @@ interface TradeCardProps {
   onOpenInvalidatePanel: (trade: Trade) => void;
 }
 
-const GRADE_STATUS_CONFIG: Record<string, { label: string; detail: string; className: string }> = {
-  not_requested: { label: 'Not Run', detail: 'Awaiting manual trigger', className: 'border-black/15 dark:border-white/15 text-black/45 dark:text-white/45' },
-  queued: { label: 'Queued', detail: 'Job is waiting in line', className: 'border-black/30 dark:border-white/30 text-black/60 dark:text-white/60' },
-  grading: { label: 'Grading', detail: 'AI is processing now', className: 'border-amber-500/60 text-amber-600 dark:text-amber-400' },
-  ready: { label: 'Completed', detail: 'Open trade detail', className: 'border-emerald-500/60 text-emerald-600 dark:text-emerald-400' },
-  failed: { label: 'Failed', detail: 'Retry from the action menu', className: 'border-rose-500/60 text-rose-600 dark:text-rose-400' },
-};
-
 function formatDateTime(value?: string | null) {
   if (!value) {
     return null;
@@ -43,10 +35,8 @@ export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onO
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const gradeStatus = trade.aiSetupGradeStatus || 'not_requested';
-  const gradeConfig = GRADE_STATUS_CONFIG[gradeStatus] || GRADE_STATUS_CONFIG.not_requested;
-  const canRegrade = trade.status === 'draft' && (!gradeStatus || gradeStatus === 'not_requested' || gradeStatus === 'failed');
+  const canRegrade = trade.status === 'draft';
   const isGrading = gradeStatus === 'queued' || gradeStatus === 'grading';
-  const isGradeReady = gradeStatus === 'ready';
   const canInvalidate = trade.status === 'draft' || trade.status === 'working' || trade.status === 'filled';
   const actionable = trade.status === 'draft' || trade.status === 'working' || trade.status === 'filled' || trade.status === 'closed';
 
@@ -85,7 +75,19 @@ export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onO
           </div>
         </div>
 
-        <div className="relative p-6 flex-grow overflow-hidden">
+        <div
+          className="relative group/trade p-6 pb-12 flex-grow overflow-hidden cursor-pointer"
+          onClick={() => onOpenTradeDetail(trade)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onOpenTradeDetail(trade);
+            }
+          }}
+          aria-label="Open AI grading detail"
+        >
           <div className="grid grid-cols-2 gap-y-6 mb-6">
             <div>
               <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">ENTRY</div>
@@ -105,26 +107,19 @@ export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onO
             </div>
           </div>
 
-          {(formattedDate || gradeConfig) && (
+          {formattedDate && (
             <div className="border-t border-black dark:border-white pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {formattedDate && (
-                <div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">CREATED AT</div>
-                  <div className="font-mono text-xs uppercase tracking-widest leading-relaxed">{formattedDate}</div>
-                </div>
-              )}
-
               <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">AI GRADING</div>
-                <button
-                  type="button"
-                  disabled={!isGradeReady}
-                  onClick={() => isGradeReady && onOpenTradeDetail(trade)}
-                  className={`w-full text-left border px-3 py-3 transition-colors ${gradeConfig.className} ${isGradeReady ? 'hover:bg-emerald-600/10 dark:hover:bg-emerald-400/10 cursor-pointer' : 'cursor-default'} ${isGrading ? 'animate-pulse' : ''}`}
-                >
-                  <div className="font-mono text-[10px] uppercase tracking-[0.25em]">{gradeConfig.label}</div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest opacity-70 mt-1">{gradeConfig.detail}</div>
-                </button>
+                <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-1">CREATED AT</div>
+                <div className="font-mono text-xs uppercase tracking-widest leading-relaxed">{formattedDate}</div>
+              </div>
+
+              <div className="md:justify-self-end md:self-end">
+                <div className="overflow-hidden h-[1.2em] relative min-w-[170px] text-left md:text-right">
+                  <div className="absolute inset-0 translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.87,0,0.13,1)] group-hover/trade:translate-y-0">
+                    <span className="font-bold text-black dark:text-white">→ VIEW AI GRADING</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -144,6 +139,7 @@ export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onO
           <AnimatePresence>
             {isMenuOpen && (
               <motion.div
+                onClick={event => event.stopPropagation()}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -151,6 +147,7 @@ export function TradeCard({ trade, userRole, onOpenDraftPanel, onOpenReplay, onO
                 className="absolute inset-0 z-30 bg-white/55 dark:bg-black/55 backdrop-blur-sm p-3 font-mono text-[10px] uppercase tracking-widest"
               >
                 <motion.div
+                  onClick={event => event.stopPropagation()}
                   initial={{ opacity: 0, y: -10, scaleY: 0.96 }}
                   animate={{ opacity: 1, y: 0, scaleY: 1 }}
                   exit={{ opacity: 0, y: -8, scaleY: 0.98 }}

@@ -1,11 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Webhook, Save } from 'lucide-react';
-import { motion } from 'framer-motion';
-
+import { Webhook, Save, ChevronDown, Send } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSession, signIn } from 'next-auth/react';
+import { useToast } from '@/hooks/use-toast';
+
+const PANEL_CHAMFER = '[clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]';
+
+type Channel = 'telegram' | 'discord' | 'webhook';
+
+const CHANNELS: Channel[] = ['telegram', 'discord', 'webhook'];
+
+const TEST_COOLDOWN_MS = 60_000;
+
 
 function TelegramIcon({ className }: { className?: string }) {
   return (
@@ -25,15 +34,212 @@ function DiscordIcon({ className }: { className?: string }) {
   );
 }
 
+function ChannelIcon({ channel, className }: { channel: Channel; className?: string }) {
+  if (channel === 'telegram') return <TelegramIcon className={className} />;
+  if (channel === 'discord') return <DiscordIcon className={className} />;
+  return <Webhook className={className} />;
+}
+
+interface ChannelConfig {
+  destination: string;
+  enabled: boolean;
+  notifyNewDraft: boolean;
+  notifyLimitFilled: boolean;
+  notifyClosed: boolean;
+  notifyInvalidated: boolean;
+}
+
+const DEFAULT_CONFIG: ChannelConfig = {
+  destination: '',
+  enabled: true,
+  notifyNewDraft: true,
+  notifyLimitFilled: true,
+  notifyClosed: true,
+  notifyInvalidated: true,
+};
+
 export default function AlertsPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const { data: session, status } = useSession();
   const userRole = (session?.user as { role?: string })?.role || 'USER';
   const isSubscribed = userRole === 'SUBSCRIBER' || userRole === 'ADMIN';
-  const [activeChannel, setActiveChannel] = useState<'telegram' | 'discord' | 'webhook'>('telegram');
 
-  // We should wait until auth status is known before showing block screens
+  const [activeChannel, setActiveChannel] = useState<Channel>('telegram');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [configs, setConfigs] = useState<Record<Channel, ChannelConfig>>({
+    telegram: { ...DEFAULT_CONFIG },
+    discord: { ...DEFAULT_CONFIG },
+    webhook: { ...DEFAULT_CONFIG },
+  });
+  const [savedConfigs, setSavedConfigs] = useState<Record<Channel, ChannelConfig>>({
+    telegram: { ...DEFAULT_CONFIG },
+    discord: { ...DEFAULT_CONFIG },
+    webhook: { ...DEFAULT_CONFIG },
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+
+  const [isTesting, setIsTesting] = useState(false);
+  const [testStatus, setTestStatus] = useState<Record<Channel, 'idle' | 'sent' | 'error'>>({
+    telegram: 'idle',
+    discord: 'idle',
+    webhook: 'idle',
+  });
+  const [testCooldownEnd, setTestCooldownEnd] = useState<Record<Channel, number | null>>({
+    telegram: null,
+    discord: null,
+    webhook: null,
+  });
+  const [testCooldownLeft, setTestCooldownLeft] = useState<Record<Channel, number>>({
+    telegram: 0,
+    discord: 0,
+    webhook: 0,
+  });
+
   const showBlocker = status !== 'loading' && !isSubscribed;
+
+  // Load saved configs on mount
+  useEffect(() => {
+    if (status !== 'authenticated' || !isSubscribed) return;
+    fetch('/api/alerts')
+      .then(r => r.json())
+      .then(data => {
+        if (!data.channels) return;
+        const updated: Record<Channel, ChannelConfig> = {
+          telegram: { ...DEFAULT_CONFIG },
+          discord: { ...DEFAULT_CONFIG },
+          webhook: { ...DEFAULT_CONFIG },
+        };
+        for (const ch of data.channels as Array<{ channel: Channel; destination: string; enabled?: boolean; notifyNewDraft: boolean; notifyLimitFilled: boolean; notifyClosed?: boolean; notifyInvalidated?: boolean }>) {
+          if (ch.channel in updated) {
+            updated[ch.channel] = {
+              destination: ch.destination,
+              enabled: ch.enabled ?? true,
+              notifyNewDraft: ch.notifyNewDraft,
+              notifyLimitFilled: ch.notifyLimitFilled,
+              notifyClosed: ch.notifyClosed ?? true,
+              notifyInvalidated: ch.notifyInvalidated ?? true,
+            };
+          }
+        }
+        setConfigs(updated);
+        setSavedConfigs(updated);
+      })
+      .catch(() => {/* silently ignore */});
+  }, [status, isSubscribed]);
+
+  // Cooldown countdown ticker (per-channel)
+  useEffect(() => {
+    const activeCooldownEnd = testCooldownEnd[activeChannel];
+    if (!activeCooldownEnd) return;
+    
+    const interval = setInterval(() => {
+      const left = Math.max(0, Math.ceil((activeCooldownEnd - Date.now()) / 1000));
+      setTestCooldownLeft(prev => ({ ...prev, [activeChannel]: left }));
+      if (left === 0) {
+        setTestCooldownEnd(prev => ({ ...prev, [activeChannel]: null }));
+        setTestStatus(prev => ({ ...prev, [activeChannel]: 'idle' }));
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [testCooldownEnd, activeChannel]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  function updateConfig(field: keyof ChannelConfig, value: string | boolean) {
+    setConfigs(prev => ({
+      ...prev,
+      [activeChannel]: { ...prev[activeChannel], [field]: value },
+    }));
+    setSaveStatus('idle');
+  }
+
+  async function handleSave() {
+    setIsSaving(true);
+    setSaveStatus('idle');
+    try {
+      const cfg = configs[activeChannel];
+      const res = await fetch('/api/alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: activeChannel,
+          destination: cfg.destination,
+          enabled: cfg.enabled,
+          notifyNewDraft: cfg.notifyNewDraft,
+          notifyLimitFilled: cfg.notifyLimitFilled,
+          notifyClosed: cfg.notifyClosed,
+          notifyInvalidated: cfg.notifyInvalidated,
+        }),
+      });
+      if (res.ok) {
+        setSaveStatus('saved');
+        setSavedConfigs(prev => ({ ...prev, [activeChannel]: { ...cfg } }));
+        toast('Alert channel configuration saved.', 'success');
+      } else {
+        setSaveStatus('error');
+        toast('Failed to save configuration.', 'error');
+      }
+    } catch {
+      setSaveStatus('error');
+      toast('Failed to save configuration.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleTest() {
+    if (isTesting || testCooldownEnd[activeChannel]) return;
+    const cfg = configs[activeChannel];
+    if (!cfg.destination.trim()) return;
+
+    setIsTesting(true);
+    setTestStatus(prev => ({ ...prev, [activeChannel]: 'idle' }));
+    try {
+      const res = await fetch('/api/alerts/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel: activeChannel, destination: cfg.destination }),
+      });
+      if (res.ok) {
+        setTestStatus(prev => ({ ...prev, [activeChannel]: 'sent' }));
+        setTestCooldownEnd(prev => ({ ...prev, [activeChannel]: Date.now() + TEST_COOLDOWN_MS }));
+        setTestCooldownLeft(prev => ({ ...prev, [activeChannel]: 60 }));
+        toast(`${activeChannel.toUpperCase()} test delivered.`, 'success');
+      } else {
+        setTestStatus(prev => ({ ...prev, [activeChannel]: 'error' }));
+        toast(`Failed to deliver ${activeChannel.toUpperCase()} test.`, 'error');
+        // On 429, still start cooldown
+        if (res.status === 429) {
+          setTestCooldownEnd(prev => ({ ...prev, [activeChannel]: Date.now() + TEST_COOLDOWN_MS }));
+          setTestCooldownLeft(prev => ({ ...prev, [activeChannel]: 60 }));
+        }
+      }
+    } catch {
+      setTestStatus(prev => ({ ...prev, [activeChannel]: 'error' }));
+      toast(`Failed to deliver ${activeChannel.toUpperCase()} test.`, 'error');
+    } finally {
+      setIsTesting(false);
+    }
+  }
+
+  const currentCfg = configs[activeChannel];
+  const savedCfg = savedConfigs[activeChannel];
+  const isDirty = JSON.stringify(currentCfg) !== JSON.stringify(savedCfg);
+  const canTest = currentCfg.destination.trim() !== '' && !testCooldownEnd[activeChannel] && !isTesting;
 
   return (
     <div className="w-full relative">
@@ -45,39 +251,193 @@ export default function AlertsPage() {
             Alert Channels
           </h1>
           <p className="font-mono text-xs uppercase tracking-widest opacity-60 max-w-2xl leading-relaxed">
-            Configure where you want to receive real-time push notifications for new setups, fills, and stop-loss trailing updates.
+            Configure where you want to receive real-time notifications for draft setups, fills, invalidations, and closed trades.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
-          {/* Side Menu */}
-          <div className="md:col-span-4 flex flex-col gap-4 font-mono text-xs uppercase tracking-widest">
-            <button 
-              onClick={() => setActiveChannel('telegram')}
-              className={`p-6 border border-black dark:border-white text-left transition-colors flex items-center gap-4 ${activeChannel === 'telegram' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'bg-white dark:bg-black hover:opacity-70'}`}
-            >
-              <TelegramIcon className="w-4 h-4" /> Telegram
-            </button>
-            <button 
-              onClick={() => setActiveChannel('discord')}
-              className={`p-6 border border-black dark:border-white text-left transition-colors flex items-center gap-4 ${activeChannel === 'discord' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'bg-white dark:bg-black hover:opacity-70'}`}
-            >
-              <DiscordIcon className="w-4 h-4" /> Discord
-            </button>
-            <button 
-              onClick={() => setActiveChannel('webhook')}
-              className={`p-6 border border-black dark:border-white text-left transition-colors flex items-center gap-4 ${activeChannel === 'webhook' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'bg-white dark:bg-black hover:opacity-70'}`}
-            >
-              <Webhook className="w-4 h-4" /> Webhook
-            </button>
-          </div>
+        {/* Config Panel */}
+        <motion.div
+          key={activeChannel}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`relative bg-black dark:bg-white p-[1px] ${PANEL_CHAMFER}`}
+        >
+          <div className={`relative bg-white dark:bg-black h-full flex flex-col ${PANEL_CHAMFER} p-8 md:p-12`}>
 
-          {/* Config Panel */}
-          <div className="md:col-span-8 relative">
+            {/* Channel dropdown */}
+            <div ref={dropdownRef} className="relative mb-10 self-start min-w-[220px]">
+              <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">
+                Channel
+              </label>
+              <button
+                onClick={() => setIsDropdownOpen(prev => !prev)}
+                className="w-full bg-transparent border border-black dark:border-white px-4 py-3 font-mono text-sm uppercase tracking-widest focus:outline-none flex justify-between items-center gap-6 text-black dark:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <ChannelIcon channel={activeChannel} className="w-4 h-4" />
+                  {activeChannel}
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform shrink-0 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {isDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col"
+                  >
+                    {CHANNELS.map(ch => (
+                      <button
+                        key={ch}
+                        onClick={() => {
+                          const previousChannel = activeChannel;
+                          setConfigs(prev => ({
+                            ...prev,
+                            [previousChannel]: { ...savedConfigs[previousChannel] },
+                            [ch]: { ...savedConfigs[ch] },
+                          }));
+                          setActiveChannel(ch);
+                          setIsDropdownOpen(false);
+                          setSaveStatus('idle');
+                        }}
+                        className={`text-left px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors border-b last:border-b-0 border-black dark:border-white flex items-center gap-3 ${
+                          activeChannel === ch
+                            ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
+                            : 'hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black opacity-80 hover:opacity-100'
+                        }`}
+                      >
+                        <ChannelIcon channel={ch} className="w-4 h-4" />
+                        {ch}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="space-y-8">
+              <div>
+                <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">
+                  {activeChannel === 'telegram' ? 'TELEGRAM DESTINATION URL' : activeChannel === 'discord' ? 'DISCORD WEBHOOK URL' : 'WEBHOOK ENDPOINT URL'}
+                </label>
+                <input
+                  type="text"
+                  value={currentCfg.destination}
+                  onChange={e => updateConfig('destination', e.target.value)}
+                  placeholder={
+                    activeChannel === 'discord'
+                      ? 'https://discord.com/api/webhooks/{the channel}/{token}'
+                      : activeChannel === 'telegram'
+                        ? 'https://api.telegram.org/bot{token}/setWebhook?url={channelid}'
+                        : 'https://webhook.site/{your-endpoint-id}'
+                  }
+                  className="w-full bg-transparent border-b border-black dark:border-white py-3 font-mono text-lg focus:outline-none focus:border-amber-500 rounded-none placeholder:opacity-30"
+                />
+                {activeChannel === 'webhook' && (
+                  <p className="font-mono text-[9px] uppercase tracking-widest opacity-50 mt-3">
+                    Tip: use webhook.site or requestbin.com to inspect test payloads instantly.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">CHANNEL STATUS</label>
+                <div className="flex items-center gap-3 font-mono text-xs uppercase">
+                  <input
+                    type="checkbox"
+                    checked={currentCfg.enabled}
+                    onChange={e => updateConfig('enabled', e.target.checked)}
+                    className="accent-black dark:accent-white w-4 h-4"
+                  />
+                  <span>ENABLE ALERTS</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">EVENT TRIGGERS</label>
+                <div className="flex flex-col gap-4 font-mono text-xs uppercase">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={currentCfg.notifyNewDraft}
+                      onChange={e => updateConfig('notifyNewDraft', e.target.checked)}
+                      className="accent-black dark:accent-white w-4 h-4"
+                    />
+                    <span>NEW DRAFT CREATED</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={currentCfg.notifyLimitFilled}
+                      onChange={e => updateConfig('notifyLimitFilled', e.target.checked)}
+                      className="accent-black dark:accent-white w-4 h-4"
+                    />
+                    <span>LIMIT ORDER FILLED</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={currentCfg.notifyInvalidated}
+                      onChange={e => updateConfig('notifyInvalidated', e.target.checked)}
+                      className="accent-black dark:accent-white w-4 h-4"
+                    />
+                    <span>TRADE INVALIDATED</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={currentCfg.notifyClosed}
+                      onChange={e => updateConfig('notifyClosed', e.target.checked)}
+                      className="accent-black dark:accent-white w-4 h-4"
+                    />
+                    <span>TRADE CLOSED</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 mt-8">
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving || !isDirty}
+                  className="flex-1 py-4 border border-black dark:border-white font-mono text-xs uppercase tracking-widest font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex justify-center items-center gap-2 disabled:opacity-40"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSaving ? 'SAVING...' : saveStatus === 'saved' ? 'SAVED ✓' : saveStatus === 'error' ? 'ERROR — RETRY' : 'SAVE CONFIGURATION'}
+                </button>
+
+                <button
+                  onClick={handleTest}
+                  disabled={!canTest}
+                  title={!currentCfg.destination.trim() ? 'Enter a destination first' : testCooldownEnd[activeChannel] ? `Wait ${testCooldownLeft[activeChannel]}s` : 'Send a test message'}
+                  className="flex-1 py-4 border border-black dark:border-white font-mono text-xs uppercase tracking-widest font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex justify-center items-center gap-2 disabled:opacity-40"
+                >
+                  <Send className="w-4 h-4" />
+                  {isTesting
+                    ? 'SENDING...'
+                    : testCooldownEnd[activeChannel]
+                      ? `TEST AGAIN IN ${testCooldownLeft[activeChannel]}S`
+                      : testStatus[activeChannel] === 'sent'
+                        ? 'SENT ✓'
+                        : testStatus[activeChannel] === 'error'
+                          ? 'DELIVERY FAILED'
+                          : 'SEND TEST'}
+                </button>
+              </div>
+
+              {testStatus[activeChannel] === 'error' && (
+                <p className="font-mono text-[10px] uppercase tracking-widest text-red-500">
+                  Could not deliver the test message. Check your {activeChannel === 'telegram' ? 'telegram destination URL' : 'webhook URL'} and try again.
+                </p>
+              )}
+            </div>
+
             {status === 'loading' ? (
-              <div className="absolute inset-0 z-20 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center" />
+              <div className={`absolute inset-0 z-20 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center ${PANEL_CHAMFER}`} />
             ) : showBlocker ? (
-              <div className="absolute inset-0 z-20 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center [clip-path:polygon(30px_0,100%_0,100%_100%,0_100%,0_30px)]">
+              <div className={`absolute inset-0 z-20 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center ${PANEL_CHAMFER}`}>
                 <div className="border border-black dark:border-white bg-white dark:bg-black p-8 max-w-sm shadow-2xl">
                   {status === 'unauthenticated' ? (
                     <>
@@ -85,12 +445,14 @@ export default function AlertsPage() {
                       <p className="font-mono text-[10px] uppercase opacity-60 mb-6 leading-relaxed">
                         You need to sign in and have an active subscription to access your alert channels.
                       </p>
-                      <button 
+                      <button
                         onClick={() => signIn('google', { callbackUrl: '/alerts' })}
-                        className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
+                        className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity inline-flex items-center justify-center gap-3 leading-none"
                       >
-                        <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
-                        SIGN IN
+                        <span className="inline-flex size-4 items-center justify-center shrink-0">
+                          <svg viewBox="0 0 24 24" className="block size-3.5 fill-current" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
+                        </span>
+                        <span className="leading-none">SIGN IN</span>
                       </button>
                     </>
                   ) : (
@@ -99,7 +461,7 @@ export default function AlertsPage() {
                       <p className="font-mono text-[10px] uppercase opacity-60 mb-6 leading-relaxed">
                         You need an active subscription to configure push notifications and webhook endpoints.
                       </p>
-                      <button 
+                      <button
                         onClick={() => router.push('/pricing')}
                         className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-mono text-xs uppercase tracking-widest font-bold hover:opacity-80 transition-opacity"
                       >
@@ -110,58 +472,8 @@ export default function AlertsPage() {
                 </div>
               </div>
             ) : null}
-            
-            <motion.div 
-              key={activeChannel}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-black dark:bg-white p-[1px] [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]"
-            >
-              <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] p-8 md:p-12">
-                <h2 className="font-mono text-lg uppercase tracking-widest font-bold mb-8 flex items-center gap-3">
-                  {activeChannel === 'webhook' ? <Webhook className="w-5 h-5" /> : activeChannel === 'telegram' ? <TelegramIcon className="w-5 h-5" /> : <DiscordIcon className="w-5 h-5" />}
-                  CONFIGURE {activeChannel}
-                </h2>
-
-                <div className="space-y-8">
-                  <div>
-                    <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">
-                      {activeChannel === 'telegram' ? 'TELEGRAM CHAT ID' : activeChannel === 'discord' ? 'DISCORD WEBHOOK URL' : 'ENDPOINT URL'}
-                    </label>
-                    <input 
-                      type="text" 
-                      placeholder={activeChannel === 'telegram' ? 'e.g. 123456789' : 'https://...'} 
-                      className="w-full bg-transparent border-b border-black dark:border-white py-3 font-mono text-lg focus:outline-none focus:border-amber-500 rounded-none placeholder:opacity-30" 
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">EVENT TRIGGERS</label>
-                    <div className="flex flex-col gap-4 font-mono text-xs uppercase">
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" defaultChecked className="accent-black dark:accent-white w-4 h-4" />
-                        NEW DRAFT SETUPS
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" defaultChecked className="accent-black dark:accent-white w-4 h-4" />
-                        LIMIT ORDER FILLED
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" defaultChecked className="accent-black dark:accent-white w-4 h-4" />
-                        STOP LOSS / TAKE PROFIT HIT
-                      </label>
-                    </div>
-                  </div>
-
-                  <button className="w-full py-4 mt-8 border border-black dark:border-white font-mono text-xs uppercase tracking-widest font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors flex justify-center items-center gap-2">
-                    <Save className="w-4 h-4" />
-                    SAVE CONFIGURATION
-                  </button>
-                </div>
-              </div>
-            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
       </main>
     </div>

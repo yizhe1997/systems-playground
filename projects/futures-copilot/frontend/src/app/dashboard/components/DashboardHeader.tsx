@@ -24,6 +24,7 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const accountDropdownRef = useRef<HTMLDivElement>(null);
+  const canOpenUpdate = userRole === 'ADMIN' && !!activeAccount;
 
   const formatAccountLabel = (account: Account) => {
     if (!account.createdAt) return account.type;
@@ -60,10 +61,33 @@ export function DashboardHeader({
       </div>
 
       <div className="lg:col-span-4 self-end">
-        <div className="group border border-black dark:border-white p-6 bg-white dark:bg-black">
+        <div
+          className={`group border border-black dark:border-white p-6 bg-white dark:bg-black ${canOpenUpdate ? 'cursor-pointer' : ''}`}
+          onClick={() => {
+            if (canOpenUpdate) {
+              onOpenUpdateAccount();
+            }
+          }}
+          role={canOpenUpdate ? 'button' : undefined}
+          tabIndex={canOpenUpdate ? 0 : undefined}
+          onKeyDown={event => {
+            if (!canOpenUpdate) {
+              return;
+            }
+
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onOpenUpdateAccount();
+            }
+          }}
+          aria-label={canOpenUpdate ? 'Open account update panel' : undefined}
+        >
           <div ref={accountDropdownRef} className="flex items-start gap-3 border-b border-black dark:border-white pb-4 mb-4 relative">
             <button
-              onClick={() => setIsAccountDropdownOpen(prev => !prev)}
+              onClick={event => {
+                event.stopPropagation();
+                setIsAccountDropdownOpen(prev => !prev);
+              }}
               className="flex-1 min-w-0 font-mono text-xs uppercase tracking-widest bg-transparent flex items-start justify-between gap-2 text-black dark:text-white"
             >
               <span className="block flex-1 min-w-0 text-left break-words leading-tight">{activeAccount ? formatAccountLabel(activeAccount) : 'NO ACCOUNT'}</span>
@@ -72,6 +96,7 @@ export function DashboardHeader({
             <AnimatePresence>
               {isAccountDropdownOpen && accounts.length > 0 && (
                 <motion.div
+                  onClick={event => event.stopPropagation()}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
@@ -80,7 +105,8 @@ export function DashboardHeader({
                   {accounts.map(account => (
                     <button
                       key={account.id}
-                      onClick={() => {
+                      onClick={event => {
+                        event.stopPropagation();
                         onSelectAccount(account.id);
                         setIsAccountDropdownOpen(false);
                       }}
@@ -95,7 +121,10 @@ export function DashboardHeader({
             <div className="flex gap-2 items-start shrink-0 self-start">
               {userRole === 'ADMIN' && (
                 <button
-                  onClick={onOpenNewAccount}
+                  onClick={event => {
+                    event.stopPropagation();
+                    onOpenNewAccount();
+                  }}
                   className="h-6 px-2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
                 >
                   + NEW
@@ -118,13 +147,12 @@ export function DashboardHeader({
               <div className="font-mono text-xl">${activeAccount?.currentMaxLossLevel?.toLocaleString() || 0}</div>
             </div>
             <div className="justify-self-end self-end h-6 flex items-end">
-              {userRole === 'ADMIN' && activeAccount && (
-                <button
-                  onClick={onOpenUpdateAccount}
-                  className="font-mono text-[10px] uppercase tracking-[0.2em] text-black dark:text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                >
-                  → UPDATE
-                </button>
+              {canOpenUpdate && (
+                <div className="overflow-hidden h-[1.2em] relative min-w-[120px] text-right">
+                  <div className="absolute inset-0 translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.87,0,0.13,1)] group-hover:translate-y-0">
+                    <span className="font-bold text-black dark:text-white">→ UPDATE</span>
+                  </div>
+                </div>
               )}
             </div>
           </div>

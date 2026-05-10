@@ -97,7 +97,6 @@ var schemaMigrations = []string{
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		deleted_at TIMESTAMP
 	);`,
-	`ALTER TABLE IF EXISTS instruments ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;`,
 
 	`
 	CREATE TABLE IF NOT EXISTS trade_plans (
@@ -137,5 +136,19 @@ var schemaMigrations = []string{
 		outcome TEXT NOT NULL CHECK (outcome IN ('WIN', 'LOSS', 'BREAKEVEN')),
 		reflection TEXT NOT NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);`,
+	`
+	CREATE TABLE IF NOT EXISTS user_alert_channels (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_email TEXT NOT NULL,
+		channel TEXT NOT NULL CHECK (channel IN ('telegram', 'discord', 'webhook')),
+		destination TEXT NOT NULL DEFAULT '',
+		enabled BOOLEAN NOT NULL DEFAULT TRUE,
+		notify_new_draft BOOLEAN NOT NULL DEFAULT TRUE,
+		notify_limit_filled BOOLEAN NOT NULL DEFAULT TRUE,
+		notify_closed BOOLEAN NOT NULL DEFAULT TRUE,
+		notify_invalidated BOOLEAN NOT NULL DEFAULT TRUE,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(user_email, channel)
 	);`,
 }

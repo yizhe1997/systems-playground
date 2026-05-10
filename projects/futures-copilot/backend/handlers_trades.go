@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -149,6 +150,9 @@ func draftTrade(c *fiber.Ctx) error {
 
 	plan.AISetupGradeStatus = gradeStatus
 
+	// Trigger alerts for subscribers interested in new draft setups
+	_ = triggerAlerts(context.Background(), "draft", plan.Instrument, plan.ID, strings.ToLower(plan.Bias), plan.Entry, plan.StopLoss, plan.TakeProfit, plan.RiskAmount)
+
 	return c.JSON(fiber.Map{
 		"trade":      plan,
 		"aiResponse": aiResponse,
@@ -168,6 +172,14 @@ func updateTradeStatus(c *fiber.Ctx) error {
 
 	if err := setTradeStatus(context.Background(), id, req.Status); err != nil {
 		return logAndJSONError(c, fiber.StatusInternalServerError, "Failed to update status", err)
+	}
+
+	// Trigger alerts for subscribers interested in this status change
+	if req.Status == "filled" {
+		// Get trade details to include instrument/symbol in alert
+		if trade, err := getTradeByID(context.Background(), id); err == nil {
+			_ = triggerAlerts(context.Background(), "filled", trade.Instrument, trade.ID, strings.ToLower(trade.Bias), trade.Entry, trade.StopLoss, trade.TakeProfit, trade.RiskAmount)
+		}
 	}
 
 	return c.JSON(fiber.Map{"id": id, "status": req.Status})
@@ -214,6 +226,11 @@ func invalidateTrade(c *fiber.Ctx) error {
 		return jsonError(c, fiber.StatusBadRequest, "Only draft, working, or filled trades can be invalidated")
 	}
 
+	// Trigger alerts for subscribers interested in trade closure
+	if trade, err := getTradeByID(context.Background(), id); err == nil {
+		_ = triggerAlerts(context.Background(), "invalidated", trade.Instrument, trade.ID, strings.ToLower(trade.Bias), trade.Entry, trade.StopLoss, trade.TakeProfit, trade.RiskAmount)
+	}
+
 	return c.JSON(fiber.Map{"id": id, "status": "invalidated"})
 }
 
@@ -232,6 +249,11 @@ func journalTrade(c *fiber.Ctx) error {
 
 	if err := saveTradeOutcome(context.Background(), req); err != nil {
 		log.Printf("Failed to save outcome: %v", err)
+	}
+
+	// Trigger alerts for subscribers interested in trade closure
+	if trade, err := getTradeByID(context.Background(), req.TradeID); err == nil {
+		_ = triggerAlerts(context.Background(), "closed", trade.Instrument, trade.ID, strings.ToLower(trade.Bias), trade.Entry, trade.StopLoss, trade.TakeProfit, trade.RiskAmount)
 	}
 
 	time.Sleep(1 * time.Second)

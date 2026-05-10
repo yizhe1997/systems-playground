@@ -12,6 +12,7 @@ import (
 )
 
 const aiSetupGradeQueueKey = "copilot:ai:setup-grade:queue"
+const alertQueueKey = "copilot:alerts:queue"
 
 // Global Redis Client
 var rdb *redis.Client
@@ -102,4 +103,15 @@ func processAISetupGradeJob(ctx context.Context, tradeID string) error {
 
 func formatUSD(value float64) string {
 	return fmt.Sprintf("$%.2f", value)
+}
+
+func enqueueAlertJob(ctx context.Context, jobPayload []byte) error {
+	if rdb == nil {
+		return errors.New("redis is not initialized")
+	}
+	if len(jobPayload) == 0 {
+		return errors.New("job payload is required")
+	}
+
+	return rdb.RPush(ctx, alertQueueKey, string(jobPayload)).Err()
 }

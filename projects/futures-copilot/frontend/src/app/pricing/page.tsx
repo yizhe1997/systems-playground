@@ -58,13 +58,6 @@ export default function PricingPage() {
           </p>
         </div>
 
-        <div className="mb-16 border border-black dark:border-white p-4 md:p-5 bg-[#f8f8f8] dark:bg-[#111] text-center">
-          <div className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-60 mb-2">Pilot Promotion</div>
-          <p className="font-mono text-xs uppercase leading-relaxed">
-            A $0 promo code can be applied at checkout during the pilot, so you can still go through the normal paid flow without being charged.
-          </p>
-        </div>
-
         {/* Toggle */}
         <div className="flex justify-center mb-16">
           <div className="flex border border-black dark:border-white p-1">
@@ -78,7 +71,7 @@ export default function PricingPage() {
               disabled
               className="px-6 py-3 font-mono text-[10px] uppercase tracking-widest font-bold transition-colors opacity-40 line-through decoration-2 cursor-not-allowed"
             >
-              ANNUAL <span className="ml-1">(SAVE 50%)</span>
+              ANNUAL (SAVE 50%)
             </button>
           </div>
         </div>

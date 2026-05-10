@@ -9,6 +9,7 @@ func main() {
 	InitRedis()
 	InitPostgres() // Fire up pgvector
 	startAISetupGradeWorker()
+	startAlertWorker()
 
 	app := newApp()
 
