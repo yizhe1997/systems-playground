@@ -3,38 +3,20 @@
 import Link from 'next/link';
 import { useTheme } from '@/lib/theme-context';
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
 import { useSession, signIn, signOut } from "next-auth/react";
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [showAnnouncement, setShowAnnouncement] = useState(false);
-  const [promoCopied, setPromoCopied] = useState(false);
   const { data: session, status } = useSession();
 
   useEffect(() => {
     const t = setTimeout(() => {
       setMounted(true);
-      setShowAnnouncement(true);
     }, 0);
 
     return () => clearTimeout(t);
   }, []);
-
-  const handleDismissAnnouncement = () => {
-    setShowAnnouncement(false);
-  };
-
-  const handleCopyPromoCode = async () => {
-    try {
-      await navigator.clipboard.writeText('FREEFUTURECOPILOT');
-      setPromoCopied(true);
-      window.setTimeout(() => setPromoCopied(false), 1600);
-    } catch {
-      setPromoCopied(false);
-    }
-  };
 
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-black border-b border-black dark:border-white">
@@ -80,35 +62,6 @@ export default function Header() {
           )}
         </div>
       </div>
-
-      {mounted && showAnnouncement && (
-        <div className="border-t border-black dark:border-white bg-white text-black dark:bg-black dark:text-white">
-          <div className="px-4 md:px-8 py-3 flex items-center gap-4">
-            <p className="font-mono text-[10px] md:text-xs uppercase tracking-widest leading-relaxed flex-1">
-              Use promo code{' '}
-              <button
-                onClick={handleCopyPromoCode}
-                className="font-bold underline underline-offset-4 hover:opacity-60 transition-opacity"
-                aria-label="Copy promo code FREEFUTURECOPILOT"
-              >
-                FREEFUTURECOPILOT
-              </button>{' '}
-              for free alerts access for a month — no credit card needed.{' '}
-              <Link href="/pricing" className="font-bold underline underline-offset-4 hover:opacity-60 transition-opacity">
-                Unlock pro plan now.
-              </Link>{' '}
-              {promoCopied && <span className="opacity-70">Copied.</span>}
-            </p>
-            <button
-              onClick={handleDismissAnnouncement}
-              className="shrink-0 p-1 hover:opacity-60 transition-opacity"
-              aria-label="Dismiss announcement"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

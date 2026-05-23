@@ -78,10 +78,10 @@ export default function ContactPage() {
         <div className="mt-32 pt-16 border-t border-black dark:border-white text-center">
           <h2 className="text-3xl md:text-5xl font-bold tracking-tighter uppercase mb-6">Ready to enforce discipline?</h2>
           <p className="font-mono text-sm uppercase tracking-widest opacity-60 max-w-xl mx-auto leading-relaxed mb-8">
-            Start your trading day with a plan. Early alerts, real-time fills, and AI-enforced discipline — all built around one proven setup.
+            Start your trading day with a plan. Configure your profile, manage your workflow, and keep your execution disciplined.
           </p>
-          <a href="/pricing" className="inline-flex px-8 py-4 border border-black dark:border-white font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-bold">
-            VIEW PRICING
+          <a href="/settings" className="inline-flex px-8 py-4 border border-black dark:border-white font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-bold">
+            OPEN SETTINGS
           </a>
         </div>
 

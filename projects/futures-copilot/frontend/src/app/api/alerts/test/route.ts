@@ -3,10 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { fetchInternalBackend, getSessionRole } from '@/lib/server/internal-api';
 
-function requireSubscriberOrAdmin(role: string): boolean {
-  return role === 'SUBSCRIBER' || role === 'ADMIN';
-}
-
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,9 +11,6 @@ export async function POST(request: Request) {
     }
 
     const role = getSessionRole(session);
-    if (!requireSubscriberOrAdmin(role)) {
-      return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
-    }
 
     const json = await request.json();
     const res = await fetchInternalBackend(

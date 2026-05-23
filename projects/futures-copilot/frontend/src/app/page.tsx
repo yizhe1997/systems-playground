@@ -355,8 +355,7 @@ export default function ShowroomPage() {
             Futures Copilot
           </h1>
           <p className="font-mono text-xs md:text-sm uppercase tracking-widest opacity-60 max-w-2xl mx-auto leading-relaxed">
-            An AI-assisted trading journal for Institutional Supply & Demand levels. 
-            Radical transparency. No black-box algorithms. Just disciplined, level-based execution audited by artificial intelligence.
+            An AI-assisted probability engine for futures trading. Powered by dynamic trade logic and strict rubrics. Radical transparency. No black boxes. See every setup drafted, objectively scored for profitability by AI, and transparently logged from entry to the final close.
           </p>
           <div className="mt-8">
             <Link href="/how-it-works" className="px-6 py-3 border border-black dark:border-white font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors inline-flex items-center gap-2">
@@ -560,14 +559,14 @@ export default function ShowroomPage() {
                 <div className="bg-white dark:bg-black h-full p-6 text-center [clip-path:polygon(0_0,100%_0,100%_calc(100%-60px),calc(100%-60px)_100%,0_100%)]">
                   {userRole === 'ANON' ? (
                     <>
-                      <p className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">WANT TRADE ALERTS BEFORE MARKET OPENS?</p>
-                      <Link href="/pricing" className="px-6 py-3 border border-black dark:border-white font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors inline-flex items-center gap-2">
-                        SUBSCRIBE FOR NOTIFICATIONS <ArrowUpRight className="w-4 h-4" />
+                      <p className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">WANT TO CONFIGURE YOUR WORKSPACE?</p>
+                      <Link href="/settings" className="px-6 py-3 border border-black dark:border-white font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors inline-flex items-center gap-2">
+                        OPEN SETTINGS <ArrowUpRight className="w-4 h-4" />
                       </Link>
                     </>
                   ) : (
                     <>
-                      <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-3">YOU ARE SUBSCRIBED TO THIS SIGNAL</p>
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-3">ALERT CHANNELS ARE AVAILABLE</p>
                       <Link href="/alerts" className="px-6 py-3 border border-black dark:border-white font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors inline-flex items-center gap-2">
                         MANAGE ALERT CHANNELS <Activity className="w-4 h-4" />
                       </Link>
@@ -638,6 +637,14 @@ export default function ShowroomPage() {
               </Link>
             </div>
           </div>
+        </div>
+
+        {/* Risk Warnings and Investment Disclaimers */}
+        <div className="mt-20 max-w-2xl mx-auto text-center">
+          <h2 className="font-mono text-sm uppercase tracking-widest font-bold mb-6">Risk Warnings and Investment Disclaimers</h2>
+          <p className="font-mono text-xs md:text-sm uppercase tracking-widest opacity-60 leading-relaxed">
+            This is a public tech showcase. The creator is not a licensed financial advisor in any jurisdiction. The A.I.&apos;s insights are for educational purposes only and are not financial advice. Futures trading carries immense risk; past performance does not guarantee future results.
+          </p>
         </div>
       </main>
     </div>

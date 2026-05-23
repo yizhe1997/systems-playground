@@ -59,6 +59,10 @@ export function DraftTradePanel({
   };
 
   const getValidationError = (): string | null => {
+    const entry = Number.parseFloat(draftForm.entry);
+    const stopLoss = Number.parseFloat(draftForm.stopLoss);
+    const takeProfit = Number.parseFloat(draftForm.takeProfit);
+
     if (!(draftForm.accountId || activeAccountId)) {
       return 'Account is required';
     }
@@ -68,13 +72,13 @@ export function DraftTradePanel({
     if (!draftForm.bias) {
       return 'Bias (Long/Short) is required';
     }
-    if (!draftForm.entry || draftForm.entry <= 0) {
+    if (!draftForm.entry || !Number.isFinite(entry) || entry <= 0) {
       return 'Entry price is required and must be > 0';
     }
-    if (!draftForm.stopLoss || draftForm.stopLoss <= 0) {
+    if (!draftForm.stopLoss || !Number.isFinite(stopLoss) || stopLoss <= 0) {
       return 'Stop Loss is required and must be > 0';
     }
-    if (!draftForm.takeProfit || draftForm.takeProfit <= 0) {
+    if (!draftForm.takeProfit || !Number.isFinite(takeProfit) || takeProfit <= 0) {
       return 'Take Profit is required and must be > 0';
     }
     if (!draftForm.contracts || draftForm.contracts <= 0) {

@@ -2,6 +2,39 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { fetchInternalBackend } from "@/lib/server/internal-api";
 
+type SyncedUserPayload = {
+  role?: string;
+  isDisabled?: boolean;
+  createdAt?: string;
+};
+
+type SessionUserExtras = {
+  role?: string;
+  createdAt?: string;
+};
+
+async function syncUserWithBackend(user: { id?: string | null; email?: string | null; name?: string | null }, account?: { providerAccountId?: string | null }) {
+  if (!user.email) {
+    return null;
+  }
+
+  const res = await fetchInternalBackend('/users/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      providerId: user.id || account?.providerAccountId || '',
+      email: user.email,
+      name: user.name || '',
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`User sync failed with status ${res.status}`);
+  }
+
+  return (await res.json()) as SyncedUserPayload;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -13,21 +46,17 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (user && user.email) {
         try {
-          const res = await fetchInternalBackend('/users/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              providerId: user.id || account?.providerAccountId || '',
-              email: user.email,
-              name: user.name || '',
-            }),
-          });
+          const data = await syncUserWithBackend(user, account);
+          if (data?.isDisabled) {
+            return false; // Reject sign in
+          }
 
-          if (res.ok) {
-            const data = await res.json();
-            if (data.isDisabled) {
-              return false; // Reject sign in
-            }
+          if (data?.createdAt) {
+            (user as typeof user & SessionUserExtras).createdAt = data.createdAt;
+          }
+
+          if (data?.role) {
+            (user as typeof user & SessionUserExtras).role = data.role;
           }
         } catch (e) {
           console.error("Failed to sync user to backend", e);
@@ -36,8 +65,57 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async session({ session }) {
+    async jwt({ token, user, account }) {
+      if (account && user?.email) {
+        const authUser = user as typeof user & SessionUserExtras;
+
+        token.createdAt = authUser.createdAt;
+        token.role = authUser.role;
+
+        if (!token.createdAt || !token.role) {
+          try {
+            const data = await syncUserWithBackend(user, account);
+            if (data?.createdAt) {
+              token.createdAt = data.createdAt;
+            }
+            if (data?.role) {
+              token.role = data.role;
+            }
+          } catch (e) {
+            console.error("Failed to sync user to token", e);
+          }
+        }
+      }
+
+      if ((!token.createdAt || !token.role) && typeof token.email === 'string' && token.email) {
+        try {
+          const data = await syncUserWithBackend({
+            id: typeof token.sub === 'string' ? token.sub : undefined,
+            email: token.email,
+            name: typeof token.name === 'string' ? token.name : undefined,
+          });
+
+          if (!token.createdAt && data?.createdAt) {
+            token.createdAt = data.createdAt;
+          }
+
+          if (!token.role && data?.role) {
+            token.role = data.role;
+          }
+        } catch (e) {
+          console.error("Failed to backfill user token", e);
+        }
+      }
+
+      return token;
+    },
+    async session({ session, token }) {
       if (session?.user) {
+        const sessionUser = session.user as typeof session.user & SessionUserExtras;
+        if (typeof token.createdAt === 'string' && token.createdAt) {
+          sessionUser.createdAt = token.createdAt;
+        }
+
         // If they match our explicit admin email list, tag them as ADMIN.
         const adminEmails = (process.env.ADMIN_EMAILS || "hello@systemsplayground.com")
           .split(",")
@@ -45,10 +123,12 @@ export const authOptions: NextAuthOptions = {
           .filter(Boolean);
         
         if (session.user.email && adminEmails.includes(session.user.email.trim().toLowerCase())) {
-          (session.user as { role: string }).role = "ADMIN";
+          sessionUser.role = "ADMIN";
+        } else if (typeof token.role === 'string' && token.role) {
+          sessionUser.role = token.role;
         } else {
-          // Everyone else is just an ANON for now until they buy a sub
-          (session.user as { role: string }).role = "ANON";
+          // Non-admin users get standard showcase access.
+          sessionUser.role = "ANON";
         }
       }
       return session;

@@ -4,6 +4,12 @@ import { createContext, useCallback, useContext, useState } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info';
 
+export interface ToastInput {
+  title?: string;
+  description?: string;
+  variant?: 'default' | 'destructive';
+}
+
 export interface Toast {
   id: string;
   message: string;
@@ -12,7 +18,7 @@ export interface Toast {
 
 interface ToastContextValue {
   toasts: Toast[];
-  toast: (message: string, type?: ToastType) => void;
+  toast: (messageOrInput: string | ToastInput, type?: ToastType) => void;
   dismiss: (id: string) => void;
 }
 
@@ -25,9 +31,21 @@ export const ToastContext = createContext<ToastContextValue>({
 export function useToastState(): ToastContextValue {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const toast = useCallback((message: string, type: ToastType = 'info') => {
+  const toast = useCallback((messageOrInput: string | ToastInput, type: ToastType = 'info') => {
+    let normalizedMessage = '';
+    let normalizedType: ToastType = type;
+
+    if (typeof messageOrInput === 'string') {
+      normalizedMessage = messageOrInput;
+    } else {
+      const title = messageOrInput.title?.trim();
+      const description = messageOrInput.description?.trim();
+      normalizedMessage = [title, description].filter(Boolean).join(': ') || 'Notification';
+      normalizedType = messageOrInput.variant === 'destructive' ? 'error' : 'info';
+    }
+
     const id = Math.random().toString(36).slice(2);
-    setToasts(prev => [...prev, { id, message, type }]);
+    setToasts(prev => [...prev, { id, message: normalizedMessage, type: normalizedType }]);
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 4000);
