@@ -82,6 +82,12 @@ frontend/
 └── ...config files
 ```
 
+### Frontend navigation convention
+
+- Use `next/link` for internal app routes (`/`, `/contact`, `/alerts`, etc.).
+- Avoid raw `<a href="/...">` for internal navigation in shared UI because it forces full document reloads instead of App Router transitions.
+- This is especially important for preserving client-side stateful UX such as custom cursor behavior, auth/session UI, and smooth browser back/forward restores.
+
 ## Runtime flow (backend)
 
 1. `backend/main.go` initializes Redis and Postgres.

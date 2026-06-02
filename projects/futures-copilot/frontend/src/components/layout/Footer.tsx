@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useSession } from "next-auth/react";
 
 export default function Footer() {
@@ -21,15 +22,15 @@ export default function Footer() {
         <div className="flex gap-12 font-mono text-xs uppercase tracking-widest">
           <div className="flex flex-col gap-3">
             <span className="opacity-60 mb-2">RESOURCES</span>
-            <a href="/how-it-works" className="hover:opacity-50 transition-opacity">HOW IT WORKS</a>
-            <a href="/contact" className="hover:opacity-50 transition-opacity">CONTACT</a>
+            <Link href="/how-it-works" className="hover:opacity-50 transition-opacity">HOW IT WORKS</Link>
+            <Link href="/contact" className="hover:opacity-50 transition-opacity">CONTACT</Link>
           </div>
           <div className="flex flex-col gap-3">
             <span className="opacity-60 mb-2">PLATFORM</span>
-            <a href="/dashboard" className="hover:opacity-50 transition-opacity">DASHBOARD</a>
-            <a href="/alerts" className="hover:opacity-50 transition-opacity">ALERTS</a>
+            <Link href="/dashboard" className="hover:opacity-50 transition-opacity">DASHBOARD</Link>
+            <Link href="/alerts" className="hover:opacity-50 transition-opacity">ALERTS</Link>
             {session && (
-              <a href="/settings" className="hover:opacity-50 transition-opacity">SETTINGS</a>
+              <Link href="/settings" className="hover:opacity-50 transition-opacity">SETTINGS</Link>
             )}
           </div>
         </div>

@@ -624,7 +624,7 @@ export default function ShowroomPage() {
                     </div>
                     <h3 className="font-mono text-sm md:text-base uppercase tracking-widest font-bold">No Recent Outcomes</h3>
                     <p className="font-mono text-[10px] md:text-xs uppercase tracking-widest opacity-70 max-w-xl leading-relaxed">
-                      No filled and closed outcomes yet. Completed trades will appear here.
+                      Completed trades will appear here.
                     </p>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 export default function Cursor() {
@@ -10,12 +10,19 @@ export default function Cursor() {
   const [isRightHalf, setIsRightHalf] = useState(false);
   const [isBottomHalf, setIsBottomHalf] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const lastPointerPositionRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(pointer: fine) and (hover: hover)');
 
     const updateEnabledState = () => {
-      setIsEnabled(mediaQuery.matches);
+      const nextIsEnabled = mediaQuery.matches;
+      setIsEnabled(nextIsEnabled);
+
+      if (!nextIsEnabled) {
+        setIsVisible(false);
+        setTooltipText(null);
+      }
     };
 
     updateEnabledState();
@@ -28,27 +35,45 @@ export default function Cursor() {
 
   useEffect(() => {
     if (!isEnabled) {
-      setIsVisible(false);
-      setTooltipText(null);
       return;
     }
 
-    const updateMousePosition = (e: MouseEvent) => {
+    const updateMousePosition = (x: number, y: number, target: EventTarget | null) => {
       setIsVisible(true);
-      setMousePosition({ x: e.clientX, y: e.clientY });
-      setIsRightHalf(e.clientX > window.innerWidth / 2);
-      setIsBottomHalf(e.clientY > window.innerHeight / 2);
+      setMousePosition({ x, y });
+      setIsRightHalf(x > window.innerWidth / 2);
+      setIsBottomHalf(y > window.innerHeight / 2);
+      lastPointerPositionRef.current = { x, y };
       
-      const target = e.target as HTMLElement;
+      const targetElement = target as HTMLElement | null;
       // Skip if mouse leaves document entirely
-      if (!target || !target.closest) return;
+      if (!targetElement || !targetElement.closest) return;
 
-      const tooltipElement = target.closest('[data-cursor-text]') as HTMLElement;
+      const tooltipElement = targetElement.closest('[data-cursor-text]') as HTMLElement;
       if (tooltipElement) {
         setTooltipText(tooltipElement.getAttribute('data-cursor-text') || null);
       } else {
         setTooltipText(null);
       }
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      updateMousePosition(e.clientX, e.clientY, e.target);
+    };
+
+    const restoreCursorAfterHistoryNavigation = () => {
+      if (!isEnabled) return;
+
+      const fallbackPosition = {
+        x: Math.round(window.innerWidth / 2),
+        y: Math.round(window.innerHeight / 2),
+      };
+      const pointer = lastPointerPositionRef.current ?? fallbackPosition;
+
+      setMousePosition(pointer);
+      setIsRightHalf(pointer.x > window.innerWidth / 2);
+      setIsBottomHalf(pointer.y > window.innerHeight / 2);
+      setIsVisible(true);
     };
 
     const hideCursor = () => {
@@ -61,19 +86,45 @@ export default function Cursor() {
         hideCursor();
       }
     };
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        restoreCursorAfterHistoryNavigation();
+      }
+    };
+
+    const handlePopState = () => {
+      requestAnimationFrame(() => {
+        restoreCursorAfterHistoryNavigation();
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        restoreCursorAfterHistoryNavigation();
+      }
+    };
     
-    window.addEventListener('mousemove', updateMousePosition);
+    window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('mouseout', handleWindowMouseOut);
     window.addEventListener('blur', hideCursor);
+    window.addEventListener('focus', restoreCursorAfterHistoryNavigation);
     window.addEventListener('pagehide', hideCursor);
+    window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('popstate', handlePopState);
     window.addEventListener('mouseleave', hideCursor);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('mousemove', updateMousePosition);
+      window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('mouseout', handleWindowMouseOut);
       window.removeEventListener('blur', hideCursor);
+      window.removeEventListener('focus', restoreCursorAfterHistoryNavigation);
       window.removeEventListener('pagehide', hideCursor);
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('mouseleave', hideCursor);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isEnabled]);
 

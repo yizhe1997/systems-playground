@@ -1,10 +1,38 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ImageOff } from 'lucide-react';
+
+const LOAD_TIMEOUT_MS = 12000;
 
 export default function BrutalistImage({ src, alt, className = '' }: { src: string, alt: string, className?: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    setHasError(false);
+
+    timeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+      setHasError(true);
+    }, LOAD_TIMEOUT_MS);
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [src]);
+
+  const handleLoad = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setIsLoading(false);
+  };
+
+  const handleError = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setIsLoading(false);
+    setHasError(true);
+  };
 
   return (
     <div className={`relative flex items-center justify-center w-full h-full min-h-[300px] ${className}`}>
@@ -25,8 +53,8 @@ export default function BrutalistImage({ src, alt, className = '' }: { src: stri
         <img 
           src={src} 
           alt={alt} 
-          onLoad={() => setIsLoading(false)}
-          onError={() => { setIsLoading(false); setHasError(true); }}
+          onLoad={handleLoad}
+          onError={handleError}
           className={`w-full max-w-[800px] h-auto object-contain dark:invert transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'} ${className}`} 
         />
       )}
