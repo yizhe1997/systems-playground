@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const body = await request.text();
     const res = await fetchInternalBackend(
-      '/ai/improve-text',
+      '/copilot/ai/improve-text',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

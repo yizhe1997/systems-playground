@@ -103,6 +103,68 @@ From `projects/futures-copilot/`:
 - Use Docker Compose to build/run services.
 - Backend tests can be run from `backend/` with `go test ./...`.
 
+## Contact form (privacy-safe)
+
+The frontend contact page submits to a thin Next.js proxy route (`frontend/src/app/api/contact/route.ts`),
+which forwards to the Go backend contact endpoint (`backend/internal/features/contact/handlers.go`).
+SMTP sending, reCAPTCHA secret verification, and rate limiting run in the Go backend.
+This avoids exposing direct personal contact channels (email/Discord) in public UI.
+
+The contact form is intentionally minimal: authenticated users submit a message only,
+while the proxy derives the sender name from the signed-in session.
+
+Security and resilience included:
+
+- Per-IP rate limiting (default: 5 requests per 10 minutes).
+- reCAPTCHA v3 verification (when reCAPTCHA env vars are set, no user interaction).
+- Contact submit waits until reCAPTCHA is ready, performs a warmup call on load, and retries once with a fresh token on reCAPTCHA validation failure.
+- In non-production environments, reCAPTCHA score thresholds above `0.1` are capped to `0.1` to avoid overly strict local/dev false negatives.
+- In non-production environments, `localhost` and `127.0.0.1` are both accepted hostname values for reCAPTCHA validation.
+- Message length validation in the UI and backend, capped at 300 words.
+- Header sanitization and safe `Reply-To` formatting to reduce injection/phishing abuse.
+- SMTP delivery only.
+
+Authentication hardening included:
+
+- Google sign-in/sign-up is gated by a reCAPTCHA v3 preflight.
+- Frontend executes `sign_in` or `sign_up` actions before starting OAuth.
+- Frontend proxy sets a short-lived one-time cookie only after backend verification succeeds.
+- Middleware enforces that cookie for `/api/auth/signin/google`.
+
+Add this variable in `frontend/.env` (public client key only):
+
+- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
+
+Add these variables in `backend/.env` (server-only):
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_SECURE`
+- `SMTP_EMAIL`
+- `SMTP_PASSWORD`
+- `SMTP_FROM`
+- `CONTACT_INBOX_EMAIL`
+- `RECAPTCHA_SECRET_KEY`
+- `RECAPTCHA_MIN_SCORE`
+- `RECAPTCHA_EXPECTED_HOSTNAME`
+- `CONTACT_RATE_LIMIT_WINDOW_MS`
+- `CONTACT_RATE_LIMIT_MAX_REQUESTS`
+
+reCAPTCHA actions are hardcoded in backend handlers:
+
+- Contact form action: `contact_submit`
+- Auth preflight actions: `sign_in`, `sign_up`
+
+If SMTP vars are missing, the contact API returns HTTP `503` and the frontend shows a friendly failure message.
+
+### Why `SMTP_FROM` is required (and should not be the end-user email)
+
+- `SMTP_FROM` should be a verified sender identity for your SMTP provider/domain.
+- The contact requester's email is set as `replyTo`, not `from`.
+- This avoids SPF/DKIM/DMARC failures and prevents messages from being rejected/spam-foldered.
+
+For authenticated-user contact flows, keep `SMTP_FROM` fixed (service sender), and use the signed-in user email as `replyTo`.
+
 ## Notes for contributors
 
 - Prefer adding new logic to the relevant `internal/features/<domain>` slice.

@@ -4,6 +4,8 @@ import (
 	accountsfeature "futures-copilot-mvp/internal/features/accounts"
 	aifeature "futures-copilot-mvp/internal/features/ai"
 	alertsfeature "futures-copilot-mvp/internal/features/alerts"
+	authrecaptchafeature "futures-copilot-mvp/internal/features/authrecaptcha"
+	contactfeature "futures-copilot-mvp/internal/features/contact"
 	instrumentsfeature "futures-copilot-mvp/internal/features/instruments"
 	rubricsfeature "futures-copilot-mvp/internal/features/rubrics"
 	statsfeature "futures-copilot-mvp/internal/features/stats"
@@ -25,6 +27,8 @@ func registerRoutes(app *fiber.App, deps Dependencies) {
 	users := api.Group("/users")
 	stats := api.Group("/stats")
 	alerts := api.Group("/alerts")
+	contact := api.Group("/contact")
+	authRecaptcha := api.Group("/auth/recaptcha")
 
 	aiExtractionDeps := aifeature.ExtractionDependencies{
 		CompileURLSourceText:       aifeature.CompileURLSourceText,
@@ -82,4 +86,7 @@ func registerRoutes(app *fiber.App, deps Dependencies) {
 	alerts.Get("", auth.RequireTrustedInternalRequest(func(c *fiber.Ctx) error { return alertsfeature.GetAlertChannels(c, deps.AlertsRepo) }))
 	alerts.Post("", auth.RequireTrustedInternalRequest(func(c *fiber.Ctx) error { return alertsfeature.SaveAlertChannel(c, deps.AlertsRepo) }))
 	alerts.Post("/test", auth.RequireTrustedInternalRequest(func(c *fiber.Ctx) error { return alertsfeature.TestAlertChannel(c, deps.AlertsRepo, alertDeps) }))
+
+	contact.Post("", auth.RequireTrustedInternalRequest(contactfeature.PostContact))
+	authRecaptcha.Post("/verify", auth.RequireTrustedInternalRequest(authrecaptchafeature.VerifyAuthRecaptcha))
 }

@@ -16,7 +16,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const res = await fetchInternalBackend('/ai/availability', { method: 'GET' }, role);
+    const res = await fetchInternalBackend('/copilot/ai/availability', { method: 'GET' }, role);
     const body = await res.text();
 
     return new NextResponse(body, {

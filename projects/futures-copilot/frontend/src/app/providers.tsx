@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { SessionProvider } from "next-auth/react";
+import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 import { ThemeProvider } from '@/lib/theme-context';
 import { ToastContext, useToastState } from '@/hooks/use-toast';
 import { Toaster } from '@/components/Toaster';
@@ -19,7 +20,7 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 export default function Providers({ children, initialTheme }: { children: React.ReactNode; initialTheme: Theme }) {
-  return (
+  const appProviders = (
     <SessionProvider>
       <ThemeProvider initialTheme={initialTheme}>
         <ToastProvider>
@@ -27,5 +28,17 @@ export default function Providers({ children, initialTheme }: { children: React.
         </ToastProvider>
       </ThemeProvider>
     </SessionProvider>
+  );
+
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+  if (!recaptchaSiteKey) {
+    return appProviders;
+  }
+
+  return (
+    <GoogleReCaptchaProvider reCaptchaKey={recaptchaSiteKey}>
+      {appProviders}
+    </GoogleReCaptchaProvider>
   );
 }

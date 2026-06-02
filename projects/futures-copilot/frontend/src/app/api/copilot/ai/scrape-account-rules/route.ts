@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const body = await request.text();
     const res = await fetchInternalBackend(
-      '/ai/scrape-account-rules',
+      '/copilot/ai/scrape-account-rules',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

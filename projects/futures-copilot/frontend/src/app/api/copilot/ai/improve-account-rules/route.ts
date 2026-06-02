@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const body = await request.text();
     const res = await fetchInternalBackend(
-      '/ai/improve-account-rules',
+      '/copilot/ai/improve-account-rules',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
