@@ -127,7 +127,7 @@ function buildTrendSeries(trades: Trade[], instrument: string, granularity: Tren
 function PerformanceTrendChart({ data }: { data: TrendPoint[] }) {
   if (data.length === 0) {
     return (
-      <div className="border border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] px-6 py-12 text-center">
+      <div className="fc-card bg-[#f8f8f8] dark:bg-[#111] px-6 py-12 text-center">
         <p className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">Performance Cadence</p>
         <p className="font-mono text-xs uppercase tracking-widest opacity-70 leading-relaxed">
           Not enough closed trades yet to plot a time-series view.
@@ -358,7 +358,7 @@ export default function ShowroomPage() {
             An AI-assisted probability engine for futures trading. Powered by dynamic trade logic and strict rubrics. Radical transparency. No black boxes. See every setup drafted, objectively scored for profitability by AI, and transparently logged from entry to the final close.
           </p>
           <div className="mt-8">
-            <Link href="/how-it-works" className="px-6 py-3 border border-black dark:border-white font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors inline-flex items-center gap-2">
+            <Link href="/how-it-works" className="fc-btn px-6 py-3 text-[10px] inline-flex items-center gap-2">
               SEE HOW IT WORKS <ArrowUpRight className="w-4 h-4" />
             </Link>
           </div>
@@ -368,10 +368,10 @@ export default function ShowroomPage() {
         <div className="mb-24">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-6">
             <div ref={statsDropdownRef} className="relative w-[220px] max-w-full">
-              <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">Instruments</label>
+              <label className="fc-label">Instruments</label>
               <button
                 onClick={() => setIsStatsDropdownOpen(prev => !prev)}
-                className="w-full bg-transparent border border-black dark:border-white px-3 py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
+                className="fc-card w-full px-3 py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
               >
                 <span>{selectedInstrument}</span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${isStatsDropdownOpen ? 'rotate-180' : ''}`} />
@@ -383,7 +383,7 @@ export default function ShowroomPage() {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col"
+                    className="fc-dropdown-menu"
                   >
                     <button
                       onClick={() => {
@@ -423,7 +423,7 @@ export default function ShowroomPage() {
 
             <div>
               <div className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">Cadence</div>
-              <div className="inline-flex border border-black dark:border-white p-1">
+              <div className="inline-flex fc-card p-1">
                 <button
                   onClick={() => setTrendGranularity('daily')}
                   className={`px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors ${trendGranularity === 'daily' ? 'bg-black text-white dark:bg-white dark:text-black' : 'hover:opacity-60'}`}
@@ -517,7 +517,7 @@ export default function ShowroomPage() {
                           {liveSymbolCandidates.length > 1 && (
                             <button
                               onClick={() => setLiveSymbolIndex(prev => (prev + 1) % liveSymbolCandidates.length)}
-                              className="px-2 py-1 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                              className="fc-btn px-2 py-1"
                             >
                               TRY ALT SOURCE
                             </button>
@@ -560,14 +560,14 @@ export default function ShowroomPage() {
                   {userRole === 'ANON' ? (
                     <>
                       <p className="font-mono text-[10px] uppercase tracking-widest opacity-60 mb-3">WANT TO CONFIGURE YOUR WORKSPACE?</p>
-                      <Link href="/settings" className="px-6 py-3 border border-black dark:border-white font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors inline-flex items-center gap-2">
+                      <Link href="/settings" className="fc-btn px-6 py-3 text-[10px] inline-flex items-center gap-2">
                         OPEN SETTINGS <ArrowUpRight className="w-4 h-4" />
                       </Link>
                     </>
                   ) : (
                     <>
                       <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-3">ALERT CHANNELS ARE AVAILABLE</p>
-                      <Link href="/alerts" className="px-6 py-3 border border-black dark:border-white font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors inline-flex items-center gap-2">
+                      <Link href="/alerts" className="fc-btn px-6 py-3 inline-flex items-center gap-2">
                         MANAGE ALERT CHANNELS <Activity className="w-4 h-4" />
                       </Link>
                     </>
@@ -585,7 +585,7 @@ export default function ShowroomPage() {
                 const pnl = trade.pnl ?? 0;
 
                 return (
-                  <div key={trade.id} className="group block border border-black dark:border-white p-6 hover:bg-[#f8f8f8] dark:hover:bg-[#111] transition-colors">
+                  <div key={trade.id} className="group block fc-card p-6 hover:bg-[#f8f8f8] dark:hover:bg-[#111] transition-colors">
                     <div className="pb-3 border-b border-black/20 dark:border-white/20 group-hover:border-black dark:group-hover:border-white transition-colors">
                       <div className="p-2 flex justify-between bg-black text-white dark:bg-white dark:text-black">
                         <div className="text-xl font-bold tracking-tighter uppercase leading-none flex items-center gap-3">
@@ -617,7 +617,7 @@ export default function ShowroomPage() {
                 );
               })}
               {recentTrades.length === 0 && (
-                <div className="col-span-1 md:col-span-3 border border-black dark:border-white p-8 md:p-12 text-center bg-[#f8f8f8] dark:bg-[#111]">
+                <div className="col-span-1 md:col-span-3 fc-card p-8 md:p-12 text-center bg-[#f8f8f8] dark:bg-[#111]">
                   <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 flex items-center justify-center">
                       <SearchX className="w-5 h-5" />
@@ -632,7 +632,7 @@ export default function ShowroomPage() {
             </div>
 
             <div className="flex justify-center pt-12">
-              <Link href="/dashboard" className="px-8 py-4 border border-black dark:border-white font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors">
+              <Link href="/dashboard" className="fc-btn px-8 py-4 text-[10px]">
                 VIEW FULL JOURNAL
               </Link>
             </div>

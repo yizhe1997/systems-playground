@@ -126,7 +126,7 @@ export function DraftTradePanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-sm z-[99]"
+            className="fc-panel-overlay z-[99]"
             onClick={onClose}
           />
           <motion.div
@@ -134,24 +134,24 @@ export function DraftTradePanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-black dark:bg-white p-[1px] [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] z-[100]"
+            className="fc-panel-shell max-w-md [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] z-[100]"
           >
-            <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
-              <div className="pl-[70px] pr-6 py-6 border-b border-black dark:border-white flex justify-between items-center bg-black text-white dark:bg-white dark:text-black">
+            <div className="fc-panel-inner [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
+              <div className="fc-panel-header">
                 <h2 className="font-mono text-sm uppercase tracking-widest font-bold">
                   {editTradeId ? 'EDIT SETUP' : 'DRAFT NEW SETUP'}
                 </h2>
-                <button onClick={onClose} className="hover:opacity-50 transition-opacity flex items-center justify-center w-5 h-5">
+                <button onClick={onClose} className="fc-btn-subtle fc-icon-btn">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-8 flex-grow overflow-y-auto space-y-8">
+              <div className="fc-panel-body">
                 <div ref={draftAccountDropdownRef} className="relative">
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">SELECT ACCOUNT</label>
+                  <label className="fc-label">SELECT ACCOUNT</label>
                   <button
                     onClick={() => setIsDraftAccountDropdownOpen(prev => !prev)}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
+                    className="fc-select-trigger"
                   >
                     <span>{accounts.find(account => account.id === (draftForm.accountId || activeAccountId))?.type || 'SELECT ACCOUNT'}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${isDraftAccountDropdownOpen ? 'rotate-180' : ''}`} />
@@ -163,7 +163,7 @@ export function DraftTradePanel({
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col max-h-[200px] overflow-y-auto"
+                        className="fc-dropdown-menu max-h-[200px] overflow-y-auto"
                       >
                         {accounts.map(account => (
                           <button
@@ -172,7 +172,7 @@ export function DraftTradePanel({
                               onDraftFormChange({ ...draftForm, accountId: account.id });
                               setIsDraftAccountDropdownOpen(false);
                             }}
-                            className="text-left px-4 py-3 font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b last:border-b-0 border-black dark:border-white opacity-80 hover:opacity-100"
+                            className="fc-dropdown-item"
                           >
                             {account.type}
                           </button>
@@ -183,10 +183,10 @@ export function DraftTradePanel({
                 </div>
 
                 <div ref={draftRubricDropdownRef} className="relative">
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">GRADING RUBRIC</label>
+                  <label className="fc-label">GRADING RUBRIC</label>
                   <button
                     onClick={() => setIsDraftRubricDropdownOpen(prev => !prev)}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
+                    className="fc-select-trigger"
                   >
                     <span>{rubrics.find(rubric => rubric.id === draftForm.rubricId)?.name || 'SELECT RUBRIC'}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${isDraftRubricDropdownOpen ? 'rotate-180' : ''}`} />
@@ -198,7 +198,7 @@ export function DraftTradePanel({
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col max-h-[200px] overflow-y-auto"
+                        className="fc-dropdown-menu max-h-[200px] overflow-y-auto"
                       >
                         {rubrics.map(rubric => (
                           <button
@@ -207,7 +207,7 @@ export function DraftTradePanel({
                               onDraftFormChange({ ...draftForm, rubricId: rubric.id });
                               setIsDraftRubricDropdownOpen(false);
                             }}
-                            className="text-left px-4 py-3 font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b last:border-b-0 border-black dark:border-white opacity-80 hover:opacity-100"
+                            className="fc-dropdown-item"
                           >
                             {rubric.name}
                           </button>
@@ -218,10 +218,10 @@ export function DraftTradePanel({
                 </div>
 
                 <div ref={draftInstrumentDropdownRef} className="relative">
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">INSTRUMENT</label>
+                  <label className="fc-label">INSTRUMENT</label>
                   <button
                     onClick={() => setIsDraftInstrumentDropdownOpen(prev => !prev)}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
+                    className="fc-select-trigger"
                   >
                     <span>{instruments.find(instrument => instrument.code === draftForm.instrument)?.code || 'SELECT INSTRUMENT'}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${isDraftInstrumentDropdownOpen ? 'rotate-180' : ''}`} />
@@ -233,7 +233,7 @@ export function DraftTradePanel({
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col max-h-[220px] overflow-y-auto"
+                        className="fc-dropdown-menu max-h-[220px] overflow-y-auto"
                       >
                         {instruments.length === 0 ? (
                           <div className="px-4 py-3 font-mono text-xs uppercase tracking-widest opacity-60">
@@ -247,7 +247,7 @@ export function DraftTradePanel({
                                 onDraftFormChange({ ...draftForm, instrument: instrument.code });
                                 setIsDraftInstrumentDropdownOpen(false);
                               }}
-                              className="text-left px-4 py-3 font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b last:border-b-0 border-black dark:border-white opacity-80 hover:opacity-100"
+                              className="fc-dropdown-item"
                             >
                               {instrument.code}
                             </button>
@@ -278,7 +278,7 @@ export function DraftTradePanel({
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="col-span-2">
-                    <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">ENTRY ZONE</label>
+                    <label className="fc-label">ENTRY ZONE</label>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -286,11 +286,11 @@ export function DraftTradePanel({
                       value={draftForm.entry}
                       onChange={event => onDraftFormChange({ ...draftForm, entry: sanitizeDecimalInput(event.target.value) })}
                       onBlur={() => handlePriceBlur('entry')}
-                      className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
+                      className="fc-input-line"
                     />
                   </div>
                   <div>
-                    <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2 text-rose-600 dark:text-rose-400">STOP LOSS</label>
+                    <label className="fc-label text-rose-600 dark:text-rose-400">STOP LOSS</label>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -298,11 +298,11 @@ export function DraftTradePanel({
                       value={draftForm.stopLoss}
                       onChange={event => onDraftFormChange({ ...draftForm, stopLoss: sanitizeDecimalInput(event.target.value) })}
                       onBlur={() => handlePriceBlur('stopLoss')}
-                      className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
+                      className="fc-input-line"
                     />
                   </div>
                   <div>
-                    <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2 text-emerald-600 dark:text-emerald-400">TAKE PROFIT</label>
+                    <label className="fc-label text-emerald-600 dark:text-emerald-400">TAKE PROFIT</label>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -310,13 +310,13 @@ export function DraftTradePanel({
                       value={draftForm.takeProfit}
                       onChange={event => onDraftFormChange({ ...draftForm, takeProfit: sanitizeDecimalInput(event.target.value) })}
                       onBlur={() => handlePriceBlur('takeProfit')}
-                      className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
+                      className="fc-input-line"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">CONTRACTS</label>
+                  <label className="fc-label">CONTRACTS</label>
                   <input
                     type="number"
                     placeholder="1"
@@ -326,7 +326,7 @@ export function DraftTradePanel({
                     inputMode="numeric"
                     min={1}
                     step={1}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
+                    className="fc-input-line"
                   />
                 </div>
 
@@ -342,14 +342,14 @@ export function DraftTradePanel({
                     rows={4}
                     value={draftForm.notes}
                     onChange={event => onDraftFormChange({ ...draftForm, notes: event.target.value })}
-                    className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs uppercase leading-relaxed focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y"
+                    className="fc-textarea"
                   />
                   {availableAiProviders.length > 0 && (
                     <div className="mt-3">
                       <button
                         onClick={onAiImproveNotes}
                         disabled={isAiImproving || !draftForm.notes}
-                        className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
+                        className="font-mono text-[10px] uppercase tracking-widest fc-btn-subtle disabled:opacity-30"
                       >
                         {isAiImproving ? 'THINKING...' : '[ AI: IMPROVE WRITING ]'}
                       </button>
@@ -369,7 +369,7 @@ export function DraftTradePanel({
                         readOnly
                         value={draftForm.aiSetupFindings || ''}
                         placeholder="Grading in progress or not yet requested..."
-                        className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs uppercase leading-relaxed focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y"
+                        className="fc-textarea"
                       />
                     </div>
                   )}
@@ -388,7 +388,7 @@ export function DraftTradePanel({
                 </div>
               </div>
 
-              <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111] space-y-3">
+              <div className="fc-panel-footer space-y-3">
                 {validationError && (
                   <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-700 px-4 py-3 font-mono text-[10px] uppercase tracking-widest text-rose-700 dark:text-rose-300">
                     {validationError}
@@ -397,7 +397,7 @@ export function DraftTradePanel({
                 <button
                   onClick={onSubmit}
                   disabled={!!validationError}
-                  className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="fc-btn w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   CREATE DRAFT
                 </button>

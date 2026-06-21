@@ -62,7 +62,7 @@ export function DashboardHeader({
 
       <div className="lg:col-span-4 self-end">
         <div
-          className={`group border border-black dark:border-white p-6 bg-white dark:bg-black ${canOpenUpdate ? 'cursor-pointer' : ''}`}
+          className={`group fc-card p-6 ${canOpenUpdate ? 'cursor-pointer' : ''}`}
           onClick={() => {
             if (canOpenUpdate) {
               onOpenUpdateAccount();
@@ -100,7 +100,7 @@ export function DashboardHeader({
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col"
+                  className="fc-dropdown-menu"
                 >
                   {accounts.map(account => (
                     <button
@@ -110,7 +110,7 @@ export function DashboardHeader({
                         onSelectAccount(account.id);
                         setIsAccountDropdownOpen(false);
                       }}
-                      className="text-left px-4 py-3 font-mono text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b last:border-b-0 border-black dark:border-white opacity-80 hover:opacity-100"
+                      className="fc-dropdown-item text-[10px]"
                     >
                       {formatAccountLabel(account)}
                     </button>
@@ -125,7 +125,7 @@ export function DashboardHeader({
                     event.stopPropagation();
                     onOpenNewAccount();
                   }}
-                  className="h-6 px-2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                  className="fc-btn h-6 px-2 whitespace-nowrap text-[10px]"
                 >
                   + NEW
                 </button>

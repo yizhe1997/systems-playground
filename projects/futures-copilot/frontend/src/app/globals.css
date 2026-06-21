@@ -141,6 +141,80 @@
   }
 }
 
+@layer components {
+  .fc-panel-overlay {
+    @apply fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-sm;
+  }
+
+  .fc-panel-shell {
+    @apply fixed right-0 top-0 h-full w-full bg-black dark:bg-white p-[1px];
+  }
+
+  .fc-panel-inner {
+    @apply bg-white dark:bg-black h-full flex flex-col;
+  }
+
+  .fc-panel-header {
+    @apply pl-[70px] pr-6 py-6 border-b border-black dark:border-white flex justify-between items-center bg-black text-white dark:bg-white dark:text-black;
+  }
+
+  .fc-panel-body {
+    @apply p-8 flex-grow overflow-y-auto space-y-8;
+  }
+
+  .fc-panel-footer {
+    @apply p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111];
+  }
+
+  .fc-label {
+    @apply block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2;
+  }
+
+  .fc-input-line {
+    @apply w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50;
+  }
+
+  .fc-select-trigger {
+    @apply w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white;
+  }
+
+  .fc-dropdown-menu {
+    @apply absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col;
+  }
+
+  .fc-dropdown-item {
+    @apply text-left px-4 py-3 font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b last:border-b-0 border-black dark:border-white opacity-80 hover:opacity-100;
+  }
+
+  .fc-textarea {
+    @apply w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs uppercase leading-relaxed focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 resize-y;
+  }
+
+  .fc-btn {
+    @apply border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold;
+  }
+
+  .fc-btn-primary {
+    @apply bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition-opacity font-mono text-xs uppercase tracking-widest font-bold;
+  }
+
+  .fc-btn-danger {
+    @apply bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors;
+  }
+
+  .fc-btn-subtle {
+    @apply hover:opacity-50 transition-opacity;
+  }
+
+  .fc-icon-btn {
+    @apply flex items-center justify-center w-5 h-5;
+  }
+
+  .fc-card {
+    @apply border border-black dark:border-white bg-white dark:bg-black;
+  }
+}
+
 @media (pointer: fine) and (hover: hover) {
   html,
   body,

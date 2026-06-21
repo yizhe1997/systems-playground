@@ -112,14 +112,14 @@ export function ReplayTradePanel({ trade, instruments, onClose }: ReplayTradePan
                   {symbolCandidates.length > 1 && (
                     <button
                       onClick={() => setSymbolIndex(prev => (prev + 1) % symbolCandidates.length)}
-                      className="px-2 py-1 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                      className="fc-btn px-2 py-1"
                     >
                       ALT SOURCE
                     </button>
                   )}
                   <button
                     onClick={() => setIsPlaying(prev => !prev)}
-                    className="px-2 py-1 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors inline-flex items-center gap-1"
+                    className="fc-btn px-2 py-1 inline-flex items-center gap-1"
                   >
                     {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                     {isPlaying ? 'PAUSE' : 'PLAY'}
@@ -129,7 +129,7 @@ export function ReplayTradePanel({ trade, instruments, onClose }: ReplayTradePan
                       setProgress(0);
                       setIsPlaying(false);
                     }}
-                    className="px-2 py-1 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors inline-flex items-center gap-1"
+                    className="fc-btn px-2 py-1 inline-flex items-center gap-1"
                   >
                     <RotateCcw className="w-3 h-3" /> RESET
                   </button>

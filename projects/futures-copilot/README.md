@@ -88,6 +88,16 @@ frontend/
 - Avoid raw `<a href="/...">` for internal navigation in shared UI because it forces full document reloads instead of App Router transitions.
 - This is especially important for preserving client-side stateful UX such as custom cursor behavior, auth/session UI, and smooth browser back/forward restores.
 
+### Frontend design-system convention (Futures dashboard)
+
+- Shared dashboard UI primitives now live in `frontend/src/app/globals.css` under `@layer components` with `fc-*` semantic utility classes.
+- Reuse these classes (instead of retyping long Tailwind strings) for consistent design language and safer refactors:
+  - Panel anatomy: `fc-panel-overlay`, `fc-panel-shell`, `fc-panel-inner`, `fc-panel-header`, `fc-panel-body`, `fc-panel-footer`
+  - Form controls: `fc-label`, `fc-input-line`, `fc-select-trigger`, `fc-dropdown-menu`, `fc-dropdown-item`, `fc-textarea`
+  - Actions: `fc-btn`, `fc-btn-primary`, `fc-btn-danger`, `fc-btn-subtle`, `fc-icon-btn`
+  - Containers: `fc-card`
+- Keep one-off visual flourishes (e.g., custom clip paths, special danger fills) local to the component; put reusable patterns into `fc-*` classes.
+
 ## Runtime flow (backend)
 
 1. `backend/main.go` initializes Redis and Postgres.

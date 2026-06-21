@@ -122,7 +122,7 @@ export function InstrumentConfigPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-sm z-[99]"
+            className="fc-panel-overlay z-[99]"
             onClick={onClose}
           />
           <motion.div
@@ -130,22 +130,22 @@ export function InstrumentConfigPanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-black dark:bg-white p-[1px] [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] z-[100]"
+            className="fc-panel-shell max-w-md [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] z-[100]"
           >
-            <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
-              <div className="pl-[70px] pr-6 py-6 border-b border-black dark:border-white flex justify-between items-center bg-black text-white dark:bg-white dark:text-black">
+            <div className="fc-panel-inner [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
+              <div className="fc-panel-header">
                 <h2 className="font-mono text-sm uppercase tracking-widest font-bold">INSTRUMENT CONFIG</h2>
-                <button onClick={onClose} className="hover:opacity-50 transition-opacity flex items-center justify-center w-5 h-5">
+                <button onClick={onClose} className="fc-btn-subtle fc-icon-btn">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-8 flex-grow overflow-y-auto space-y-8">
+              <div className="fc-panel-body">
                 <div ref={instrumentDropdownRef} className="relative">
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">SELECT OR CREATE</label>
+                  <label className="fc-label">SELECT OR CREATE</label>
                   <button
                     onClick={() => setIsInstrumentDropdownOpen(prev => !prev)}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
+                    className="fc-select-trigger"
                   >
                     <span>{selectedCode || 'CREATE NEW'}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${isInstrumentDropdownOpen ? 'rotate-180' : ''}`} />
@@ -157,14 +157,14 @@ export function InstrumentConfigPanel({
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-black border border-black dark:border-white shadow-xl z-50 flex flex-col max-h-[220px] overflow-y-auto"
+                        className="fc-dropdown-menu max-h-[220px] overflow-y-auto"
                       >
                         <button
                           onClick={() => {
                             startCreateNew();
                             setIsInstrumentDropdownOpen(false);
                           }}
-                          className="text-left px-4 py-3 font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b border-black dark:border-white font-bold"
+                          className="fc-dropdown-item font-bold"
                         >
                           CREATE NEW
                         </button>
@@ -175,7 +175,7 @@ export function InstrumentConfigPanel({
                               loadInstrumentIntoForm(instrument);
                               setIsInstrumentDropdownOpen(false);
                             }}
-                            className="text-left px-4 py-3 font-mono text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors border-b last:border-b-0 border-black dark:border-white opacity-80 hover:opacity-100"
+                            className="fc-dropdown-item"
                           >
                             {instrument.code}
                           </button>
@@ -186,18 +186,18 @@ export function InstrumentConfigPanel({
                 </div>
 
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">TICKER / TRADINGVIEW SYMBOL</label>
+                  <label className="fc-label">TICKER / TRADINGVIEW SYMBOL</label>
                   <input
                     type="text"
                     value={form.code}
                     onChange={event => setForm(prev => ({ ...prev, code: normalizeInstrumentCode(event.target.value) }))}
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 uppercase"
+                    className="fc-input-line uppercase"
                     placeholder="COMEX:MGC1!"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2" data-cursor-text="Per-tick point value. Used to calculate risk: distance × pointValue × contracts">POINT VALUE (GAIN PER TICK)</label>
+                  <label className="fc-label" data-cursor-text="Per-tick point value. Used to calculate risk: distance × pointValue × contracts">POINT VALUE (GAIN PER TICK)</label>
                   <input
                     type="number"
                     placeholder="10"
@@ -205,43 +205,43 @@ export function InstrumentConfigPanel({
                     onChange={e => setForm({ ...form, pointValue: e.target.value })}
                     step="0.1"
                     min="0"
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
+                    className="fc-input-line"
                   />
                   <div className="font-mono text-[9px] uppercase tracking-widest opacity-50 mt-2">Examples: GC=100, NQ=20, ES=50, DAX=25</div>
                 </div>
               </div>
 
               {showDeleteConfirm ? (
-                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
+                <div className="fc-panel-footer">
                   <p className="font-mono text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold leading-relaxed mb-4">
                     WARNING: This will permanently delete {selectedCode}.
                   </p>
                   <button
                     onClick={handleDelete}
-                    className="w-full py-4 bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors mb-4"
+                    className="fc-btn-danger w-full py-4 mb-4"
                   >
                     CONFIRM
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold"
+                    className="fc-btn w-full py-4"
                   >
                     CANCEL
                   </button>
                 </div>
               ) : (
-                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
+                <div className="fc-panel-footer">
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className={`w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold ${selectedCode ? 'mb-4' : ''} disabled:opacity-40`}
+                    className={`fc-btn w-full py-4 ${selectedCode ? 'mb-4' : ''} disabled:opacity-40`}
                   >
                     {isSaving ? 'SAVING...' : 'SAVE INSTRUMENT'}
                   </button>
                   {selectedCode && (
                     <button
                       onClick={() => setShowDeleteConfirm(true)}
-                      className="w-full py-4 bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors"
+                      className="fc-btn-danger w-full py-4"
                     >
                       DELETE INSTRUMENT
                     </button>

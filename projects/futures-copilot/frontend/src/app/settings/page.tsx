@@ -347,7 +347,7 @@ export default function SettingsPage() {
                           <button
                             onClick={toggleDeleteInlineConfirm}
                             disabled={isDeleting}
-                            className="flex items-center justify-center w-full md:w-auto gap-2 px-6 py-4 border border-black dark:border-white font-mono text-xs uppercase tracking-widest font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors disabled:opacity-50"
+                            className="fc-btn flex items-center justify-center w-full md:w-auto gap-2 px-6 py-4 disabled:opacity-50"
                           >
                             <UserX className="w-4 h-4" />
                             {isDeleting
@@ -382,7 +382,7 @@ export default function SettingsPage() {
                                     if (deleteConfirmError) setDeleteConfirmError('');
                                   }}
                                   disabled={isDeleting}
-                                  className="w-full bg-transparent border border-black dark:border-white py-3 px-4 font-mono text-xs tracking-widest focus:outline-none"
+                                  className="fc-card w-full py-3 px-4 font-mono text-xs tracking-widest focus:outline-none"
                                   placeholder="you@example.com"
                                 />
 
@@ -397,7 +397,7 @@ export default function SettingsPage() {
                                     type="button"
                                     onClick={handleDisableUser}
                                     disabled={isDeleting || !canConfirmDeletion}
-                                    className="w-full md:w-auto px-6 py-4 border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors disabled:opacity-40"
+                                    className="fc-btn-danger w-full md:w-auto px-6 py-4 disabled:opacity-40"
                                   >
                                     {isDeleting ? 'DELETING...' : 'CONFIRM DELETE'}
                                   </button>
@@ -456,7 +456,7 @@ export default function SettingsPage() {
                                 <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">Feature</label>
                                 <button
                                   onClick={() => setFeatureDropdownOpen(prev => !prev)}
-                                  className="w-full bg-transparent border border-black dark:border-white px-4 py-3 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
+                                  className="fc-card w-full px-4 py-3 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
                                 >
                                   <span>{aiConfig.features.find(f => f.key === selectedFeatureKey)?.label ?? selectedFeatureKey ?? 'Select feature'}</span>
                                   <ChevronDown className={`w-4 h-4 transition-transform ${featureDropdownOpen ? 'rotate-180' : ''}`} />
@@ -467,7 +467,7 @@ export default function SettingsPage() {
                                 <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">Provider</label>
                                 <button
                                   onClick={() => setProviderDropdownOpen(prev => !prev)}
-                                  className="w-full bg-transparent border border-black dark:border-white px-4 py-3 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
+                                  className="fc-card w-full px-4 py-3 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
                                 >
                                   <span>{providerLabel(aiConfig.features.find(f => f.key === selectedFeatureKey)?.provider ?? '') || 'Select provider'}</span>
                                   <ChevronDown className={`w-4 h-4 transition-transform ${providerDropdownOpen ? 'rotate-180' : ''}`} />
@@ -478,7 +478,7 @@ export default function SettingsPage() {
                                 <label className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2">Model</label>
                                 <button
                                   onClick={() => setModelDropdownOpen(prev => !prev)}
-                                  className="w-full bg-transparent border border-black dark:border-white px-4 py-3 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
+                                  className="fc-card w-full px-4 py-3 font-mono text-xs uppercase tracking-widest focus:outline-none flex justify-between items-center text-black dark:text-white"
                                 >
                                   <span>{selectedModel || 'Select model'}</span>
                                   <ChevronDown className={`w-4 h-4 transition-transform ${modelDropdownOpen ? 'rotate-180' : ''}`} />
@@ -502,14 +502,14 @@ export default function SettingsPage() {
                                       ),
                                     }));
                                   }}
-                                  className="w-full bg-transparent border border-black dark:border-white py-3 px-4 font-mono text-xs tracking-widest focus:outline-none"
+                                  className="fc-card w-full py-3 px-4 font-mono text-xs tracking-widest focus:outline-none"
                                 />
                               </div>
 
                               <button
                                 onClick={handleSaveAIConfig}
                                 disabled={isAiConfigSaving}
-                                className="px-6 py-4 border border-black dark:border-white font-mono text-xs uppercase tracking-widest font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors disabled:opacity-40"
+                                className="fc-btn px-6 py-4 disabled:opacity-40"
                               >
                                 {isAiConfigSaving ? 'Saving...' : 'Save AI Routing'}
                               </button>

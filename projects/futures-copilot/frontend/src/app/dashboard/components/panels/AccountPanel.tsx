@@ -119,7 +119,7 @@ export function AccountPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 dark:bg-white/10 backdrop-blur-sm z-[99]"
+            className="fc-panel-overlay z-[99]"
             onClick={isBusy ? undefined : onClose}
           />
           <motion.div
@@ -127,23 +127,23 @@ export function AccountPanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-black dark:bg-white p-[1px] [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] z-[100]"
+            className="fc-panel-shell max-w-md [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)] z-[100]"
           >
-            <div className="bg-white dark:bg-black h-full flex flex-col [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
-              <div className="pl-[70px] pr-6 py-6 border-b border-black dark:border-white flex justify-between items-center bg-black text-white dark:bg-white dark:text-black">
+            <div className="fc-panel-inner [clip-path:polygon(60px_0,100%_0,100%_100%,0_100%,0_60px)]">
+              <div className="fc-panel-header">
                 <h2 className="font-mono text-sm uppercase tracking-widest font-bold">
                   {accountForm.id ? 'ACCOUNT DETAIL' : 'NEW ACCOUNT'}
                 </h2>
-                <button disabled={isBusy} onClick={onClose} className="hover:opacity-50 transition-opacity flex items-center justify-center w-5 h-5 disabled:opacity-30">
+                <button disabled={isBusy} onClick={onClose} className="fc-btn-subtle fc-icon-btn disabled:opacity-30">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-8 flex-grow overflow-y-auto space-y-8">
+              <div className="fc-panel-body">
                 <div>
                   <label
                     data-cursor-text="Name format: [Broker Name] [Account Type] [Account Size], e.g. Topstep Express Funded Account 50K."
-                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                    className="fc-label"
                   >
                     ACCOUNT TYPE
                   </label>
@@ -153,13 +153,13 @@ export function AccountPanel({
                     value={accountForm.type}
                     onChange={event => onAccountFormChange({ ...accountForm, type: event.target.value })}
                     required
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
+                    className="fc-input-line"
                   />
                 </div>
                 <div>
                   <label
                     data-cursor-text="Enter the current account balance from your broker dashboard."
-                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                    className="fc-label"
                   >
                     CURRENT BALANCE
                   </label>
@@ -171,13 +171,13 @@ export function AccountPanel({
                     onBlur={() => handleMoneyInputBlur(currentBalanceInput, setCurrentBalanceInput, 'currentBalance')}
                     inputMode="decimal"
                     required
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
+                    className="fc-input-line"
                   />
                 </div>
                 <div>
                   <label
                     data-cursor-text="Enter the broker-defined daily stop floor for this account type."
-                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                    className="fc-label"
                   >
                     DAILY STOP LEVEL (FLOOR)
                   </label>
@@ -189,13 +189,13 @@ export function AccountPanel({
                     onBlur={() => handleMoneyInputBlur(dailyStopInput, setDailyStopInput, 'currentDailyStopLevel')}
                     inputMode="decimal"
                     required
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
+                    className="fc-input-line"
                   />
                 </div>
                 <div>
                   <label
                     data-cursor-text="Enter the broker-defined max loss floor for this account type."
-                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                    className="fc-label"
                   >
                     MAX LOSS LEVEL (FLOOR)
                   </label>
@@ -207,13 +207,13 @@ export function AccountPanel({
                     onBlur={() => handleMoneyInputBlur(maxLossInput, setMaxLossInput, 'currentMaxLossLevel')}
                     inputMode="decimal"
                     required
-                    className="w-full bg-transparent border-b border-black dark:border-white py-2 font-mono text-xl focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50"
+                    className="fc-input-line"
                   />
                 </div>
                 <div>
                   <label
                     data-cursor-text="Add broker rules that apply specifically to the account type you selected."
-                    className="block font-mono text-[10px] uppercase tracking-widest opacity-60 mb-2"
+                    className="fc-label"
                   >
                     RULES CONTEXT
                   </label>
@@ -221,7 +221,7 @@ export function AccountPanel({
                     placeholder="Trailing rules context..."
                     value={accountForm.rulesContext}
                     onChange={event => onAccountFormChange({ ...accountForm, rulesContext: event.target.value })}
-                    className="w-full bg-transparent border border-black dark:border-white p-3 font-mono text-xs focus:outline-none rounded-none placeholder:text-black/50 dark:placeholder:text-white/50 min-h-[100px] resize-y"
+                    className="fc-textarea normal-case min-h-[100px]"
                   />
                   <div className="mt-4 flex flex-col gap-2">
                     {hasAvailableAI && (
@@ -229,14 +229,14 @@ export function AccountPanel({
                         <button
                           onClick={() => onShowUrlInputChange(!showUrlInput)}
                           disabled={isBusy || !normalizedAccountType}
-                          className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
+                          className="font-mono text-[10px] uppercase tracking-widest fc-btn-subtle disabled:opacity-30"
                         >
                           [ AI: SCRAPE FROM URLS ]
                         </button>
                         <button
                           onClick={onAiImproveRules}
                           disabled={isBusy || !accountForm.rulesContext || !normalizedAccountType}
-                          className="font-mono text-[10px] uppercase tracking-widest hover:opacity-50 transition-opacity disabled:opacity-30"
+                          className="font-mono text-[10px] uppercase tracking-widest fc-btn-subtle disabled:opacity-30"
                         >
                           {isAiImproving ? 'THINKING...' : '[ AI: CLEANUP TEXT ]'}
                         </button>
@@ -265,7 +265,7 @@ export function AccountPanel({
                                   onAiUrlsInputChange(nextUrls);
                                 }}
                                 disabled={isBusy}
-                                className="text-rose-500 hover:opacity-50 disabled:opacity-30"
+                                className="text-rose-500 fc-btn-subtle disabled:opacity-30"
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -276,7 +276,7 @@ export function AccountPanel({
                           <button
                             onClick={() => onAiUrlsInputChange([...aiUrlsInput, ''])}
                             disabled={isBusy}
-                            className="self-start font-mono text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 mt-1 disabled:opacity-30"
+                            className="self-start font-mono text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 mt-1"
                           >
                             + ADD ANOTHER URL
                           </button>
@@ -285,7 +285,7 @@ export function AccountPanel({
                         <button
                           onClick={onAiScrapeUrls}
                           disabled={isBusy || !normalizedAccountType}
-                          className="w-full py-3 bg-black text-white dark:bg-white dark:text-black font-mono text-[10px] uppercase tracking-widest font-bold hover:opacity-80 transition-opacity mt-2 disabled:opacity-30"
+                          className="fc-btn-primary w-full py-3 text-[10px] mt-2 disabled:opacity-30"
                         >
                           {isAiScraping ? 'SCRAPING...' : 'EXTRACT RULES'}
                         </button>
@@ -297,14 +297,14 @@ export function AccountPanel({
               </div>
 
               {showDeleteConfirm ? (
-                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
+                <div className="fc-panel-footer">
                   <p className="font-mono text-[10px] uppercase text-rose-600 dark:text-rose-400 font-bold leading-relaxed">
                     WARNING: This will permanently delete {accountForm.type} along with all trades and outcomes tied to it.
                   </p>
                   <button
                     onClick={onDelete}
                     disabled={isBusy}
-                    className={`w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold disabled:opacity-30 ${accountForm.id ? 'mb-4' : ''}`}
+                    className={`fc-btn w-full py-4 disabled:opacity-30 ${accountForm.id ? 'mb-4' : ''}`}
                   >
                     CONFIRM
                   </button>
@@ -313,18 +313,18 @@ export function AccountPanel({
                     <button
                       onClick={() => onShowDeleteConfirmChange(true)}
                       disabled={isBusy}
-                      className="w-full py-4 bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors disabled:opacity-30"
+                      className="fc-btn-danger w-full py-4 disabled:opacity-30"
                     >
                       CANCEL
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="p-6 border-t border-black dark:border-white bg-[#f8f8f8] dark:bg-[#111]">
+                <div className="fc-panel-footer">
                   <button
                     onClick={onSubmit}
                     disabled={isBusy || !canSubmitAccount}
-                    className={`w-full py-4 border border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-mono text-xs uppercase tracking-widest font-bold disabled:opacity-30 ${accountForm.id ? 'mb-4' : ''}`}
+                    className={`fc-btn w-full py-4 disabled:opacity-30 ${accountForm.id ? 'mb-4' : ''}`}
                   >
                     {accountForm.id ? 'UPDATE ACCOUNT' : 'CREATE ACCOUNT'}
                   </button>
@@ -333,7 +333,7 @@ export function AccountPanel({
                     <button
                       onClick={() => onShowDeleteConfirmChange(true)}
                       disabled={isBusy}
-                      className="w-full py-4 bg-transparent border border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400 font-mono text-xs uppercase tracking-widest font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-400 dark:hover:text-black transition-colors disabled:opacity-30"
+                      className="fc-btn-danger w-full py-4 disabled:opacity-30"
                     >
                       DELETE ACCOUNT
                     </button>
