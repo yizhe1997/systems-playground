@@ -1,0 +1,49 @@
+name: Deploy Infra - n8n
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'wsl-reference-setup/infra/n8n/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR || '/home/yizhe/infra' }}
+      N8N_POSTGRES_USER: ${{ vars.N8N_POSTGRES_USER || 'n8n' }}
+      N8N_POSTGRES_PASSWORD: ${{ secrets.N8N_POSTGRES_PASSWORD }}
+      N8N_BASIC_AUTH_USER: ${{ vars.N8N_BASIC_AUTH_USER || 'admin' }}
+      N8N_BASIC_AUTH_PASSWORD: ${{ secrets.N8N_BASIC_AUTH_PASSWORD }}
+      N8N_HOST: ${{ vars.N8N_HOST }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Deploy n8n
+        run: |
+          TARGET="$INFRA_BASE_DIR/n8n"
+          mkdir -p "$TARGET"
+
+          echo "📦 Syncing n8n compose and Dockerfile..."
+          cp wsl-reference-setup/infra/n8n/docker-compose.yml "$TARGET/"
+          cp wsl-reference-setup/infra/n8n/Dockerfile "$TARGET/"
+
+          echo "🔐 Writing n8n .env..."
+          cat <<EOF > "$TARGET/.env"
+          N8N_POSTGRES_USER=$N8N_POSTGRES_USER
+          N8N_POSTGRES_PASSWORD=$N8N_POSTGRES_PASSWORD
+          N8N_BASIC_AUTH_USER=$N8N_BASIC_AUTH_USER
+          N8N_BASIC_AUTH_PASSWORD=$N8N_BASIC_AUTH_PASSWORD
+          N8N_HOST=$N8N_HOST
+          EOF
+
+          echo "🔄 Rebuilding and restarting n8n..."
+          cd "$TARGET"
+          docker compose up --build -d
+          echo "✅ n8n deployed."
+
+      - name: Prune old images
+        run: docker image prune -f

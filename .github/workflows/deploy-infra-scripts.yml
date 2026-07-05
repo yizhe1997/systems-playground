@@ -1,0 +1,41 @@
+name: Deploy Infra - Startup/Shutdown Scripts
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'wsl-reference-setup/infra/scripts/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR || '/home/yizhe/infra' }}
+      LOGDIR: ${{ vars.LOGDIR || '/home/yizhe/infra/logs' }}
+      CFLOG: ${{ vars.CFLOG || '/home/yizhe/.cloudflared/cloudflared.log' }}
+      TUNNEL_NAME: ${{ vars.TUNNEL_NAME || 'tunnel' }}
+      DISCORD_WEBHOOK_INFRA_ALERTS: ${{ secrets.DISCORD_WEBHOOK_INFRA_ALERTS }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Deploy scripts
+        run: |
+          echo "📋 Copying scripts to $INFRA_BASE_DIR..."
+          cp wsl-reference-setup/infra/scripts/wsl-startup.sh "$INFRA_BASE_DIR/wsl-startup.sh"
+          cp wsl-reference-setup/infra/scripts/wsl-shutdown.sh "$INFRA_BASE_DIR/wsl-shutdown.sh"
+          chmod +x "$INFRA_BASE_DIR/wsl-startup.sh" "$INFRA_BASE_DIR/wsl-shutdown.sh"
+          echo "✅ Scripts deployed."
+
+      - name: Write infra .env
+        run: |
+          echo "🔐 Writing $INFRA_BASE_DIR/.env..."
+          cat <<EOF > "$INFRA_BASE_DIR/.env"
+          LOGDIR=$LOGDIR
+          CFLOG=$CFLOG
+          TUNNEL_NAME=$TUNNEL_NAME
+          DISCORD_WEBHOOK_INFRA_ALERTS=$DISCORD_WEBHOOK_INFRA_ALERTS
+          EOF
+          echo "✅ .env written."

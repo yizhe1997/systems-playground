@@ -1,0 +1,41 @@
+name: Deploy Infra - Watchtower
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'wsl-reference-setup/infra/watchtower/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR || '/home/yizhe/infra' }}
+      WATCHTOWER_DISCORD_URL: ${{ secrets.WATCHTOWER_DISCORD_URL }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Deploy watchtower
+        run: |
+          TARGET="$INFRA_BASE_DIR/watchtower"
+          mkdir -p "$TARGET"
+
+          echo "📦 Syncing watchtower compose..."
+          cp wsl-reference-setup/infra/watchtower/docker-compose.yml "$TARGET/"
+
+          echo "🔐 Writing watchtower .env..."
+          cat <<EOF > "$TARGET/.env"
+          WATCHTOWER_DISCORD_URL=$WATCHTOWER_DISCORD_URL
+          EOF
+
+          echo "🔄 Restarting watchtower..."
+          cd "$TARGET"
+          docker compose pull
+          docker compose up -d
+          echo "✅ watchtower deployed."
+
+      - name: Prune old images
+        run: docker image prune -f

@@ -1,0 +1,41 @@
+name: Deploy Infra - Uptime Kuma
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'wsl-reference-setup/infra/uptime-kuma/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR || '/home/yizhe/infra' }}
+      UPTIME_KUMA_CLOUDFLARED_TOKEN: ${{ secrets.UPTIME_KUMA_CLOUDFLARED_TOKEN }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Deploy uptime-kuma
+        run: |
+          TARGET="$INFRA_BASE_DIR/uptime-kuma"
+          mkdir -p "$TARGET"
+
+          echo "📦 Syncing uptime-kuma compose..."
+          cp wsl-reference-setup/infra/uptime-kuma/docker-compose.yml "$TARGET/"
+
+          echo "🔐 Writing uptime-kuma .env..."
+          cat <<EOF > "$TARGET/.env"
+          UPTIME_KUMA_CLOUDFLARED_TOKEN=$UPTIME_KUMA_CLOUDFLARED_TOKEN
+          EOF
+
+          echo "🔄 Restarting uptime-kuma..."
+          cd "$TARGET"
+          docker compose pull
+          docker compose up -d
+          echo "✅ uptime-kuma deployed."
+
+      - name: Prune old images
+        run: docker image prune -f
