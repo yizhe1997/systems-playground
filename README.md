@@ -1,69 +1,38 @@
 # Systems Playground
 
-> An interactive portfolio and developer showcase by Chin Yi Zhe. 
-> Instead of just listing technologies on a resume, this project visually demonstrates backend architecture concepts (Message Queues, Caching, WebSockets) in real-time.
+A self-hosted showcase monorepo by Chin Yi Zhe: a platform shell that hosts one or more independent showcase projects, plus the self-hosted infrastructure (home server / NUC) that runs them.
+
+## Repository Layout
+
+```text
+systems-playground/
+├── self-host/
+│   ├── infra/            # Platform-level infra: uptime-kuma, watchtower, filebrowser, n8n, boot scripts
+│   │   └── _template/    # `make new-infra` scaffolds from here
+│   └── apps/             # Showcase projects, one folder per project
+│       ├── portfolio/    # Flagship project — see self-host/apps/portfolio/README.md
+│       └── _template/    # `make new-app` scaffolds from here
+├── docs/                 # Developer/monorepo/deployment guides, ADRs
+└── .specify/             # Speckit spec-driven workflow (specs, plan, tasks per feature)
+```
+
+`self-host/infra` and `self-host/apps` are deliberately separate: infra is platform-wide (runs 24/7, shared across everything on the host), apps are independently scoped showcase projects that can be added, changed, or extracted without touching infra. Use `make new-app` / `make new-infra` to scaffold either — see `make help`.
 
 ## Documentation
 
-- `docs/DEVELOPER_GUIDE.md` — local development workflow and operating model.
-- `docs/MONOREPO_GUIDE.md` — architecture boundaries and project structure for this monorepo.
-- `CONTRIBUTING.md` — contribution standards, PR expectations, and how to add new projects.
-- `docs/DEPLOYMENT_WSL.md` — WSL and self-hosted deployment guide.
+- [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md) — local development workflow and the Speckit feature process.
+- [`docs/MONOREPO_GUIDE.md`](docs/MONOREPO_GUIDE.md) — architecture boundaries and project structure for this monorepo.
+- [`docs/DEPLOYMENT_WSL.md`](docs/DEPLOYMENT_WSL.md) — WSL/NUC self-hosted deployment guide (Cloudflare Tunnel, CI/CD, Watchtower).
+- [`docs/adrs/`](docs/adrs/) — platform/monorepo-wide architecture decision records. Project-specific ADRs live with their project (e.g. [`self-host/apps/portfolio/adrs/`](self-host/apps/portfolio/adrs/)).
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution standards, PR expectations, and how to add new projects.
+- [`self-host/apps/portfolio/README.md`](self-host/apps/portfolio/README.md) — the portfolio project itself: what it demonstrates, quick start, and the live site's content draft.
+- [`self-host/infra/README.md`](self-host/infra/README.md) — current infra services and how to add another.
 
 ## Tech Stack
-* **Backend:** Golang (Fiber/Gin)
-* **Frontend:** Next.js / React, Tailwind CSS, Framer Motion (for animations)
-* **Infrastructure:** Docker, Redis, RabbitMQ
-* **Deployment:** Self-hosted via Docker Compose
 
----
+* **Platform backend control plane:** Go 1.24 / Fiber
+* **Platform frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4
+* **Showcase infrastructure:** Docker, Redis, RabbitMQ, Redpanda (Kafka-compatible)
+* **Deployment:** Self-hosted on a WSL/NUC host via Docker Compose, GitHub Actions self-hosted runner, and Watchtower
 
-## 📝 Landing Page Content Draft
-
-### 1. Hero / Bio Section
-**Headline:** Hi, I'm Chin Yi Zhe.
-**Sub-headline:** I build scalable, multi-tenant cloud systems.
-**Body:** I'm a Backend-focused Software Engineer with deep expertise in .NET and Golang, alongside full-stack experience with Blazor, Angular, and React. I focus on architecting resilient distributed systems, automating complex cloud deployment pipelines, and modernizing enterprise applications. 
-**Calls to Action:** 
-- [Download Resume]
-- [View LinkedIn]
-
----
-
-### 2. The Interactive Playground
-*This section contains live widgets connected to a real Golang backend.*
-
-#### Widget A: The Message Queue (RabbitMQ)
-* **Concept:** Demonstrating asynchronous task processing.
-* **UI:** A text input with a "Send Job" button. Below it, a visual representation of a "Queue" and 3 "Workers" (servers).
-* **Action:** User types a message and clicks Send.
-* **Visual:** The message appears in the Queue. One of the Workers lights up (simulating picking up the job), a spinner runs for 2 seconds, and then outputs: `[Worker 2] Processed job: <message>`.
-
-#### Widget B: The Cache Hit (Redis)
-* **Concept:** Demonstrating in-memory data store performance.
-* **UI:** A "Fetch Database Records" button. Two metric boxes: "Latency" and "Source".
-* **Action:** User clicks the button.
-* **Visual:** 
-  * *First Click (Cache Miss):* Takes ~1500ms. Source says "PostgreSQL".
-  * *Second Click (Cache Hit):* Takes ~10ms. Source says "Redis Cache". 
-
-#### Widget C: Real-Time Sync (WebSockets)
-* **Concept:** Demonstrating bidirectional full-duplex communication.
-* **UI:** A shared digital whiteboard or a live chat-box element.
-* **Action:** "Open this page in a new tab." 
-* **Visual:** Anything the user types/draws in Tab A instantly replicates in Tab B with zero HTTP polling.
-
----
-
-### 3. Architecture Case Studies
-*Short, high-impact blog posts proving deep systems knowledge.*
-
-#### Case Study 1: Designing Idempotent Webhooks for ATS Integration
-* **The Problem:** Synchronizing candidate data from a legacy ATS (Bullhorn) into a multi-tenant portal without creating duplicate records or race conditions during high-volume bursts.
-* **The Solution:** Building a Golang ingestion handler with strict idempotency keys, distributed locking via Redis, and a retry mechanism.
-* **The Impact:** 100% data integrity for the Singapore market pilot, eliminating manual data entry.
-
-#### Case Study 2: Modernizing an Enterprise Job Portal
-* **The Problem:** A legacy architecture that was difficult to scale and slow to onboard new developers across global teams.
-* **The Solution:** A phased rewrite leveraging Golang and React, orchestrated via GCP and Pulumi.
-* **The Impact:** Drastically improved system responsiveness, reduced technical debt, and cleaner separation of concerns across 9 regional enterprise tenants.
+Individual showcase projects may use their own stack — see each project's `README.md` under `self-host/apps/`.

@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - 'wsl-reference-setup/infra/uptime-kuma/**'
+      - 'self-host/infra/uptime-kuma/**'
   workflow_dispatch:
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
           mkdir -p "$TARGET"
 
           echo "📦 Syncing uptime-kuma compose..."
-          cp wsl-reference-setup/infra/uptime-kuma/docker-compose.yml "$TARGET/"
+          cp self-host/infra/uptime-kuma/docker-compose.yml "$TARGET/"
 
           echo "🔐 Writing uptime-kuma .env..."
           cat <<EOF > "$TARGET/.env"

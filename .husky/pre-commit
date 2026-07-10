@@ -3,7 +3,6 @@ echo "⏳ Running pre-commit hooks..."
 # Ensure Node/npm are available in non-interactive shells (e.g. VS Code Git UI)
 if ! command -v npm >/dev/null 2>&1; then
   if [ -f "$HOME/.nvm/nvm.sh" ]; then
-    # shellcheck source=/dev/null
     . "$HOME/.nvm/nvm.sh"
     nvm use --silent >/dev/null 2>&1 || true
   fi
@@ -11,40 +10,35 @@ fi
 
 if ! command -v npm >/dev/null 2>&1; then
   echo "❌ npm is not available in PATH for the pre-commit hook."
-  echo "Tip: open VS Code from a terminal with nvm loaded (code .),"
-  echo "or make Node/npm available globally for non-interactive shells."
   exit 1
 fi
 
 # Check if there are changes in the frontend folder
-if git diff --cached --name-only | grep -q "^frontend/"; then
+if git diff --cached --name-only | grep -q "^self-host/apps/portfolio/frontend/"; then
   echo "🔨 Frontend changes detected. Running Next.js build check..."
-  cd frontend
-  
+  cd self-host/apps/portfolio/frontend
+
   if ! npm run build; then
     echo "❌ Frontend build failed. Commit rejected."
-    echo "Please fix the TypeScript/Next.js errors before committing."
     exit 1
   fi
-  
+
   echo "✅ Frontend build successful."
-  cd ..
+  cd - > /dev/null
 fi
 
 # Check if there are changes in the backend folder
-if git diff --cached --name-only | grep -q "^backend/"; then
+if git diff --cached --name-only | grep -q "^self-host/apps/portfolio/backend/"; then
   echo "🔨 Backend changes detected. Running Go build check..."
-  cd backend
-  
-  # Run a lightweight go build check
-  if ! docker run --rm -v "$PWD":/app -w /app golang:1.24-alpine sh -c "go build -o /dev/null ."; then
+  cd self-host/apps/portfolio/backend
+
+  if ! MSYS_NO_PATHCONV=1 docker run --rm -v "$PWD":/app -w /app golang:1.24-alpine sh -c "go build -o /dev/null ."; then
     echo "❌ Backend build failed. Commit rejected."
-    echo "Please fix the Go syntax/import errors before committing."
     exit 1
   fi
-  
+
   echo "✅ Backend build successful."
-  cd ..
+  cd - > /dev/null
 fi
 
 echo "✅ Pre-commit hooks passed."

@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - 'wsl-reference-setup/infra/watchtower/**'
+      - 'self-host/infra/watchtower/**'
   workflow_dispatch:
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
           mkdir -p "$TARGET"
 
           echo "📦 Syncing watchtower compose..."
-          cp wsl-reference-setup/infra/watchtower/docker-compose.yml "$TARGET/"
+          cp self-host/infra/watchtower/docker-compose.yml "$TARGET/"
 
           echo "🔐 Writing watchtower .env..."
           cat <<EOF > "$TARGET/.env"

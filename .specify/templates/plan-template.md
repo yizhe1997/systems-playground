@@ -35,11 +35,11 @@ Verify each gate; mark ✅ PASS or ❌ FAIL + justification:
 
 | # | Principle | Gate Question | Status |
 |---|-----------|---------------|--------|
-| I | Separation of Concerns | Does this feature keep logic strictly within its layer (`/frontend`, `/backend`, or infra root)? No cross-layer imports? | [ ] |
-| II | Clean Architecture (Go) | If touching `/backend`: do handlers call only services, services call only repositories/clients, and no business logic in `main.go`? | [ ] |
+| I | Separation of Concerns | Does this feature keep logic strictly within its layer (`self-host/apps/portfolio/frontend`, `self-host/apps/portfolio/backend`, or `self-host/infra`)? No cross-layer imports? | [ ] |
+| II | Clean Architecture (Go) | If touching `self-host/apps/portfolio/backend`: do handlers call only services, services call only repositories/clients, and no business logic in `main.go`? | [ ] |
 | III | Zero-Trust Security | If exposing an admin capability: is it gated by the BFF proxy + NextAuth RBAC? Is the Go API unreachable from the public internet? Does Docker label filtering apply? | [ ] |
 | IV | Scale-to-Zero | If adding a new infrastructure container: is it labelled `playground.widget=<name>` and managed by the Go control plane with an idle-shutdown timer? | [ ] |
-| V | Turbopack Compatibility | If touching `/frontend`: no new `webpack()` overrides in `next.config.ts`? Tailwind v4 for styling? Server Components default unless justified? | [ ] |
+| V | Turbopack Compatibility | If touching `self-host/apps/portfolio/frontend`: no new `webpack()` overrides in `next.config.ts`? Tailwind v4 for styling? Server Components default unless justified? | [ ] |
 | VI | Infrastructure as Code | Any new service added to `docker-compose.yml`? `.env.example` updated? `docs/DEVELOPER_GUIDE.md` updated? | [ ] |
 
 ## Project Structure

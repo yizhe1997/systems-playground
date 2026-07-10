@@ -22,6 +22,21 @@ Templates reviewed and updated:
 
 Follow-up TODOs:
   - None. All fields resolved from repo context and user input.
+
+---
+
+Version change: 1.0.0 → 1.0.1 (PATCH — path correction, no principle change)
+
+Modified principles: none — corrected stale paths only. The repo's actual layout
+places the frontend/backend under `self-host/apps/portfolio/`, not repository-root
+`/frontend` and `/backend`; this document had not been updated when that structure
+was introduced. All references to `/frontend`, `/backend`, root `docker-compose.yml`,
+and `frontend/AGENTS.md` were corrected to their `self-host/apps/portfolio/...` paths.
+
+Follow-up TODOs:
+  - If a project other than `portfolio` starts carrying platform-layer code, revisit
+    whether Principle I's layer paths should be generalized instead of hardcoded to
+    `self-host/apps/portfolio/`.
 -->
 
 # Systems Playground Constitution
@@ -30,8 +45,9 @@ Follow-up TODOs:
 
 ### I. Strict Separation of Concerns
 
-The monorepo is organised into three INVIOLABLE layers — **frontend** (`/frontend`),
-**backend** (`/backend`), and **infrastructure** (root `docker-compose*.yml`, `.github/`).
+The monorepo is organised into three INVIOLABLE layers — **frontend**
+(`self-host/apps/portfolio/frontend`), **backend** (`self-host/apps/portfolio/backend`),
+and **infrastructure** (`self-host/apps/portfolio/docker-compose*.yml`, `self-host/infra/`, `.github/`).
 
 - Frontend MUST NOT contain business logic; it MUST be restricted to UI rendering,
   client-side state, and BFF proxy route handlers.
@@ -39,8 +55,9 @@ The monorepo is organised into three INVIOLABLE layers — **frontend** (`/front
 - Infrastructure configuration MUST NOT be embedded inside application source files.
 - Cross-layer communication MUST occur only through documented API contracts (REST/WebSocket)
   and environment variables; no shared source packages across layers.
-- New packages/modules added to `/backend` MUST reside under `backend/pkg/` or
-  `backend/internal/` and be independently testable.
+- New packages/modules added to the backend MUST reside under
+  `self-host/apps/portfolio/backend/pkg/` or `self-host/apps/portfolio/backend/internal/`
+  and be independently testable.
 
 **Rationale**: Violating these boundaries couples release cycles, makes the Docker
 image build graph non-deterministic, and obscures the architecture that the portfolio
@@ -48,7 +65,7 @@ is designed to demonstrate.
 
 ### II. Clean Architecture for Go
 
-The Go backend (`/backend`) MUST follow a layered dependency rule:
+The Go backend (`self-host/apps/portfolio/backend`) MUST follow a layered dependency rule:
 
 ```
 Handler → Service → Repository/Client → External (Docker, Redis, RabbitMQ)
@@ -132,10 +149,11 @@ build failures as the ecosystem migrates.
 
 All infrastructure MUST be fully declarative and version-controlled.
 
-- Docker Compose files (`docker-compose.yml`, `docker-compose.prod.yml`,
-  `docker-compose.override.yml`) are the single source of truth for service
-  configuration. Ad-hoc `docker run` commands MUST NOT be used to configure
-  persistent services.
+- Docker Compose files under `self-host/apps/portfolio/` (`docker-compose.yml`,
+  `docker-compose.prod.yml`, `docker-compose.override.yml`) are the single source of
+  truth for portfolio service configuration; `self-host/infra/<service>/docker-compose.yml`
+  is the source of truth for shared platform infra. Ad-hoc `docker run` commands MUST
+  NOT be used to configure persistent services.
 - GitHub Actions workflows MUST be the sole mechanism for building and pushing
   production Docker images; manual `docker push` to any production registry
   is PROHIBITED.
@@ -182,7 +200,7 @@ passing CI before merging to `main`.
   `speckit.implement`).
 - Breaking API changes between frontend and backend MUST be coordinated in a single
   PR with both sides updated atomically.
-- Local development MUST use `docker-compose up --build` from the repository root;
+- Local development MUST use `docker compose up --build` from `self-host/apps/portfolio/`;
   running individual services outside Docker is permitted for fast iteration but the
   full-stack Docker build MUST pass before a PR is raised.
 
@@ -210,9 +228,9 @@ procedure below:
 
 All PRs and code reviews MUST verify compliance with the principles above.
 Complexity that violates a principle MUST be justified in the PR description and,
-if accepted, logged in a new ADR under `docs/adrs/`.
+if accepted, logged in a new ADR under `self-host/apps/portfolio/adrs/` (or `docs/adrs/` if the decision is platform-wide rather than portfolio-specific).
 
 Use `docs/DEVELOPER_GUIDE.md` for runtime development guidance. Use
-`frontend/AGENTS.md` for AI-agent-specific Next.js guidance.
+`self-host/apps/portfolio/frontend/AGENTS.md` for AI-agent-specific Next.js guidance.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-03 | **Last Amended**: 2026-04-03
+**Version**: 1.0.1 | **Ratified**: 2026-04-03 | **Last Amended**: 2026-07-10

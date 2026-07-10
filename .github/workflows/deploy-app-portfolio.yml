@@ -1,10 +1,10 @@
-name: Instant Deploy (Self-Hosted)
+name: Deploy App - Portfolio
 on:
   push:
     branches:
       - main
     paths:
-      - 'docker-compose*.yml'
+      - 'self-host/apps/portfolio/docker-compose*.yml'
   workflow_run:
     workflows: ["Build and Push Backend", "Build and Push Frontend"]
     types:
@@ -41,8 +41,8 @@ jobs:
           mkdir -p "$APP_DIR"
           
           echo "📦 Copying latest compose configurations to $APP_DIR..."
-          cp docker-compose.yml "$APP_DIR/"
-          cp docker-compose.prod.yml "$APP_DIR/docker-compose.override.yml"
+          cp self-host/apps/portfolio/docker-compose.yml "$APP_DIR/"
+          cp self-host/apps/portfolio/docker-compose.prod.yml "$APP_DIR/docker-compose.override.yml"
           
           echo "🔐 Constructing .env files from GitHub Secrets..."
           

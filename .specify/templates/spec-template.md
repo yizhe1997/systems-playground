@@ -136,7 +136,7 @@
 
 - **Principle I (Separation of Concerns)**: Feature MUST stay within its layer(s):
   [ ] frontend-only  [ ] backend-only  [ ] infra-only  [ ] full-stack (all three layers)
-- **Principle II (Clean Architecture)**: If touching `/backend`:
+- **Principle II (Clean Architecture)**: If touching `self-host/apps/portfolio/backend`:
   handlers → services → repositories; no business logic in `main.go`.
 - **Principle III (Zero-Trust Security)**: Admin capabilities MUST use BFF proxy + NextAuth RBAC.
   Docker socket access MUST use `playground.widget=<name>` label filtering.

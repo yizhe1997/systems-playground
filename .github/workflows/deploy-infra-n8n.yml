@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - 'wsl-reference-setup/infra/n8n/**'
+      - 'self-host/infra/n8n/**'
   workflow_dispatch:
 
 jobs:
@@ -28,8 +28,8 @@ jobs:
           mkdir -p "$TARGET"
 
           echo "📦 Syncing n8n compose and Dockerfile..."
-          cp wsl-reference-setup/infra/n8n/docker-compose.yml "$TARGET/"
-          cp wsl-reference-setup/infra/n8n/Dockerfile "$TARGET/"
+          cp self-host/infra/n8n/docker-compose.yml "$TARGET/"
+          cp self-host/infra/n8n/Dockerfile "$TARGET/"
 
           echo "🔐 Writing n8n .env..."
           cat <<EOF > "$TARGET/.env"

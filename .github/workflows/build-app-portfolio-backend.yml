@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - "backend/**"
+      - "self-host/apps/portfolio/backend/**"
   workflow_dispatch: # Allows manual triggering from the GitHub Actions UI
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
       - name: Build and push Backend Image
         uses: docker/build-push-action@v4
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: ./self-host/apps/portfolio/backend
+          file: ./self-host/apps/portfolio/backend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/systems-playground-backend:latest

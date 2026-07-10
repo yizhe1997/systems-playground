@@ -12,8 +12,8 @@ Please read these first:
 
 ## What can I contribute?
 
-- Platform improvements (`backend/`, `frontend/`, docs, infra)
-- New showcase projects under `projects/`
+- Platform improvements (`self-host/apps/portfolio/backend/`, `self-host/apps/portfolio/frontend/`, docs, `self-host/infra/`)
+- New showcase projects under `self-host/apps/`
 - Bug fixes, tests, and documentation improvements
 
 ## Branch and PR expectations
@@ -21,24 +21,26 @@ Please read these first:
 - Keep PRs small and focused.
 - Use clear commit messages that explain intent.
 - Include test notes in PR description (what was tested, where).
-- If architecture decisions change, add/update an ADR in `docs/adrs/`.
+- If architecture decisions change, add/update an ADR: platform/monorepo-wide decisions go in `docs/adrs/`, project-specific decisions go in `self-host/apps/<slug>/adrs/`.
 
 ## Monorepo rules
 
 - Avoid deep cross-project coupling.
-- Add project-local docs and scripts for anything under `projects/<slug>`.
+- Add project-local docs and scripts for anything under `self-host/apps/<slug>`.
 - Keep platform integration explicit (e.g., route/proxy registration and UI project listing).
 
 ## Adding a new project
 
-1. Copy `projects/_template/` to `projects/<your-project-slug>/`.
-2. Complete:
-   - `README.md`
-   - `ARCHITECTURE.md`
-   - `.env.example`
-   - `scripts/dev.sh` and `scripts/test.sh`
-3. Register showcase entry in `frontend/src/app/projects/page.tsx`.
+1. Run `make new-app slug=<your-project-slug> name="<Project Name>"` (scaffolds `self-host/apps/<your-project-slug>/` from `_template/`).
+2. Complete `README.md` and `ARCHITECTURE.md`. Add `.env.example`, `scripts/dev.sh`/`test.sh`, `backend/`, `frontend/`, `contracts/`, `tests/` only as the project actually needs them — the template ships minimal on purpose.
+3. Register showcase entry in `self-host/apps/portfolio/frontend/src/app/projects/page.tsx`.
 4. Update documentation if platform behavior changes.
+
+## Adding a new infra service
+
+1. Run `make new-infra slug=<your-infra-slug> name="<Infra Name>"` (scaffolds `self-host/infra/<your-infra-slug>/` from `_template/`, plus its deploy workflow).
+2. Complete `docker-compose.yml`, `README.md`, `.env.example`.
+3. No separate boot registration needed — `wsl-startup.sh` auto-discovers it.
 
 ## Coding and architecture standards
 

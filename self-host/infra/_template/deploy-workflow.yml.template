@@ -1,0 +1,35 @@
+name: Deploy Infra - <infra-name>
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'self-host/infra/<infra-slug>/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR || '/home/yizhe/infra' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Deploy <infra-slug>
+        run: |
+          TARGET="$INFRA_BASE_DIR/<infra-slug>"
+          mkdir -p "$TARGET"
+
+          echo "📦 Syncing <infra-slug> compose..."
+          cp self-host/infra/<infra-slug>/docker-compose.yml "$TARGET/"
+
+          echo "🔄 Restarting <infra-slug>..."
+          cd "$TARGET"
+          docker compose pull
+          docker compose up -d
+          echo "✅ <infra-slug> deployed."
+
+      - name: Prune old images
+        run: docker image prune -f

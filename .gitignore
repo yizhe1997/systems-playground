@@ -1,6 +1,6 @@
 
 # Local Infrastructure Scripts Config
-infra/scripts/.env
+self-host/infra/scripts/.env
 .DS_Store
 
 # Global Env Files
@@ -10,10 +10,7 @@ infra/scripts/.env
 
 # Build Artifacts
 .next/
-backend/api
+self-host/apps/portfolio/backend/api
 
-# Filebrowser local storage
-storage/
-
-# Ignore filebrowser runtime data
-wsl-reference-setup/infra/filebrowser/data/
+# Filebrowser local storage (runtime data, not the docker-compose.yml)
+self-host/infra/filebrowser/data/

@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - 'wsl-reference-setup/infra/filebrowser/**'
+      - 'self-host/infra/filebrowser/**'
   workflow_dispatch:
 
 jobs:
@@ -23,7 +23,7 @@ jobs:
           mkdir -p "$TARGET"
 
           echo "📦 Syncing filebrowser compose..."
-          cp wsl-reference-setup/infra/filebrowser/docker-compose.yml "$TARGET/"
+          cp self-host/infra/filebrowser/docker-compose.yml "$TARGET/"
 
           echo "🔄 Restarting filebrowser..."
           cd "$TARGET"
