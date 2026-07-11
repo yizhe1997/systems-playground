@@ -45,9 +45,12 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: "pg_isready --username=${POSTGRES_USER} && psql --username=${POSTGRES_USER} --list"
+      # -d postgres explicitly: without it, psql defaults to a database named after the
+      # connecting user, which can race Postgres's own database-creation step on first boot.
+      test: "pg_isready --username=${POSTGRES_USER} && psql --username=${POSTGRES_USER} --dbname=postgres --list"
       interval: 5s
       timeout: 10s
+      start_period: 15s
       retries: 10
 
 volumes:
