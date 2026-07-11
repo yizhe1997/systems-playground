@@ -1,0 +1,61 @@
+services:
+  backend:
+    container_name: infisical-backend
+    image: infisical/infisical:latest # TODO before first deploy: pin to a specific release tag from
+    # https://github.com/Infisical/infisical/releases — do not run the secrets store itself on a
+    # floating :latest tag long-term (same reasoning as SHA-pinning Actions: a compromised or
+    # broken upstream tag shouldn't silently roll onto your root-of-trust service).
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "8090:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/status"]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
+      retries: 5
+    networks:
+      - infisical
+
+  redis:
+    container_name: infisical-redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - infisical
+    volumes:
+      - redis_data:/data
+
+  db:
+    container_name: infisical-db
+    image: postgres:14-alpine
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - infisical
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: "pg_isready --username=${POSTGRES_USER} && psql --username=${POSTGRES_USER} --list"
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  pg_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  infisical:
+    driver: bridge

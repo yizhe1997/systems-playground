@@ -41,8 +41,46 @@ if [ ${#APPS[@]} -eq 0 ]; then
   exit 1
 fi
 
-echo "[*] Starting docker compose services..."
+# infisical is a dependency of every other service (they fetch secrets from it), so it must be
+# started — and actually ready, not just "container created" — before anything else. This is not
+# guaranteed by directory ordering alone, so it's special-cased here rather than relied on
+# alphabetically. On an ordinary reboot every other container already has its secrets baked into
+# its own Docker-persisted config from the last CI deploy and would technically survive infisical
+# being briefly unreachable, but on a fresh host (disaster recovery / new NUC) or for any future
+# service whose entrypoint fetches secrets at container-start time rather than at deploy time,
+# this ordering is load-bearing. Treat it as a hard dependency, not an optimization.
+INFISICAL_DIR="$SCRIPT_DIR/infisical"
+if [ -f "$INFISICAL_DIR/docker-compose.yml" ]; then
+  echo "[*] Starting infisical first (dependency of other infra services)..."
+  cd "$INFISICAL_DIR" || { echo "[!] Could not cd into $INFISICAL_DIR"; exit 1; }
+  docker compose pull
+  docker compose up -d
+
+  echo "[*] Waiting for infisical to report healthy..."
+  INFISICAL_READY=false
+  for i in $(seq 1 30); do
+    if curl -sf "http://localhost:8090/api/status" >/dev/null 2>&1; then
+      echo "[✔] infisical is healthy (after ${i}0s)."
+      INFISICAL_READY=true
+      break
+    fi
+    sleep 10
+  done
+  if [ "$INFISICAL_READY" != true ]; then
+    echo "[!] infisical did not become healthy after 5 minutes. Continuing anyway — other services"
+    echo "    may fail to start if their secrets aren't already baked into existing containers."
+    if [ -n "$DISCORD_WEBHOOK_INFRA_ALERTS" ]; then
+      curl -s -H "Content-Type: application/json" \
+           -d "{\"content\": \":warning: infisical did not become healthy during startup on \`$(hostname)\` — dependent services may fail.\"}" \
+           "$DISCORD_WEBHOOK_INFRA_ALERTS"
+    fi
+  fi
+  cd "$SCRIPT_DIR" || exit 1
+fi
+
+echo "[*] Starting remaining docker compose services..."
 for APP_DIR in "${APPS[@]}"; do
+  [ "$APP_DIR" = "$INFISICAL_DIR" ] && continue
   echo "    -> Starting $APP_DIR"
   cd "$APP_DIR" || continue
   docker compose pull

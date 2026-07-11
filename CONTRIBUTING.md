@@ -53,6 +53,7 @@ Please read these first:
 - Never commit real secrets.
 - Commit only safe placeholders in `.env.example`.
 - Treat anything under admin/auth/proxy paths as security-sensitive and review accordingly.
+- This repo is public with a self-hosted Actions runner attached — see `docs/adrs/001-cicd-secrets-and-runner-trust-boundary.md` before adding any workflow that runs on the self-hosted runner. In short: never trigger a self-hosted job on `pull_request`.
 
 ## Need help?
 

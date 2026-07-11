@@ -133,6 +133,8 @@ Setup steps:
 
 4. Go to your GitHub Repository -> **Settings** -> **Secrets and variables** -> **Actions** -> **Variables**, and create a repository variable called `APP_DIR` — the absolute path on the host where the portfolio's compose files and `.env` files should be written (e.g., `/home/user/apps/systems-playground`). This is a deploy target, not necessarily where the repo is git-cloned. Similarly, `deploy-infra-scripts.yml` uses `INFRA_BASE_DIR` (default `/home/yizhe/infra`).
 
+**⚠️ Security note:** this repo is public and the runner above is self-hosted — GitHub explicitly warns against that combination because a `pull_request`-triggered workflow can let a forked PR run untrusted code on your host before review. Current workflows avoid this (only `push`/`workflow_run`/`workflow_dispatch` trigger the self-hosted jobs), but that invariant must hold for any new workflow you add. See [`docs/adrs/001-cicd-secrets-and-runner-trust-boundary.md`](adrs/001-cicd-secrets-and-runner-trust-boundary.md) before adding a PR-triggered workflow or a second collaborator.
+
 **ℹ️ Edge Case: What if the NUC is turned off during a push?**
 *   **< 24 Hours Offline:** If you push code while the NUC is off, the deployment job will sit in a "Queued" state on GitHub. The moment the NUC boots up (and the WSL runner service starts), it will instantly connect to GitHub, catch up, and execute the queued deployment.
 *   **> 24 Hours Offline:** GitHub Actions cancels queued jobs after 24 hours. If your NUC is off for a week, you will need to manually trigger the deployment. Go to your repository's **Actions** tab -> **Instant Deploy (Self-Hosted)** -> click **Run workflow** to force the NUC to sync the latest code and images.

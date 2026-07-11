@@ -1,0 +1,56 @@
+name: Deploy Infra - Infisical
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'self-host/infra/infisical/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR || '/home/yizhe/infra' }}
+      # These are Infisical's OWN bootstrap secrets (its root of trust) — this is the one
+      # service in the repo that is deliberately exempt from the "move secrets into Infisical"
+      # migration, for the obvious chicken-and-egg reason. See self-host/infra/infisical/README.md.
+      POSTGRES_USER: ${{ vars.INFISICAL_POSTGRES_USER || 'infisical' }}
+      POSTGRES_DB: ${{ vars.INFISICAL_POSTGRES_DB || 'infisical' }}
+      POSTGRES_PASSWORD: ${{ secrets.INFISICAL_POSTGRES_PASSWORD }}
+      ENCRYPTION_KEY: ${{ secrets.INFISICAL_ENCRYPTION_KEY }}
+      AUTH_SECRET: ${{ secrets.INFISICAL_AUTH_SECRET }}
+      SITE_URL: ${{ vars.INFISICAL_SITE_URL || 'http://localhost:8090' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Deploy infisical
+        run: |
+          TARGET="$INFRA_BASE_DIR/infisical"
+          mkdir -p "$TARGET"
+
+          echo "📦 Syncing infisical compose..."
+          cp self-host/infra/infisical/docker-compose.yml "$TARGET/"
+
+          echo "🔐 Writing infisical .env..."
+          cat <<EOF > "$TARGET/.env"
+          POSTGRES_USER=$POSTGRES_USER
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          POSTGRES_DB=$POSTGRES_DB
+          DB_CONNECTION_URI=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@db:5432/$POSTGRES_DB
+          REDIS_URL=redis://redis:6379
+          ENCRYPTION_KEY=$ENCRYPTION_KEY
+          AUTH_SECRET=$AUTH_SECRET
+          SITE_URL=$SITE_URL
+          EOF
+
+          echo "🔄 Restarting infisical..."
+          cd "$TARGET"
+          docker compose pull
+          docker compose up -d
+          echo "✅ infisical deployed."
+
+      - name: Prune old images
+        run: docker image prune -f
