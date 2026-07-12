@@ -16,14 +16,11 @@ jobs:
   deploy:
     runs-on: self-hosted
     env:
-      # No fallback defaults anywhere in this job, intentionally — every one of these must
-      # set explicitly as a repository Variable/Secret, or the job fails fast with a clear error
-      # instead of silently deploying to an unintended path.
-      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
+      APP_BASE_DIR: ${{ vars.APP_BASE_DIR }}
       INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
       INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
-      INFISICAL_DOMAIN: ${{ vars.INFISICAL_SITE_URL }}
+      INFISICAL_DOMAIN: ${{ vars.INFISICAL_SITE_URL || 'http://localhost:8090' }}
 
     steps:
       - name: Check out repository
@@ -35,7 +32,6 @@ jobs:
       - name: Authenticate to Infisical
         id: infisical-auth
         run: |
-          : "${INFISICAL_DOMAIN:?INFISICAL_SITE_URL repository variable must be set}"
           : "${INFISICAL_CLIENT_ID:?INFISICAL_CLIENT_ID repository variable must be set}"
           : "${INFISICAL_CLIENT_SECRET:?INFISICAL_CLIENT_SECRET repository secret must be set}"
           : "${INFISICAL_PROJECT_ID:?INFISICAL_PROJECT_ID repository variable must be set}"
@@ -54,8 +50,8 @@ jobs:
           # actual secret values, only the Infisical credential used to fetch them.
           infisical run --domain="$INFISICAL_DOMAIN" --token="$INFISICAL_TOKEN" \
             --projectId="$INFISICAL_PROJECT_ID" --env=prod -- bash -c '
-          : "${INFRA_BASE_DIR:?INFRA_BASE_DIR repository variable must be set}"
-          APP_DIR="$INFRA_BASE_DIR/systems-playground"
+          : "${APP_BASE_DIR:?APP_BASE_DIR repository variable must be set}"
+          APP_DIR="$APP_BASE_DIR/systems-playground"
           mkdir -p "$APP_DIR"
           
           echo "📦 Copying latest compose configurations to $APP_DIR..."

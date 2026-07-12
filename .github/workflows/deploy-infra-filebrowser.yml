@@ -12,8 +12,6 @@ jobs:
   deploy:
     runs-on: self-hosted
     env:
-      # No fallback default — must be set explicitly as a repository Variable, or the job fails
-      # fast instead of silently using an assumed value.
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
 
     steps:

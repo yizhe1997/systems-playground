@@ -12,8 +12,6 @@ jobs:
   deploy:
     runs-on: self-hosted
     env:
-      # No fallback defaults — every one of these must be set explicitly as a repository
-      # Variable/Secret, or the job fails fast instead of silently using an assumed value.
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
       # These are Infisical's OWN bootstrap secrets (its root of trust) — this is the one
       # service in the repo that is deliberately exempt from the "move secrets into Infisical"
