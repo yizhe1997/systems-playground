@@ -13,8 +13,15 @@ services:
       - REDIS_URL=redis:6379
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - KAFKA_BROKER=redpanda:9092
-    env_file:
-      - ./backend/.env
+      # These read directly from the invoking process's environment (which `infisical run`
+      # populates) via compose interpolation — no backend/.env file needed or written anymore.
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
+      - SMTP_EMAIL=${SMTP_EMAIL}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - RESUME_WEBHOOK_URL=${RESUME_WEBHOOK_URL}
+      - FILEBROWSER_PUBLIC_URL=${FILEBROWSER_PUBLIC_URL}
+      - FILEBROWSER_ADMIN_USERNAME=${FILEBROWSER_ADMIN_USERNAME}
+      - FILEBROWSER_ADMIN_PASSWORD=${FILEBROWSER_ADMIN_PASSWORD}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:

@@ -65,41 +65,16 @@ jobs:
           : "${APP_BASE_DIR:?APP_BASE_DIR repository variable must be set}"
           APP_DIR="$APP_BASE_DIR/portfolio"
           mkdir -p "$APP_DIR"
-          
+
           echo "📦 Copying latest compose configurations to $APP_DIR..."
           cp self-host/apps/portfolio/docker-compose.yml "$APP_DIR/"
           cp self-host/apps/portfolio/docker-compose.prod.yml "$APP_DIR/docker-compose.override.yml"
-          
-          echo "🔐 Constructing .env files from Infisical-injected environment..."
-          
-          # Root .env for docker-compose.yml overrides (only needed for docker-compose itself, e.g. DOCKER_USERNAME)
-          cat <<EOF > "$APP_DIR/.env"
-          DOCKER_USERNAME=$DOCKER_USERNAME
-          EOF
-          
-          # Frontend .env
-          mkdir -p "$APP_DIR/frontend"
-          cat <<EOF > "$APP_DIR/frontend/.env"
-          NEXTAUTH_SECRET=$NEXTAUTH_SECRET
-          NEXTAUTH_URL=$NEXTAUTH_URL
-          GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
-          GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
-          ADMIN_EMAILS=$ADMIN_EMAILS
-          ADMIN_API_KEY=$ADMIN_API_KEY
-          EOF
 
-          # Backend .env
-          mkdir -p "$APP_DIR/backend"
-          cat <<EOF > "$APP_DIR/backend/.env"
-          ADMIN_API_KEY=$ADMIN_API_KEY
-          SMTP_EMAIL=$SMTP_EMAIL
-          SMTP_PASSWORD=$SMTP_PASSWORD
-          RESUME_WEBHOOK_URL=$RESUME_WEBHOOK_URL
-          FILEBROWSER_PUBLIC_URL=$FILEBROWSER_PUBLIC_URL
-          FILEBROWSER_ADMIN_USERNAME=$FILEBROWSER_ADMIN_USERNAME
-          FILEBROWSER_ADMIN_PASSWORD=$FILEBROWSER_ADMIN_PASSWORD
-          EOF
-          
+          # No .env files written anymore. docker-compose.yml/docker-compose.prod.yml use
+          # ${VAR} interpolation (environment: blocks) instead of env_file:, so `docker compose`
+          # below reads every secret directly from this script's own process environment — the
+          # same one infisical run injected into. See docs/adrs/002-infisical-secret-injection.md.
+
           cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
           
           echo "📥 Pulling latest pre-built images from registry..."

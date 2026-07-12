@@ -10,7 +10,14 @@ services:
 
   frontend:
     image: ${DOCKER_USERNAME:-yourdockerhub}/systems-playground-frontend:latest
-    env_file:
-      - ./frontend/.env
+    environment:
+      # These read directly from the invoking process's environment (which `infisical run`
+      # populates) via compose interpolation — no frontend/.env file needed or written anymore.
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - ADMIN_EMAILS=${ADMIN_EMAILS}
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
