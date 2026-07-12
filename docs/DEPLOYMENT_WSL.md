@@ -2,38 +2,34 @@
 
 This guide documents how to deploy the Systems Playground onto a Windows/WSL hosting environment, leveraging automated startup scripts, Cloudflare Tunnels, and Watchtower for CI/CD.
 
-## Architecture: `infra` vs `apps`
-A robust local host environment separates core infrastructure from application workloads. This is the **deployed** layout on the WSL/NUC host — it's flattened out of the repo by CI, and does not mirror the in-repo folder structure exactly (see the note below the diagram).
+## Architecture: one deployed tree under `$INFRA_BASE_DIR`
+The **repo** still separates platform infra (`self-host/infra/`) from showcase apps (`self-host/apps/`) — that split is about source organization and is unchanged. The **deployed** layout on the WSL/NUC host, however, is a single flat tree: every service, infra or app, lands as a sibling directory under one required `INFRA_BASE_DIR` repository variable (no default — every deploy workflow fails fast if it isn't set). This collapsed a previous `~/infra` vs `~/apps` split; if you're looking at an older version of this doc or an older host layout, that's why they don't match anymore.
 
 ```text
-~ (Home Directory)
-├── infra/                      # Core System Services (deployed from self-host/infra/)
-│   ├── wsl-startup.sh          # Boots infra & initializes Cloudflare Tunnel
-│   ├── wsl-shutdown.sh         # Gracefully stops infra
-│   ├── .env                    # Environment variables (Discord webhooks, paths)
-│   ├── uptime-kuma/
-│   │   └── docker-compose.yml
-│   ├── watchtower/
-│   │   └── docker-compose.yml
-│   ├── filebrowser/
-│   │   └── docker-compose.yml
-│   └── n8n/
-│       └── docker-compose.yml
-│
-└── apps/                       # Application Workloads
-    ├── systems-playground/     # <-- Git clone this repository here
-    │   └── self-host/apps/portfolio/
-    │       ├── docker-compose.yml           # Base definitions (Redis, RabbitMQ, Redpanda, ports)
-    │       ├── docker-compose.override.yml  # Loaded automatically for local dev
-    │       └── docker-compose.prod.yml       # Production image tags & Watchtower labels
-    │
-    └── another-app/            # e.g., n8n, ghost, etc.
+$INFRA_BASE_DIR (e.g. /home/yizhe/infra)
+├── wsl-startup.sh          # Boots every service below & initializes Cloudflare Tunnel
+├── wsl-shutdown.sh         # Gracefully stops everything
+├── .env                    # Startup-script environment (Discord webhooks, log paths)
+├── uptime-kuma/
+│   └── docker-compose.yml
+├── watchtower/
+│   └── docker-compose.yml
+├── filebrowser/
+│   └── docker-compose.yml
+├── n8n/
+│   └── docker-compose.yml
+├── infisical/
+│   └── docker-compose.yml
+└── systems-playground/     # the portfolio app — deployed here, not a separate ~/apps tree
+    ├── docker-compose.yml
+    ├── docker-compose.override.yml
+    ├── frontend/.env
+    └── backend/.env
 ```
 
-*   **`~/infra`**: Houses system-wide services like Cloudflare (`cloudflared`, installed directly on the host — not containerized), Monitoring (`uptime-kuma`), and CI/CD (`watchtower`), plus shared storage (`filebrowser`) and automation (`n8n`). This folder runs its own startup/shutdown scripts to initialize the core layer.
-*   **`~/apps`**: Houses the actual applications (like `systems-playground`, `n8n`, etc.). These come online *after* the infrastructure layer.
+**In-repo source of these files:** the `wsl-startup.sh`/`wsl-shutdown.sh` scripts live in this repo at `self-host/infra/scripts/`, copied flat into `$INFRA_BASE_DIR/` by `.github/workflows/deploy-infra-scripts.yml` whenever that folder changes. Every other service's compose file is copied the same way by its own `deploy-infra-<slug>.yml` (or, for the portfolio app, `deploy-app-portfolio.yml`) into `$INFRA_BASE_DIR/<slug>/`. There is no `/wsl-reference-setup` directory in this repo — `self-host/infra/` and `self-host/apps/` **are** the reference source; only the deployed-host layout is flattened into one tree.
 
-**In-repo source of these files:** the `~/infra/wsl-startup.sh` and `~/infra/wsl-shutdown.sh` scripts live in this repo at `self-host/infra/scripts/`, and are copied flat into `~/infra/` by the `Deploy Infra - Startup/Shutdown Scripts` GitHub Actions workflow (`.github/workflows/deploy-infra-scripts.yml`) whenever that folder changes. Similarly, the compose files for `~/apps/systems-playground/self-host/apps/portfolio/` are copied out to a flat `$APP_DIR` (default `/home/user/apps/systems-playground`, overridable via the `APP_DIR` repo variable) by `.github/workflows/deploy-app-portfolio.yml`. There is no `/wsl-reference-setup` directory in this repo — `self-host/infra/` and `self-host/apps/` **are** the reference source.
+**Migration note:** if you have an existing running deployment from before this change, the portfolio app was previously deployed under a separate `APP_DIR` (default had been `/home/user/apps/systems-playground`). It now deploys to `$INFRA_BASE_DIR/systems-playground` instead. The next deploy will stand up a fresh copy at the new path — the old directory and its containers won't be automatically cleaned up or migrated, that's a manual one-time step (stop/remove the old containers, optionally `rm -rf` the old `APP_DIR` path once confirmed the new deploy is healthy).
 
 ---
 
@@ -115,7 +111,7 @@ To ensure the portfolio is always up to date with the latest GitHub code, we use
 The workflows involved, all under `.github/workflows/`:
 
 *   **`build-app-portfolio-backend.yml`** / **`build-app-portfolio-frontend.yml`** — build and push Docker images to Docker Hub whenever `self-host/apps/portfolio/backend/**` or `self-host/apps/portfolio/frontend/**` changes.
-*   **`deploy-app-portfolio.yml`** ("Instant Deploy (Self-Hosted)") — runs on the self-hosted runner after either build workflow completes, or when `self-host/apps/portfolio/docker-compose*.yml` changes. It copies `docker-compose.yml` and `docker-compose.prod.yml` (renamed to `docker-compose.override.yml`) into `$APP_DIR`, writes `.env` files from secrets, then runs `docker compose pull && docker compose up -d`.
+*   **`deploy-app-portfolio.yml`** ("Instant Deploy (Self-Hosted)") — runs on the self-hosted runner after either build workflow completes, or when `self-host/apps/portfolio/docker-compose*.yml` changes. It copies `docker-compose.yml` and `docker-compose.prod.yml` (renamed to `docker-compose.override.yml`) into `$INFRA_BASE_DIR/systems-playground`, writes `.env` files from Infisical-injected secrets (see `docs/adrs/002-infisical-secret-injection.md`), then runs `docker compose pull && docker compose up -d`.
 *   **`deploy-infra-scripts.yml`**, **`deploy-infra-uptime-kuma.yml`**, **`deploy-infra-watchtower.yml`**, **`deploy-infra-filebrowser.yml`**, **`deploy-infra-n8n.yml`** — each copies its corresponding `self-host/infra/<service>/` files to the host and restarts that one service when it changes.
 
 Setup steps:
@@ -131,7 +127,7 @@ Setup steps:
    * Install the background service: `sudo ./svc.sh install`
    * Start the background service: `sudo ./svc.sh start`
 
-4. Go to your GitHub Repository -> **Settings** -> **Secrets and variables** -> **Actions** -> **Variables**, and create a repository variable called `APP_DIR` — the absolute path on the host where the portfolio's compose files and `.env` files should be written (e.g., `/home/user/apps/systems-playground`). This is a deploy target, not necessarily where the repo is git-cloned. Similarly, `deploy-infra-scripts.yml` uses `INFRA_BASE_DIR` (default `/home/yizhe/infra`).
+4. Go to your GitHub Repository -> **Settings** -> **Secrets and variables** -> **Actions** -> **Variables**, and create a repository variable called `INFRA_BASE_DIR` — the absolute path on the host where every service (infra and the portfolio app alike) gets deployed as a subdirectory, e.g. `/home/yizhe/infra`. This is a deploy target, not necessarily where the repo is git-cloned. Every deploy workflow now requires this explicitly — none of them fall back to a baked-in default anymore, so a missing `INFRA_BASE_DIR` fails the job immediately with a clear error instead of silently deploying somewhere unintended.
 
 **⚠️ Security note:** this repo is public and the runner above is self-hosted — GitHub explicitly warns against that combination because a `pull_request`-triggered workflow can let a forked PR run untrusted code on your host before review. Current workflows avoid this (only `push`/`workflow_run`/`workflow_dispatch` trigger the self-hosted jobs), but that invariant must hold for any new workflow you add. See [`docs/adrs/001-cicd-secrets-and-runner-trust-boundary.md`](adrs/001-cicd-secrets-and-runner-trust-boundary.md) before adding a PR-triggered workflow or a second collaborator.
 

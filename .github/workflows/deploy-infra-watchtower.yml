@@ -5,13 +5,16 @@ on:
       - main
     paths:
       - 'self-host/infra/watchtower/**'
+      - '.github/workflows/deploy-infra-watchtower.yml'
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: self-hosted
     env:
-      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR || '/home/yizhe/infra' }}
+      # No fallback defaults — every one of these must be set explicitly as a repository
+      # Variable/Secret, or the job fails fast instead of silently using an assumed value.
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
       WATCHTOWER_DISCORD_URL: ${{ secrets.WATCHTOWER_DISCORD_URL }}
 
     steps:
@@ -20,6 +23,8 @@ jobs:
 
       - name: Deploy watchtower
         run: |
+          : "${INFRA_BASE_DIR:?INFRA_BASE_DIR repository variable must be set}"
+          : "${WATCHTOWER_DISCORD_URL:?WATCHTOWER_DISCORD_URL repository secret must be set}"
           TARGET="$INFRA_BASE_DIR/watchtower"
           mkdir -p "$TARGET"
 

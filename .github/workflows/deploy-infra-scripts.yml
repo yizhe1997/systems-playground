@@ -5,16 +5,19 @@ on:
       - main
     paths:
       - 'self-host/infra/scripts/**'
+      - '.github/workflows/deploy-infra-scripts.yml'
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: self-hosted
     env:
-      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR || '/home/yizhe/infra' }}
-      LOGDIR: ${{ vars.LOGDIR || '/home/yizhe/infra/logs' }}
-      CFLOG: ${{ vars.CFLOG || '/home/yizhe/.cloudflared/cloudflared.log' }}
-      TUNNEL_NAME: ${{ vars.TUNNEL_NAME || 'tunnel' }}
+      # No fallback defaults — every one of these must be set explicitly as a repository
+      # Variable/Secret, or the job fails fast instead of silently using an assumed value.
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
+      LOGDIR: ${{ vars.LOGDIR }}
+      CFLOG: ${{ vars.CFLOG }}
+      TUNNEL_NAME: ${{ vars.TUNNEL_NAME }}
       DISCORD_WEBHOOK_INFRA_ALERTS: ${{ secrets.DISCORD_WEBHOOK_INFRA_ALERTS }}
 
     steps:
@@ -23,6 +26,11 @@ jobs:
 
       - name: Deploy scripts
         run: |
+          : "${INFRA_BASE_DIR:?INFRA_BASE_DIR repository variable must be set}"
+          : "${LOGDIR:?LOGDIR repository variable must be set}"
+          : "${CFLOG:?CFLOG repository variable must be set}"
+          : "${TUNNEL_NAME:?TUNNEL_NAME repository variable must be set}"
+          : "${DISCORD_WEBHOOK_INFRA_ALERTS:?DISCORD_WEBHOOK_INFRA_ALERTS repository secret must be set}"
           echo "📋 Copying scripts to $INFRA_BASE_DIR..."
           cp self-host/infra/scripts/wsl-startup.sh "$INFRA_BASE_DIR/wsl-startup.sh"
           cp self-host/infra/scripts/wsl-shutdown.sh "$INFRA_BASE_DIR/wsl-shutdown.sh"

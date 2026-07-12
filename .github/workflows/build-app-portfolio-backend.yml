@@ -5,6 +5,7 @@ on:
       - main
     paths:
       - "self-host/apps/portfolio/backend/**"
+      - ".github/workflows/build-app-portfolio-backend.yml"
   workflow_dispatch: # Allows manual triggering from the GitHub Actions UI
 
 jobs:

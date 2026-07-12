@@ -5,16 +5,19 @@ on:
       - main
     paths:
       - 'self-host/infra/n8n/**'
+      - '.github/workflows/deploy-infra-n8n.yml'
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: self-hosted
     env:
-      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR || '/home/yizhe/infra' }}
-      N8N_POSTGRES_USER: ${{ vars.N8N_POSTGRES_USER || 'n8n' }}
+      # No fallback defaults — every one of these must be set explicitly as a repository
+      # Variable/Secret, or the job fails fast instead of silently using an assumed value.
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
+      N8N_POSTGRES_USER: ${{ vars.N8N_POSTGRES_USER }}
       N8N_POSTGRES_PASSWORD: ${{ secrets.N8N_POSTGRES_PASSWORD }}
-      N8N_BASIC_AUTH_USER: ${{ vars.N8N_BASIC_AUTH_USER || 'admin' }}
+      N8N_BASIC_AUTH_USER: ${{ vars.N8N_BASIC_AUTH_USER }}
       N8N_BASIC_AUTH_PASSWORD: ${{ secrets.N8N_BASIC_AUTH_PASSWORD }}
       N8N_HOST: ${{ vars.N8N_HOST }}
 
@@ -24,6 +27,12 @@ jobs:
 
       - name: Deploy n8n
         run: |
+          : "${INFRA_BASE_DIR:?INFRA_BASE_DIR repository variable must be set}"
+          : "${N8N_POSTGRES_USER:?N8N_POSTGRES_USER repository variable must be set}"
+          : "${N8N_POSTGRES_PASSWORD:?N8N_POSTGRES_PASSWORD repository secret must be set}"
+          : "${N8N_BASIC_AUTH_USER:?N8N_BASIC_AUTH_USER repository variable must be set}"
+          : "${N8N_BASIC_AUTH_PASSWORD:?N8N_BASIC_AUTH_PASSWORD repository secret must be set}"
+          : "${N8N_HOST:?N8N_HOST repository variable must be set}"
           TARGET="$INFRA_BASE_DIR/n8n"
           mkdir -p "$TARGET"
 
