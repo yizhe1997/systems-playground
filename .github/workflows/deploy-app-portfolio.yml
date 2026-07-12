@@ -62,13 +62,14 @@ jobs:
           # actual secret values, only the Infisical credential used to fetch them.
           infisical run --domain="$INFISICAL_DOMAIN" --token="$INFISICAL_TOKEN" \
             --projectId="$INFISICAL_PROJECT_ID" --env=prod -- bash -c '
+          set -e
           : "${APP_BASE_DIR:?APP_BASE_DIR repository variable must be set}"
           APP_DIR="$APP_BASE_DIR/portfolio"
           mkdir -p "$APP_DIR"
 
           echo "📦 Copying latest compose configurations to $APP_DIR..."
-          cp self-host/apps/portfolio/docker-compose.yml "$APP_DIR/"
-          cp self-host/apps/portfolio/docker-compose.prod.yml "$APP_DIR/docker-compose.override.yml"
+          cp -v self-host/apps/portfolio/docker-compose.yml "$APP_DIR/"
+          cp -v self-host/apps/portfolio/docker-compose.prod.yml "$APP_DIR/docker-compose.override.yml"
 
           # No .env files written anymore. docker-compose.yml/docker-compose.prod.yml use
           # ${VAR} interpolation (environment: blocks) instead of env_file:, so `docker compose`
@@ -76,6 +77,8 @@ jobs:
           # same one infisical run injected into. See docs/adrs/002-infisical-secret-injection.md.
 
           cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
+          echo "📁 Contents of $APP_DIR after copy:"
+          ls -la "$APP_DIR"
           
           echo "📥 Pulling latest pre-built images from registry..."
           docker compose pull
