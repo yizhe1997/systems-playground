@@ -7,3 +7,5 @@ services:
       - ./data/files:/srv
       - ./data/config/filebrowser.db:/database/filebrowser.db
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"

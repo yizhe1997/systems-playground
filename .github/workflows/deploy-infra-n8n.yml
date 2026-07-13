@@ -12,44 +12,64 @@ jobs:
   deploy:
     runs-on: self-hosted
     env:
-      # No fallback defaults — every one of these must be set explicitly as a repository
-      # Variable/Secret, or the job fails fast instead of silently using an assumed value.
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
-      N8N_POSTGRES_USER: ${{ vars.N8N_POSTGRES_USER || 'n8n' }}
-      N8N_POSTGRES_PASSWORD: ${{ secrets.N8N_POSTGRES_PASSWORD }}
-      N8N_BASIC_AUTH_USER: ${{ vars.N8N_BASIC_AUTH_USER || 'admin' }}
-      N8N_BASIC_AUTH_PASSWORD: ${{ secrets.N8N_BASIC_AUTH_PASSWORD }}
-      N8N_HOST: ${{ vars.N8N_HOST || 'http://localhost:5678' }}
+      INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
+      INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+      INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
+      INFISICAL_DOMAIN: ${{ vars.INFISICAL_SITE_URL || 'http://localhost:8090' }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Deploy n8n
+      - name: Install Infisical CLI
         run: |
+          LATEST_TAG=$(curl -sL -o /dev/null -w '%{url_effective}' https://github.com/Infisical/cli/releases/latest | sed 's#.*/tag/##')
+          VERSION="${LATEST_TAG#v}"
+          curl -sL "https://github.com/Infisical/cli/releases/download/${LATEST_TAG}/cli_${VERSION}_linux_amd64.tar.gz" -o infisical-cli.tar.gz
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf infisical-cli.tar.gz -C "$HOME/.local/bin" infisical
+          chmod +x "$HOME/.local/bin/infisical"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          rm infisical-cli.tar.gz
+
+      - name: Authenticate to Infisical
+        id: infisical-auth
+        run: |
+          : "${INFISICAL_CLIENT_ID:?INFISICAL_CLIENT_ID repository variable must be set}"
+          : "${INFISICAL_CLIENT_SECRET:?INFISICAL_CLIENT_SECRET repository secret must be set}"
+          : "${INFISICAL_PROJECT_ID:?INFISICAL_PROJECT_ID repository variable must be set}"
+          TOKEN=$(infisical login --domain="$INFISICAL_DOMAIN" --method=universal-auth \
+            --client-id="$INFISICAL_CLIENT_ID" --client-secret="$INFISICAL_CLIENT_SECRET" \
+            --plain --silent)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy n8n
+        env:
+          INFISICAL_TOKEN: ${{ steps.infisical-auth.outputs.token }}
+        run: |
+          infisical run --domain="$INFISICAL_DOMAIN" --token="$INFISICAL_TOKEN" \
+            --projectId="$INFISICAL_PROJECT_ID" --env=prod -- bash -c '
+          set -e
           : "${INFRA_BASE_DIR:?INFRA_BASE_DIR repository variable must be set}"
-          : "${N8N_POSTGRES_PASSWORD:?N8N_POSTGRES_PASSWORD repository secret must be set}"
-          : "${N8N_BASIC_AUTH_PASSWORD:?N8N_BASIC_AUTH_PASSWORD repository secret must be set}"
+          : "${N8N_POSTGRES_PASSWORD:?N8N_POSTGRES_PASSWORD must be set in Infisical}"
+          : "${N8N_BASIC_AUTH_PASSWORD:?N8N_BASIC_AUTH_PASSWORD must be set in Infisical}"
+          export N8N_POSTGRES_USER="${N8N_POSTGRES_USER:-n8n}"
+          export N8N_BASIC_AUTH_USER="${N8N_BASIC_AUTH_USER:-admin}"
+          export N8N_HOST="${N8N_HOST:-http://localhost:5678}"
           TARGET="$INFRA_BASE_DIR/n8n"
           mkdir -p "$TARGET"
 
           echo "📦 Syncing n8n compose and Dockerfile..."
-          cp self-host/infra/n8n/docker-compose.yml "$TARGET/"
-          cp self-host/infra/n8n/Dockerfile "$TARGET/"
+          cp -v self-host/infra/n8n/docker-compose.yml "$TARGET/"
+          cp -v self-host/infra/n8n/Dockerfile "$TARGET/"
 
-          echo "🔐 Writing n8n .env..."
-          cat <<EOF > "$TARGET/.env"
-          N8N_POSTGRES_USER=$N8N_POSTGRES_USER
-          N8N_POSTGRES_PASSWORD=$N8N_POSTGRES_PASSWORD
-          N8N_BASIC_AUTH_USER=$N8N_BASIC_AUTH_USER
-          N8N_BASIC_AUTH_PASSWORD=$N8N_BASIC_AUTH_PASSWORD
-          N8N_HOST=$N8N_HOST
-          EOF
-
+          cd "$TARGET" || { echo "❌ Directory $TARGET not found!"; exit 1; }
           echo "🔄 Rebuilding and restarting n8n..."
-          cd "$TARGET"
           docker compose up --build -d
           echo "✅ n8n deployed."
+          '
 
       - name: Prune old images
         run: docker image prune -f
