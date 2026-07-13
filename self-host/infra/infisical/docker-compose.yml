@@ -1,10 +1,14 @@
 services:
   backend:
     container_name: infisical-backend
-    image: infisical/infisical:latest # TODO before first deploy: pin to a specific release tag from
-    # https://github.com/Infisical/infisical/releases — do not run the secrets store itself on a
-    # floating :latest tag long-term (same reasoning as SHA-pinning Actions: a compromised or
-    # broken upstream tag shouldn't silently roll onto your root-of-trust service).
+    # Pinned 2026-07-13, matches what was actually already running (confirmed via digest lookup
+    # against Docker Hub's tag list, not just picking the newest available tag) — same reasoning
+    # as SHA-pinning Actions: a compromised or broken upstream :latest push shouldn't silently
+    # roll onto the root-of-trust service. To upgrade deliberately later: check
+    # https://github.com/Infisical/infisical/releases, confirm the target version actually exists
+    # as a Docker Hub tag first (the combined self-hosted image's tags can trail the GitHub release
+    # version), then bump this and redeploy.
+    image: infisical/infisical:v0.162.3
     restart: unless-stopped
     depends_on:
       db:
