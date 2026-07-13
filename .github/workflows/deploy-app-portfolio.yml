@@ -72,9 +72,9 @@ jobs:
           cp -v self-host/apps/portfolio/docker-compose.prod.yml "$APP_DIR/docker-compose.override.yml"
 
           # No .env files written anymore. docker-compose.yml/docker-compose.prod.yml use
-          # ${VAR} interpolation (environment: blocks) instead of env_file:, so `docker compose`
-          # below reads every secret directly from this script's own process environment — the
-          # same one infisical run injected into. See docs/adrs/002-infisical-secret-injection.md.
+          # dollar-brace interpolation (environment blocks) instead of env_file, so docker
+          # compose below reads every secret directly from its own process environment,
+          # the same one infisical run injected into. See docs/adrs/002-infisical-secret-injection.md.
 
           cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
           echo "📁 Contents of $APP_DIR after copy:"
