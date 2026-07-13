@@ -4,8 +4,21 @@ services:
     ports:
       - "8088:80"
     volumes:
+      # /srv stays a host bind mount deliberately — these are the actual files being browsed/
+      # edited, meant to be visible on the host filesystem too.
       - ./data/files:/srv
-      - ./data/config/filebrowser.db:/database/filebrowser.db
+      # /database and /config are Docker-managed named volumes, not host bind mounts. Filebrowser's
+      # SQLite database needs real flock/mmap support, which Docker Desktop's WSL2 bind-mount
+      # passthrough (/mnt/wsl/docker-desktop-bind-mounts/...) doesn't reliably provide — that's what
+      # caused the "Error: timeout" restart loop. Named volumes live inside Docker's own storage and
+      # sidestep that passthrough layer entirely, matching every other stateful service in this repo
+      # (n8n's postgres, uptime-kuma, infisical's postgres/redis all already use named volumes).
+      - db_data:/database
+      - config_data:/config
     restart: unless-stopped
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+
+volumes:
+  db_data:
+  config_data:
