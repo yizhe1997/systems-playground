@@ -10,16 +10,48 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    env:
+      INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
+      INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+      INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
+      INFISICAL_DOMAIN: ${{ vars.INFISICAL_SITE_URL || 'http://localhost:8090' }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      - name: Install Infisical CLI
+        run: |
+          LATEST_TAG=$(curl -sL -o /dev/null -w '%{url_effective}' https://github.com/Infisical/cli/releases/latest | sed 's#.*/tag/##')
+          VERSION="${LATEST_TAG#v}"
+          curl -sL "https://github.com/Infisical/cli/releases/download/${LATEST_TAG}/cli_${VERSION}_linux_amd64.tar.gz" -o infisical-cli.tar.gz
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf infisical-cli.tar.gz -C "$HOME/.local/bin" infisical
+          chmod +x "$HOME/.local/bin/infisical"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          rm infisical-cli.tar.gz
+
+      - name: Authenticate to Infisical
+        id: infisical-auth
+        run: |
+          : "${INFISICAL_CLIENT_ID:?INFISICAL_CLIENT_ID repository variable must be set}"
+          : "${INFISICAL_CLIENT_SECRET:?INFISICAL_CLIENT_SECRET repository secret must be set}"
+          : "${INFISICAL_PROJECT_ID:?INFISICAL_PROJECT_ID repository variable must be set}"
+          TOKEN=$(infisical login --domain="$INFISICAL_DOMAIN" --method=universal-auth \
+            --client-id="$INFISICAL_CLIENT_ID" --client-secret="$INFISICAL_CLIENT_SECRET" \
+            --plain --silent)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
       - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+        id: docker-auth
+        env:
+          INFISICAL_TOKEN: ${{ steps.infisical-auth.outputs.token }}
+        run: |
+          infisical run --domain="$INFISICAL_DOMAIN" --token="$INFISICAL_TOKEN" \
+            --projectId="$INFISICAL_PROJECT_ID" --env=prod -- \
+            sh -c 'echo "::add-mask::$DOCKER_PASSWORD" && echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin && echo "username=$DOCKER_USERNAME" >> "$GITHUB_OUTPUT"'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -30,4 +62,4 @@ jobs:
           context: ./self-host/apps/portfolio/backend
           file: ./self-host/apps/portfolio/backend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/systems-playground-backend:latest
+          tags: ${{ steps.docker-auth.outputs.username }}/systems-playground-backend:latest
