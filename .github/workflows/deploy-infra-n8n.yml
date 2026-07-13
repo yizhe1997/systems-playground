@@ -4,12 +4,24 @@ on:
     branches:
       - main
     paths:
-      - 'self-host/infra/n8n/**'
+      # Deliberately NOT self-host/infra/n8n/** — build-infra-n8n.yml already watches that whole
+      # directory, so any real change gets caught there and reaches this workflow via workflow_run
+      # below, strictly after the build finishes. Watching the same paths here too would race the
+      # build: this push trigger would fire immediately and pull whatever image is still in the
+      # registry (the OLD one), rather than waiting. Only this workflow's own file needs a direct
+      # trigger, since editing it isn't something build-infra-n8n.yml would ever pick up.
       - '.github/workflows/deploy-infra-n8n.yml'
+  workflow_run:
+    workflows: ["Build and Push n8n"]
+    types:
+      - completed
   workflow_dispatch:
 
 jobs:
   deploy:
+    # Skip if this run was triggered by a failed/cancelled build — no point redeploying the old
+    # image. push/workflow_dispatch runs have no workflow_run conclusion to check, so always proceed.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: self-hosted
     env:
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
@@ -61,13 +73,14 @@ jobs:
           TARGET="$INFRA_BASE_DIR/n8n"
           mkdir -p "$TARGET"
 
-          echo "📦 Syncing n8n compose and Dockerfile..."
+          echo "📦 Syncing n8n compose..."
           cp -v self-host/infra/n8n/docker-compose.yml "$TARGET/"
-          cp -v self-host/infra/n8n/Dockerfile "$TARGET/"
 
           cd "$TARGET" || { echo "❌ Directory $TARGET not found!"; exit 1; }
-          echo "🔄 Rebuilding and restarting n8n..."
-          docker compose up --build -d
+          echo "📥 Pulling latest n8n image from registry..."
+          docker compose pull
+          echo "🔄 Restarting n8n..."
+          docker compose up -d
           echo "✅ n8n deployed."
           '
 

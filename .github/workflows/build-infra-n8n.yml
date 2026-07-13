@@ -1,0 +1,33 @@
+name: Build and Push n8n
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "self-host/infra/n8n/**"
+      - ".github/workflows/build-infra-n8n.yml"
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions UI
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push n8n Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./self-host/infra/n8n
+          file: ./self-host/infra/n8n/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/systems-playground-n8n:latest

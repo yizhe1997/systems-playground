@@ -4,7 +4,15 @@ on:
     branches:
       - main
     paths:
-      - 'self-host/apps/portfolio/**'
+      # Deliberately NOT the whole self-host/apps/portfolio/** tree. backend/** and frontend/**
+      # are each watched by their own build-and-push workflow already, so real code changes there
+      # reach this workflow via workflow_run below, strictly after the build finishes — watching
+      # those paths here too would race the build (this push trigger firing immediately and
+      # pulling whatever image is still in the registry, the OLD one, instead of waiting). The
+      # compose files below aren't covered by any build workflow though, so they still need a
+      # direct trigger, same for this workflow's own file.
+      - 'self-host/apps/portfolio/docker-compose.yml'
+      - 'self-host/apps/portfolio/docker-compose.prod.yml'
       - '.github/workflows/deploy-app-portfolio.yml'
   workflow_run:
     workflows: ["Build and Push Backend", "Build and Push Frontend"]
@@ -14,6 +22,9 @@ on:
 
 jobs:
   deploy:
+    # Skip if this run was triggered by a failed/cancelled build — no point redeploying the old
+    # image. push/workflow_dispatch runs have no workflow_run conclusion to check, so always proceed.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: self-hosted
     env:
       APP_BASE_DIR: ${{ vars.APP_BASE_DIR }}
