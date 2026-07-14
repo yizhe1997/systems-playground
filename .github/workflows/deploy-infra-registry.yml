@@ -61,7 +61,10 @@ jobs:
           cp -v self-host/infra/registry/docker-compose.yml "$TARGET/"
 
           echo "🔐 Regenerating htpasswd file..."
-          docker run --rm --entrypoint htpasswd registry:2 -Bbn "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" > "$TARGET/auth/htpasswd"
+          # registry:2 does not ship the htpasswd binary itself (Distribution image, not
+          # Apache) — use httpd:2 as a throwaway generator instead, same bcrypt-hashed output
+          # format the registry container expects via REGISTRY_AUTH_HTPASSWD_PATH.
+          docker run --rm --entrypoint htpasswd httpd:2 -Bbn "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" > "$TARGET/auth/htpasswd"
 
           cd "$TARGET" || { echo "❌ Directory $TARGET not found!"; exit 1; }
           echo "🔄 Restarting registry..."
