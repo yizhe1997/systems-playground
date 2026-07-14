@@ -90,7 +90,17 @@ jobs:
           cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
           echo "📁 Contents of $APP_DIR after copy:"
           ls -la "$APP_DIR"
-          
+
+          : "${REGISTRY_USERNAME:?REGISTRY_USERNAME must be set in Infisical}"
+          : "${REGISTRY_PASSWORD:?REGISTRY_PASSWORD must be set in Infisical}"
+          # No hard requirement on REGISTRY_HOST: this deploy runs on the same self-hosted
+          # runner/host as the registry container itself (port 5000, see
+          # self-host/infra/registry/docker-compose.yml), so localhost:5000 is always correct
+          # here regardless of whatever public hostname REGISTRY_HOST may hold for external use.
+          export REGISTRY_HOST="${REGISTRY_HOST:-localhost:5000}"
+          echo "🔐 Logging in to self-hosted registry..."
+          echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_HOST" -u "$REGISTRY_USERNAME" --password-stdin
+
           echo "📥 Pulling latest pre-built images from registry..."
           docker compose pull
           

@@ -1,27 +1,14 @@
-name: Deploy Infra - n8n
+name: Deploy Infra - Registry
 on:
   push:
     branches:
       - main
     paths:
-      # Deliberately NOT self-host/infra/n8n/** — build-infra-n8n.yml already watches that whole
-      # directory, so any real change gets caught there and reaches this workflow via workflow_run
-      # below, strictly after the build finishes. Watching the same paths here too would race the
-      # build: this push trigger would fire immediately and pull whatever image is still in the
-      # registry (the OLD one), rather than waiting. Only this workflow's own file needs a direct
-      # trigger, since editing it isn't something build-infra-n8n.yml would ever pick up.
-      - '.github/workflows/deploy-infra-n8n.yml'
-  workflow_run:
-    workflows: ["Build and Push n8n"]
-    types:
-      - completed
+      - '.github/workflows/deploy-infra-registry.yml'
   workflow_dispatch:
 
 jobs:
   deploy:
-    # Skip if this run was triggered by a failed/cancelled build — no point redeploying the old
-    # image. push/workflow_dispatch runs have no workflow_run conclusion to check, so always proceed.
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: self-hosted
     env:
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
@@ -57,7 +44,7 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy n8n
+      - name: Deploy registry
         env:
           INFISICAL_TOKEN: ${{ steps.infisical-auth.outputs.token }}
         run: |
@@ -65,34 +52,22 @@ jobs:
             --projectId="$INFISICAL_PROJECT_ID" --env=prod -- bash -c '
           set -e
           : "${INFRA_BASE_DIR:?INFRA_BASE_DIR repository variable must be set}"
-          : "${N8N_POSTGRES_PASSWORD:?N8N_POSTGRES_PASSWORD must be set in Infisical}"
-          : "${N8N_BASIC_AUTH_PASSWORD:?N8N_BASIC_AUTH_PASSWORD must be set in Infisical}"
-          export N8N_POSTGRES_USER="${N8N_POSTGRES_USER:-n8n}"
-          export N8N_BASIC_AUTH_USER="${N8N_BASIC_AUTH_USER:-admin}"
-          export N8N_HOST="${N8N_HOST:-http://localhost:5678}"
-          TARGET="$INFRA_BASE_DIR/n8n"
-          mkdir -p "$TARGET"
-
-          echo "📦 Syncing n8n compose..."
-          cp -v self-host/infra/n8n/docker-compose.yml "$TARGET/"
-
-          cd "$TARGET" || { echo "❌ Directory $TARGET not found!"; exit 1; }
-
           : "${REGISTRY_USERNAME:?REGISTRY_USERNAME must be set in Infisical}"
           : "${REGISTRY_PASSWORD:?REGISTRY_PASSWORD must be set in Infisical}"
-          # No hard requirement on REGISTRY_HOST: this deploy runs on the same self-hosted
-          # runner/host as the registry container itself (port 5000, see
-          # self-host/infra/registry/docker-compose.yml), so localhost:5000 is always correct
-          # here regardless of whatever public hostname REGISTRY_HOST may hold for external use.
-          export REGISTRY_HOST="${REGISTRY_HOST:-localhost:5000}"
-          echo "🔐 Logging in to self-hosted registry..."
-          echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_HOST" -u "$REGISTRY_USERNAME" --password-stdin
+          TARGET="$INFRA_BASE_DIR/registry"
+          mkdir -p "$TARGET/auth"
 
-          echo "📥 Pulling latest n8n image from registry..."
+          echo "📦 Syncing registry compose..."
+          cp -v self-host/infra/registry/docker-compose.yml "$TARGET/"
+
+          echo "🔐 Regenerating htpasswd file..."
+          docker run --rm --entrypoint htpasswd registry:2 -Bbn "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" > "$TARGET/auth/htpasswd"
+
+          cd "$TARGET" || { echo "❌ Directory $TARGET not found!"; exit 1; }
+          echo "🔄 Restarting registry..."
           docker compose pull
-          echo "🔄 Restarting n8n..."
           docker compose up -d
-          echo "✅ n8n deployed."
+          echo "✅ registry deployed."
           '
 
       - name: Prune old images

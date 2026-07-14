@@ -44,14 +44,14 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Log in to Docker Hub
-        id: docker-auth
+      - name: Log in to self-hosted registry
+        id: registry-auth
         env:
           INFISICAL_TOKEN: ${{ steps.infisical-auth.outputs.token }}
         run: |
           infisical run --domain="$INFISICAL_DOMAIN" --token="$INFISICAL_TOKEN" \
             --projectId="$INFISICAL_PROJECT_ID" --env=prod -- \
-            sh -c 'echo "::add-mask::$DOCKER_PASSWORD" && echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin && echo "username=$DOCKER_USERNAME" >> "$GITHUB_OUTPUT"'
+            sh -c 'REGISTRY_HOST="${REGISTRY_HOST:-localhost:5000}"; echo "::add-mask::$REGISTRY_PASSWORD" && echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_HOST" -u "$REGISTRY_USERNAME" --password-stdin && echo "host=$REGISTRY_HOST" >> "$GITHUB_OUTPUT"'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -62,4 +62,4 @@ jobs:
           context: ./self-host/apps/portfolio/backend
           file: ./self-host/apps/portfolio/backend/Dockerfile
           push: true
-          tags: ${{ steps.docker-auth.outputs.username }}/systems-playground-backend:latest
+          tags: ${{ steps.registry-auth.outputs.host }}/systems-playground-backend:latest

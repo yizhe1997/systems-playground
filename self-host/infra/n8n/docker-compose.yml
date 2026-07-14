@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
 
   n8n:
-    image: ${DOCKER_USERNAME:-yourdockerhub}/systems-playground-n8n:latest
+    image: ${REGISTRY_HOST}/systems-playground-n8n:latest
     ports:
       - "5678:5678"
     environment:
