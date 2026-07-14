@@ -55,6 +55,12 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          # docker-container driver (the default) runs buildkit in its own isolated network
+          # namespace — "localhost:5000" inside it points at itself, not the host's registry,
+          # causing an i/o timeout on push. network=host makes the builder share the runner's
+          # network namespace so localhost:5000 correctly reaches the registry container.
+          driver-opts: network=host
 
       - name: Build and push Frontend Image
         uses: docker/build-push-action@v4
