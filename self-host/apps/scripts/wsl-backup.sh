@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Load .env from the same directory as this script (~/infra/.env on the live host)
+# Load .env from the same directory as this script (~/apps/.env on the live host)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/.env" ]; then
   source <(tr -d '\r' < "$SCRIPT_DIR/.env")
 fi
 
-INFRA_LOG_DIR="$(printf '%s' "${INFRA_LOG_DIR:-$SCRIPT_DIR/logs}" | tr -d '\r')"
-mkdir -p "$INFRA_LOG_DIR"
-LOGFILE="$INFRA_LOG_DIR/wsl-backup.log"
+APP_LOG_DIR="$(printf '%s' "${APP_LOG_DIR:-$SCRIPT_DIR/logs}" | tr -d '\r')"
+mkdir -p "$APP_LOG_DIR"
+LOGFILE="$APP_LOG_DIR/wsl-backup.log"
 DISCORD_WEBHOOK_INFRA_ALERTS="${DISCORD_WEBHOOK_INFRA_ALERTS:-}"
-# Nested inside $SCRIPT_DIR (i.e. $INFRA_BASE_DIR/backups), not a sibling of it. A sibling default
-# here and in the apps layer's wsl-backup.sh would both resolve to the exact same directory
+# Nested inside $SCRIPT_DIR (i.e. $APP_BASE_DIR/backups), not a sibling of it. A sibling default
+# here and in the infra layer's wsl-backup.sh would both resolve to the exact same directory
 # (~/backups), silently mixing infra and app backups together in one folder — same convention as
 # logs (nested, not shared) avoids that collision entirely.
 BACKUP_DIR="$(printf '%s' "${BACKUP_DIR:-$SCRIPT_DIR/backups}" | tr -d '\r')"
@@ -26,7 +26,7 @@ touch "$LOGFILE"
 chmod 664 "$LOGFILE"
 
 exec > >(tee -a "$LOGFILE") 2>&1
-echo "=== Infra Backup $(date) ==="
+echo "=== App Backup $(date) ==="
 
 alert() {
   echo "[!] $1"
@@ -41,22 +41,20 @@ FAILED=0
 RUN_DIR="$BACKUP_DIR/$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$RUN_DIR"
 
-# --- Discover infra services: any subdirectory of SCRIPT_DIR with a docker-compose.yml ---
+# --- Discover app services: any subdirectory of SCRIPT_DIR with a docker-compose.yml ---
 # Same auto-discovery as wsl-startup.sh. This is also how volumes get scoped to THIS layer only
-# (see step 2 below) — an apps-layer volume should never end up in an infra backup, or vice versa.
+# (see step 2 below) — an infra-layer volume should never end up in an app backup, or vice versa.
 SERVICE_DIRS=()
 for compose_file in "$SCRIPT_DIR"/*/docker-compose.yml; do
   [ -f "$compose_file" ] && SERVICE_DIRS+=("$(dirname "$compose_file")")
 done
 
 # --- 1. Quiesce Postgres-backed services before snapshotting their volumes ---
-# Tarring a live Postgres data directory is not crash-consistent — files can be mid-write. The
-# other volumes on this host (Redis, RabbitMQ, Redpanda, Filebrowser's SQLite, uptime-kuma,
-# the registry) are either not a real RDBMS or low enough stakes that a live snapshot is an
-# acceptable risk; Postgres is not, since Infisical's DB holds every secret on the host and n8n's
-# holds every workflow. This list is deliberately explicit (not auto-discovered) — add a service
-# here only if it runs its own Postgres/MySQL-style database that needs quiescing.
-POSTGRES_BACKED_SERVICES=("infisical" "n8n")
+# Empty today — no app currently runs its own Postgres/MySQL-style database (the portfolio's
+# redis/rabbitmq/redpanda are all fine snapshotted live; they're cache/queue-like, not a source of
+# truth). Add a service name here the day an app gains a real RDBMS of its own — see the identical
+# list in the infra layer's wsl-backup.sh for the full reasoning on why this matters.
+POSTGRES_BACKED_SERVICES=()
 
 echo "[*] Stopping Postgres-backed services for a consistent snapshot..."
 for SVC in "${POSTGRES_BACKED_SERVICES[@]}"; do
@@ -64,24 +62,18 @@ for SVC in "${POSTGRES_BACKED_SERVICES[@]}"; do
   if [ -f "$SVC_DIR/docker-compose.yml" ]; then
     echo "    -> Stopping $SVC"
     (cd "$SVC_DIR" && docker compose stop) || alert "Failed to stop $SVC before backup — its volume snapshot may be inconsistent"
-  else
-    echo "    -> $SVC_DIR not found, skipping (not deployed here?)"
   fi
 done
 
 # --- 2. Docker named volumes belonging to THIS layer's services ---
-# Scoped via each service's Docker Compose project label — `docker compose` auto-tags every
-# volume it creates with `com.docker.compose.project=<project-name>`, where <project-name>
-# defaults to the directory basename (exactly what none of these deploy workflows ever override
-# with -p/--project-name, so the basename is what's actually in effect). This replaces a blind
-# `docker volume ls` across the whole host — that would also catch every app-layer volume, mixing
-# infra and app backups together, which is exactly what YZ flagged as confusing (2026-07-14).
+# Scoped via each service's Docker Compose project label — same mechanism as the infra layer's
+# wsl-backup.sh, see there for the full reasoning. This is what keeps app backups from picking up
+# infra volumes (or vice versa) instead of a blind `docker volume ls` across the whole host.
 #
-# Exception: n8n's two volumes (postgres_data, n8n_data) are declared `external: true` with fixed
-# names in its docker-compose.yml. External volumes are referenced, not created, by Compose, so
-# they never get the project label and would be invisible to the filter below — listed explicitly
-# instead. If a future infra service adds its own external volume, add it here too.
-EXTERNAL_VOLUMES=("n8n_postgres_data" "n8n_n8n_data")
+# No external volumes to special-case here today (unlike n8n's over in the infra layer) — every
+# volume any app currently declares is a normal Compose-managed one, so it always carries the
+# project label. Add an entry here if a future app ever declares `external: true` volumes.
+EXTERNAL_VOLUMES=()
 
 echo "[*] Backing up Docker named volumes for this layer's services..."
 VOLS_TO_BACKUP=()
@@ -119,12 +111,9 @@ for SVC in "${POSTGRES_BACKED_SERVICES[@]}"; do
 done
 
 # --- 4. Known bind-mounted host paths that hold real state, not covered by a Docker volume ---
-# Not auto-discoverable like volumes are — add a line here any time a service starts persisting
-# something to a plain host path instead of a named volume.
-declare -A BIND_PATHS=(
-  ["filebrowser_files"]="$SCRIPT_DIR/filebrowser/data/files"
-  ["infisical_env"]="$SCRIPT_DIR/infisical/.env"
-)
+# Empty today — no app persists anything to a plain host path instead of a named volume. Add a
+# line here the day one does, matching the infra layer's Filebrowser/Infisical entries.
+declare -A BIND_PATHS=()
 echo "[*] Backing up known bind-mounted paths..."
 for NAME in "${!BIND_PATHS[@]}"; do
   SRC="${BIND_PATHS[$NAME]}"
@@ -134,8 +123,6 @@ for NAME in "${!BIND_PATHS[@]}"; do
       alert "Backup of bind-mounted path '$NAME' ($SRC) failed"
       FAILED=1
     fi
-  else
-    echo "    -> $NAME not found at $SRC, skipping (not deployed here?)"
   fi
 done
 

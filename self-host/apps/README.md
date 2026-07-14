@@ -5,6 +5,7 @@ Independently scoped showcase projects, one folder per project. Separate from `s
 ## Current Projects
 
 - **`portfolio/`** — flagship project: platform shell (Go control-plane backend + Next.js UI) and the first showcase project. See [`portfolio/README.md`](portfolio/README.md).
+- **`scripts/`** — `wsl-startup.sh` / `wsl-shutdown.sh`, deployed to `~/apps/` on the host by `deploy-app-scripts.yml`. Auto-discovers and starts/stops any `self-host/apps/*/docker-compose.yml`. See `scripts/README.md` — notably, there's no app-layer backup script here; that's handled host-wide by the infra layer's `wsl-backup.sh` (it backs up every Docker volume on the host, not just infra's).
 - **`_template/`** — starter template for a new project.
 
 ## Adding a Project

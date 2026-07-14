@@ -6,10 +6,10 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
   source <(tr -d '\r' < "$SCRIPT_DIR/.env")
 fi
 
-LOGDIR="$(printf '%s' "${LOGDIR:-$SCRIPT_DIR/logs}" | tr -d '\r')"
-mkdir -p "$LOGDIR"
-LOGFILE="$LOGDIR/wsl-startup.log"
-CFLOG="$(printf '%s' "${CFLOG:-$HOME/.cloudflared/cloudflared.log}" | tr -d '\r')"
+INFRA_LOG_DIR="$(printf '%s' "${INFRA_LOG_DIR:-$SCRIPT_DIR/logs}" | tr -d '\r')"
+mkdir -p "$INFRA_LOG_DIR"
+LOGFILE="$INFRA_LOG_DIR/wsl-startup.log"
+CLOUDFLARED_LOG_DIR="$(printf '%s' "${CLOUDFLARED_LOG_DIR:-$HOME/.cloudflared/cloudflared.log}" | tr -d '\r')"
 TUNNEL_NAME="$(printf '%s' "${TUNNEL_NAME:-tunnel}" | tr -d '\r')"
 DISCORD_WEBHOOK_INFRA_ALERTS="${DISCORD_WEBHOOK_INFRA_ALERTS:-}"
 
@@ -96,11 +96,11 @@ pkill -f "cloudflared tunnel run $TUNNEL_NAME" 2>/dev/null || true
 try_start_tunnel() {
   local attempt="$1"
   echo "[*] Attempting to start Cloudflare tunnel '$TUNNEL_NAME' (try $attempt)..."
-  nohup cloudflared tunnel run "$TUNNEL_NAME" > "$CFLOG" 2>&1 &
+  nohup cloudflared tunnel run "$TUNNEL_NAME" > "$CLOUDFLARED_LOG_DIR" 2>&1 &
   local pid=$!
   local count=0
   while true; do
-    if grep -q "Connection established\|Registered tunnel connection" "$CFLOG" 2>/dev/null; then
+    if grep -q "Connection established\|Registered tunnel connection" "$CLOUDFLARED_LOG_DIR" 2>/dev/null; then
       echo "[✔] Tunnel connected on attempt $attempt."
       return 0
     fi

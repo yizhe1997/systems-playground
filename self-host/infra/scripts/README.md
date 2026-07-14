@@ -1,12 +1,29 @@
 # Scripts
 
-Deployed to `$INFRA_BASE_DIR` on the host by `deploy-infra-scripts.yml`, along with an `.env` written from repo Variables/Secrets (`LOGDIR`, `CFLOG`, `TUNNEL_NAME`, `DISCORD_WEBHOOK_INFRA_ALERTS`, `BACKUP_DIR`, `BACKUP_RETENTION_DAYS`).
+Deployed to `$INFRA_BASE_DIR` on the host by `deploy-infra-scripts.yml`, along with an `.env` written from repo Variables/Secrets.
+
+| Name | Type | Required? | Notes |
+|---|---|---|---|
+| `INFRA_BASE_DIR` | var | Yes | Real path, no safe default possible. |
+| `CLOUDFLARED_LOG_DIR` | var | Yes | Has a script-level fallback (`$HOME/.cloudflared/cloudflared.log`) but kept explicit by choice. |
+| `TUNNEL_NAME` | var | No | Falls back to `tunnel` — confirmed to match the actual tunnel name, safe to leave unset. |
+| `DISCORD_WEBHOOK_INFRA_ALERTS` | secret | No | Leave empty to disable alerts entirely. |
+| `BACKUP_DIR` | var | No | Falls back to `$SCRIPT_DIR/backups` (i.e. `$INFRA_BASE_DIR/backups`). Deliberately nested inside this layer's own directory, not a sibling of it — see the apps layer's `APP_BACKUP_DIR`, which uses a different GH var name specifically so the two layers' backups can never collide into the same folder. |
+| `BACKUP_RETENTION_DAYS` | var | No | Falls back to `14`. |
+
+There's no `INFRA_LOG_DIR` GitHub var wired here at all (same as `APP_LOG_DIR` on the apps side) — `wsl-startup.sh`/`wsl-backup.sh`'s own fallback (`$SCRIPT_DIR/logs`, which always equals `$INFRA_BASE_DIR/logs` once deployed) is the only value anyone would realistically want. This is purely where these scripts write their own log output (`wsl-startup.log`, `wsl-backup.log`) — not container or app logs.
 
 | Script | Runs when | What it does |
 |---|---|---|
 | `wsl-startup.sh` | Windows Task Scheduler, on boot | Starts Docker, brings up every `self-host/infra/*/docker-compose.yml` (Infisical first, health-checked, since everything else depends on it), starts the Cloudflare tunnel. |
 | `wsl-shutdown.sh` | Windows Task Scheduler, on shutdown | Stops every discovered infra service. |
-| `wsl-backup.sh` | **Not yet scheduled — deployed only.** See below. | Backs up every Docker named volume on the host plus known bind-mounted paths (Filebrowser's files, Infisical's `.env`). |
+| `wsl-backup.sh` | **Not yet scheduled — deployed only.** See below. | Backs up every Docker named volume belonging to an infra-layer service, plus known bind-mounted paths (Filebrowser's files, Infisical's `.env`). Scoped to this layer only — see "How volumes get scoped" below. The apps layer has its own independent `wsl-backup.sh` (`self-host/apps/scripts/`) for its own volumes. |
+
+## How volumes get scoped to this layer
+
+Each service directory discovered under `$INFRA_BASE_DIR` (`infisical/`, `n8n/`, `filebrowser/`, `uptime-kuma/`, `registry/`) doubles as a Docker Compose project name (the directory basename — nothing here ever overrides it with `-p`). Docker Compose auto-tags every volume it creates with `com.docker.compose.project=<project-name>`, so `wsl-backup.sh` filters `docker volume ls` by that label per discovered directory rather than backing up every volume on the host — that's what keeps this layer's backups from also scooping up the apps layer's volumes (portfolio's redis/rabbitmq/redpanda, etc.).
+
+One exception: n8n's two volumes are declared `external: true` with fixed names, so they never carry the project label (Compose references external volumes, it doesn't create/tag them) — they're listed explicitly in the script instead.
 
 ## Scheduling the backup
 
@@ -16,7 +33,7 @@ Deployed to `$INFRA_BASE_DIR` on the host by `deploy-infra-scripts.yml`, along w
 wsl.exe -d <your-distro> -- /home/<user>/infra/wsl-backup.sh
 ```
 
-Each run writes into a fresh timestamped folder under `$BACKUP_DIR` (default `$INFRA_BASE_DIR/../backups`) and prunes anything older than `$BACKUP_RETENTION_DAYS` days (default 14).
+Each run writes into a fresh timestamped folder under `$BACKUP_DIR` (default `$INFRA_BASE_DIR/backups`) and prunes anything older than `$BACKUP_RETENTION_DAYS` days (default 14).
 
 ## What's in a backup
 
@@ -38,7 +55,7 @@ Recommended order for a full disaster-recovery restore (fresh host):
 2. Restore `bind_infisical_env.tar.gz` into `$INFRA_BASE_DIR/infisical/` first.
 3. Restore `volume_<infisical pg_data>.tar.gz` and `volume_<infisical redis_data>.tar.gz` (see the generic recipe below).
 4. Start Infisical, confirm it's healthy (`curl http://localhost:8090/api/status`) before doing anything else.
-5. Restore every other service's volumes and bind-mounted paths in any order — n8n, Filebrowser (needs both its volumes *and* `bind_filebrowser_files.tar.gz` to get files back, not just one), uptime-kuma, registry, portfolio.
+5. Restore every other infra service's volumes and bind-mounted paths in any order — n8n, Filebrowser (needs both its volumes *and* `bind_filebrowser_files.tar.gz` to get files back, not just one), uptime-kuma, registry. Portfolio and other apps are backed up separately — see `self-host/apps/scripts/README.md`.
 
 ### Restoring a Docker volume
 

@@ -13,8 +13,7 @@ jobs:
     runs-on: self-hosted
     env:
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
-      LOGDIR: ${{ vars.LOGDIR }}
-      CFLOG: ${{ vars.CFLOG }}
+      CLOUDFLARED_LOG_DIR: ${{ vars.CLOUDFLARED_LOG_DIR }}
       TUNNEL_NAME: ${{ vars.TUNNEL_NAME }}
       DISCORD_WEBHOOK_INFRA_ALERTS: ${{ secrets.DISCORD_WEBHOOK_INFRA_ALERTS }}
       BACKUP_DIR: ${{ vars.BACKUP_DIR }}
@@ -27,10 +26,7 @@ jobs:
       - name: Deploy scripts
         run: |
           : "${INFRA_BASE_DIR:?INFRA_BASE_DIR repository variable must be set}"
-          : "${LOGDIR:?LOGDIR repository variable must be set}"
-          : "${CFLOG:?CFLOG repository variable must be set}"
-          : "${TUNNEL_NAME:?TUNNEL_NAME repository variable must be set}"
-          : "${DISCORD_WEBHOOK_INFRA_ALERTS:?DISCORD_WEBHOOK_INFRA_ALERTS repository secret must be set}"
+          : "${CLOUDFLARED_LOG_DIR:?CLOUDFLARED_LOG_DIR repository variable must be set}"
           echo "📋 Copying scripts to $INFRA_BASE_DIR..."
           cp self-host/infra/scripts/wsl-startup.sh "$INFRA_BASE_DIR/wsl-startup.sh"
           cp self-host/infra/scripts/wsl-shutdown.sh "$INFRA_BASE_DIR/wsl-shutdown.sh"
@@ -41,12 +37,17 @@ jobs:
       - name: Write infra .env
         run: |
           echo "🔐 Writing $INFRA_BASE_DIR/.env..."
-          # BACKUP_DIR/BACKUP_RETENTION_DAYS deliberately have no fallback baked in here — if
-          # unset, wsl-backup.sh itself falls back to $SCRIPT_DIR/../backups and 14 days, so an
-          # empty line below is harmless, not a silent misconfiguration.
+          # TUNNEL_NAME, DISCORD_WEBHOOK_INFRA_ALERTS, BACKUP_DIR, BACKUP_RETENTION_DAYS
+          # deliberately have no hard guard above and no fallback baked in here — each script
+          # already falls back safely on its own if the line below is empty (TUNNEL_NAME ->
+          # "tunnel", confirmed to match YZ's actual tunnel name; DISCORD alerts -> silently
+          # disabled; BACKUP_DIR -> $SCRIPT_DIR/../backups; BACKUP_RETENTION_DAYS -> 14). An empty
+          # line here is harmless, not a silent misconfiguration — only values with no safe
+          # default (INFRA_BASE_DIR, CLOUDFLARED_LOG_DIR) are hard-required above. INFRA_LOG_DIR
+          # isn't wired here at all (like APP_LOG_DIR on the apps side) — its fallback
+          # ($SCRIPT_DIR/logs = $INFRA_BASE_DIR/logs deployed) is the only value anyone would want.
           cat <<EOF > "$INFRA_BASE_DIR/.env"
-          LOGDIR=$LOGDIR
-          CFLOG=$CFLOG
+          CLOUDFLARED_LOG_DIR=$CLOUDFLARED_LOG_DIR
           TUNNEL_NAME=$TUNNEL_NAME
           DISCORD_WEBHOOK_INFRA_ALERTS=$DISCORD_WEBHOOK_INFRA_ALERTS
           BACKUP_DIR=$BACKUP_DIR

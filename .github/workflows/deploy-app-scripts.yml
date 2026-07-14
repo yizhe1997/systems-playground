@@ -1,0 +1,53 @@
+name: Deploy App - Startup/Shutdown Scripts
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'self-host/apps/scripts/**'
+      - '.github/workflows/deploy-app-scripts.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      APP_BASE_DIR: ${{ vars.APP_BASE_DIR }}
+      DISCORD_WEBHOOK_INFRA_ALERTS: ${{ secrets.DISCORD_WEBHOOK_INFRA_ALERTS }}
+      BACKUP_DIR: ${{ vars.APP_BACKUP_DIR }}
+      BACKUP_RETENTION_DAYS: ${{ vars.APP_BACKUP_RETENTION_DAYS }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Deploy scripts
+        run: |
+          : "${APP_BASE_DIR:?APP_BASE_DIR repository variable must be set}"
+          echo "📋 Copying scripts to $APP_BASE_DIR..."
+          cp self-host/apps/scripts/wsl-startup.sh "$APP_BASE_DIR/wsl-startup.sh"
+          cp self-host/apps/scripts/wsl-shutdown.sh "$APP_BASE_DIR/wsl-shutdown.sh"
+          cp self-host/apps/scripts/wsl-backup.sh "$APP_BASE_DIR/wsl-backup.sh"
+          chmod +x "$APP_BASE_DIR/wsl-startup.sh" "$APP_BASE_DIR/wsl-shutdown.sh" "$APP_BASE_DIR/wsl-backup.sh"
+          echo "✅ Scripts deployed."
+
+      - name: Write app .env
+        run: |
+          echo "🔐 Writing $APP_BASE_DIR/.env..."
+          # DISCORD_WEBHOOK_INFRA_ALERTS, BACKUP_DIR, BACKUP_RETENTION_DAYS deliberately have no
+          # hard guard above — each falls back safely on its own if the line below is empty
+          # (DISCORD alerts -> silently disabled; BACKUP_DIR -> $SCRIPT_DIR/backups, i.e.
+          # $APP_BASE_DIR/backups — deliberately NOT the same default the infra layer uses, so the
+          # two layers' backups never land in the same folder; BACKUP_RETENTION_DAYS -> 14).
+          # DISCORD_WEBHOOK_INFRA_ALERTS reuses the same secret as the infra layer. APP_LOG_DIR
+          # isn't wired here at all (unlike the infra layer's own unwired INFRA_LOG_DIR) —
+          # wsl-startup.sh's own fallback is the only value anyone would ever want.
+          # Uses APP_BACKUP_DIR/APP_BACKUP_RETENTION_DAYS as the GH var names (not the infra
+          # layer's BACKUP_DIR/BACKUP_RETENTION_DAYS) so setting one layer's backup location in
+          # GitHub can never accidentally apply to the other.
+          cat <<EOF > "$APP_BASE_DIR/.env"
+          DISCORD_WEBHOOK_INFRA_ALERTS=$DISCORD_WEBHOOK_INFRA_ALERTS
+          BACKUP_DIR=$BACKUP_DIR
+          BACKUP_RETENTION_DAYS=$BACKUP_RETENTION_DAYS
+          EOF
+          echo "✅ .env written."
