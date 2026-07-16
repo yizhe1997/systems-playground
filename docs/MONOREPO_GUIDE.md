@@ -1,8 +1,3 @@
----
-title: "Monorepo Guide"
-description: "Architecture boundaries and contribution model for multi-project development in Systems Playground."
----
-
 # Monorepo Guide
 
 This repository is a **showcase monorepo**: `self-host/infra` hosts platform-wide infrastructure, and `self-host/apps` hosts one or more independent showcase projects, each presented through the flagship `portfolio` project's UI.
@@ -15,14 +10,22 @@ This repository is a **showcase monorepo**: `self-host/infra` hosts platform-wid
 
 ## Repository Zones
 
-- `self-host/infra/`: platform-wide infrastructure — Uptime Kuma (monitoring), Watchtower (auto-update), Filebrowser (shared file storage), n8n, and the WSL boot/shutdown scripts. Runs continuously, independent of any single showcase project.
-  - `self-host/infra/_template/`: starter template for a new infra service (scaffold with `make new-infra`).
-- `self-host/apps/`: independently scoped showcase projects, one folder per project.
-  - `self-host/apps/portfolio/`: the flagship project — Go control-plane backend, Next.js UI shell (landing page, docs pages, showcase routes, BFF/proxy layer), and the platform's own demo widgets (Redis, RabbitMQ, Redpanda).
-  - `self-host/apps/<other-slug>/`: additional showcase projects, each self-contained.
-  - `self-host/apps/_template/`: starter template for a new project (scaffold with `make new-app`).
-- `docs/`: architecture records, developer guides, deployment and contribution docs.
-- `.specify/`: Speckit spec-driven workflow — specs, plans, and tasks per feature (see `docs/DEVELOPER_GUIDE.md`).
+```
+self-host/
+├── infra/            platform-wide, always-on services — independent of any one showcase
+│                     project (see infra/README.md for the current service list)
+│   └── _template/    scaffold for a new infra service (make new-infra)
+└── apps/             independently scoped showcase projects, one folder per project
+    ├── portfolio/    flagship: Go control-plane backend, Next.js UI shell
+    │                 (landing/docs/showcase routes, BFF/proxy), platform demo widgets
+    │                 (Redis, RabbitMQ, Redpanda)
+    ├── <other-slug>/ additional showcase projects, each self-contained
+    └── _template/    scaffold for a new project (make new-app)
+
+docs/                 architecture records, developer guides, deployment guides, ADRs
+```
+
+See [`self-host/infra/README.md`](../self-host/infra/README.md) and [`self-host/apps/README.md`](../self-host/apps/README.md) for what's actually running today — not duplicated here since that list changes independently of this guide.
 
 Because `portfolio` is both the platform shell *and* the first showcase project, it is the one place where platform code (`backend/`, `frontend/`) and showcase content coexist. Every other project under `self-host/apps/` is purely a showcase project with no platform responsibilities.
 
@@ -66,7 +69,7 @@ When adding a new showcase project:
 1. Run `make new-app slug=<your-project-slug> name="<Project Name>"` (scaffolds from `self-host/apps/_template`).
 2. Fill in `README.md` (purpose, run, test, interfaces).
 3. Fill in `ARCHITECTURE.md` (scope, boundaries, dependencies, extraction plan).
-4. Register the project in the showcase UI (`self-host/apps/portfolio/frontend/src/app/projects/page.tsx`).
+4. Register the project in the [showcase UI](../self-host/apps/portfolio/frontend/src/app/projects/page.tsx).
 5. Add or update docs in `docs/` if the platform integration changes.
 
 When adding a new platform infra service:
@@ -75,7 +78,7 @@ When adding a new platform infra service:
 2. Fill in `docker-compose.yml`, `README.md`, `.env.example`.
 3. It's picked up automatically by `wsl-startup.sh`'s auto-discovery — no separate registration step.
 
-For detailed PR expectations, naming, and review standards, see `CONTRIBUTING.md`.
+For detailed PR expectations, naming, and review standards, see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Extract-to-Standalone Readiness
 

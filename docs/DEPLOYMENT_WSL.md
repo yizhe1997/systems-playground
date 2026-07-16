@@ -2,16 +2,20 @@
 
 This guide documents how to deploy the Systems Playground onto a Windows/WSL hosting environment, leveraging automated startup scripts, Cloudflare Tunnels, and Watchtower for CI/CD.
 
+## The host
+
+Everything in this guide deploys onto **the host**: a Windows machine (currently a NUC-class mini PC, though any Windows machine with WSL2 works identically — nothing here depends on that specific hardware) running WSL2 with an Ubuntu distro. Docker Desktop for Windows (WSL2 backend) and a self-hosted GitHub Actions runner both run inside that WSL2 environment. The rest of this doc just says "the host" from here on.
+
 ## Architecture: `infra` vs `apps`
-A robust local host environment separates core infrastructure from application workloads — this mirrors the in-repo split between `self-host/infra/` (platform-wide services) and `self-host/apps/` (showcase projects like the portfolio). This is the **deployed** layout on the WSL/NUC host; two required repository variables control it, `INFRA_BASE_DIR` and `APP_BASE_DIR` — neither has a default, every deploy workflow fails fast if its own is unset.
+A robust local host environment separates core infrastructure from application workloads — this mirrors the in-repo split between `self-host/infra/` (platform-wide services) and `self-host/apps/` (showcase projects like the portfolio). This is the **deployed** layout on the host; two required repository variables control it, `INFRA_BASE_DIR` and `APP_BASE_DIR` — neither has a default, every deploy workflow fails fast if its own is unset.
 
 ```text
-$INFRA_BASE_DIR (e.g. /home/yizhe/infra)          $APP_BASE_DIR (e.g. /home/yizhe/apps)
-├── wsl-startup.sh                                └── portfolio/
-├── wsl-shutdown.sh                                    ├── docker-compose.yml
-├── .env                                                ├── docker-compose.override.yml
-├── uptime-kuma/                                        ├── frontend/.env
-│   └── docker-compose.yml                              └── backend/.env
+$INFRA_BASE_DIR (e.g. /home/yizhe/infra)          
+├── wsl-startup.sh                                
+├── wsl-shutdown.sh                                    
+├── .env                                                
+├── uptime-kuma/                                        
+│   └── docker-compose.yml                              
 ├── watchtower/
 │   └── docker-compose.yml
 ├── filebrowser/
@@ -20,6 +24,13 @@ $INFRA_BASE_DIR (e.g. /home/yizhe/infra)          $APP_BASE_DIR (e.g. /home/yizh
 │   └── docker-compose.yml
 └── infisical/
     └── docker-compose.yml
+
+$APP_BASE_DIR (e.g. /home/yizhe/apps)
+└── portfolio/
+  ├── docker-compose.yml
+  ├── docker-compose.override.yml
+  ├── frontend/.env
+  └── backend/.env
 ```
 
 *   **`$INFRA_BASE_DIR`**: platform-wide services — Cloudflare (`cloudflared`, installed directly on the host, not containerized), monitoring (`uptime-kuma`), CI/CD (`watchtower`), shared storage (`filebrowser`), automation (`n8n`), and the secrets manager (`infisical`). `wsl-startup.sh`/`wsl-shutdown.sh` boot/stop this whole layer as a group.
@@ -106,9 +117,14 @@ To ensure the portfolio is always up to date with the latest GitHub code, we use
 
 The workflows involved, all under `.github/workflows/`:
 
-*   **`build-app-portfolio-backend.yml`** / **`build-app-portfolio-frontend.yml`** — build and push Docker images to Docker Hub whenever `self-host/apps/portfolio/backend/**` or `self-host/apps/portfolio/frontend/**` changes.
-*   **`deploy-app-portfolio.yml`** ("Instant Deploy (Self-Hosted)") — runs on the self-hosted runner after either build workflow completes, or when `self-host/apps/portfolio/**` changes. It copies `docker-compose.yml` and `docker-compose.prod.yml` (renamed to `docker-compose.override.yml`) into `$APP_BASE_DIR/portfolio`, writes `.env` files from Infisical-injected secrets (see `docs/adrs/002-infisical-secret-injection.md`), then runs `docker compose pull && docker compose up -d`.
-*   **`deploy-infra-scripts.yml`**, **`deploy-infra-uptime-kuma.yml`**, **`deploy-infra-watchtower.yml`**, **`deploy-infra-filebrowser.yml`**, **`deploy-infra-n8n.yml`** — each copies its corresponding `self-host/infra/<service>/` files to the host and restarts that one service when it changes.
+| Workflow | Runs when | What it does |
+|---|---|---|
+| `build-app-portfolio-backend.yml` / `-frontend.yml`, `build-infra-n8n.yml` | Its own `backend/**` / `frontend/**` (portfolio) or `self-host/infra/n8n/**` changes | Builds and pushes an image to the self-hosted registry (see [ADR 002](adrs/002-infisical-secret-injection.md) for the secrets side of this) |
+| `deploy-app-portfolio.yml` ("Instant Deploy (Self-Hosted)") | Either portfolio build workflow completes, or `self-host/apps/portfolio/**` changes | Copies `docker-compose.yml`/`docker-compose.prod.yml` (renamed to `docker-compose.override.yml`) into `$APP_BASE_DIR/portfolio`, writes `.env` files from Infisical-injected secrets, runs `docker compose pull && docker compose up -d` |
+| `deploy-infra-n8n.yml` | `build-infra-n8n.yml` completes, or `self-host/infra/n8n/**` changes | Same pattern as `deploy-app-portfolio.yml`, for n8n |
+| `deploy-app-scripts.yml` | `self-host/apps/scripts/**` changes | Copies `wsl-startup.sh`/`wsl-shutdown.sh`/`wsl-backup.sh` to `$APP_BASE_DIR` |
+| `deploy-infra-scripts.yml` | `self-host/infra/scripts/**` changes | Same, to `$INFRA_BASE_DIR` |
+| `deploy-infra-uptime-kuma.yml`, `deploy-infra-watchtower.yml`, `deploy-infra-filebrowser.yml`, `deploy-infra-infisical.yml`, `deploy-infra-registry.yml` | Its own `self-host/infra/<service>/**` changes | Copies that service's compose file to the host and restarts it |
 
 Setup steps:
 
@@ -127,6 +143,6 @@ Setup steps:
 
 **⚠️ Security note:** this repo is public and the runner above is self-hosted — GitHub explicitly warns against that combination because a `pull_request`-triggered workflow can let a forked PR run untrusted code on your host before review. Current workflows avoid this (only `push`/`workflow_run`/`workflow_dispatch` trigger the self-hosted jobs), but that invariant must hold for any new workflow you add. See [`docs/adrs/001-cicd-secrets-and-runner-trust-boundary.md`](adrs/001-cicd-secrets-and-runner-trust-boundary.md) before adding a PR-triggered workflow or a second collaborator.
 
-**ℹ️ Edge Case: What if the NUC is turned off during a push?**
-*   **< 24 Hours Offline:** If you push code while the NUC is off, the deployment job will sit in a "Queued" state on GitHub. The moment the NUC boots up (and the WSL runner service starts), it will instantly connect to GitHub, catch up, and execute the queued deployment.
-*   **> 24 Hours Offline:** GitHub Actions cancels queued jobs after 24 hours. If your NUC is off for a week, you will need to manually trigger the deployment. Go to your repository's **Actions** tab -> **Instant Deploy (Self-Hosted)** -> click **Run workflow** to force the NUC to sync the latest code and images.
+**ℹ️ Edge Case: What if the host is turned off during a push?**
+*   **< 24 Hours Offline:** If you push code while the host is off, the deployment job will sit in a "Queued" state on GitHub. The moment the host boots up (and the WSL runner service starts), it will instantly connect to GitHub, catch up, and execute the queued deployment.
+*   **> 24 Hours Offline:** GitHub Actions cancels queued jobs after 24 hours. If the host is off for a week, you will need to manually trigger the deployment. Go to your repository's **Actions** tab -> **Instant Deploy (Self-Hosted)** -> click **Run workflow** to force the host to sync the latest code and images.

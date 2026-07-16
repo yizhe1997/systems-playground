@@ -13,7 +13,7 @@ There's no `APP_LOG_DIR` GitHub var wired here either (same as infra's `INFRA_LO
 
 | Script | Runs when | What it does |
 |---|---|---|
-| `wsl-startup.sh` | Windows Task Scheduler, on boot (after infra's own startup — see `self-host/infra/scripts/README.md`) | Auto-discovers every `self-host/apps/*/docker-compose.yml`, pulls and starts each. Compose auto-merges any co-located `docker-compose.override.yml` (e.g. the portfolio's prod override) — no special handling needed for that. |
+| `wsl-startup.sh` | Windows Task Scheduler, on boot (after infra's own startup — see [the infra scripts README](../../infra/scripts/README.md)) | Auto-discovers every `self-host/apps/*/docker-compose.yml`, pulls and starts each. Compose auto-merges any co-located `docker-compose.override.yml` (e.g. the portfolio's prod override) — no special handling needed for that. |
 | `wsl-shutdown.sh` | Windows Task Scheduler, on shutdown | Stops every discovered app service. |
 | `wsl-backup.sh` | **Not yet scheduled — deployed only.** See below. | Backs up every Docker named volume belonging to an app-layer service. Independent from the infra layer's own `wsl-backup.sh` — each backs up only its own layer's volumes, into its own backup directory, so the two never mix. |
 

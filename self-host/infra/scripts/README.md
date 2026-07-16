@@ -21,7 +21,7 @@ There's no `INFRA_LOG_DIR` GitHub var wired here at all (same as `APP_LOG_DIR` o
 
 ## How volumes get scoped to this layer
 
-Each service directory discovered under `$INFRA_BASE_DIR` (`infisical/`, `n8n/`, `filebrowser/`, `uptime-kuma/`, `registry/`) doubles as a Docker Compose project name (the directory basename — nothing here ever overrides it with `-p`). Docker Compose auto-tags every volume it creates with `com.docker.compose.project=<project-name>`, so `wsl-backup.sh` filters `docker volume ls` by that label per discovered directory rather than backing up every volume on the host — that's what keeps this layer's backups from also scooping up the apps layer's volumes (portfolio's redis/rabbitmq/redpanda, etc.).
+`wsl-backup.sh` discovers services the same way `wsl-startup.sh` does: any subdirectory of `$INFRA_BASE_DIR` with its own `docker-compose.yml` (see [`self-host/infra/README.md`](../README.md) for the current list — not repeated here, since it changes independently of this doc). Each discovered directory's basename doubles as its Docker Compose project name (nothing here ever overrides it with `-p`). Docker Compose auto-tags every volume it creates with `com.docker.compose.project=<project-name>`, so `wsl-backup.sh` filters `docker volume ls` by that label per discovered directory rather than backing up every volume on the host — that's what keeps this layer's backups from also scooping up the apps layer's volumes (portfolio's redis/rabbitmq/redpanda, etc.).
 
 One exception: n8n's two volumes are declared `external: true` with fixed names, so they never carry the project label (Compose references external volumes, it doesn't create/tag them) — they're listed explicitly in the script instead.
 
@@ -54,8 +54,8 @@ Recommended order for a full disaster-recovery restore (fresh host):
 1. Deploy this repo's compose files to the host as usual (via the deploy workflows, or manually) — you need the directory structure in place before restoring into it.
 2. Restore `bind_infisical_env.tar.gz` into `$INFRA_BASE_DIR/infisical/` first.
 3. Restore `volume_<infisical pg_data>.tar.gz` and `volume_<infisical redis_data>.tar.gz` (see the generic recipe below).
-4. Start Infisical, confirm it's healthy (`curl http://localhost:8090/api/status`) before doing anything else.
-5. Restore every other infra service's volumes and bind-mounted paths in any order — n8n, Filebrowser (needs both its volumes *and* `bind_filebrowser_files.tar.gz` to get files back, not just one), uptime-kuma, registry. Portfolio and other apps are backed up separately — see `self-host/apps/scripts/README.md`.
+4. Start Infisical, confirm it's healthy (`curl http://localhost:8090/api/status` — port comes from [its docker-compose.yml](../infisical/docker-compose.yml), check there if this ever changes) before doing anything else.
+5. Restore every other infra service's volumes and bind-mounted paths in any order — n8n, Filebrowser (needs both its volumes *and* `bind_filebrowser_files.tar.gz` to get files back, not just one), uptime-kuma, registry. Watchtower needs nothing restored — it only mounts the Docker socket, no persistent state. Portfolio and other apps are backed up separately — see [the apps-layer scripts README](../../apps/scripts/README.md).
 
 ### Restoring a Docker volume
 
@@ -86,6 +86,6 @@ tar xzf bind_filebrowser_files.tar.gz -C "$INFRA_BASE_DIR/filebrowser/data/"
 tar xzf bind_infisical_env.tar.gz -C "$INFRA_BASE_DIR/infisical/"
 ```
 
-## Known gap
+## Note on ADR 003
 
-`self-host/apps/portfolio/adrs/003-secure-resume-storage.md` currently states Filebrowser's files are already "backing up via our existing `wsl-backup.sh` cron job." That predates this rewrite and the premise of this whole backlog item was that no backup was ever actually scheduled — worth checking whether that line was ever true, and updating the ADR once a real schedule exists.
+[ADR 003](../../apps/portfolio/adrs/003-secure-resume-storage.md) previously stated Filebrowser's files were already "backing up via our existing `wsl-backup.sh` cron job" — that was inaccurate (no schedule ever existed) and has been corrected in the ADR (2026-07-16) to say the script is deployed but not yet scheduled, matching this doc.

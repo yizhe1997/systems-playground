@@ -8,11 +8,11 @@ Initial iterations considered placing the `.pdf` directly within the Next.js `pu
 3. **Deployment Friction:** Every single resume typo fix would require a complete Git commit, push, GitHub Action trigger, and Docker container rebuild.
 
 ## Decision
-We elected to provision a dedicated **Filebrowser** container mapped via Docker volumes to the local host machine's NVMe drive, acting as a lightweight, self-hosted S3 alternative.
+We elected to provision a dedicated **Filebrowser** container mapped via Docker volumes to the host's local storage, acting as a lightweight, self-hosted S3 alternative.
 
 ## Implementation Details
 * A `filebrowser/filebrowser` image (~20MB memory footprint) runs as a shared platform infra service at `self-host/infra/filebrowser/docker-compose.yml`, rather than inside the portfolio project's own compose file — this lets any future showcase project reuse the same storage without duplicating the container.
-* A host volume (`./data/files:/srv`) allows the files to reside securely on the NUC's filesystem, surviving container restarts and easily backing up via our existing `wsl-backup.sh` cron job.
+* A host volume (`./data/files:/srv`) allows the files to reside securely on the host's filesystem, surviving container restarts. Backed up by the infra layer's `wsl-backup.sh` — deployed, but not yet wired to an automatic schedule; see [the infra scripts README](../../../infra/scripts/README.md) for current status and how to restore.
 * A SQLite database (`./data/config/filebrowser.db`) stores user credentials, session tokens, and cryptographic share links.
 * The portfolio backend (`self-host/apps/portfolio/backend/filebrowser.go`) talks to this shared service over the internal Docker network via its API, rather than mounting the volume directly.
 
@@ -24,4 +24,4 @@ We elected to provision a dedicated **Filebrowser** container mapped via Docker 
 
 ### Negative
 * Adds a small amount of architectural complexity (one additional container to monitor and update).
-* Requires the host machine's `self-host/infra/filebrowser/data/` folder to be backed up independently of the Git repository.
+* `self-host/infra/filebrowser/data/` isn't tracked by Git, so it depends entirely on `wsl-backup.sh` actually running on a schedule (not yet set up as of this writing) — see the note above.

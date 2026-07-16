@@ -1,14 +1,14 @@
 # Infisical
 
-Platform-wide infrastructure service — shared across everything on the host, not scoped to a single showcase project. See `docs/MONOREPO_GUIDE.md` for the infra vs apps distinction.
+Platform-wide infrastructure service — shared across everything on the host, not scoped to a single showcase project. See [the monorepo guide](../../../docs/MONOREPO_GUIDE.md) for the infra vs apps distinction.
 
 ## What this runs
 
-Self-hosted [Infisical](https://infisical.com) — a secrets manager. It replaces the current pattern of secrets living only in GitHub's encrypted store and getting written out as plaintext `.env` files on the runner host during every deploy (see `docs/adrs/001-cicd-secrets-and-runner-trust-boundary.md` for the problem this creates). Once bootstrapped, deploy workflows fetch secrets from here at deploy time via `infisical run -- <command>`, which injects them directly into the deployed process's environment and never writes them to disk. See `docs/adrs/002-infisical-secret-injection.md` for the full reasoning.
+Self-hosted [Infisical](https://infisical.com) — a secrets manager. It replaces the current pattern of secrets living only in GitHub's encrypted store and getting written out as plaintext `.env` files on the runner host during every deploy (see [ADR 001](../../../docs/adrs/001-cicd-secrets-and-runner-trust-boundary.md) for the problem this creates). Once bootstrapped, deploy workflows fetch secrets from here at deploy time via `infisical run -- <command>`, which injects them directly into the deployed process's environment and never writes them to disk. See [ADR 002](../../../docs/adrs/002-infisical-secret-injection.md) for the full reasoning.
 
 Runs three containers: `backend` (Infisical itself), `db` (dedicated Postgres — not shared with n8n's), `redis` (dedicated Redis — not shared with the portfolio app's). Dedicated datastores were a deliberate choice: this service ends up holding the keys to everything else running on the host, so it doesn't share a failure domain with anything else.
 
-**Exposure:** recommended default is Cloudflare Tunnel + Cloudflare Access in front (not just Infisical's own login) so you can manage secrets remotely without putting your secrets manager's login page nakedly on the public internet. Add an ingress entry in `~/.cloudflared/config.yml` pointing at `localhost:8090`, then create an Access application + policy for that hostname in the Cloudflare Zero Trust dashboard (account-level config, not part of this repo). If you'd rather not expose it at all, skip the tunnel entry and manage it via SSH tunnel / Tailscale into the WSL host instead — nothing here requires public exposure to function for CI.
+**Exposure:** recommended default is Cloudflare Tunnel + Cloudflare Access in front (not just Infisical's own login) so you can manage secrets remotely without putting your secrets manager's login page nakedly on the public internet. Add an ingress entry in `~/.cloudflared/config.yml` pointing at this container's local port (see [docker-compose.yml](./docker-compose.yml)), then create an Access application + policy for that hostname in the Cloudflare Zero Trust dashboard (account-level config, not part of this repo). If you'd rather not expose it at all, skip the tunnel entry and manage it via SSH tunnel / Tailscale into the WSL host instead — nothing here requires public exposure to function for CI.
 
 ## Bootstrap (one-time, manual — cannot be automated via CI since nothing else can authenticate to this yet)
 
@@ -18,7 +18,7 @@ Runs three containers: `backend` (Infisical itself), `db` (dedicated Postgres �
 4. Re-enter the secrets currently sitting in GitHub Secrets/Variables and in the various infra services' `.env` files into the appropriate Infisical project/environment. Do this once per secret — this is the migration, not a duplication you maintain going forward.
 5. Create a **Machine Identity** (Infisical's term for a service account) with Universal Auth, scoped to this project.
 6. Add four values as GitHub repo Variables/Secrets — this is what every migrated workflow actually authenticates with (not a single static token):
-   - `INFISICAL_SITE_URL` (var) — this instance's URL. Optional in practice: every workflow falls back to `http://localhost:8090` if unset, which is always correct for the self-hosted runner since it lives on the same host as this container and the compose file hardcodes `8090:8080`. Only needs to be set explicitly if the runner ever reaches Infisical some other way (different host, tunnel, etc).
+   - `INFISICAL_SITE_URL` (var) — this instance's URL. Optional in practice: every workflow falls back to `localhost` on this container's own port (see [docker-compose.yml](./docker-compose.yml)) if unset, which is always correct for the self-hosted runner since it shares a host with this container. Only needs to be set explicitly if the runner ever reaches Infisical some other way (different host, tunnel, etc).
    - `INFISICAL_CLIENT_ID` (var) — the Machine Identity's client ID
    - `INFISICAL_CLIENT_SECRET` (secret) — the Machine Identity's client secret
    - `INFISICAL_PROJECT_ID` (var) — the project's ID
@@ -26,22 +26,50 @@ Runs three containers: `backend` (Infisical itself), `db` (dedicated Postgres �
 
 ### Secrets that must exist in the `prod` environment before each service's deploy workflow will succeed
 
-Each of these was previously a plain GitHub Secret/Variable and is now fetched live via `infisical run`. Enter the current value from GitHub into Infisical under the same key name, then the corresponding GitHub Secret/Variable can be deleted once you've confirmed a successful deploy.
+Each was previously a plain GitHub Secret/Variable and is now fetched live via `infisical run`. Enter the current value from GitHub into Infisical under the same key name, then delete the GitHub Secret/Variable once a deploy has succeeded with it coming from here instead.
 
-- **Shared / cross-service:** `REGISTRY_USERNAME`, `REGISTRY_PASSWORD` (hard requirements), `REGISTRY_HOST` (optional) — as of 2026-07-14, Docker Hub was replaced entirely by a self-hosted `registry:2` instance (see `self-host/infra/registry/`), exposed via Cloudflare Tunnel with htpasswd auth required for both push AND pull (unlike Docker Hub's public pulls). All three build workflows (`build-app-portfolio-backend.yml`, `build-app-portfolio-frontend.yml`, `build-infra-n8n.yml`) and both deploy workflows that pull prebuilt images (`deploy-app-portfolio.yml`, `deploy-infra-n8n.yml`) log in to `$REGISTRY_HOST` before pushing/pulling. `REGISTRY_HOST` falls back to `localhost:5000` if unset in Infisical — always correct since every build/deploy workflow runs on the same self-hosted runner/host as the registry container itself (port 5000 is hardcoded in `self-host/infra/registry/docker-compose.yml`), and Docker treats `127.0.0.0/8`/`localhost` registries as insecure-by-default, so plain HTTP login works with no daemon config. Only set `REGISTRY_HOST` explicitly in Infisical if you need these workflows to reach the registry through its public/tunnel hostname instead. The compose files (`docker-compose.prod.yml` for the portfolio's backend/frontend, `self-host/infra/n8n/docker-compose.yml`) interpolate `${REGISTRY_HOST}/systems-playground-<service>:latest` with no fallback of their own — they rely on the enclosing deploy script having already exported `REGISTRY_HOST` (with its default applied) before `docker compose pull`/`up` runs. `REGISTRY_USERNAME`/`REGISTRY_PASSWORD` are also read directly by `deploy-infra-registry.yml` itself, which regenerates the registry's htpasswd file fresh on every deploy. The old `DOCKER_USERNAME`/`DOCKER_PASSWORD` secrets are no longer used anywhere in this repo and can be removed from Infisical/GitHub once this migration is confirmed working.
-- **Portfolio app:** `ADMIN_API_KEY`, `SMTP_EMAIL`, `SMTP_PASSWORD`, `RESUME_WEBHOOK_URL`, `FILEBROWSER_PUBLIC_URL`, `FILEBROWSER_ADMIN_USERNAME`, `FILEBROWSER_ADMIN_PASSWORD`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`
-- **n8n:** `N8N_POSTGRES_PASSWORD`, `N8N_BASIC_AUTH_PASSWORD` — hard requirements, deploy fails if unset. `N8N_POSTGRES_USER`, `N8N_BASIC_AUTH_USER`, `N8N_HOST` are optional — if not set in Infisical, `deploy-infra-n8n.yml` falls back to `n8n` / `admin` / `http://localhost:5678` respectively (same defaults as before the Infisical migration; deliberately preserved, not every n8n value is a hard requirement). Also depends on the shared `REGISTRY_USERNAME`/`REGISTRY_PASSWORD`/`REGISTRY_HOST` above, now that n8n pulls a prebuilt image from the self-hosted registry instead of building locally.
-- **registry:** `REGISTRY_USERNAME`, `REGISTRY_PASSWORD` — see shared bullet above. Also requires a manual Cloudflare Tunnel ingress entry pointing at the registry's port (same pattern as Infisical's own exposure — account-level config, not part of this repo) if you want push/pull to work from outside the host.
-- **uptime-kuma:** `UPTIME_KUMA_CLOUDFLARED_TOKEN`
-- **watchtower:** `WATCHTOWER_DISCORD_URL`
+| Name | Service(s) | Required? | Falls back to |
+|---|---|---|---|
+| `REGISTRY_USERNAME` | shared: all 3 build workflows, `deploy-app-portfolio.yml`, `deploy-infra-n8n.yml`, `deploy-infra-registry.yml` | Yes | — |
+| `REGISTRY_PASSWORD` | same as above | Yes | — |
+| `REGISTRY_HOST` | same as above | No | `localhost:5000` |
+| `ADMIN_API_KEY` | portfolio | Yes | — |
+| `SMTP_EMAIL` | portfolio | Yes | — |
+| `SMTP_PASSWORD` | portfolio | Yes | — |
+| `RESUME_WEBHOOK_URL` | portfolio | Yes | — |
+| `FILEBROWSER_PUBLIC_URL` | portfolio | Yes | — |
+| `FILEBROWSER_ADMIN_USERNAME` | portfolio | Yes | — |
+| `FILEBROWSER_ADMIN_PASSWORD` | portfolio | Yes | — |
+| `NEXTAUTH_SECRET` | portfolio | Yes | — |
+| `NEXTAUTH_URL` | portfolio | Yes | — |
+| `GOOGLE_CLIENT_ID` | portfolio | Yes | — |
+| `GOOGLE_CLIENT_SECRET` | portfolio | Yes | — |
+| `ADMIN_EMAILS` | portfolio | Yes | — |
+| `N8N_POSTGRES_PASSWORD` | n8n | Yes | — |
+| `N8N_BASIC_AUTH_PASSWORD` | n8n | Yes | — |
+| `N8N_POSTGRES_USER` | n8n | No | `n8n` |
+| `N8N_BASIC_AUTH_USER` | n8n | No | `admin` |
+| `N8N_HOST` | n8n | No | `http://localhost:5678` |
+| `UPTIME_KUMA_CLOUDFLARED_TOKEN` | uptime-kuma | Yes | — |
+| `WATCHTOWER_DISCORD_URL` | watchtower | Yes | — |
+
+A few things the table doesn't show:
+
+- Docker Hub is gone — replaced by the self-hosted `registry:2` instance (`self-host/infra/registry/`), auth required for both push and pull. The old `DOCKER_USERNAME`/`DOCKER_PASSWORD` are unused now and can be deleted from Infisical/GitHub.
+- `REGISTRY_HOST`'s `localhost:5000` default is always correct for CI, since every build/deploy workflow runs on the same host as the registry container (port hardcoded in its compose file) — only set it explicitly if you need these workflows to reach the registry through its public/tunnel hostname instead.
+- n8n additionally depends on the shared `REGISTRY_*` secrets above, since it now pulls a prebuilt image instead of building locally.
 
 ### What stays on plain GitHub Secrets/Variables (deliberately not migrated)
 
-- **This service's own bootstrap values** (`INFISICAL_POSTGRES_USER`, `INFISICAL_POSTGRES_DB`, `INFISICAL_POSTGRES_PASSWORD`, `INFISICAL_ENCRYPTION_KEY`, `INFISICAL_AUTH_SECRET`, `INFISICAL_SITE_URL`) — root-of-trust problem, Infisical can't hold the keys that create Infisical. `INFISICAL_POSTGRES_USER`/`INFISICAL_POSTGRES_DB` deliberately keep `|| 'infisical'` fallback defaults in `deploy-infra-infisical.yml`, unlike every other var in this repo's deploy workflows — YZ's explicit choice, don't remove. `INFISICAL_SITE_URL` deliberately keeps `|| 'http://localhost:8090'` everywhere it's read (`deploy-app-portfolio.yml`, all `deploy-infra-*.yml`) — matches the port hardcoded in this service's own `docker-compose.yml`, so the default is always correct for the self-hosted runner, not a risky placeholder. Don't remove this fallback either.
-- **`deploy-infra-scripts.yml`'s values** (`LOGDIR`, `CLOUDFLARED_LOG_DIR`, `TUNNEL_NAME`, `DISCORD_WEBHOOK_INFRA_ALERTS`, `BACKUP_DIR`, `BACKUP_RETENTION_DAYS` — see `self-host/infra/scripts/README.md` for which of these are actually required vs. optional) — these get written to `$INFRA_BASE_DIR/.env` and sourced by `wsl-startup.sh`/`wsl-shutdown.sh`/`wsl-backup.sh` at host boot via Windows Task Scheduler, entirely outside any CI process. `infisical run` only injects into a process it directly launches; a script invoked independently at boot has no such parent, so there's no way for it to receive Infisical-sourced values without wsl-startup.sh itself calling out to Infisical — which would need Infisical already running before the script that starts Infisical's own container runs. Same category of chicken-and-egg problem as this service's own bootstrap secrets, so it stays as-is.
+| Name(s) | Why it stays put |
+|---|---|
+| `INFISICAL_POSTGRES_USER`, `INFISICAL_POSTGRES_DB`, `INFISICAL_POSTGRES_PASSWORD`, `INFISICAL_ENCRYPTION_KEY`, `INFISICAL_AUTH_SECRET`, `INFISICAL_SITE_URL` | Root-of-trust — Infisical can't hold the keys that create Infisical. |
+| `LOGDIR`, `CLOUDFLARED_LOG_DIR`, `TUNNEL_NAME`, `DISCORD_WEBHOOK_INFRA_ALERTS`, `BACKUP_DIR`, `BACKUP_RETENTION_DAYS` ([`deploy-infra-scripts.yml`](../../../.github/workflows/deploy-infra-scripts.yml)) | Consumed by `wsl-startup.sh`/`wsl-shutdown.sh`/`wsl-backup.sh` at host boot via Windows Task Scheduler — no CI parent process for `infisical run` to inject into, and Infisical itself isn't running yet at that point anyway. Same chicken-and-egg problem as the row above. See [the scripts README](../scripts/README.md) for which of these are actually required vs. optional. |
+
+Two fallback exceptions to the "no silent defaults" rule used everywhere else in this repo — don't remove either: `INFISICAL_POSTGRES_USER`/`INFISICAL_POSTGRES_DB` keep `|| 'infisical'` in [`deploy-infra-infisical.yml`](../../../.github/workflows/deploy-infra-infisical.yml) (YZ's explicit choice), and `INFISICAL_SITE_URL` keeps its `localhost` fallback everywhere it's read — matches this service's own [docker-compose.yml](./docker-compose.yml), so it's always correct, not a risky placeholder.
 
 ## Deploy
 
-Deployed automatically by `.github/workflows/deploy-infra-infisical.yml` whenever `self-host/infra/infisical/**` changes on `main`. Also started on host boot: `self-host/infra/scripts/wsl-startup.sh` auto-discovers any `self-host/infra/*/docker-compose.yml`, so no separate registration step is needed there.
+Deployed automatically by [`deploy-infra-infisical.yml`](../../../.github/workflows/deploy-infra-infisical.yml) whenever `self-host/infra/infisical/**` changes on `main`. Also started on host boot: [`wsl-startup.sh`](../scripts/wsl-startup.sh) auto-discovers any `self-host/infra/*/docker-compose.yml`, so no separate registration step is needed there.
 
 Note the bootstrap order dependency: this must be deployed and manually configured (steps above) *before* other workflows are migrated to pull secrets from it (see task tracked for migrating `deploy-app-portfolio.yml` and the other `deploy-infra-*.yml` workflows to `infisical run`).

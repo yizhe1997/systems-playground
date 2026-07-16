@@ -26,5 +26,5 @@ Architecture decisions specific to this project go in [`adrs/`](./adrs/) (copy `
 
 See also:
 
-- `docs/MONOREPO_GUIDE.md` — repo-wide structure and boundaries
-- `CONTRIBUTING.md` — PR and review expectations
+- [`docs/MONOREPO_GUIDE.md`](../../../docs/MONOREPO_GUIDE.md) — repo-wide structure and boundaries
+- [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) — PR and review expectations

@@ -1,6 +1,6 @@
 # <infra-name>
 
-Platform-wide infrastructure service — shared across everything on the host, not scoped to a single showcase project. See `docs/MONOREPO_GUIDE.md` for the infra vs apps distinction.
+Platform-wide infrastructure service — shared across everything on the host, not scoped to a single showcase project. See [the monorepo guide](../../../docs/MONOREPO_GUIDE.md) for the infra vs apps distinction.
 
 ## What this runs
 
