@@ -1,6 +1,6 @@
 # Systems Playground
 
-A self-hosted showcase monorepo by Chin Yi Zhe: a platform shell that hosts one or more independent showcase projects, plus the self-hosted infrastructure that runs them (see [`docs/DEPLOYMENT_WSL.md`](docs/DEPLOYMENT_WSL.md) for what host this actually runs on).
+A self-hosted showcase monorepo by Chin Yi Zhe: a platform shell that hosts one or more independent showcase projects, plus the self-hosted infrastructure that runs them (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for what host this actually runs on).
 
 ## Repository Layout
 
@@ -21,7 +21,7 @@ systems-playground/
 
 - [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md) — local development workflow.
 - [`docs/MONOREPO_GUIDE.md`](docs/MONOREPO_GUIDE.md) — architecture boundaries and project structure for this monorepo.
-- [`docs/DEPLOYMENT_WSL.md`](docs/DEPLOYMENT_WSL.md) — self-hosted deployment guide (Windows/WSL2 host, Cloudflare Tunnel, CI/CD, Watchtower).
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — self-hosted deployment guide (any Ubuntu 22.04+ host, Cloudflare Tunnel, CI/CD, Watchtower).
 - [`docs/adrs/`](docs/adrs/) — platform/monorepo-wide architecture decision records. Project-specific ADRs live with their project (e.g. [`self-host/apps/portfolio/adrs/`](self-host/apps/portfolio/adrs/)).
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — PR/commit process, coding standards, security expectations.
 - [`self-host/apps/portfolio/README.md`](self-host/apps/portfolio/README.md) — the portfolio project itself: what it demonstrates, quick start, and the live site's content draft.

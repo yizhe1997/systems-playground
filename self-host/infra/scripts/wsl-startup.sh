@@ -12,6 +12,11 @@ LOGFILE="$INFRA_LOG_DIR/wsl-startup.log"
 CLOUDFLARED_LOG_DIR="$(printf '%s' "${CLOUDFLARED_LOG_DIR:-$HOME/.cloudflared/cloudflared.log}" | tr -d '\r')"
 TUNNEL_NAME="$(printf '%s' "${TUNNEL_NAME:-tunnel}" | tr -d '\r')"
 DISCORD_WEBHOOK_INFRA_ALERTS="${DISCORD_WEBHOOK_INFRA_ALERTS:-}"
+# Overridable so the test suite can point the health check at a fixture container published on a
+# different host port (see scripts/tests/test-infra-startup-shutdown.bats) -- the real Infisical
+# already binds host port 8090, so a same-port fixture's health check would silently pass against
+# the real container instead of the fixture, masking a fixture startup failure.
+INFISICAL_HEALTH_URL="$(printf '%s' "${INFISICAL_HEALTH_URL:-http://localhost:8090/api/status}" | tr -d '\r')"
 
 # --- Log rotation (keep last 5) ---
 for i in 4 3 2 1; do
@@ -49,7 +54,10 @@ fi
 # being briefly unreachable, but on a fresh host (disaster recovery / new NUC) or for any future
 # service whose entrypoint fetches secrets at container-start time rather than at deploy time,
 # this ordering is load-bearing. Treat it as a hard dependency, not an optimization.
-INFISICAL_DIR="$SCRIPT_DIR/infisical"
+# Directory name overridable via env (see scripts/tests/test-infra-startup-shutdown.bats) so the
+# test suite can exercise this special case with a fixture name that can never collide with the
+# real ~/infra/infisical -- Compose infers a project's identity from directory basename alone.
+INFISICAL_DIR="$SCRIPT_DIR/${INFISICAL_DIR_NAME:-infisical}"
 if [ -f "$INFISICAL_DIR/docker-compose.yml" ]; then
   echo "[*] Starting infisical first (dependency of other infra services)..."
   cd "$INFISICAL_DIR" || { echo "[!] Could not cd into $INFISICAL_DIR"; exit 1; }
@@ -59,7 +67,7 @@ if [ -f "$INFISICAL_DIR/docker-compose.yml" ]; then
   echo "[*] Waiting for infisical to report healthy..."
   INFISICAL_READY=false
   for i in $(seq 1 30); do
-    if curl -sf "http://localhost:8090/api/status" >/dev/null 2>&1; then
+    if curl -sf "$INFISICAL_HEALTH_URL" >/dev/null 2>&1; then
       echo "[✔] infisical is healthy (after ${i}0s)."
       INFISICAL_READY=true
       break
@@ -78,9 +86,44 @@ if [ -f "$INFISICAL_DIR/docker-compose.yml" ]; then
   cd "$SCRIPT_DIR" || exit 1
 fi
 
+# The self-hosted registry is a dependency of any service that pulls a prebuilt image from it
+# instead of a public registry (n8n today, and any future built-and-pushed service) — it has to
+# be up and reachable before those services' `docker compose pull` runs, not just started
+# alongside them in whatever order the directory glob happens to return (alphabetically, "n8n"
+# sorts before "registry", which is exactly backwards). Special-cased second, right after
+# infisical, for the same reason infisical is special-cased first.
+# Same override reasoning as INFISICAL_DIR_NAME above (no test exercises this special case yet,
+# but the hook is here for when one does).
+REGISTRY_DIR="$SCRIPT_DIR/${REGISTRY_DIR_NAME:-registry}"
+if [ -f "$REGISTRY_DIR/docker-compose.yml" ]; then
+  echo "[*] Starting registry second (dependency for services that pull their image from here)..."
+  cd "$REGISTRY_DIR" || { echo "[!] Could not cd into $REGISTRY_DIR"; exit 1; }
+  docker compose pull
+  docker compose up -d
+
+  echo "[*] Waiting for registry to accept connections..."
+  REGISTRY_READY=false
+  for i in $(seq 1 30); do
+    # No -f: registry requires auth on /v2/ (REGISTRY_AUTH=htpasswd), so a 401 is still a sign
+    # of life. Only a real connection failure (refused/timeout) should count as "not ready yet".
+    if curl -s -o /dev/null "http://localhost:5000/v2/"; then
+      echo "[✔] registry is reachable (after ${i}0s)."
+      REGISTRY_READY=true
+      break
+    fi
+    sleep 10
+  done
+  if [ "$REGISTRY_READY" != true ]; then
+    echo "[!] registry did not become reachable after 5 minutes. Continuing anyway — services"
+    echo "    that pull their image from here may fail to start."
+  fi
+  cd "$SCRIPT_DIR" || exit 1
+fi
+
 echo "[*] Starting remaining docker compose services..."
 for APP_DIR in "${APPS[@]}"; do
   [ "$APP_DIR" = "$INFISICAL_DIR" ] && continue
+  [ "$APP_DIR" = "$REGISTRY_DIR" ] && continue
   echo "    -> Starting $APP_DIR"
   cd "$APP_DIR" || continue
   docker compose pull

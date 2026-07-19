@@ -4,7 +4,7 @@
 **Status:** Accepted
 
 ### Context
-`systems-playground` is a **public** repository. Its deploy workflows (`deploy-app-portfolio.yml`, `deploy-infra-*.yml`) run on a **self-hosted runner** on the host (see [`docs/DEPLOYMENT_WSL.md`](../DEPLOYMENT_WSL.md) for what that is), and inject real secrets (SMTP creds, NextAuth secret, Google OAuth client secret, admin API key, Discord webhooks, etc.) as plaintext `.env` files on that host.
+`systems-playground` is a **public** repository. Its deploy workflows (`deploy-app-portfolio.yml`, `deploy-infra-*.yml`) run on a **self-hosted runner** on the host (see [`docs/DEPLOYMENT.md`](../DEPLOYMENT.md) for what that is), and inject real secrets (SMTP creds, NextAuth secret, Google OAuth client secret, admin API key, Discord webhooks, etc.) as plaintext `.env` files on that host.
 
 GitHub explicitly warns against combining public repos with self-hosted runners: a workflow triggered by `pull_request` from a fork can run untrusted code on the runner before any human reviews it, giving an attacker code execution on the host plus every secret the job has access to.
 

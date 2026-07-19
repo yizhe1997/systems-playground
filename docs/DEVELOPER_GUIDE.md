@@ -11,7 +11,7 @@
 ## 🚀 How to Start the Services
 
 ### Prerequisites
-*   Docker & Docker Compose must be installed, whether that's your local machine or the host (see [`docs/DEPLOYMENT_WSL.md`](DEPLOYMENT_WSL.md) for what "the host" is).
+*   Docker & Docker Compose must be installed, whether that's your local machine or the host (see [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) for what "the host" is).
 *   *Note:* You do **not** need Go or Node.js installed locally to run the project. Everything is containerized.
 
 ### Running the Full Stack
@@ -28,7 +28,7 @@ There is no root-level compose file — each project under `self-host/apps/` run
     *   **Golang API:** `http://localhost:8085/health`
     *   **RabbitMQ Management UI:** `http://localhost:15672` (if you want to peek under the hood)
 
-`docker-compose.override.yml` is auto-loaded for local dev (builds from source). Production/self-hosted runs instead merge `docker-compose.prod.yml` (pre-built images from the self-hosted registry + Watchtower labels) — see [`docs/DEPLOYMENT_WSL.md`](DEPLOYMENT_WSL.md).
+`docker-compose.override.yml` is auto-loaded for local dev (builds from source). Production/self-hosted runs instead merge `docker-compose.prod.yml` (pre-built images from the self-hosted registry + Watchtower labels) — see [`docs/DEPLOYMENT.md`](DEPLOYMENT.md).
 
 Other projects under `self-host/apps/<slug>/` follow the same pattern; see each project's own `README.md`.
 

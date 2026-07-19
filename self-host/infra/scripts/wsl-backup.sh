@@ -1,5 +1,24 @@
 #!/bin/bash
 
+# Git Bash/MSYS2 support for the `docker run -v host:/container` calls below: MSYS_NO_PATHCONV=1
+# stops MSYS from mangling the CONTAINER-side target (e.g. "/backup" silently becoming a Windows
+# path fragment, so the mount point never exists inside the container). But that alone breaks the
+# HOST-side source instead: a bare POSIX path like "/tmp/xyz" then reaches docker.exe untranslated,
+# which Docker Desktop resolves against its own WSL2 VM filesystem rather than the real Windows
+# host disk - the container write succeeds with no error, but nothing lands where the host-side
+# script expects to find it. Fix: convert host-side paths to native Windows form ourselves via
+# `cygpath -w` before handing them to `-v`, so MSYS has nothing left to (mis)convert on that side
+# either. Both `cygpath` and this whole block are no-ops on native Linux/WSL - the real target
+# environment - where POSIX paths already work directly.
+export MSYS_NO_PATHCONV=1
+docker_host_path() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$1"
+  else
+    printf '%s' "$1"
+  fi
+}
+
 # Load .env from the same directory as this script (~/infra/.env on the live host)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/.env" ]; then
@@ -56,7 +75,12 @@ done
 # acceptable risk; Postgres is not, since Infisical's DB holds every secret on the host and n8n's
 # holds every workflow. This list is deliberately explicit (not auto-discovered) — add a service
 # here only if it runs its own Postgres/MySQL-style database that needs quiescing.
-POSTGRES_BACKED_SERVICES=("infisical" "n8n")
+# Overridable via env (see scripts/tests/test-infra-backup-restore.bats) so the test suite can
+# exercise this exact logic with fixture names that can never collide with the real ~/infra/
+# directories of the same name -- Compose infers a project's identity from directory basename
+# alone, so a same-named fixture anywhere on the same Docker daemon targets the real project too.
+# shellcheck disable=SC2206
+POSTGRES_BACKED_SERVICES=(${POSTGRES_BACKED_SERVICES_OVERRIDE:-infisical n8n})
 
 echo "[*] Stopping Postgres-backed services for a consistent snapshot..."
 for SVC in "${POSTGRES_BACKED_SERVICES[@]}"; do
@@ -81,7 +105,9 @@ done
 # names in its docker-compose.yml. External volumes are referenced, not created, by Compose, so
 # they never get the project label and would be invisible to the filter below — listed explicitly
 # instead. If a future infra service adds its own external volume, add it here too.
-EXTERNAL_VOLUMES=("n8n_postgres_data" "n8n_n8n_data")
+# Overridable via env, same reason as POSTGRES_BACKED_SERVICES_OVERRIDE above.
+# shellcheck disable=SC2206
+EXTERNAL_VOLUMES=(${EXTERNAL_VOLUMES_OVERRIDE:-n8n_postgres_data n8n_n8n_data})
 
 echo "[*] Backing up Docker named volumes for this layer's services..."
 VOLS_TO_BACKUP=()
@@ -101,7 +127,7 @@ for VOL in "${VOLS_TO_BACKUP[@]}"; do
   echo "    -> $VOL"
   if ! docker run --rm \
       -v "$VOL":/volume:ro \
-      -v "$RUN_DIR":/backup \
+      -v "$(docker_host_path "$RUN_DIR")":/backup \
       alpine sh -c "tar czf /backup/volume_${VOL}.tar.gz -C /volume ." ; then
     alert "Backup of Docker volume '$VOL' failed"
     FAILED=1

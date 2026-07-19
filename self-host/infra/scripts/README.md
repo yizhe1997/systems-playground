@@ -15,9 +15,13 @@ There's no `INFRA_LOG_DIR` GitHub var wired here at all (same as `APP_LOG_DIR` o
 
 | Script | Runs when | What it does |
 |---|---|---|
-| `wsl-startup.sh` | Windows Task Scheduler, on boot | Starts Docker, brings up every `self-host/infra/*/docker-compose.yml` (Infisical first, health-checked, since everything else depends on it), starts the Cloudflare tunnel. |
+| `wsl-startup.sh` | Windows Task Scheduler, on boot | Starts Docker, brings up every `self-host/infra/*/docker-compose.yml` (Infisical first, health-checked, since everything else depends on it for secrets; the self-hosted registry second, reachability-checked, since services like n8n pull their image from it rather than a public registry — see below), starts the Cloudflare tunnel. |
 | `wsl-shutdown.sh` | Windows Task Scheduler, on shutdown | Stops every discovered infra service. |
 | `wsl-backup.sh` | **Not yet scheduled — deployed only.** See below. | Backs up every Docker named volume belonging to an infra-layer service, plus known bind-mounted paths (Filebrowser's files, Infisical's `.env`). Scoped to this layer only — see "How volumes get scoped" below. The apps layer has its own independent `wsl-backup.sh` (`self-host/apps/scripts/`) for its own volumes. |
+
+## Why the registry starts second
+
+`wsl-startup.sh` discovers services by globbing `$SCRIPT_DIR/*/docker-compose.yml` and, absent any special-casing, would start them in whatever order that glob returns — alphabetical on most filesystems, which puts `n8n` before `registry`. That's backwards: n8n's compose file pulls a prebuilt image from the self-hosted registry (`${REGISTRY_HOST}/systems-playground-n8n`) rather than building locally, so if `docker compose pull` runs for n8n before the registry container is up and accepting connections, the pull fails and n8n never starts. The script special-cases the registry the same way it special-cases Infisical: start it, then poll until it's reachable, before moving on to the general "everything else" loop. The reachability check deliberately uses `curl -s -o /dev/null` (checking curl's own exit code) rather than `curl -f` (checking HTTP status) — the registry requires htpasswd auth on `/v2/`, so a fully-up registry still returns `401`, which `-f` would misread as "not ready."
 
 ## How volumes get scoped to this layer
 

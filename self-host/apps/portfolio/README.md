@@ -38,7 +38,7 @@ docker compose logs -f     # tail all service logs
 docker compose down        # stop the stack
 ```
 
-`docker-compose.override.yml` is auto-loaded for local dev. Production/self-hosted deploys instead merge `docker-compose.prod.yml` (pre-built images from the self-hosted registry, Watchtower auto-update labels) — see [docs/DEPLOYMENT_WSL.md](../../../docs/DEPLOYMENT_WSL.md).
+`docker-compose.override.yml` is auto-loaded for local dev. Production/self-hosted deploys instead merge `docker-compose.prod.yml` (pre-built images from the self-hosted registry, Watchtower auto-update labels) — see [docs/DEPLOYMENT.md](../../../docs/DEPLOYMENT.md).
 
 ## Content / Copy
 

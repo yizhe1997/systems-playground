@@ -25,7 +25,7 @@ Demonstrate real backend architecture concepts (message queues, event streaming,
 ## Operational Notes
 
 - **Runtime requirements:** Docker + Docker Compose only; no local Go/Node toolchain needed.
-- **Scale-to-zero:** heavy containers (RabbitMQ, Redpanda) are started/stopped on demand by the Go control plane's reaper after a period of inactivity — required because the production host has limited RAM (see [`docs/DEPLOYMENT_WSL.md`](../../../docs/DEPLOYMENT_WSL.md) for what that host is). See ADR 001.
+- **Scale-to-zero:** heavy containers (RabbitMQ, Redpanda) are started/stopped on demand by the Go control plane's reaper after a period of inactivity — required because the production host has limited RAM (see [`docs/DEPLOYMENT.md`](../../../docs/DEPLOYMENT.md) for what that host is). See ADR 001.
 - **Observability:** RabbitMQ management UI exposed on `15672` for local inspection; no centralized logging yet (open item, not currently tracked as an ADR).
 
 ## Extraction Plan

@@ -4,7 +4,7 @@
 **Status:** Accepted
 
 ## Context
-The Systems Playground requires backend services (Redis, RabbitMQ, Kafka, etc.) to demonstrate concepts. However, the host has limited RAM/CPU (see [`docs/DEPLOYMENT_WSL.md`](../../../../docs/DEPLOYMENT_WSL.md) for what the host is). Running a dozen enterprise infrastructure containers 24/7 is not feasible and will crash the server.
+The Systems Playground requires backend services (Redis, RabbitMQ, Kafka, etc.) to demonstrate concepts. However, the host has limited RAM/CPU (see [`docs/DEPLOYMENT.md`](../../../../docs/DEPLOYMENT.md) for what the host is). Running a dozen enterprise infrastructure containers 24/7 is not feasible and will crash the server.
 
 We needed a way to manage the lifecycle of these containers.
 

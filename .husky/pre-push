@@ -1,0 +1,27 @@
+# Pre-push hook: runs the container-based test suite (scripts/tests/*.bats, via `make test`)
+# before allowing a push, but only when the push actually touches the scripts under test -- so
+# pushing docs or unrelated app code doesn't sit through a multi-minute Docker run for no reason.
+#
+# Picked up automatically by Husky (core.hooksPath = .husky/_, set by `npm install`'s `prepare`
+# script) -- no separate install step needed, unlike the old scripts/git-hooks/ + `make
+# install-hooks` mechanism this replaced (that one silently never fired once Husky took over
+# core.hooksPath for pre-commit). Skip once with `git push --no-verify`.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+WATCHED_PATHS="scripts/bootstrap.sh scripts/tests self-host/infra/scripts self-host/apps/scripts"
+
+# Diff against the upstream tracking branch if one exists, to see if this push actually touches
+# anything under test. If there's no upstream yet (brand-new local branch), fall through and just
+# run the tests to be safe rather than trying to guess a base to diff against.
+if base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)"; then
+  # shellcheck disable=SC2086
+  changed="$(git diff --name-only "$base"...HEAD -- $WATCHED_PATHS)"
+  if [ -z "$changed" ]; then
+    echo "[*] pre-push: no changes under the tested scripts -- skipping make test."
+    exit 0
+  fi
+fi
+
+echo "[*] pre-push: relevant script changes detected -- running make test (skip once with 'git push --no-verify')..."
+make test

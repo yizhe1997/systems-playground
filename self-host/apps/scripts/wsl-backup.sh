@@ -1,5 +1,24 @@
 #!/bin/bash
 
+# Git Bash/MSYS2 support for the `docker run -v host:/container` calls below: MSYS_NO_PATHCONV=1
+# stops MSYS from mangling the CONTAINER-side target (e.g. "/backup" silently becoming a Windows
+# path fragment, so the mount point never exists inside the container). But that alone breaks the
+# HOST-side source instead: a bare POSIX path like "/tmp/xyz" then reaches docker.exe untranslated,
+# which Docker Desktop resolves against its own WSL2 VM filesystem rather than the real Windows
+# host disk - the container write succeeds with no error, but nothing lands where the host-side
+# script expects to find it. Fix: convert host-side paths to native Windows form ourselves via
+# `cygpath -w` before handing them to `-v`, so MSYS has nothing left to (mis)convert on that side
+# either. Both `cygpath` and this whole block are no-ops on native Linux/WSL - the real target
+# environment - where POSIX paths already work directly.
+export MSYS_NO_PATHCONV=1
+docker_host_path() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$1"
+  else
+    printf '%s' "$1"
+  fi
+}
+
 # Load .env from the same directory as this script (~/apps/.env on the live host)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/.env" ]; then
@@ -14,8 +33,8 @@ DISCORD_WEBHOOK_INFRA_ALERTS="${DISCORD_WEBHOOK_INFRA_ALERTS:-}"
 # here and in the infra layer's wsl-backup.sh would both resolve to the exact same directory
 # (~/backups), silently mixing infra and app backups together in one folder — same convention as
 # logs (nested, not shared) avoids that collision entirely.
-BACKUP_DIR="$(printf '%s' "${BACKUP_DIR:-$SCRIPT_DIR/backups}" | tr -d '\r')"
-BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-14}"
+BACKUP_DIR="$(printf '%s' "${APP_BACKUP_DIR:-$SCRIPT_DIR/backups}" | tr -d '\r')"
+BACKUP_RETENTION_DAYS="${APP_BACKUP_RETENTION_DAYS:-14}"
 
 # --- Log rotation (keep last 5) ---
 for i in 4 3 2 1; do
@@ -93,7 +112,7 @@ for VOL in "${VOLS_TO_BACKUP[@]}"; do
   echo "    -> $VOL"
   if ! docker run --rm \
       -v "$VOL":/volume:ro \
-      -v "$RUN_DIR":/backup \
+      -v "$(docker_host_path "$RUN_DIR")":/backup \
       alpine sh -c "tar czf /backup/volume_${VOL}.tar.gz -C /volume ." ; then
     alert "Backup of Docker volume '$VOL' failed"
     FAILED=1

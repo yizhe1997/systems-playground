@@ -11,10 +11,20 @@ INFRA_DIR := self-host/infra
 INFRA_TEMPLATE_DIR := $(INFRA_DIR)/_template
 WORKFLOWS_DIR := .github/workflows
 
-.PHONY: help new-app new-infra
+BOOTSTRAP_SCRIPT := scripts/bootstrap.sh
+TEST_SCRIPTS_DIR := scripts/tests
+BATS := $(TEST_SCRIPTS_DIR)/vendor/bats-core/bin/bats
+
+.PHONY: help new-app new-infra bootstrap test test-bootstrap test-infra test-apps check-bats
 
 help:
 	@echo "Systems Playground"
+	@echo ""
+	@echo "  make bootstrap"
+	@echo "      Fresh-host setup: install prerequisites, clone the repo, scaffold deploy"
+	@echo "      directories, and pause with instructions at manual/interactive steps"
+	@echo "      (cloudflared login, tunnel creation, GH runner registration). Re-run to"
+	@echo "      pick up where it left off. See $(BOOTSTRAP_SCRIPT)."
 	@echo ""
 	@echo "  make new-app slug=<project-slug> [name=\"Project Name\"]"
 	@echo "      Scaffold a new showcase project under $(APPS_DIR)/ from $(APPS_TEMPLATE_DIR)/."
@@ -24,6 +34,40 @@ help:
 	@echo "      Scaffold a new platform infra service under $(INFRA_DIR)/ from $(INFRA_TEMPLATE_DIR)/,"
 	@echo "      plus a matching $(WORKFLOWS_DIR)/deploy-infra-<infra-slug>.yml."
 	@echo "      Example: make new-infra slug=grafana name=\"Grafana\""
+	@echo ""
+	@echo "  make test"
+	@echo "      Run every container-based script test (bootstrap + infra + apps) via bats, with"
+	@echo "      per-case pass/fail reporting. Needs only Docker + the bats-core submodule (run"
+	@echo "      'git submodule update --init --recursive' once) — no GitHub runner or push"
+	@echo "      required. Same .bats files CI calls, see $(TEST_SCRIPTS_DIR)/."
+	@echo ""
+	@echo "  make test-bootstrap / test-infra / test-apps"
+	@echo "      Run just one group. See $(TEST_SCRIPTS_DIR)/ for what each covers."
+	@echo ""
+	@echo "  Pre-push test gating is handled by Husky (.husky/pre-push), which runs 'make test'"
+	@echo "  automatically before a push that touches the tested scripts. Installed the same way"
+	@echo "  as the pre-commit hook -- run 'npm install' once per clone, no separate make target."
+
+bootstrap:
+	@bash $(BOOTSTRAP_SCRIPT)
+
+check-bats:
+	@if [ ! -x "$(BATS)" ]; then \
+		echo "❌ bats-core isn't set up yet (it's a git submodule, not committed directly). Run this once:"; \
+		echo "     git submodule update --init --recursive"; \
+		exit 1; \
+	fi
+
+test: check-bats test-bootstrap test-infra test-apps
+
+test-bootstrap: check-bats
+	@$(BATS) $(TEST_SCRIPTS_DIR)/test-bootstrap.bats
+
+test-infra: check-bats
+	@$(BATS) $(TEST_SCRIPTS_DIR)/test-infra-startup-shutdown.bats $(TEST_SCRIPTS_DIR)/test-infra-backup-restore.bats
+
+test-apps: check-bats
+	@$(BATS) $(TEST_SCRIPTS_DIR)/test-apps-startup-shutdown.bats $(TEST_SCRIPTS_DIR)/test-apps-backup-restore.bats
 
 new-app:
 ifndef slug
