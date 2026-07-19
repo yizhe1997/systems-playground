@@ -88,6 +88,17 @@ setup_file() {
     su tester -c "REPO_URL=file:///repo REPO_DIR=/home/tester/systems-playground bash /repo/scripts/bootstrap.sh" \
       > /logs/run2.log 2>&1
     echo $? > /logs/run2.exit
+
+    # Everything "tester" created (cloned repo, .gitconfig, .cloudflared) is now owned by an
+    # arbitrary in-container UID that has no relationship to the CI runner account outside this
+    # container. On a real GitHub Actions runner, that leaves bats own end-of-suite cleanup unable
+    # to delete this bind-mounted tester-home directory afterward ("Permission denied" on every
+    # file, exit code 1) - the tests themselves pass, only the cleanup step fails. Confirmed
+    # on GitHub Actions ubuntu-latest; not reproducible via Docker Desktop on Windows, which
+    # normalizes bind-mount ownership differently. Fix: as root (this whole script runs as root
+    # except the su-scoped bootstrap.sh calls above), make it world-writable before the container
+    # exits, so whatever UID owns the cleanup step outside this container can remove it.
+    chmod -R a+rwX /home/tester
   '
 }
 
