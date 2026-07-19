@@ -10,6 +10,7 @@ Platform-wide infrastructure — shared across everything on the host, unlike `s
 - **`n8n/`** — automation.
 - **`infisical/`** — self-hosted secrets manager; every deploy workflow fetches its secrets from here at deploy time.
 - **`registry/`** — self-hosted Docker image registry (`registry:2`), replaces Docker Hub for every build/deploy workflow.
+- **`observability/`** — self-hosted logs/metrics/dashboards (Loki, Promtail, Prometheus, cAdvisor, node-exporter, Grafana) — phase 1 of a planned full LGTM stack, scoped to infra/host debugging first.
 - **`scripts/`** — `wsl-startup.sh` / `wsl-shutdown.sh` / `wsl-backup.sh`, deployed to `~/infra/` on the host. See [`scripts/README.md`](scripts/README.md) for what each does and, importantly, how to restore from a backup.
 - **`_template/`** — starter template for a new infra service.
 

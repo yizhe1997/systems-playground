@@ -1,0 +1,72 @@
+name: Deploy Infra - Observability
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'self-host/infra/observability/**'
+      - '.github/workflows/deploy-infra-observability.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
+      INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
+      INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+      INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
+      INFISICAL_DOMAIN: ${{ vars.INFISICAL_SITE_URL || 'http://localhost:8090' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install Infisical CLI
+        run: |
+          LATEST_TAG=$(curl -sL -o /dev/null -w '%{url_effective}' https://github.com/Infisical/cli/releases/latest | sed 's#.*/tag/##')
+          VERSION="${LATEST_TAG#v}"
+          curl -sL "https://github.com/Infisical/cli/releases/download/${LATEST_TAG}/cli_${VERSION}_linux_amd64.tar.gz" -o infisical-cli.tar.gz
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf infisical-cli.tar.gz -C "$HOME/.local/bin" infisical
+          chmod +x "$HOME/.local/bin/infisical"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          rm infisical-cli.tar.gz
+
+      - name: Authenticate to Infisical
+        id: infisical-auth
+        run: |
+          : "${INFISICAL_CLIENT_ID:?INFISICAL_CLIENT_ID repository variable must be set}"
+          : "${INFISICAL_CLIENT_SECRET:?INFISICAL_CLIENT_SECRET repository secret must be set}"
+          : "${INFISICAL_PROJECT_ID:?INFISICAL_PROJECT_ID repository variable must be set}"
+          TOKEN=$(infisical login --domain="$INFISICAL_DOMAIN" --method=universal-auth \
+            --client-id="$INFISICAL_CLIENT_ID" --client-secret="$INFISICAL_CLIENT_SECRET" \
+            --plain --silent)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy observability
+        env:
+          INFISICAL_TOKEN: ${{ steps.infisical-auth.outputs.token }}
+        run: |
+          infisical run --domain="$INFISICAL_DOMAIN" --token="$INFISICAL_TOKEN" \
+            --projectId="$INFISICAL_PROJECT_ID" --env=prod -- bash -c '
+          set -e
+          : "${INFRA_BASE_DIR:?INFRA_BASE_DIR repository variable must be set}"
+          : "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set in Infisical}"
+          TARGET="$INFRA_BASE_DIR/observability"
+          mkdir -p "$TARGET"
+
+          echo "📦 Syncing observability compose + config (loki-config.yaml, promtail-config.yaml, prometheus.yml, grafana/provisioning)..."
+          cp -r self-host/infra/observability/. "$TARGET/"
+          rm -f "$TARGET/README.md" "$TARGET/.env.example"
+
+          cd "$TARGET" || { echo "❌ Directory $TARGET not found!"; exit 1; }
+          echo "🔄 Restarting observability..."
+          docker compose pull
+          docker compose up -d
+          echo "✅ observability deployed."
+          '
+
+      - name: Prune old images
+        run: docker image prune -f
