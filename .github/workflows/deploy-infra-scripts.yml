@@ -1,15 +1,22 @@
-name: Deploy Infra - Startup/Shutdown Scripts
+name: Deploy Infra - Scripts
+
+# Gated on Test Infra Scripts (test-infra-scripts.yml) passing, instead of triggering on push
+# directly - tests and deploy used to fire independently off the same push, so a script that broke
+# bats could still deploy to the live host in parallel with its own test run going red.
+# test-infra-scripts.yml was split out of a combined test workflow specifically so this gate could
+# be scoped to just the infra-side tests - workflow_run can only key off a whole workflow's
+# conclusion, and a shared workflow would mean an unrelated apps-script test failure could block an
+# infra-script deploy.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'self-host/infra/scripts/**'
-      - '.github/workflows/deploy-infra-scripts.yml'
+  workflow_run:
+    workflows: ["Test Infra Scripts"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: self-hosted
     env:
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
@@ -23,6 +30,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Deploy scripts
         run: |

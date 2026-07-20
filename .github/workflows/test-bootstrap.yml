@@ -1,0 +1,44 @@
+name: Test Bootstrap Script
+
+# GitHub-hosted runner, deliberately — not self-hosted. This is what lets it safely trigger on
+# pull_request too (see ADR 001: the self-hosted-runner ban on pull_request doesn't apply here,
+# since nothing here is runs-on: self-hosted). A self-hosted runner triggered by a PR would let
+# anyone who opens one rewrite what code actually runs against your real host — that's a security
+# hole regardless of what the workflow itself intends to do.
+#
+# Split out from what used to be one combined "Test Host Scripts" workflow (test-scripts.yml),
+# alongside test-infra-scripts.yml and test-apps-scripts.yml — deploy-infra-scripts.yml and
+# deploy-app-scripts.yml each gate on their own matching test workflow via workflow_run, and
+# workflow_run can only key off a whole workflow's conclusion, not one job inside a shared one.
+# bootstrap.sh itself isn't deployed by any CI workflow (it's run manually on a fresh host per
+# docs/DEPLOYMENT.md), so nothing needs to gate on this one — it's a standalone sanity check.
+#
+# Just checks out the repo (with its bats-core submodule) and runs scripts/tests/test-bootstrap.bats
+# — no test logic lives in this file. Runs identically locally via `make test-bootstrap` (needs
+# only Docker + `git submodule update --init --recursive` once, not a GitHub runner or a push), so
+# local and CI runs can never drift apart. See scripts/tests/test-bootstrap.bats for what it does.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/bootstrap.sh'
+      - 'scripts/tests/test-bootstrap.bats'
+      - 'scripts/tests/vendor/**'
+      - '.github/workflows/test-bootstrap.yml'
+  pull_request:
+    paths:
+      - 'scripts/bootstrap.sh'
+      - 'scripts/tests/test-bootstrap.bats'
+      - 'scripts/tests/vendor/**'
+      - '.github/workflows/test-bootstrap.yml'
+  workflow_dispatch:
+
+jobs:
+  bootstrap:
+    name: bootstrap.sh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: scripts/tests/vendor/bats-core/bin/bats scripts/tests/test-bootstrap.bats

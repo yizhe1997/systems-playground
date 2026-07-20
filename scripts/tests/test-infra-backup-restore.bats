@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # Container-based test for self-host/infra/scripts/wsl-backup.sh + the restore procedure
 # documented in self-host/infra/scripts/README.md. Runs identically locally (`make test-infra`)
-# and in CI (.github/workflows/test-scripts.yml) — this file is the single source of truth, the
+# and in CI (.github/workflows/test-infra-scripts.yml) — this file is the single source of truth, the
 # workflow just calls it via bats. Requires Docker and the bats-core submodule
 # (scripts/tests/vendor/bats-core — run `git submodule update --init` once if missing).
 #

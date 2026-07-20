@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 # Container-based test for scripts/bootstrap.sh. Runs identically locally (`make test-bootstrap`)
-# and in CI (.github/workflows/test-scripts.yml) — this file is the single source of truth, the
+# and in CI (.github/workflows/test-bootstrap.yml) — this file is the single source of truth, the
 # workflow just calls it via bats. Requires Docker and the bats-core submodule
 # (scripts/tests/vendor/bats-core — run `git submodule update --init` once if missing).
 #

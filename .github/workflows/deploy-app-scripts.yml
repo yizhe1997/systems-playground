@@ -1,15 +1,22 @@
-name: Deploy App - Startup/Shutdown Scripts
+name: Deploy App - Scripts
+
+# Gated on Test Apps Scripts (test-apps-scripts.yml) passing, instead of triggering on push
+# directly - matches the same gating deploy-infra-scripts.yml uses, and for the same reason: a
+# script that broke bats could otherwise deploy in parallel with its own test run going red.
+# test-apps-scripts.yml is a separate workflow file from the infra-side tests specifically so this
+# gate can be scoped to just the apps-side tests - workflow_run can only key off a whole workflow's
+# conclusion, and a shared workflow would mean an unrelated infra-script test failure could block
+# an app-script deploy.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'self-host/apps/scripts/**'
-      - '.github/workflows/deploy-app-scripts.yml'
+  workflow_run:
+    workflows: ["Test Apps Scripts"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: self-hosted
     env:
       APP_BASE_DIR: ${{ vars.APP_BASE_DIR }}
@@ -20,6 +27,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Deploy scripts
         run: |

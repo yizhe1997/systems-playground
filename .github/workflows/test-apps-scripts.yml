@@ -1,0 +1,55 @@
+name: Test Apps Scripts
+
+# GitHub-hosted runner, deliberately — not self-hosted. This is what lets it safely trigger on
+# pull_request too (see ADR 001: the self-hosted-runner ban on pull_request doesn't apply here,
+# since nothing here is runs-on: self-hosted). A self-hosted runner triggered by a PR would let
+# anyone who opens one rewrite what code actually runs against your real host — that's a security
+# hole regardless of what the workflow itself intends to do.
+#
+# Split out from what used to be one combined "Test Host Scripts" workflow (test-scripts.yml),
+# alongside test-bootstrap.yml and test-infra-scripts.yml. deploy-app-scripts.yml gates on this
+# workflow's conclusion via workflow_run — it needed its own file because workflow_run can only key
+# off a whole workflow's conclusion, not one job inside a workflow shared with the infra-side tests
+# (an unrelated infra-script test failure would otherwise block an app-script deploy, and vice
+# versa the other direction on the infra side).
+#
+# Just checks out the repo (with its bats-core submodule) and runs the apps wsl-*.sh bats files —
+# no test logic lives in this file. Runs identically locally via `make test-apps` (needs only
+# Docker + `git submodule update --init --recursive` once, not a GitHub runner or a push), so local
+# and CI runs can never drift apart. See scripts/tests/test-apps-*.bats for what each does.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'self-host/apps/scripts/**'
+      - 'scripts/tests/test-apps-startup-shutdown.bats'
+      - 'scripts/tests/test-apps-backup-restore.bats'
+      - 'scripts/tests/vendor/**'
+      - '.github/workflows/test-apps-scripts.yml'
+  pull_request:
+    paths:
+      - 'self-host/apps/scripts/**'
+      - 'scripts/tests/test-apps-startup-shutdown.bats'
+      - 'scripts/tests/test-apps-backup-restore.bats'
+      - 'scripts/tests/vendor/**'
+      - '.github/workflows/test-apps-scripts.yml'
+  workflow_dispatch:
+
+jobs:
+  apps-startup-shutdown:
+    name: apps wsl-startup.sh / wsl-shutdown.sh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: scripts/tests/vendor/bats-core/bin/bats scripts/tests/test-apps-startup-shutdown.bats
+
+  apps-backup-restore:
+    name: apps wsl-backup.sh (backup + restore round trip)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: scripts/tests/vendor/bats-core/bin/bats scripts/tests/test-apps-backup-restore.bats

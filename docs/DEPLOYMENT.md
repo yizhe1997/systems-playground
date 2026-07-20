@@ -215,8 +215,8 @@ The workflows involved, all under `.github/workflows/`:
 | `build-app-portfolio-backend.yml` / `-frontend.yml`, `build-infra-n8n.yml` | Its own `backend/**` / `frontend/**` (portfolio) or `self-host/infra/n8n/**` changes | Builds and pushes an image to the self-hosted registry (see [ADR 002](adrs/002-infisical-secret-injection.md) for the secrets side of this) |
 | `deploy-app-portfolio.yml` ("Instant Deploy (Self-Hosted)") | Either portfolio build workflow completes, or `self-host/apps/portfolio/**` changes | Copies `docker-compose.yml`/`docker-compose.prod.yml` (renamed to `docker-compose.override.yml`) into `$APP_BASE_DIR/portfolio`, writes `.env` files from Infisical-injected secrets, runs `docker compose pull && docker compose up -d` |
 | `deploy-infra-n8n.yml` | `build-infra-n8n.yml` completes, or `self-host/infra/n8n/**` changes | Same pattern as `deploy-app-portfolio.yml`, for n8n |
-| `deploy-app-scripts.yml` | `self-host/apps/scripts/**` changes | Copies `wsl-startup.sh`/`wsl-shutdown.sh`/`wsl-backup.sh` to `$APP_BASE_DIR` |
-| `deploy-infra-scripts.yml` | `self-host/infra/scripts/**` changes | Same, to `$INFRA_BASE_DIR` |
+| `deploy-app-scripts.yml` | `Test Apps Scripts` (`test-apps-scripts.yml`) passes on `main` | Copies `wsl-startup.sh`/`wsl-shutdown.sh`/`wsl-backup.sh` to `$APP_BASE_DIR` — gated on tests passing first, unlike most other rows here |
+| `deploy-infra-scripts.yml` | `Test Infra Scripts` (`test-infra-scripts.yml`) passes on `main` | Same, to `$INFRA_BASE_DIR` — gated on tests passing first, unlike most other rows here |
 | `deploy-infra-uptime-kuma.yml`, `deploy-infra-watchtower.yml`, `deploy-infra-filebrowser.yml`, `deploy-infra-infisical.yml`, `deploy-infra-registry.yml` | Its own `self-host/infra/<service>/**` changes | Copies that service's compose file to the host and restarts it |
 
 Setup steps (`make bootstrap` downloads and extracts the runner binary for you — steps 1-2 and the `config.sh`/`svc.sh` commands in step 3 still require the GitHub UI and a fresh token, so stay manual):

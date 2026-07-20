@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 # Container-based test for self-host/apps/scripts/{wsl-startup,wsl-shutdown}.sh. Runs identically
-# locally (`make test-apps`) and in CI (.github/workflows/test-scripts.yml) — this file is the
+# locally (`make test-apps`) and in CI (.github/workflows/test-apps-scripts.yml) — this file is the
 # single source of truth, the workflow just calls it via bats. Requires Docker and the bats-core
 # submodule (scripts/tests/vendor/bats-core — run `git submodule update --init` once if missing).
 #
