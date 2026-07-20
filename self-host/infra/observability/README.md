@@ -21,7 +21,7 @@ Six services, all on the shared `observability` Docker network so they can reach
 
 Grafana ships with both datasources pre-wired (provisioned from `grafana/provisioning/`), but no dashboards — importing them is a two-minute manual step, same category as `cloudflared tunnel login` elsewhere in this repo (genuinely one-time, not worth scripting):
 
-1. Log into Grafana (`http://localhost:3030`, or your Cloudflare Tunnel hostname once you add an ingress entry — see [`docs/DEPLOYMENT.md`](../../../docs/DEPLOYMENT.md) section 1), `admin` / the password from `GRAFANA_ADMIN_PASSWORD`.
+1. Log into Grafana (`http://localhost:3030`, or `grafana.38569123.xyz` if `CLOUDFLARED_SYNC_ENABLED=true` — see [`docs/DEPLOYMENT.md`](../../../docs/DEPLOYMENT.md) section 1 and the `cloudflare.tunnel.hostname`/`cloudflare.tunnel.port` labels on the `grafana` service below), `admin` / the password from `GRAFANA_ADMIN_PASSWORD`.
 2. **Dashboards → New → Import**, enter dashboard ID `1860` (Node Exporter Full) — covers host-level CPU/memory/disk/network.
 3. Repeat with dashboard ID `14282` (cAdvisor / Docker Container & Host Metrics) — covers per-container resource usage.
 4. For logs: **Explore** → select the **Loki** datasource → query `{container=~".+"}` to confirm logs are flowing, then build/save a dashboard panel as needed.

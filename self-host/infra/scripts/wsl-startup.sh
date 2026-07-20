@@ -176,4 +176,20 @@ if [ "$connected" != true ]; then
   exit 1
 fi
 
+# Opt-in, off unless explicitly enabled — existing hosts don't change behavior on a routine
+# script update. See self-host/infra/scripts/cloudflared-sync.sh for what this does (keeps
+# ~/.cloudflared/config.yml's ingress rules and their Cloudflare DNS records in sync with
+# whichever running containers are labelled cloudflare.tunnel.hostname/cloudflare.tunnel.port).
+if [ "${CLOUDFLARED_SYNC_ENABLED:-false}" = "true" ]; then
+  echo "[*] Killing stale cloudflared-sync (if any)..."
+  pkill -f "bash $SCRIPT_DIR/cloudflared-sync.sh" 2>/dev/null || true
+  echo "[*] Starting cloudflared-sync in the background..."
+  # Points the script's own internal logging at $INFRA_LOG_DIR explicitly, rather than letting it
+  # fall back to its default ($HOME/infra/logs/...) — this script runs as root via Task Scheduler,
+  # so $HOME would resolve to /root here, not the real $INFRA_BASE_DIR. No outer redirect on the
+  # nohup call itself: the script's own log() already tees every line to that file, redirecting
+  # stdout too would double-write every line into it.
+  CLOUDFLARED_SYNC_LOG="$INFRA_LOG_DIR/cloudflared-sync.log" nohup bash "$SCRIPT_DIR/cloudflared-sync.sh" >/dev/null 2>&1 &
+fi
+
 echo "[*] Startup complete."

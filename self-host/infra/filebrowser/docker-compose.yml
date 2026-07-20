@@ -18,6 +18,11 @@ services:
     restart: unless-stopped
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+      # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh - already live at
+      # this hostname via a manually-added config.yml entry; migrating it to a label here means
+      # the automated sync now owns it going forward instead.
+      - cloudflare.tunnel.hostname=files.38569123.xyz
+      - cloudflare.tunnel.port=8088
 
 volumes:
   db_data:

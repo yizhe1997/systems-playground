@@ -160,14 +160,20 @@ tunnel: $TUNNEL_ID
 credentials-file: $TUNNEL_CRED_FILE
 
 ingress:
-  # Add one hostname -> local-port entry per service you expose, e.g.:
+  # Entries between the two markers below are managed automatically by cloudflared-sync.sh (see
+  # self-host/infra/scripts/) for any running container labelled cloudflare.tunnel.hostname /
+  # cloudflare.tunnel.port - don't hand-edit that block, it gets overwritten on the next sync.
+  # For anything not label-driven, add entries above the BEGIN marker or below the END marker
+  # instead, e.g.:
   #   - hostname: portal.yourdomain.com
   #     service: http://localhost:8081
   # See docs/DEPLOYMENT.md section 1 for the full pattern, and each service's own
   # docker-compose.yml for its current host port.
+  # BEGIN cloudflared-sync managed block - do not edit by hand, see self-host/infra/scripts/cloudflared-sync.sh
+  # END cloudflared-sync managed block
   - service: http_status:404
 EOF
-    ok "Templated $CONFIG_YML with a catch-all 404 — add per-service ingress entries as you deploy them."
+    ok "Templated $CONFIG_YML with a catch-all 404 and a cloudflared-sync managed block — add per-service ingress entries as you deploy them, or label containers to have them added automatically."
   fi
 fi
 

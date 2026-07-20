@@ -50,7 +50,6 @@ Each was previously a plain GitHub Secret/Variable and is now fetched live via `
 | `N8N_POSTGRES_USER` | n8n | No | `n8n` |
 | `N8N_BASIC_AUTH_USER` | n8n | No | `admin` |
 | `N8N_HOST` | n8n | No | `http://localhost:5678` |
-| `UPTIME_KUMA_CLOUDFLARED_TOKEN` | uptime-kuma | Yes | — |
 | `WATCHTOWER_DISCORD_URL` | watchtower | Yes | — |
 
 A few things the table doesn't show:

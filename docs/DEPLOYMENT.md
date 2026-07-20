@@ -106,39 +106,39 @@ To expose your local services securely without opening router ports, we use Clou
 1. **Install cloudflared:** `make bootstrap` does this for you (or follow the [official Cloudflare documentation](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-local-tunnel/) to install it manually).
 2. **Authenticate:** Run `cloudflared tunnel login`.
 3. **Create a Tunnel:** Run `cloudflared tunnel create <your-tunnel-name>`. This generates a JSON credentials file.
-4. **Configure Routing:** `make bootstrap` templates a starter `config.yml` in `~/.cloudflared/` (tunnel id + credentials-file + catch-all 404) once a tunnel exists — it never overwrites one that's already there. Add per-service `ingress` entries to it as you deploy each service.
+4. **Configure Routing:** `make bootstrap` templates a starter `config.yml` in `~/.cloudflared/` (tunnel id + credentials-file + a `cloudflared-sync` managed block + catch-all 404) once a tunnel exists — it never overwrites one that's already there.
 
-### How to Bind Domains in `config.yml`
-Here is an example configuration showing how to route public domains to the internal local ports. By default, the portfolio project (`self-host/apps/portfolio/docker-compose.yml`) uses:
-*   **Frontend:** Container port `3000`, host port `8086`
-*   **Backend API:** Container port `8080`, host port `8085`
+### Two ways to add a service's route
+
+**Automatic (recommended):** label the service in its `docker-compose.yml`, and [`cloudflared-sync.sh`](../self-host/infra/scripts/README.md#automatic-cloudflare-tunnel-routing) does the rest — adds the `ingress` entry *and* creates the Cloudflare DNS record, no manual file editing or dashboard visit needed:
+
+```yaml
+  frontend:
+    ports:
+      - "8081:3000"
+    labels:
+      - cloudflare.tunnel.hostname=portal.yourdomain.com
+      - cloudflare.tunnel.port=8081
+```
+
+Opt-in — set `CLOUDFLARED_SYNC_ENABLED=true` (a repository variable, same mechanism as `TUNNEL_NAME`) to turn it on. See the linked doc for exactly how it works and what it won't touch.
+
+**Manual:** still works for anything not label-driven — edit `~/.cloudflared/config.yml` directly, adding entries above the `# BEGIN cloudflared-sync managed block` marker or below the `# END` marker (never inside it, that section gets overwritten on the next automatic sync if it's enabled), then create the DNS record yourself: `cloudflared tunnel route dns <your-tunnel-name> <hostname>`.
 
 ```yaml
 tunnel: <your-tunnel-id>
 credentials-file: /home/user/.cloudflared/<your-tunnel-id>.json
 
 ingress:
-  # Example: Expose the Systems Playground Frontend
-  - hostname: portal.yourdomain.com
-    service: http://localhost:8086
-    
-  # Example: Expose the Systems Playground API
+  # Example: Expose the Systems Playground API (manual entry)
   - hostname: api.yourdomain.com
     service: http://localhost:8085
-    
-  # Catch-all for unmatched traffic
+
+  # BEGIN cloudflared-sync managed block - do not edit by hand, see self-host/infra/scripts/cloudflared-sync.sh
+  - hostname: portal.yourdomain.com
+    service: http://localhost:8081
+  # END cloudflared-sync managed block
   - service: http_status:404
-```
-
-**Action Required in `self-host/apps/portfolio/docker-compose.yml`:**
-If you want the frontend accessible at `portal.yourdomain.com` via port 8081, ensure the frontend mapping in `docker-compose.yml` (or `docker-compose.prod.yml`) is set to `"8081:3000"`.
-
-```yaml
-  frontend:
-    ports:
-      - "8081:3000" # Map host port 8081 to container port 3000
-    environment:
-      - NEXT_PUBLIC_API_URL=https://api.yourdomain.com
 ```
 
 **✅ Verify this worked:** run `cloudflared tunnel list` — your tunnel name should appear. Run `cat ~/.cloudflared/config.yml` and confirm it has your tunnel's ID and at least the catch-all 404 entry. You won't be able to reach a hostname yet (nothing runs the tunnel process until section 2's startup script does), so don't worry if `https://yourdomain.com` doesn't respond yet — that's expected at this point.

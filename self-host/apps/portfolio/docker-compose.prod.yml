@@ -7,6 +7,12 @@ services:
     image: ${REGISTRY_HOST}/systems-playground-backend:latest
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+      # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh - already live at
+      # this hostname via a manually-added config.yml entry; migrating it to a label here means
+      # the automated sync now owns it going forward instead. Host port (8085) comes from the base
+      # docker-compose.yml, unchanged by this override.
+      - cloudflare.tunnel.hostname=portfolio-api.38569123.xyz
+      - cloudflare.tunnel.port=8085
 
   frontend:
     image: ${REGISTRY_HOST}/systems-playground-frontend:latest
@@ -21,3 +27,7 @@ services:
       - ADMIN_API_KEY=${ADMIN_API_KEY}
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+      # See the backend service's comment above - same migration, host port (8086) from the base
+      # docker-compose.yml.
+      - cloudflare.tunnel.hostname=portfolio.38569123.xyz
+      - cloudflare.tunnel.port=8086

@@ -6,9 +6,14 @@ services:
       - uptime_kuma_data:/app/data
     ports:
       - "3001:3001"
-    environment:
-      - UPTIME_KUMA_CLOUDFLARED_TOKEN=${UPTIME_KUMA_CLOUDFLARED_TOKEN}
     labels:
       - com.centurylinklabs.watchtower.enable=true
+      # Migrated off Uptime Kuma's own built-in (token-based, remotely-managed) Cloudflare Tunnel
+      # feature - it ran as a second, independent tunnel (kuma_tunnel) alongside this repo's own
+      # locally-managed host tunnel, which was never a deliberate design choice, just incidental.
+      # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh now instead, same
+      # as every other service - one tunnel, one config.yml, no separate token to manage.
+      - cloudflare.tunnel.hostname=kuma.38569123.xyz
+      - cloudflare.tunnel.port=3001
 volumes:
   uptime_kuma_data:

@@ -10,14 +10,30 @@ Deployed to `$INFRA_BASE_DIR` on the host by `deploy-infra-scripts.yml`, along w
 | `DISCORD_WEBHOOK_INFRA_ALERTS` | secret | No | Leave empty to disable alerts entirely. |
 | `BACKUP_DIR` | var | No | Falls back to `$SCRIPT_DIR/backups` (i.e. `$INFRA_BASE_DIR/backups`). Deliberately nested inside this layer's own directory, not a sibling of it — see the apps layer's `APP_BACKUP_DIR`, which uses a different GH var name specifically so the two layers' backups can never collide into the same folder. |
 | `BACKUP_RETENTION_DAYS` | var | No | Falls back to `14`. |
+| `CLOUDFLARED_SYNC_ENABLED` | var | No | Falls back to `false` (off) — deliberately opt-in, since it changes running behavior (auto-restarts cloudflared on config changes). Set to `true` to launch `cloudflared-sync.sh` on boot. See below. |
 
 There's no `INFRA_LOG_DIR` GitHub var wired here at all (same as `APP_LOG_DIR` on the apps side) — `wsl-startup.sh`/`wsl-backup.sh`'s own fallback (`$SCRIPT_DIR/logs`, which always equals `$INFRA_BASE_DIR/logs` once deployed) is the only value anyone would realistically want. This is purely where these scripts write their own log output (`wsl-startup.log`, `wsl-backup.log`) — not container or app logs.
 
 | Script | Runs when | What it does |
 |---|---|---|
-| `wsl-startup.sh` | Windows Task Scheduler, on boot | Starts Docker, brings up every `self-host/infra/*/docker-compose.yml` (Infisical first, health-checked, since everything else depends on it for secrets; the self-hosted registry second, reachability-checked, since services like n8n pull their image from it rather than a public registry — see below), starts the Cloudflare tunnel. |
+| `wsl-startup.sh` | Windows Task Scheduler, on boot | Starts Docker, brings up every `self-host/infra/*/docker-compose.yml` (Infisical first, health-checked, since everything else depends on it for secrets; the self-hosted registry second, reachability-checked, since services like n8n pull their image from it rather than a public registry — see below), starts the Cloudflare tunnel, and (if `CLOUDFLARED_SYNC_ENABLED=true`) launches `cloudflared-sync.sh` in the background. |
 | `wsl-shutdown.sh` | Windows Task Scheduler, on shutdown | Stops every discovered infra service. |
 | `wsl-backup.sh` | **Not yet scheduled — deployed only.** See below. | Backs up every Docker named volume belonging to an infra-layer service, plus known bind-mounted paths (Filebrowser's files, Infisical's `.env`). Scoped to this layer only — see "How volumes get scoped" below. The apps layer has its own independent `wsl-backup.sh` (`self-host/apps/scripts/`) for its own volumes. |
+| `cloudflared-sync.sh` | Opt-in (`CLOUDFLARED_SYNC_ENABLED=true`), launched by `wsl-startup.sh`, runs continuously in the background | Keeps `~/.cloudflared/config.yml`'s ingress rules — and the matching Cloudflare DNS records — in sync with whichever running containers (anywhere on the host, not just this layer) are labelled `cloudflare.tunnel.hostname` / `cloudflare.tunnel.port`. See "Automatic Cloudflare Tunnel routing" below. |
+
+## Automatic Cloudflare Tunnel routing
+
+Adding a new public-facing service used to mean two manual steps: hand-editing `~/.cloudflared/config.yml` to add an `ingress` entry, then separately visiting Cloudflare's dashboard to add the matching DNS record. `cloudflared-sync.sh` replaces both with two Docker labels on the service itself:
+
+```yaml
+labels:
+  - cloudflare.tunnel.hostname=myservice.yourdomain.com
+  - cloudflare.tunnel.port=8082   # the HOST port the service is published on
+```
+
+Every ~30s (`CLOUDFLARED_SYNC_INTERVAL`, default 30), the script re-scans every running container on the host for both labels, regenerates the block between two marker comments in `config.yml` (`bootstrap.sh` templates those markers into a fresh `config.yml` automatically — see step 8 there), runs `cloudflared tunnel route dns` for any hostname that needs one, and restarts `cloudflared` to pick up the change. Missing either label skips that container entirely — it never guesses a port. Anything outside the marker block (the tunnel/credentials-file header, the catch-all 404, or any entry you'd rather manage by hand) is left untouched.
+
+Off by default (`CLOUDFLARED_SYNC_ENABLED` falls back to `false`) — turning it on is a deliberate choice, since it means `cloudflared` can restart itself automatically whenever a labelled container's set changes.
 
 ## Why the registry starts second
 

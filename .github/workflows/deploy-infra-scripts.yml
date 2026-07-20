@@ -18,6 +18,7 @@ jobs:
       DISCORD_WEBHOOK_INFRA_ALERTS: ${{ secrets.DISCORD_WEBHOOK_INFRA_ALERTS }}
       BACKUP_DIR: ${{ vars.BACKUP_DIR }}
       BACKUP_RETENTION_DAYS: ${{ vars.BACKUP_RETENTION_DAYS }}
+      CLOUDFLARED_SYNC_ENABLED: ${{ vars.CLOUDFLARED_SYNC_ENABLED }}
 
     steps:
       - name: Check out repository
@@ -31,18 +32,21 @@ jobs:
           cp self-host/infra/scripts/wsl-startup.sh "$INFRA_BASE_DIR/wsl-startup.sh"
           cp self-host/infra/scripts/wsl-shutdown.sh "$INFRA_BASE_DIR/wsl-shutdown.sh"
           cp self-host/infra/scripts/wsl-backup.sh "$INFRA_BASE_DIR/wsl-backup.sh"
-          chmod +x "$INFRA_BASE_DIR/wsl-startup.sh" "$INFRA_BASE_DIR/wsl-shutdown.sh" "$INFRA_BASE_DIR/wsl-backup.sh"
+          cp self-host/infra/scripts/cloudflared-sync.sh "$INFRA_BASE_DIR/cloudflared-sync.sh"
+          chmod +x "$INFRA_BASE_DIR/wsl-startup.sh" "$INFRA_BASE_DIR/wsl-shutdown.sh" "$INFRA_BASE_DIR/wsl-backup.sh" "$INFRA_BASE_DIR/cloudflared-sync.sh"
           echo "✅ Scripts deployed."
 
       - name: Write infra .env
         run: |
           echo "🔐 Writing $INFRA_BASE_DIR/.env..."
-          # TUNNEL_NAME, DISCORD_WEBHOOK_INFRA_ALERTS, BACKUP_DIR, BACKUP_RETENTION_DAYS
-          # deliberately have no hard guard above and no fallback baked in here — each script
-          # already falls back safely on its own if the line below is empty (TUNNEL_NAME ->
-          # "tunnel", confirmed to match YZ's actual tunnel name; DISCORD alerts -> silently
-          # disabled; BACKUP_DIR -> $SCRIPT_DIR/../backups; BACKUP_RETENTION_DAYS -> 14). An empty
-          # line here is harmless, not a silent misconfiguration — only values with no safe
+          # TUNNEL_NAME, DISCORD_WEBHOOK_INFRA_ALERTS, BACKUP_DIR, BACKUP_RETENTION_DAYS,
+          # CLOUDFLARED_SYNC_ENABLED deliberately have no hard guard above and no fallback baked
+          # in here — each script already falls back safely on its own if the line below is empty
+          # (TUNNEL_NAME -> "tunnel", confirmed to match YZ's actual tunnel name; DISCORD alerts ->
+          # silently disabled; BACKUP_DIR -> $SCRIPT_DIR/../backups; BACKUP_RETENTION_DAYS -> 14;
+          # CLOUDFLARED_SYNC_ENABLED -> "false", i.e. off, since it changes running behavior and
+          # should be a deliberate opt-in, not silently on the moment this variable is unset). An
+          # empty line here is harmless, not a silent misconfiguration — only values with no safe
           # default (INFRA_BASE_DIR, CLOUDFLARED_LOG_DIR) are hard-required above. INFRA_LOG_DIR
           # isn't wired here at all (like APP_LOG_DIR on the apps side) — its fallback
           # ($SCRIPT_DIR/logs = $INFRA_BASE_DIR/logs deployed) is the only value anyone would want.
@@ -52,5 +56,6 @@ jobs:
           DISCORD_WEBHOOK_INFRA_ALERTS=$DISCORD_WEBHOOK_INFRA_ALERTS
           BACKUP_DIR=$BACKUP_DIR
           BACKUP_RETENTION_DAYS=$BACKUP_RETENTION_DAYS
+          CLOUDFLARED_SYNC_ENABLED=$CLOUDFLARED_SYNC_ENABLED
           EOF
           echo "✅ .env written."

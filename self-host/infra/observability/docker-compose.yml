@@ -103,6 +103,10 @@ services:
     restart: unless-stopped
     labels:
       - com.centurylinklabs.watchtower.enable=true
+      # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh - adds/updates the
+      # ingress entry in config.yml and the matching Cloudflare DNS record with no manual step.
+      - cloudflare.tunnel.hostname=grafana.38569123.xyz
+      - cloudflare.tunnel.port=3030
 
 volumes:
   loki_data:
