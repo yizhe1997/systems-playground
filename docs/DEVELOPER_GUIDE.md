@@ -1,10 +1,10 @@
 # Developer Guide
 
 ## 🏗️ Architectural Decisions
-*   **Backend:** Golang (Fiber). Chosen for its concurrency model (goroutines) which makes handling WebSockets and Message Queues lightweight and fast. Plus, compiling down to a single binary makes the Docker image extremely small.
+*   **Backend:** Golang (Fiber). Chosen for its concurrency model (goroutines) and small, fast Docker images.
 *   **Frontend:** Next.js (App Router) & Tailwind CSS. Next.js provides a robust React framework for our Landing Page and Admin UI, while Tailwind allows for rapid styling.
-*   **Container Orchestration (Scale-to-Zero):** Docker Compose + Go API. By mapping the Docker socket (`/var/run/docker.sock`) into the Go backend, the Go API acts as a control plane. This is essential for our **Scale-to-Zero architecture**—the API can dynamically start/stop heavy containers (Redis, RabbitMQ) only when a demo is active, shutting them down automatically after inactivity to save RAM on the host.
-*   **Infrastructure:** Redis (for caching) and RabbitMQ (for message queues). These are the industry standard tools for these use-cases and demonstrate real-world system architecture.
+*   **Infrastructure:** Redis backs the CMS (projects, documents, homepage layout), site config, and resume requests.
+*   The portfolio previously also ran a live "playground" of real backend demo containers (Kafka/RabbitMQ/Redis widgets) via a Go control plane with Docker-socket access - retired in favor of a CMS-first design. See [ADR 004](../self-host/apps/portfolio/adrs/004-retire-live-playground.md).
 
 *For detailed architectural logs, see the ADRs under [`self-host/apps/portfolio/adrs/`](../self-host/apps/portfolio/adrs/) (platform-wide decisions, if any, live under [`docs/adrs/`](adrs/)).*
 
@@ -26,7 +26,6 @@ There is no root-level compose file — each project under `self-host/apps/` run
 3.  Once the containers spin up, you can access the applications at:
     *   **Public Landing Page & Admin UI:** `http://localhost:8086`
     *   **Golang API:** `http://localhost:8085/health`
-    *   **RabbitMQ Management UI:** `http://localhost:15672` (if you want to peek under the hood)
 
 `docker-compose.override.yml` is auto-loaded for local dev (builds from source). Production/self-hosted runs instead merge `docker-compose.prod.yml` (pre-built images from the self-hosted registry + Watchtower labels) — see [`docs/DEPLOYMENT.md`](DEPLOYMENT.md).
 

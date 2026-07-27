@@ -88,6 +88,25 @@
   /* Bento glow variables */
   --glow-primary: oklch(0.55 0.2 200 / 0.25);
   --glow-secondary: oklch(0.55 0.2 160 / 0.2);
+
+  /* Design system tokens - Neo-Brutalist "Push Button" direction (DESIGN.md),
+     pinned by the operator, supersedes both prior directions ("Config File",
+     "Technical Blueprint" / Mosaic Grid - both rejected after the operator
+     saw them rendered). Additive, separate from the --background/--foreground
+     family above: those still drive shadcn primitives used by admin-adjacent
+     surfaces. Public-facing pages reference --ds-* directly so a future
+     re-theme only means redefining these, never touching component files. */
+  --ds-yellow: #ffe17c;
+  --ds-charcoal: #171e19;
+  --ds-sage: #b7c6c2;
+  --ds-white: #ffffff;
+  --ds-black: #000000;
+  --ds-radius: 0.75rem;
+  --ds-shadow-sm: 4px 4px 0px 0px var(--ds-black);
+  --ds-shadow-md: 8px 8px 0px 0px var(--ds-black);
+  --ds-shadow-lg: 12px 12px 0px 0px var(--ds-black);
+  --ds-font-display: "Cabinet Grotesk", ui-sans-serif, sans-serif;
+  --ds-font-body: "Satoshi", ui-sans-serif, sans-serif;
 }
 
 .dark {

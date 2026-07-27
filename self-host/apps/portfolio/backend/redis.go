@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"os"
-	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -52,27 +51,4 @@ func SetConfig(ctx context.Context, key string, value string) error {
 		return nil
 	}
 	return redisClient.Set(ctx, "config:"+key, value, 0).Err() // 0 means no expiration
-}
-
-// RecordHeartbeat sets an expiring key in Redis to track container activity
-func RecordHeartbeat(ctx context.Context, containerID string) error {
-	if redisClient == nil {
-		return nil
-	}
-	// 15-minute TTL: gives enough buffer for browser tab-throttling (which can
-	// delay the frontend's 2-minute heartbeat interval to ~5 min when backgrounded)
-	// while still scaling to zero promptly once a session genuinely ends.
-	return redisClient.Set(ctx, "heartbeat:"+containerID, "active", 15*time.Minute).Err()
-}
-
-// IsHeartbeatAlive checks if the container's heartbeat key still exists in Redis
-func IsHeartbeatAlive(ctx context.Context, containerID string) bool {
-	if redisClient == nil {
-		return true // If Redis is down, fail-safe to keep containers alive
-	}
-	val, err := redisClient.Exists(ctx, "heartbeat:"+containerID).Result()
-	if err != nil {
-		return true
-	}
-	return val > 0
 }

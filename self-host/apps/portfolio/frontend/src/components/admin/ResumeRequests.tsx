@@ -2,9 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 type ResumeRequest = {
   id: string;
@@ -14,6 +11,19 @@ type ResumeRequest = {
   reason: string;
   status: string;
   created_at: number;
+};
+
+const dsInput =
+  "w-full px-3 py-2.5 bg-white border-2 border-black rounded-[0.5rem] text-[var(--ds-charcoal)] placeholder:text-[var(--ds-charcoal)]/40 focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow";
+
+const pushBtnSm =
+  "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)] hover:translate-x-0.5 hover:translate-y-0.5";
+
+const statusStyle: Record<string, { bg: string; label: string }> = {
+  pending: { bg: 'var(--ds-yellow)', label: 'Pending' },
+  approved: { bg: 'var(--ds-sage)', label: 'Approved' },
+  'approving...': { bg: 'var(--ds-sage)', label: 'Approving…' },
+  rejected: { bg: '#f5a3a3', label: 'Rejected' },
 };
 
 export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
@@ -79,43 +89,44 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
     }
   };
 
-  if (loading) return <div className="animate-pulse text-muted-foreground p-8 text-center bg-card border border-border/50 rounded-xl">Loading requests...</div>;
+  if (loading) return (
+    <div role="status" aria-live="polite" className="text-sm font-bold text-[var(--ds-charcoal)]/70 p-8 text-center bg-white border-2 border-black" style={{ borderRadius: '0.75rem' }}>
+      Loading requests&hellip;
+    </div>
+  );
 
   return (
-    <div className="bg-card rounded-xl shadow-sm border border-border/50 overflow-hidden">
+    <div className="bg-white border-2 border-black shadow-[4px_4px_0px_0px_#000] overflow-hidden" style={{ borderRadius: '0.75rem' }}>
       {requests.length === 0 ? (
-        <div className="p-12 text-center text-muted-foreground dark:text-muted-foreground/70">
-          <span className="text-4xl block mb-4 opacity-50">📥</span>
+        <div className="p-12 text-center text-[var(--ds-charcoal)]/70">
           No resume requests found.
         </div>
       ) : (
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="divide-y-2 divide-black">
           {requests.sort((a, b) => b.created_at - a.created_at).map(req => (
-            <div key={req.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-muted/50 transition">
+            <div key={req.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-1">
-                  <h4 className="font-bold text-foreground text-lg">{req.name}</h4>
-                  <span className="text-sm font-mono text-muted-foreground dark:text-muted-foreground/70 bg-muted px-2 py-0.5 rounded">{req.company}</span>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                    req.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-200' :
-                    req.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-200' :
-                    req.status === 'approving...' ? 'bg-blue-100 text-blue-700 border-blue-200 animate-pulse' :
-                    'bg-rose-500/10 text-rose-500 border-rose-200'
-                  }`}>
-                    {req.status}
+                <div className="flex items-center gap-3 mb-1 flex-wrap">
+                  <h4 className="font-extrabold text-lg">{req.name}</h4>
+                  <span className="text-sm font-bold text-[var(--ds-charcoal)]/70 bg-black/5 px-2 py-0.5" style={{ borderRadius: '0.25rem' }}>{req.company}</span>
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-2 border-black"
+                    style={{ borderRadius: '999px', backgroundColor: statusStyle[req.status]?.bg || 'var(--ds-white)' }}
+                  >
+                    {statusStyle[req.status]?.label || req.status}
                   </span>
                 </div>
                 {isAdmin ? (
-                  <a href={`mailto:${req.email}`} className="text-sm text-blue-600 hover:underline mb-3 inline-block">{req.email}</a>
+                  <a href={`mailto:${req.email}`} className="text-sm text-[var(--ds-charcoal)] hover:underline mb-3 inline-block">{req.email}</a>
                 ) : (
-                  <span className="text-sm text-muted-foreground mb-3 inline-block">{req.email}</span>
+                  <span className="text-sm text-[var(--ds-charcoal)]/70 mb-3 inline-block">{req.email}</span>
                 )}
                 {req.reason && (
-                  <p className="text-sm text-muted-foreground dark:text-muted-foreground/70 bg-muted/50 dark:bg-black/90 p-3 rounded-lg border border-border/50 italic">
+                  <p className="text-sm text-[var(--ds-charcoal)]/80 bg-black/5 p-3 italic" style={{ borderRadius: '0.5rem' }}>
                     &ldquo;{req.reason}&rdquo;
                   </p>
                 )}
-                <div className="text-[10px] text-muted-foreground/70 mt-3 font-mono">
+                <div className="text-[10px] text-[var(--ds-charcoal)]/50 mt-3 font-mono">
                   Requested: {new Date(req.created_at).toLocaleString()}
                 </div>
               </div>
@@ -124,15 +135,16 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                 <div className="flex items-center gap-3 shrink-0">
                   <button
                     onClick={() => handleAction(req.id, 'reject')}
-                    className="px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                    className="px-4 py-2 text-sm font-bold text-red-600 hover:text-red-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
                   >
                     Reject
                   </button>
                   <button
                     onClick={() => openApproveDialog(req.id, req.name)}
-                    className="px-4 py-2 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition"
+                    className={`px-4 py-2 text-sm font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 ${pushBtnSm} bg-black text-white`}
+                    style={{ borderRadius: '0.5rem' }}
                   >
-                    Approve & Email Link
+                    Approve &amp; Email Link
                   </button>
                 </div>
               )}
@@ -143,31 +155,34 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
 
       {/* Approval Dialog */}
       <Dialog open={approveDialog.open} onOpenChange={(open) => !open && setApproveDialog({ ...approveDialog, open: false })}>
-        <DialogContent className="sm:max-w-xl bg-card border-border">
+        <DialogContent
+          className="sm:max-w-xl bg-white border-2 border-black text-[var(--ds-charcoal)] ring-0"
+          style={{ fontFamily: 'var(--ds-font-body)', borderRadius: '0.75rem', boxShadow: '8px 8px 0px 0px #000' }}
+        >
           <DialogHeader>
-            <DialogTitle className="text-xl text-foreground">Approve Request</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Customize the email that will be sent to <strong className="text-foreground">{approveDialog.name}</strong>.
-              Use <code className="bg-muted px-1 rounded text-primary">{"{{name}}"}</code> and <code className="bg-muted px-1 rounded text-primary">{"{{link}}"}</code> as template variables.
+            <DialogTitle className="text-xl text-black font-extrabold">Approve Request</DialogTitle>
+            <DialogDescription className="text-[var(--ds-charcoal)]/70">
+              Customize the email that will be sent to <strong className="text-black">{approveDialog.name}</strong>.
+              Use <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{name}}"}</code> and <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{link}}"}</code> as template variables.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">Email Subject</Label>
-              <Input
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider">Email Subject</label>
+              <input
                 value={emailSubject}
                 onChange={e => setEmailSubject(e.target.value)}
-                className="bg-background border-input text-foreground"
+                className={dsInput}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">Email Body</Label>
-              <Textarea
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider">Email Body</label>
+              <textarea
                 value={emailBody}
                 onChange={e => setEmailBody(e.target.value)}
                 rows={8}
-                className="bg-background border-input text-foreground font-mono text-sm leading-relaxed"
+                className={`${dsInput} font-mono text-sm leading-relaxed resize-none`}
               />
             </div>
           </div>
@@ -175,13 +190,14 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
           <div className="flex justify-end gap-3 pt-2">
             <button
               onClick={() => setApproveDialog({ ...approveDialog, open: false })}
-              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent rounded-md transition"
+              className="px-4 py-2 text-sm font-bold text-[var(--ds-charcoal)]/60 hover:text-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
             >
               Cancel
             </button>
             <button
               onClick={() => handleAction(approveDialog.reqId!, 'approve', emailSubject, emailBody)}
-              className="px-5 py-2 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition flex items-center gap-2"
+              className={`px-5 py-2 text-sm font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none ${pushBtnSm} bg-black text-white`}
+              style={{ borderRadius: '0.5rem' }}
             >
               Send Secure Link
             </button>

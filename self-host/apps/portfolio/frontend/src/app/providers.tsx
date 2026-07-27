@@ -2,11 +2,14 @@
 
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
+import { ResumeRequestProvider } from "@/components/ResumeRequestModal";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-      <SessionProvider>{children}</SessionProvider>
+      <SessionProvider>
+        <ResumeRequestProvider>{children}</ResumeRequestProvider>
+      </SessionProvider>
     </ThemeProvider>
   );
 }

@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { fetchJson } from '@/lib/fetch-json';
 
 type Document = {
   id: string;
@@ -12,13 +13,14 @@ type Document = {
   content_target: string;
 };
 
-export default function DocumentViewer({ params }: { params: { slug: string[] } }) {
+export default function DocumentViewer({ params }: { params: Promise<{ slug: string[] }> }) {
+  const { slug } = use(params);
   const [content, setContent] = useState<string>('');
   const [docMeta, setDocMeta] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const id = params.slug[params.slug.length - 1]; // Assume the last part of the URL is the unique ID
+  const id = slug[slug.length - 1]; // Assume the last part of the URL is the unique ID
 
   useEffect(() => {
     const fetchDoc = async () => {
@@ -27,8 +29,7 @@ export default function DocumentViewer({ params }: { params: { slug: string[] } 
       try {
         // 1. Find document metadata from Redis registry
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-        const resList = await fetch(`${apiUrl}/api/documents`);
-        const docs: Document[] = await resList.json();
+        const docs = await fetchJson<Document[]>('/api/documents');
 
         const targetDoc = docs.find(d => d.id === id);
         if (!targetDoc) {
@@ -67,23 +68,42 @@ export default function DocumentViewer({ params }: { params: { slug: string[] } 
     fetchDoc();
   }, [id]);
 
-  if (loading) return <div className="animate-pulse flex items-center gap-3 text-muted-foreground"><span className="text-xl">⌛</span> Loading engineering document...</div>;
-  if (error) return <div className="text-destructive p-6 bg-destructive/10 rounded-xl border border-destructive/20 shadow-sm flex items-center gap-3"><span className="text-2xl">⚠️</span> {error}</div>;
+  if (loading) return <div role="status" aria-live="polite" className="text-sm font-bold text-[var(--ds-charcoal)]/70">Loading document&hellip;</div>;
+  if (error) return (
+    <div
+      role="alert"
+      className="text-[var(--ds-charcoal)] p-6 bg-[var(--ds-yellow)] border-2 border-black"
+      style={{ borderRadius: '0.75rem' }}
+    >
+      <p className="font-bold">Couldn&apos;t load that document</p>
+      <p className="text-sm mt-1">{error}</p>
+    </div>
+  );
 
   return (
-    <article className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary hover:prose-a:text-primary/80 prose-pre:bg-slate-900 prose-pre:text-slate-50">
-      <div className="mb-10 pb-8 border-b border-border">
-        <h1 className="text-4xl lg:text-5xl font-extrabold text-foreground mb-4 leading-tight">{docMeta?.title}</h1>
-        <p className="text-xl text-muted-foreground font-medium">{docMeta?.description}</p>
+    <article className="max-w-none">
+      <div className="mb-10 pb-8 border-b-2 border-black">
+        <h1
+          className="text-3xl lg:text-4xl mb-4 leading-tight text-black"
+          style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
+        >
+          {docMeta?.title}
+        </h1>
+        <p className="text-lg text-[var(--ds-charcoal)]/80 font-medium">{docMeta?.description}</p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full border ${docMeta?.source_type === 'external_url' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/20'}`}>
-            {docMeta?.source_type === 'external_url' ? '🔗 External Source (Read-Only)' : '💾 Native CMS'}
+          <span
+            className="px-3 py-1 text-xs font-bold uppercase tracking-wider border-2 border-black"
+            style={{ backgroundColor: docMeta?.source_type === 'external_url' ? 'var(--ds-yellow)' : 'var(--ds-sage)', borderRadius: '0.5rem' }}
+          >
+            {docMeta?.source_type === 'external_url' ? 'External source' : 'Native CMS'}
           </span>
-          <span className="text-xs text-muted-foreground font-mono bg-accent px-2 py-1 rounded border border-border">Folder: {docMeta?.folder_path}</span>
+          <span className="text-xs font-bold px-2 py-1 border-2 border-black" style={{ borderRadius: '0.5rem' }}>
+            {docMeta?.folder_path}
+          </span>
         </div>
       </div>
 
-      <div className="mt-8">
+      <div className="prose prose-headings:font-extrabold prose-a:text-black prose-a:underline prose-pre:bg-[var(--ds-charcoal)] prose-pre:text-white prose-pre:border-2 prose-pre:border-black mt-8 max-w-none">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {content}
         </ReactMarkdown>

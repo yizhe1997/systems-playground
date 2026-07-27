@@ -27,7 +27,6 @@ type Document struct {
 
 type HomepageVisibility struct {
 	FeaturedProjects []string `json:"featured_projects"`
-	FeaturedDemos    []string `json:"featured_demos"`
 	FeaturedDocs     []string `json:"featured_docs"`
 }
 
@@ -67,7 +66,6 @@ func RegisterCMSRoutes(app *fiber.App) {
 		if err != nil {
 			return c.JSON(HomepageVisibility{
 				FeaturedProjects: []string{},
-				FeaturedDemos:    []string{},
 				FeaturedDocs:     []string{},
 			})
 		}
@@ -106,9 +104,6 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		if hp.FeaturedProjects == nil {
 			hp.FeaturedProjects = []string{}
-		}
-		if hp.FeaturedDemos == nil {
-			hp.FeaturedDemos = []string{}
 		}
 		if hp.FeaturedDocs == nil {
 			hp.FeaturedDocs = []string{}

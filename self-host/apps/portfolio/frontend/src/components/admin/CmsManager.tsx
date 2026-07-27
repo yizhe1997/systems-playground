@@ -1,18 +1,25 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import AdminTabBar, { tabId, tabPanelId } from '@/components/admin/AdminTabBar';
 
 type Project = { id: string; title: string; description: string; tech_stack: string[]; live_url: string; github_url: string; };
 type Document = { id: string; title: string; description: string; folder_path: string; source_type: string; content_target: string; };
-type HomepageVisibility = { featured_projects: string[]; featured_demos: string[]; featured_docs: string[]; };
+type HomepageVisibility = { featured_projects: string[]; featured_docs: string[]; };
 
-export default function CmsManager({ isAdmin, widgets }: { isAdmin: boolean; widgets: any[] }) {
+const dsInput =
+  "px-3 py-2 text-sm bg-white border-2 border-black rounded-[0.375rem] text-[var(--ds-charcoal)] placeholder:text-[var(--ds-charcoal)]/40 focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed";
+
+const pushBtnSm =
+  "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)] hover:translate-x-0.5 hover:translate-y-0.5";
+
+export default function CmsManager({ isAdmin }: { isAdmin: boolean }) {
   const [tab, setTab] = useState<'home' | 'projects' | 'docs'>('home');
   const [loading, setLoading] = useState(false);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [docs, setDocs] = useState<Document[]>([]);
-  const [homepage, setHomepage] = useState<HomepageVisibility>({ featured_projects: [], featured_demos: [], featured_docs: [] });
+  const [homepage, setHomepage] = useState<HomepageVisibility>({ featured_projects: [], featured_docs: [] });
 
   const [editingFile, setEditingFile] = useState<{ path: string, content: string } | null>(null);
 
@@ -28,7 +35,7 @@ export default function CmsManager({ isAdmin, widgets }: { isAdmin: boolean; wid
       ]);
       setProjects(resP || []);
       setDocs(resD || []);
-      setHomepage(resH || { featured_projects: [], featured_demos: [], featured_docs: [] });
+      setHomepage(resH || { featured_projects: [], featured_docs: [] });
     };
     fetchAll().catch(console.error);
   }, []);
@@ -83,175 +90,236 @@ export default function CmsManager({ isAdmin, widgets }: { isAdmin: boolean; wid
   };
 
   return (
-    <div className="mt-12 bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-      <div className="flex border-b border-border bg-muted/50 overflow-x-auto">
-        <button onClick={() => setTab('home')} className={`flex-1 py-3 px-4 text-sm font-semibold transition whitespace-nowrap ${tab === 'home' ? 'bg-card text-primary border-b-2 border-indigo-600' : 'text-muted-foreground hover:bg-muted'}`}>Homepage Layout</button>
-        <button onClick={() => setTab('projects')} className={`flex-1 py-3 px-4 text-sm font-semibold transition whitespace-nowrap ${tab === 'projects' ? 'bg-card text-primary border-b-2 border-indigo-600' : 'text-muted-foreground hover:bg-muted'}`}>Projects Registry</button>
-        <button onClick={() => setTab('docs')} className={`flex-1 py-3 px-4 text-sm font-semibold transition whitespace-nowrap ${tab === 'docs' ? 'bg-card text-primary border-b-2 border-indigo-600' : 'text-muted-foreground hover:bg-muted'}`}>Docs & CMS</button>
+    <div className="mt-8 bg-white border-2 border-black shadow-[4px_4px_0px_0px_#000] overflow-hidden" style={{ borderRadius: '0.75rem' }}>
+      <div className="p-4 border-b-2 border-black bg-white">
+        <AdminTabBar
+          idPrefix="cms"
+          tabs={[
+            { value: 'home', label: 'Homepage Layout' },
+            { value: 'projects', label: 'Projects Registry' },
+            { value: 'docs', label: 'Docs & CMS' },
+          ]}
+          active={tab}
+          onChange={setTab}
+        />
       </div>
 
       <div className="p-6">
         {tab === 'home' && (
-          <div className="space-y-6">
-            <h3 className="text-lg font-bold">Homepage Visibility Manager</h3>
-            <p className="text-sm text-muted-foreground mb-6">Select which items appear on the main landing page.</p>
+          <div id={tabPanelId('cms', 'home')} role="tabpanel" aria-labelledby={tabId('cms', 'home')} className="space-y-6">
+            <h3 className="text-lg font-extrabold">Homepage Visibility Manager</h3>
+            <p className="text-sm text-[var(--ds-charcoal)]/70 mb-2">Select which items appear on the main landing page.</p>
 
             <div className="space-y-3">
-              <h4 className="font-semibold text-foreground/80 border-b pb-2">Featured Demos</h4>
-              <div className="flex flex-wrap gap-3">
-                {widgets.map(w => (
-                  <label key={w.id} className="flex items-center gap-2 text-sm bg-muted/50 px-3 py-2 rounded-md border border-border cursor-pointer">
-                    <input type="checkbox" checked={homepage.featured_demos?.includes(w.type)} onChange={e => {
-                      const nu = e.target.checked ? [...(homepage.featured_demos||[]), w.type] : homepage.featured_demos.filter(id => id !== w.type);
-                      setHomepage({ ...homepage, featured_demos: nu });
-                    }} disabled={!isAdmin} className="rounded" />
-                    {w.name}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="font-semibold text-foreground/80 border-b pb-2 mt-6">Featured Projects</h4>
+              <h4 className="font-bold text-sm border-b-2 border-black pb-2">Featured Projects</h4>
               <div className="flex flex-wrap gap-3">
                 {projects.map(p => (
-                  <label key={p.id} className="flex items-center gap-2 text-sm bg-muted/50 px-3 py-2 rounded-md border border-border cursor-pointer">
+                  <label key={p.id} className="flex items-center gap-2 text-sm bg-white px-3 py-2 border-2 border-black cursor-pointer" style={{ borderRadius: '0.375rem' }}>
                     <input type="checkbox" checked={homepage.featured_projects?.includes(p.id)} onChange={e => {
                       const nu = e.target.checked ? [...(homepage.featured_projects||[]), p.id] : homepage.featured_projects.filter(id => id !== p.id);
                       setHomepage({ ...homepage, featured_projects: nu });
-                    }} disabled={!isAdmin} className="rounded" />
+                    }} disabled={!isAdmin} className="accent-black" />
                     {p.title || 'Untitled'}
                   </label>
                 ))}
-                {projects.length === 0 && <span className="text-sm text-muted-foreground/70 italic">No projects created yet.</span>}
+                {projects.length === 0 && <span className="text-sm text-[var(--ds-charcoal)]/50 italic">No projects created yet.</span>}
               </div>
             </div>
 
             <div className="space-y-3">
-              <h4 className="font-semibold text-foreground/80 border-b pb-2 mt-6">Featured Docs</h4>
+              <h4 className="font-bold text-sm border-b-2 border-black pb-2 mt-6">Featured Docs</h4>
               <div className="flex flex-wrap gap-3">
                 {docs.map(d => (
-                  <label key={d.id} className="flex items-center gap-2 text-sm bg-muted/50 px-3 py-2 rounded-md border border-border cursor-pointer">
+                  <label key={d.id} className="flex items-center gap-2 text-sm bg-white px-3 py-2 border-2 border-black cursor-pointer" style={{ borderRadius: '0.375rem' }}>
                     <input type="checkbox" checked={homepage.featured_docs?.includes(d.id)} onChange={e => {
                       const nu = e.target.checked ? [...(homepage.featured_docs||[]), d.id] : homepage.featured_docs.filter(id => id !== d.id);
                       setHomepage({ ...homepage, featured_docs: nu });
-                    }} disabled={!isAdmin} className="rounded" />
+                    }} disabled={!isAdmin} className="accent-black" />
                     {d.title || 'Untitled'}
                   </label>
                 ))}
-                {docs.length === 0 && <span className="text-sm text-muted-foreground/70 italic">No documents created yet.</span>}
+                {docs.length === 0 && <span className="text-sm text-[var(--ds-charcoal)]/50 italic">No documents created yet.</span>}
               </div>
             </div>
 
-            <div className="pt-4 border-t border-border/50">
-              <button onClick={() => saveCms('homepage', homepage)} disabled={!isAdmin || loading} className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-bold disabled:opacity-50 transition shadow-sm">Save Homepage Layout</button>
+            <div className="pt-4 border-t-2 border-black">
+              <button
+                onClick={() => saveCms('homepage', homepage)}
+                disabled={!isAdmin || loading}
+                className={`px-5 py-2.5 text-sm font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 ${pushBtnSm} disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-[4px_4px_0px_0px_#000] disabled:hover:translate-x-0 disabled:hover:translate-y-0 bg-black text-white`}
+                style={{ borderRadius: '0.5rem' }}
+              >
+                Save Homepage Layout
+              </button>
             </div>
           </div>
         )}
 
         {tab === 'projects' && (
-          <div className="space-y-6">
+          <div id={tabPanelId('cms', 'projects')} role="tabpanel" aria-labelledby={tabId('cms', 'projects')} className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-bold">Project Registry</h3>
-                <p className="text-sm text-muted-foreground">Metadata for standalone external applications.</p>
+                <h3 className="text-lg font-extrabold">Project Registry</h3>
+                <p className="text-sm text-[var(--ds-charcoal)]/70">Metadata for standalone external applications.</p>
               </div>
-              <button onClick={() => setProjects([{ id: Math.random().toString(36).substring(2,8), title: '', description: '', tech_stack: [], live_url: '', github_url: '' }, ...projects])} className="px-4 py-2 bg-muted hover:bg-accent text-foreground rounded-lg text-sm font-bold transition" disabled={!isAdmin}>+ Add Project</button>
+              <button
+                onClick={() => setProjects([{ id: Math.random().toString(36).substring(2,8), title: '', description: '', tech_stack: [], live_url: '', github_url: '' }, ...projects])}
+                className="px-4 py-2 text-sm font-bold border-2 border-black bg-white hover:bg-black hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ borderRadius: '0.5rem' }}
+                disabled={!isAdmin}
+              >
+                + Add Project
+              </button>
             </div>
 
-            <div className="space-y-4">
-              {projects.map((p, i) => (
-                <div key={i} className="p-5 border border-border rounded-xl bg-muted/50 space-y-4 relative group">
-                  <button onClick={() => { const n = [...projects]; n.splice(i, 1); setProjects(n); }} className="absolute top-4 right-4 px-2 py-1 bg-rose-500/10 text-rose-500 rounded text-xs font-bold opacity-0 group-hover:opacity-100 transition" disabled={!isAdmin}>Remove</button>
-                  <div className="flex flex-col sm:flex-row gap-3 pr-16">
-                    <input value={p.title} onChange={e => { const n = [...projects]; n[i].title = e.target.value; setProjects(n); }} className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-md font-bold focus:ring-2 outline-none" placeholder="Project Title" disabled={!isAdmin} />
-                    <input value={p.id} onChange={e => { const n = [...projects]; n[i].id = e.target.value; setProjects(n); }} className="w-full sm:w-32 px-3 py-2 text-xs border border-slate-300 rounded-md font-mono text-muted-foreground focus:ring-2 outline-none bg-muted" placeholder="Slug ID" disabled={!isAdmin} />
+            {projects.length === 0 ? (
+              <div className="text-sm text-[var(--ds-charcoal)]/60 text-center py-12 border-2 border-dashed border-black/30" style={{ borderRadius: '0.75rem' }}>
+                No projects in registry. Click &quot;Add Project&quot; to begin.
+              </div>
+            ) : (
+              <div className="border-2 border-black divide-y-2 divide-black" style={{ borderRadius: '0.75rem' }}>
+                {projects.map((p, i) => (
+                  <div key={i} className="p-5 space-y-4 relative group">
+                    <button
+                      onClick={() => { const n = [...projects]; n.splice(i, 1); setProjects(n); }}
+                      className="absolute top-4 right-4 px-2 py-1 text-xs font-bold text-red-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:cursor-not-allowed disabled:pointer-events-none disabled:group-hover:opacity-0 disabled:focus:opacity-0"
+                      disabled={!isAdmin}
+                    >
+                      Remove
+                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 pr-16">
+                      <input value={p.title} onChange={e => { const n = [...projects]; n[i].title = e.target.value; setProjects(n); }} className={`flex-1 font-bold ${dsInput}`} placeholder="Project Title" disabled={!isAdmin} />
+                      <input value={p.id} onChange={e => { const n = [...projects]; n[i].id = e.target.value; setProjects(n); }} className={`w-full sm:w-32 text-xs font-mono ${dsInput}`} placeholder="Slug ID" disabled={!isAdmin} />
+                    </div>
+                    <textarea value={p.description} onChange={e => { const n = [...projects]; n[i].description = e.target.value; setProjects(n); }} className={`w-full min-h-[80px] ${dsInput}`} placeholder="Short description..." disabled={!isAdmin} />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <input value={p.tech_stack.join(', ')} onChange={e => { const n = [...projects]; n[i].tech_stack = e.target.value.split(',').map(s=>s.trim()).filter(Boolean); setProjects(n); }} className={`text-xs ${dsInput}`} placeholder="Tags (comma separated)" disabled={!isAdmin} />
+                      <input value={p.live_url} onChange={e => { const n = [...projects]; n[i].live_url = e.target.value; setProjects(n); }} className={`text-xs ${dsInput}`} placeholder="Live URL (https://...)" disabled={!isAdmin} />
+                      <input value={p.github_url} onChange={e => { const n = [...projects]; n[i].github_url = e.target.value; setProjects(n); }} className={`text-xs ${dsInput}`} placeholder="GitHub URL (https://...)" disabled={!isAdmin} />
+                    </div>
                   </div>
-                  <textarea value={p.description} onChange={e => { const n = [...projects]; n[i].description = e.target.value; setProjects(n); }} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md min-h-[80px] focus:ring-2 outline-none" placeholder="Short description..." disabled={!isAdmin} />
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <input value={p.tech_stack.join(', ')} onChange={e => { const n = [...projects]; n[i].tech_stack = e.target.value.split(',').map(s=>s.trim()).filter(Boolean); setProjects(n); }} className="px-3 py-2 text-xs border border-slate-300 rounded-md focus:ring-2 outline-none" placeholder="Tags (comma separated)" disabled={!isAdmin} />
-                    <input value={p.live_url} onChange={e => { const n = [...projects]; n[i].live_url = e.target.value; setProjects(n); }} className="px-3 py-2 text-xs border border-slate-300 rounded-md focus:ring-2 outline-none" placeholder="Live URL (https://...)" disabled={!isAdmin} />
-                    <input value={p.github_url} onChange={e => { const n = [...projects]; n[i].github_url = e.target.value; setProjects(n); }} className="px-3 py-2 text-xs border border-slate-300 rounded-md focus:ring-2 outline-none" placeholder="GitHub URL (https://...)" disabled={!isAdmin} />
-                  </div>
-                </div>
-              ))}
-              {projects.length === 0 && <div className="text-sm text-muted-foreground text-center py-12 border-2 border-dashed border-border rounded-xl">No projects in registry. Click &quot;Add Project&quot; to begin.</div>}
-            </div>
+                ))}
+              </div>
+            )}
 
-            <div className="pt-4 border-t border-border/50">
-              <button onClick={() => saveCms('projects', projects)} disabled={!isAdmin || loading} className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-bold disabled:opacity-50 transition shadow-sm">Save Projects Registry</button>
+            <div className="pt-4 border-t-2 border-black">
+              <button
+                onClick={() => saveCms('projects', projects)}
+                disabled={!isAdmin || loading}
+                className={`px-5 py-2.5 text-sm font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 ${pushBtnSm} disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-[4px_4px_0px_0px_#000] disabled:hover:translate-x-0 disabled:hover:translate-y-0 bg-black text-white`}
+                style={{ borderRadius: '0.5rem' }}
+              >
+                Save Projects Registry
+              </button>
             </div>
           </div>
         )}
 
         {tab === 'docs' && (
-          <div className="space-y-6">
+          <div id={tabPanelId('cms', 'docs')} role="tabpanel" aria-labelledby={tabId('cms', 'docs')} className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-bold">Document & Folder Registry</h3>
-                <p className="text-sm text-muted-foreground">Virtual tree pointing to read-only repos or native CMS files.</p>
+                <h3 className="text-lg font-extrabold">Document &amp; Folder Registry</h3>
+                <p className="text-sm text-[var(--ds-charcoal)]/70">Virtual tree pointing to read-only repos or native CMS files.</p>
               </div>
-              <button onClick={() => setDocs([{ id: Math.random().toString(36).substring(2,8), title: '', description: '', folder_path: '/blogs', source_type: 'native', content_target: '' }, ...docs])} className="px-4 py-2 bg-muted hover:bg-accent text-foreground rounded-lg text-sm font-bold transition" disabled={!isAdmin}>+ Add Document</button>
+              <button
+                onClick={() => setDocs([{ id: Math.random().toString(36).substring(2,8), title: '', description: '', folder_path: '/blogs', source_type: 'native', content_target: '' }, ...docs])}
+                className="px-4 py-2 text-sm font-bold border-2 border-black bg-white hover:bg-black hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ borderRadius: '0.5rem' }}
+                disabled={!isAdmin}
+              >
+                + Add Document
+              </button>
             </div>
 
-            <div className="space-y-4">
-              {docs.map((d, i) => (
-                <div key={i} className="p-5 border border-border rounded-xl bg-muted/50 space-y-4 relative group">
-                  <button onClick={() => { const n = [...docs]; n.splice(i, 1); setDocs(n); }} className="absolute top-4 right-4 px-2 py-1 bg-rose-500/10 text-rose-500 rounded text-xs font-bold opacity-0 group-hover:opacity-100 transition" disabled={!isAdmin}>Remove</button>
-                  <div className="flex flex-col sm:flex-row gap-3 pr-16">
-                    <input value={d.title} onChange={e => { const n = [...docs]; n[i].title = e.target.value; setDocs(n); }} className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-md font-bold focus:ring-2 outline-none" placeholder="Document Title" disabled={!isAdmin} />
-                    <input value={d.id} onChange={e => { const n = [...docs]; n[i].id = e.target.value; setDocs(n); }} className="w-full sm:w-32 px-3 py-2 text-xs border border-slate-300 rounded-md font-mono text-muted-foreground bg-muted focus:ring-2 outline-none" placeholder="Slug ID" disabled={!isAdmin} />
-                  </div>
-                  <input value={d.description} onChange={e => { const n = [...docs]; n[i].description = e.target.value; setDocs(n); }} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 outline-none" placeholder="Short description..." disabled={!isAdmin} />
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <input value={d.folder_path} onChange={e => { const n = [...docs]; n[i].folder_path = e.target.value; setDocs(n); }} className="sm:w-1/4 px-3 py-2 text-xs border border-slate-300 rounded-md focus:ring-2 outline-none" placeholder="Folder (e.g. /adrs)" disabled={!isAdmin} />
-                    <select value={d.source_type} onChange={e => { const n = [...docs]; n[i].source_type = e.target.value; setDocs(n); }} className="sm:w-1/4 px-3 py-2 text-xs border border-slate-300 rounded-md focus:ring-2 outline-none bg-card" disabled={!isAdmin}>
-                      <option value="external_url">External (GitHub)</option>
-                      <option value="native">Native (Filebrowser)</option>
-                    </select>
-                    <div className="flex-1 flex gap-2">
-                      <input value={d.content_target} onChange={e => { const n = [...docs]; n[i].content_target = e.target.value; setDocs(n); }} className="flex-1 px-3 py-2 text-xs border border-slate-300 rounded-md focus:ring-2 outline-none" placeholder={d.source_type === 'native' ? "/blogs/post.md" : "https://raw.github..."} disabled={!isAdmin} />
-                      {d.source_type === 'native' && d.content_target && (
-                        <button onClick={() => loadNativeFile(d.content_target)} className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-md text-xs font-bold transition shadow-sm whitespace-nowrap">Open Editor</button>
-                      )}
+            {docs.length === 0 ? (
+              <div className="text-sm text-[var(--ds-charcoal)]/60 text-center py-12 border-2 border-dashed border-black/30" style={{ borderRadius: '0.75rem' }}>
+                No documents in registry.
+              </div>
+            ) : (
+              <div className="border-2 border-black divide-y-2 divide-black" style={{ borderRadius: '0.75rem' }}>
+                {docs.map((d, i) => (
+                  <div key={i} className="p-5 space-y-4 relative group">
+                    <button
+                      onClick={() => { const n = [...docs]; n.splice(i, 1); setDocs(n); }}
+                      className="absolute top-4 right-4 px-2 py-1 text-xs font-bold text-red-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:cursor-not-allowed disabled:pointer-events-none disabled:group-hover:opacity-0 disabled:focus:opacity-0"
+                      disabled={!isAdmin}
+                    >
+                      Remove
+                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 pr-16">
+                      <input value={d.title} onChange={e => { const n = [...docs]; n[i].title = e.target.value; setDocs(n); }} className={`flex-1 font-bold ${dsInput}`} placeholder="Document Title" disabled={!isAdmin} />
+                      <input value={d.id} onChange={e => { const n = [...docs]; n[i].id = e.target.value; setDocs(n); }} className={`w-full sm:w-32 text-xs font-mono ${dsInput}`} placeholder="Slug ID" disabled={!isAdmin} />
+                    </div>
+                    <input value={d.description} onChange={e => { const n = [...docs]; n[i].description = e.target.value; setDocs(n); }} className={`w-full ${dsInput}`} placeholder="Short description..." disabled={!isAdmin} />
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input value={d.folder_path} onChange={e => { const n = [...docs]; n[i].folder_path = e.target.value; setDocs(n); }} className={`sm:w-1/4 text-xs ${dsInput}`} placeholder="Folder (e.g. /adrs)" disabled={!isAdmin} />
+                      <select value={d.source_type} onChange={e => { const n = [...docs]; n[i].source_type = e.target.value; setDocs(n); }} className={`sm:w-1/4 text-xs ${dsInput}`} disabled={!isAdmin}>
+                        <option value="external_url">External (GitHub)</option>
+                        <option value="native">Native (Filebrowser)</option>
+                      </select>
+                      <div className="flex-1 flex gap-2">
+                        <input value={d.content_target} onChange={e => { const n = [...docs]; n[i].content_target = e.target.value; setDocs(n); }} className={`flex-1 text-xs ${dsInput}`} placeholder={d.source_type === 'native' ? "/blogs/post.md" : "https://raw.github..."} disabled={!isAdmin} />
+                        {d.source_type === 'native' && d.content_target && (
+                          <button
+                            onClick={() => loadNativeFile(d.content_target)}
+                            className="px-4 py-2 border-2 border-black bg-[var(--ds-sage)] hover:bg-black hover:text-white text-xs font-bold transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                            style={{ borderRadius: '0.375rem' }}
+                          >
+                            Open Editor
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              {docs.length === 0 && <div className="text-sm text-muted-foreground text-center py-12 border-2 border-dashed border-border rounded-xl">No documents in registry.</div>}
-            </div>
+                ))}
+              </div>
+            )}
 
-            <div className="pt-4 border-t border-border/50">
-              <button onClick={() => saveCms('documents', docs)} disabled={!isAdmin || loading} className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-bold disabled:opacity-50 transition shadow-sm">Save Docs Registry</button>
+            <div className="pt-4 border-t-2 border-black">
+              <button
+                onClick={() => saveCms('documents', docs)}
+                disabled={!isAdmin || loading}
+                className={`px-5 py-2.5 text-sm font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 ${pushBtnSm} disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-[4px_4px_0px_0px_#000] disabled:hover:translate-x-0 disabled:hover:translate-y-0 bg-black text-white`}
+                style={{ borderRadius: '0.5rem' }}
+              >
+                Save Docs Registry
+              </button>
             </div>
           </div>
         )}
 
         {/* Markdown Editor Modal Overlay */}
         {editingFile && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 sm:p-8 backdrop-blur-sm">
-            <div className="bg-card rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between bg-muted/50 gap-4">
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 sm:p-8">
+            <div className="bg-white border-2 border-black shadow-[12px_12px_0px_0px_#000] w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden" style={{ borderRadius: '0.75rem' }}>
+              <div className="px-6 py-4 border-b-2 border-black flex flex-col sm:flex-row sm:items-center justify-between bg-white gap-4">
                 <div>
-                  <h3 className="font-bold text-lg text-foreground">Native Markdown Editor</h3>
-                  <span className="text-xs text-muted-foreground font-mono flex items-center gap-2 mt-1">
-                    <svg className="w-4 h-4 text-muted-foreground/70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
-                    {editingFile.path}
-                  </span>
+                  <h3 className="font-extrabold text-lg">Native Markdown Editor</h3>
+                  <span className="text-xs text-[var(--ds-charcoal)]/70 font-mono">{editingFile.path}</span>
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => setEditingFile(null)} className="px-5 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-accent hover:text-foreground rounded-lg transition">Discard Changes</button>
-                  <button onClick={saveNativeFile} disabled={loading} className="px-5 py-2.5 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                  <button
+                    onClick={() => setEditingFile(null)}
+                    className="px-5 py-2.5 text-sm font-bold text-[var(--ds-charcoal)]/70 hover:text-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                  >
+                    Discard Changes
+                  </button>
+                  <button
+                    onClick={saveNativeFile}
+                    disabled={loading}
+                    className={`px-5 py-2.5 text-sm font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 ${pushBtnSm} bg-black text-white flex items-center gap-2`}
+                    style={{ borderRadius: '0.5rem' }}
+                  >
                     Save to Storage
                   </button>
                 </div>
               </div>
-              <div className="flex-1 bg-slate-900 text-slate-50">
+              <div className="flex-1" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
                 <textarea
                   value={editingFile.content}
                   onChange={e => setEditingFile({...editingFile, content: e.target.value})}
-                  className="w-full h-full p-8 font-mono text-[13px] leading-relaxed resize-none outline-none bg-transparent"
+                  className="w-full h-full p-8 font-mono text-[13px] leading-relaxed resize-none outline-none bg-transparent text-white"
                   spellCheck={false}
                   placeholder="# Write your markdown here..."
                 />

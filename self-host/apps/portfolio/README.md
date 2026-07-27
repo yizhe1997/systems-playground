@@ -1,6 +1,6 @@
 # Portfolio
 
-An interactive portfolio and developer showcase by Chin Yi Zhe. Instead of just listing technologies on a resume, this project visually demonstrates backend architecture concepts (message queues, event streaming, caching, WebSockets) in real time, backed by a Go control plane that scales the demo infrastructure up and down on demand.
+A CMS-style personal portfolio by Chin Yi Zhe — projects, documentation, and resume requests, backed by a Go control plane. Previously also ran a live "playground" of real backend demo containers (Kafka/RabbitMQ/Redis widgets); retired in favor of a CMS-first design — see [ADR 004](./adrs/004-retire-live-playground.md).
 
 This is the flagship project of the [Systems Playground](../../../README.md) monorepo, living at `self-host/apps/portfolio/`.
 
@@ -8,11 +8,11 @@ This is the flagship project of the [Systems Playground](../../../README.md) mon
 
 * **Backend:** Go 1.24, [Fiber](https://gofiber.io/) v2
 * **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui
-* **Infrastructure (scale-to-zero demo widgets):** Redis (cache demo), RabbitMQ (queue demo), Redpanda/Kafka (event streaming demo)
+* **Data store:** Redis (CMS content, site config, resume requests)
 * **Auth:** NextAuth v4 (Google OAuth), BFF proxy pattern for admin routes
 * **File storage:** shared [Filebrowser](../../infra/filebrowser/) infra service (resume uploads, CMS assets)
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for how these pieces fit together, and [adrs/](./adrs/) for the reasoning behind the big calls (custom Go control plane, BFF security, resume storage).
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for how these pieces fit together, and [adrs/](./adrs/) for the reasoning behind the big calls (BFF security, resume storage, retiring the live playground).
 
 ## Quick Start
 
@@ -29,7 +29,6 @@ Once containers are up:
 
 * **Frontend (landing page + admin UI):** http://localhost:8086
 * **Backend API:** http://localhost:8085/health
-* **RabbitMQ management UI:** http://localhost:15672
 
 Useful commands, run from `self-host/apps/portfolio/`:
 
@@ -52,16 +51,6 @@ Working draft of the site's marketing copy. This is the source of truth when upd
 **Calls to Action:**
 - [Download Resume]
 - [View LinkedIn]
-
-### The Interactive Playground
-
-Live widgets connected to the real Go backend described above.
-
-**Widget A — The Message Queue (RabbitMQ).** Demonstrates asynchronous task processing. UI: a text input with a "Send Job" button, a visual "Queue," and 3 "Worker" servers. User types a message and clicks Send; the message appears in the queue, a worker lights up, a spinner runs for ~2s, then outputs `[Worker 2] Processed job: <message>`.
-
-**Widget B — The Cache Hit (Redis).** Demonstrates in-memory data store performance. UI: a "Fetch Database Records" button plus "Latency" and "Source" metric boxes. First click (cache miss) takes ~1500ms, source "PostgreSQL"; second click (cache hit) takes ~10ms, source "Redis Cache."
-
-**Widget C — Distributed Event Streaming (Redpanda).** Demonstrates pub/sub event streaming with an immutable log and replayable consumer groups.
 
 ### Architecture Case Studies
 

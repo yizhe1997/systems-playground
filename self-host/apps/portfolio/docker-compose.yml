@@ -11,8 +11,6 @@ services:
       - "8085:8080"
     environment:
       - REDIS_URL=redis:6379
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-      - KAFKA_BROKER=redpanda:9092
       # These read directly from the invoking process's environment (which `infisical run`
       # populates) via compose interpolation — no backend/.env file needed or written anymore.
       - ADMIN_API_KEY=${ADMIN_API_KEY}
@@ -22,12 +20,8 @@ services:
       - FILEBROWSER_PUBLIC_URL=${FILEBROWSER_PUBLIC_URL}
       - FILEBROWSER_ADMIN_USERNAME=${FILEBROWSER_ADMIN_USERNAME}
       - FILEBROWSER_ADMIN_PASSWORD=${FILEBROWSER_ADMIN_PASSWORD}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - redis
-      - rabbitmq
-      - redpanda
 
   frontend:
     restart: unless-stopped
@@ -49,46 +43,5 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    restart: unless-stopped
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
-      - "playground.widget=queue"
-      - "playground.name=Task Queuing & Worker Pools"
-      - "playground.desc=Use Cases: Offloading heavy, synchronous HTTP tasks (like generating PDFs, sending emails, or processing batch webhooks) to background worker pools to prevent API timeouts and database lock contention. Solution: Demonstrates strict FIFO task delegation using a RabbitMQ message broker. Jobs are distributed to background Go workers, safely processed, acknowledged, and permanently deleted from the queue."
-
-  redpanda:
-    image: redpandadata/redpanda:v23.1.2
-    command:
-      - redpanda
-      - start
-      - --smp
-      - '1'
-      - --reserve-memory
-      - 0M
-      - --overprovisioned
-      - --node-id
-      - '0'
-      - --kafka-addr
-      - PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:19092
-      - --advertise-kafka-addr
-      - PLAINTEXT://redpanda:9092,OUTSIDE://localhost:19092
-    ports:
-      - "19092:19092"
-    volumes:
-      - redpanda_data:/var/lib/redpanda/data
-    labels:
-      - "playground.widget=event"
-      - "playground.name=Distributed Event Streaming"
-      - "playground.desc=Use Cases: Architecting a robust microservice ecosystem where multiple distinct services (Inventory, Email, Analytics) need to react to a single event (Checkout) asynchronously without tight coupling. Solution: Demonstrates Pub/Sub Event Streaming using Redpanda (a lightweight C++ Kafka alternative). Orders are appended to an immutable event log. Distinct consumer groups read from the log at their own pace, proving that crashed microservices can safely replay events when they recover."
-
 volumes:
   redis_data:
-  rabbitmq_data:
-  redpanda_data:

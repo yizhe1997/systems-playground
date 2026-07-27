@@ -1,7 +1,7 @@
 # ADR 001: Custom Go Control Plane vs. Portainer for Infrastructure Management
 
 **Date:** 2026-03-22
-**Status:** Accepted
+**Status:** Superseded by [ADR 004](./004-retire-live-playground.md) (2026-07-23) — the live backend playground this control plane managed was retired. Kept for historical context; the reasoning below no longer reflects the current architecture.
 
 ## Context
 The Systems Playground requires backend services (Redis, RabbitMQ, Kafka, etc.) to demonstrate concepts. However, the host has limited RAM/CPU (see [`docs/DEPLOYMENT.md`](../../../../docs/DEPLOYMENT.md) for what the host is). Running a dozen enterprise infrastructure containers 24/7 is not feasible and will crash the server.

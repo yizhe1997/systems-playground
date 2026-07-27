@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+        "createdAt": "2026-07-26T11:36:06.093Z",
+        "reason": "User confirmed cubic-bezier(0.175, 0.885, 0.32, 1.275) is intentional - specified in the pinned Neo-Brutalist reference spec's push-button press effect"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(0.175,0.885,0.32,1.275)",
+        "createdAt": "2026-07-26T12:12:09.013Z",
+        "reason": "User confirmed cubic-bezier(0.175, 0.885, 0.32, 1.275) is intentional - specified in the pinned Neo-Brutalist reference spec's push-button press effect. Same value, no-space formatting required inside a Tailwind arbitrary-value bracket (GitHub hero button custom hover)."
+      }
+    ]
+  }
+}
