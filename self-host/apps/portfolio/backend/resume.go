@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -24,6 +25,70 @@ type ResumeRequest struct {
 	Reason    string `json:"reason"`
 	Status    string `json:"status"` // pending, approved, rejected
 	CreatedAt int64  `json:"created_at"`
+
+	// AI triage — set by runTriage() in triage.go
+	TriageStatus     string `json:"triage_status"` // queued, processing, complete, failed
+	AIModel          string `json:"ai_model,omitempty"`
+	Legitimacy       string `json:"legitimacy,omitempty"` // legit, suspicious, spam
+	LegitimacyReason string `json:"legitimacy_reason,omitempty"`
+	RoleFitSummary   string `json:"role_fit_summary,omitempty"`
+	TriageError      string `json:"triage_error,omitempty"`
+	TriageAttempts   int    `json:"triage_attempts,omitempty"`
+}
+
+const resumeRequestColumns = `id, name, email, company, reason, status, created_at,
+	triage_status, ai_model, legitimacy, legitimacy_reason, role_fit_summary,
+	triage_error, triage_attempts`
+
+func scanResumeRequest(row interface{ Scan(...any) error }) (*ResumeRequest, error) {
+	var r ResumeRequest
+	err := row.Scan(&r.ID, &r.Name, &r.Email, &r.Company, &r.Reason, &r.Status, &r.CreatedAt,
+		&r.TriageStatus, &r.AIModel, &r.Legitimacy, &r.LegitimacyReason, &r.RoleFitSummary,
+		&r.TriageError, &r.TriageAttempts)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+// findResumeRequest looks up a request by ID. Returns (nil, nil) if not found.
+func findResumeRequest(ctx context.Context, id string) (*ResumeRequest, error) {
+	row := db.QueryRowContext(ctx, "SELECT "+resumeRequestColumns+" FROM resume_requests WHERE id = ?", id)
+	req, err := scanResumeRequest(row)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return req, nil
+}
+
+// saveResumeRequest persists every mutable field of req. CreatedAt is
+// immutable after insert — the 30-day retention clock always starts at
+// creation, regardless of how many times a request is updated or retried.
+func saveResumeRequest(ctx context.Context, req *ResumeRequest) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE resume_requests SET
+			name = ?, email = ?, company = ?, reason = ?, status = ?,
+			triage_status = ?, ai_model = ?, legitimacy = ?, legitimacy_reason = ?,
+			role_fit_summary = ?, triage_error = ?, triage_attempts = ?
+		WHERE id = ?`,
+		req.Name, req.Email, req.Company, req.Reason, req.Status,
+		req.TriageStatus, req.AIModel, req.Legitimacy, req.LegitimacyReason,
+		req.RoleFitSummary, req.TriageError, req.TriageAttempts,
+		req.ID)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("resume request %s not found", req.ID)
+	}
+	return nil
 }
 
 func RegisterResumeRoutes(app *fiber.App) {
@@ -41,12 +106,14 @@ func RegisterResumeRoutes(app *fiber.App) {
 		req.ID = uuid.New().String()
 		req.Status = "pending"
 		req.CreatedAt = time.Now().UnixMilli()
+		req.TriageStatus = "queued"
 
-		// Save to Redis List
-		reqJSON, _ := json.Marshal(req)
-		err := redisClient.LPush(c.Context(), "resume_requests", reqJSON).Err()
+		_, err := db.ExecContext(c.Context(), `
+			INSERT INTO resume_requests (id, name, email, company, reason, status, created_at, triage_status)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			req.ID, req.Name, req.Email, req.Company, req.Reason, req.Status, req.CreatedAt, req.TriageStatus)
 		if err != nil {
-			log.Printf("❌ Failed to save resume request to Redis: %v", err)
+			log.Printf("❌ Failed to save resume request: %v", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to save request"})
 		}
 
@@ -58,7 +125,31 @@ func RegisterResumeRoutes(app *fiber.App) {
 			go fireNotificationWebhook(webhookUrl, req)
 		}
 
+		go runTriage(req.ID)
+
 		return c.Status(201).JSON(fiber.Map{"status": "success", "id": req.ID})
+	})
+
+	// Public: poll triage status for the requester's own submission.
+	// Deliberately omits name/email/company/reason — the queue page only
+	// needs to render workflow state, not echo submitted PII back.
+	app.Get("/api/resume/status/:id", func(c *fiber.Ctx) error {
+		req, err := findResumeRequest(c.Context(), c.Params("id"))
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to read request"})
+		}
+		if req == nil {
+			return c.Status(404).JSON(fiber.Map{"error": "Request not found"})
+		}
+		return c.JSON(fiber.Map{
+			"id":                req.ID,
+			"status":            req.Status,
+			"triage_status":     req.TriageStatus,
+			"ai_model":          req.AIModel,
+			"legitimacy":        req.Legitimacy,
+			"legitimacy_reason": req.LegitimacyReason,
+			"role_fit_summary":  req.RoleFitSummary,
+		})
 	})
 
 	// Protected Admin Routes
@@ -66,16 +157,19 @@ func RegisterResumeRoutes(app *fiber.App) {
 
 	// List all requests
 	admin.Get("/requests", func(c *fiber.Ctx) error {
-		vals, err := redisClient.LRange(c.Context(), "resume_requests", 0, -1).Result()
+		rows, err := db.QueryContext(c.Context(), "SELECT "+resumeRequestColumns+" FROM resume_requests ORDER BY created_at DESC")
 		if err != nil {
 			return c.JSON([]ResumeRequest{})
 		}
+		defer rows.Close()
 
 		requests := make([]ResumeRequest, 0)
-		for _, val := range vals {
-			var req ResumeRequest
-			json.Unmarshal([]byte(val), &req)
-			requests = append(requests, req)
+		for rows.Next() {
+			req, err := scanResumeRequest(rows)
+			if err != nil {
+				continue
+			}
+			requests = append(requests, *req)
 		}
 
 		return c.JSON(requests)
@@ -96,24 +190,10 @@ func RegisterResumeRoutes(app *fiber.App) {
 		}
 
 		ctx := c.Context()
-		vals, err := redisClient.LRange(ctx, "resume_requests", 0, -1).Result()
+		targetReq, err := findResumeRequest(ctx, id)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to read requests"})
 		}
-
-		var targetReq *ResumeRequest
-		var targetIndex int
-
-		for i, val := range vals {
-			var r ResumeRequest
-			json.Unmarshal([]byte(val), &r)
-			if r.ID == id {
-				targetReq = &r
-				targetIndex = i
-				break
-			}
-		}
-
 		if targetReq == nil {
 			return c.Status(404).JSON(fiber.Map{"error": "Request not found"})
 		}
@@ -142,15 +222,73 @@ func RegisterResumeRoutes(app *fiber.App) {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid action. Use 'approve' or 'reject'"})
 		}
 
-		// Update Redis List (LSET)
-		updatedJSON, _ := json.Marshal(targetReq)
-		err = redisClient.LSet(ctx, "resume_requests", int64(targetIndex), updatedJSON).Err()
-		if err != nil {
+		if err := saveResumeRequest(ctx, targetReq); err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to update request status"})
 		}
 
 		return c.JSON(fiber.Map{"status": "success", "request": targetReq})
 	})
+
+	// Requeue a failed (or stuck) AI triage call
+	admin.Post("/requests/:id/retriage", func(c *fiber.Ctx) error {
+		ctx := c.Context()
+		id := c.Params("id")
+
+		targetReq, err := findResumeRequest(ctx, id)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to read requests"})
+		}
+		if targetReq == nil {
+			return c.Status(404).JSON(fiber.Map{"error": "Request not found"})
+		}
+
+		targetReq.TriageStatus = "queued"
+		targetReq.TriageError = ""
+		if err := saveResumeRequest(ctx, targetReq); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to requeue triage"})
+		}
+
+		go runTriage(id)
+
+		return c.JSON(fiber.Map{"status": "success"})
+	})
+
+	startRetentionSweep()
+}
+
+// startRetentionSweep runs an immediate sweep, then repeats daily. The
+// retention window is 30 days from CreatedAt for every request regardless of
+// status — a failed or never-resolved request is purged on the same clock as
+// a resolved one, since a stale pending request is either spam or something
+// forgotten, not something worth holding onto indefinitely.
+func startRetentionSweep() {
+	go func() {
+		runRetentionSweep(context.Background())
+		ticker := time.NewTicker(24 * time.Hour)
+		for range ticker.C {
+			runRetentionSweep(context.Background())
+		}
+	}()
+}
+
+func runRetentionSweep(ctx context.Context) {
+	if db == nil {
+		return
+	}
+
+	cutoff := time.Now().AddDate(0, 0, -30).UnixMilli()
+	res, err := db.ExecContext(ctx, "DELETE FROM resume_requests WHERE created_at < ?", cutoff)
+	if err != nil {
+		log.Printf("⚠️ Retention sweep: failed to purge resume_requests: %v", err)
+		return
+	}
+
+	purged, err := res.RowsAffected()
+	if err != nil || purged == 0 {
+		return
+	}
+
+	log.Printf("🧹 Retention sweep: purged %d resume request(s) older than 30 days", purged)
 }
 
 // ---------------------------------------------

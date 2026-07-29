@@ -23,6 +23,7 @@ func main() {
 
 	// Initialize external systems
 	initRedis()
+	initDB()
 
 	RegisterCMSRoutes(app)
 	RegisterFilebrowserRoutes(app)

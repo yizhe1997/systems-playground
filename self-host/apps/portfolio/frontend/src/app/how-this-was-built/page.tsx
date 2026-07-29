@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Bot, Boxes, GitBranch, Server, Container, ArrowRight } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import { timeline, beforeAfterGallery } from '@/content/how-this-was-built';
 
 const stack = [
   { icon: Bot, label: 'Claude Code', detail: 'AI pair-programmer for the build itself' },
@@ -33,24 +34,25 @@ export default function HowThisWasBuiltPage() {
           the design decisions on this page too.
         </p>
 
+        {/* Built with */}
         <h2
           className="text-2xl mb-6 text-black"
           style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
         >
           Built with
         </h2>
-        <div className="grid sm:grid-cols-2 gap-4 mb-16">
+        <div className="grid sm:grid-cols-2 gap-4 mb-20">
           {stack.map(({ icon: Icon, label, detail }) => (
             <div
               key={label}
-              className="flex items-start gap-4 bg-white border-2 border-black p-5 shadow-[4px_4px_0px_0px_#000]"
+              className="group flex items-start gap-4 bg-white border-2 border-black p-5 shadow-[4px_4px_0px_0px_#000] transition-transform duration-200 hover:-translate-y-0.5"
               style={{ borderRadius: '0.75rem' }}
             >
               <div
-                className="w-10 h-10 shrink-0 flex items-center justify-center border-2 border-black"
+                className="w-10 h-10 shrink-0 flex items-center justify-center border-2 border-black transition-colors group-hover:bg-black"
                 style={{ backgroundColor: 'var(--ds-yellow)', borderRadius: '0.5rem' }}
               >
-                <Icon className="w-5 h-5 text-black" aria-hidden="true" />
+                <Icon className="w-5 h-5 text-black transition-colors group-hover:text-[var(--ds-yellow)]" aria-hidden="true" />
               </div>
               <div>
                 <p className="font-extrabold">{label}</p>
@@ -60,21 +62,111 @@ export default function HowThisWasBuiltPage() {
           ))}
         </div>
 
+        {/* Build timeline */}
+        <h2
+          className="text-2xl mb-2 text-black"
+          style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
+        >
+          The build timeline
+        </h2>
+        <p className="text-sm text-[var(--ds-charcoal)]/70 max-w-xl mb-10">
+          Real moments from this site&apos;s actual build session &mdash; including the parts that didn&apos;t work the
+          first time.
+        </p>
+        <div className="relative mb-20">
+          <div className="absolute left-5 top-2 bottom-2 w-0.5 bg-black/15 hidden sm:block" aria-hidden="true" />
+          <div className="space-y-6">
+            {timeline.map((moment, i) => (
+              <div key={i} className="relative sm:pl-16">
+                <div
+                  className="hidden sm:flex absolute left-0 top-0 w-10 h-10 items-center justify-center bg-black text-white font-extrabold text-sm border-2 border-black"
+                  style={{ fontFamily: 'var(--ds-font-display)', borderRadius: '0.5rem' }}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </div>
+                <div
+                  className="bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_#000]"
+                  style={{ borderRadius: '0.75rem' }}
+                >
+                  <p className="text-sm italic text-[var(--ds-charcoal)]/70 mb-3">&ldquo;{moment.prompt}&rdquo;</p>
+                  <p className="text-sm mb-3">
+                    <span className="font-extrabold uppercase tracking-wider text-xs text-[var(--ds-charcoal)]/50 mr-2">Decision</span>
+                    {moment.decision}
+                  </p>
+                  <p
+                    className="text-sm font-medium p-3 border-2 border-black"
+                    style={{ backgroundColor: 'var(--ds-sage)', borderRadius: '0.5rem' }}
+                  >
+                    <span className="font-extrabold uppercase tracking-wider text-xs mr-2">Result</span>
+                    {moment.result}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Before / after */}
+        <h2
+          className="text-2xl mb-2 text-black"
+          style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
+        >
+          Before / after
+        </h2>
+        <p className="text-sm text-[var(--ds-charcoal)]/70 max-w-xl mb-10">
+          A few real diffs from this build, not staged examples.
+        </p>
+        <div className="space-y-10 mb-20">
+          {beforeAfterGallery.map((item) => (
+            <div key={item.title}>
+              <p className="font-extrabold mb-1">{item.title}</p>
+              <p className="text-sm text-[var(--ds-charcoal)]/70 mb-4 max-w-2xl">{item.context}</p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="border-2 border-black overflow-hidden" style={{ borderRadius: '0.75rem' }}>
+                  <div className="px-4 py-2 text-xs font-extrabold uppercase tracking-wider bg-white border-b-2 border-black">
+                    Before
+                  </div>
+                  <pre
+                    className="p-4 text-xs font-mono leading-relaxed overflow-x-auto text-white"
+                    style={{ backgroundColor: 'var(--ds-charcoal)' }}
+                  >
+                    <code>{item.before}</code>
+                  </pre>
+                </div>
+                <div className="border-2 border-black overflow-hidden" style={{ borderRadius: '0.75rem' }}>
+                  <div
+                    className="px-4 py-2 text-xs font-extrabold uppercase tracking-wider border-b-2 border-black"
+                    style={{ backgroundColor: 'var(--ds-sage)' }}
+                  >
+                    After
+                  </div>
+                  <pre
+                    className="p-4 text-xs font-mono leading-relaxed overflow-x-auto text-white"
+                    style={{ backgroundColor: 'var(--ds-charcoal)' }}
+                  >
+                    <code>{item.after}</code>
+                  </pre>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Reflection */}
         <h2
           className="text-2xl mb-6 text-black"
           style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
         >
-          The build log
+          What I&apos;d do differently
         </h2>
         <div
-          className="bg-white border-2 border-black p-8 shadow-[8px_8px_0px_0px_#000] mb-6"
+          className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000] mb-16"
           style={{ borderRadius: '0.75rem' }}
         >
-          <p className="font-bold mb-1">Curated write-up coming soon</p>
+          <p className="font-bold mb-1">Not written yet</p>
           <p className="text-sm text-[var(--ds-charcoal)]/70 max-w-xl">
-            The real prompt-to-shipped-code walkthrough &mdash; before/after comparisons, the actual decisions and
-            dead ends &mdash; is being drafted from this build&apos;s real history rather than written after the
-            fact.
+            This part has to be my own honest take, not something generated for me &mdash; it&apos;s the section that
+            actually signals judgment, not just tool usage.
           </p>
         </div>
 

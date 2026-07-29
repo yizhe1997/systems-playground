@@ -11,15 +11,19 @@ services:
       - "8085:8080"
     environment:
       - REDIS_URL=redis:6379
+      - SQLITE_PATH=/data/portfolio.db
       # These read directly from the invoking process's environment (which `infisical run`
       # populates) via compose interpolation — no backend/.env file needed or written anymore.
       - ADMIN_API_KEY=${ADMIN_API_KEY}
       - SMTP_EMAIL=${SMTP_EMAIL}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - RESUME_WEBHOOK_URL=${RESUME_WEBHOOK_URL}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - FILEBROWSER_PUBLIC_URL=${FILEBROWSER_PUBLIC_URL}
       - FILEBROWSER_ADMIN_USERNAME=${FILEBROWSER_ADMIN_USERNAME}
       - FILEBROWSER_ADMIN_PASSWORD=${FILEBROWSER_ADMIN_PASSWORD}
+    volumes:
+      - backend_data:/data
     depends_on:
       - redis
 
@@ -45,3 +49,4 @@ services:
 
 volumes:
   redis_data:
+  backend_data:
