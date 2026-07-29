@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 
@@ -20,13 +19,9 @@ export default function AboutPage() {
           About
         </h1>
 
-        <p className="text-lg font-medium max-w-2xl mb-4">
+        <p className="text-lg font-medium max-w-2xl mb-14">
           Chin Yi Zhe &mdash; Backend / Platform Engineer. Builds and operates real self-hosted infrastructure,
           with AI as a working collaborator rather than a novelty.
-        </p>
-        <p className="text-sm text-[var(--ds-charcoal)]/70 max-w-2xl mb-14">
-          See <Link href="/how-this-was-built" className="underline hover:text-black">How This Was Built</Link> for
-          how this site itself was built and designed.
         </p>
 
         <h2

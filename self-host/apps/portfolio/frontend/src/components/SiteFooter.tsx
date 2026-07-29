@@ -8,7 +8,6 @@ import { fetchJson } from '@/lib/fetch-json';
 const exploreLinks = [
   { href: '/projects', label: 'Projects' },
   { href: '/docs', label: 'Docs' },
-  { href: '/how-this-was-built', label: "How it's built" },
   { href: '/about', label: 'About' },
 ];
 
