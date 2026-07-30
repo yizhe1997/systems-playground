@@ -12,7 +12,7 @@ const dsInput =
   "h-auto w-full px-3 py-2.5 bg-white border-2 border-black rounded-[0.5rem] text-[var(--ds-charcoal)] placeholder:text-[var(--ds-charcoal)]/40 focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] focus-visible:ring-0 transition-shadow";
 
 const pushBtnSm =
-  "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)] hover:translate-x-0.5 hover:translate-y-0.5";
+  "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-0.5 hover:translate-y-0.5";
 
 export default function AdminDashboard() {
   const { data: session } = useSession();

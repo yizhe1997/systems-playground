@@ -21,7 +21,7 @@ export default function SiteHeader() {
         <ClickEffects interactionMode="burst" color="#171e19" duration={0.4} strokeWidth={3} effectSize={70} showLabel={false} />
       </div>
       <header className="sticky top-0 z-50 w-full h-20 bg-[var(--ds-yellow)] border-b-2 border-black flex items-center">
-      <div className="max-w-6xl mx-auto px-6 w-full grid grid-cols-[1fr_auto_1fr] items-center">
+      <div className="max-w-6xl mx-auto px-6 w-full flex items-center justify-between sm:grid sm:grid-cols-[1fr_auto_1fr]">
         <Link href="/" className="flex items-center gap-2 group justify-self-start" aria-label="Home">
           <div
             className="w-10 h-10 flex items-center justify-center bg-black text-[var(--ds-yellow)] text-sm border-2 border-black group-hover:rotate-6 transition-transform"

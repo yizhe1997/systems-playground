@@ -22,7 +22,7 @@ type Project = {
 const iconByIndex = [Server, Boxes, Cpu];
 
 const pushBtn =
-  "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)] hover:translate-x-1 hover:translate-y-1";
+  "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-1";
 
 export default function Home() {
   const { open: openResumeRequest } = useResumeRequest();
@@ -34,6 +34,8 @@ export default function Home() {
   const [resumeUrl, setResumeUrl] = useState<string>('#');
   const [linkedinUrl, setLinkedinUrl] = useState<string>('#');
   const [githubUrl, setGithubUrl] = useState<string>('#');
+
+  const isConfigured = (url: string) => !!url && url !== '#';
 
   const formatUrl = (url: string) => {
     if (!url || url === '#') return '#';
@@ -142,26 +144,30 @@ export default function Home() {
                 <FileDown className="w-4 h-4" aria-hidden="true" />
                 Request resume
               </button>
-              <a
-                href={formatUrl(githubUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
-                style={{ borderRadius: '0.75rem' }}
-              >
-                <GithubIcon />
-                GitHub
-              </a>
-              <a
-                href={formatUrl(linkedinUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
-                style={{ borderRadius: '0.75rem' }}
-              >
-                <LinkedinIcon />
-                LinkedIn
-              </a>
+              {isConfigured(githubUrl) && (
+                <a
+                  href={formatUrl(githubUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                  style={{ borderRadius: '0.75rem' }}
+                >
+                  <GithubIcon />
+                  GitHub
+                </a>
+              )}
+              {isConfigured(linkedinUrl) && (
+                <a
+                  href={formatUrl(linkedinUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+                  style={{ borderRadius: '0.75rem' }}
+                >
+                  <LinkedinIcon />
+                  LinkedIn
+                </a>
+              )}
             </div>
           </div>
 

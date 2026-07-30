@@ -1,12 +1,13 @@
 'use client';
 
 import { createContext, useContext, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const pushBtn =
-  'transition-transform duration-200 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)] hover:translate-x-1 hover:translate-y-1';
+  'transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-1';
 
 const dsInput =
   'w-full px-3 py-2.5 bg-white border-2 border-black rounded-[0.5rem] text-[var(--ds-charcoal)] placeholder:text-[var(--ds-charcoal)]/40 focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow';
@@ -24,6 +25,7 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
   const [form, setForm] = useState({ name: '', email: '', company: '', reason: '' });
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,9 +38,10 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
         body: JSON.stringify(form),
       });
       if (res.ok) {
+        const { id } = await res.json();
         setModalOpen(false);
-        toast({ title: 'Request sent', description: 'Check your email soon.' });
         setForm({ name: '', email: '', company: '', reason: '' });
+        router.push(`/resume/status/${id}`);
       } else {
         toast({ title: "Couldn't send that", description: 'Try again in a moment.', variant: 'destructive' });
       }
@@ -67,6 +70,10 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
               The full resume isn&apos;t publicly exposed. Fill this in and an expiring link gets emailed once approved.
             </DialogDescription>
           </DialogHeader>
+
+          <p className="text-xs text-[var(--ds-charcoal)]/60 -mt-2">
+            Already sent a request? Check the confirmation email for a link to track its status.
+          </p>
           <form onSubmit={handleSubmit} className="space-y-4 mt-2 text-sm">
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-wider">Name</label>

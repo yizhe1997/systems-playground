@@ -11,7 +11,7 @@ const dsInput =
   "px-3 py-2 text-sm bg-white border-2 border-black rounded-[0.375rem] text-[var(--ds-charcoal)] placeholder:text-[var(--ds-charcoal)]/40 focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed";
 
 const pushBtnSm =
-  "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)] hover:translate-x-0.5 hover:translate-y-0.5";
+  "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-0.5 hover:translate-y-0.5";
 
 export default function CmsManager({ isAdmin }: { isAdmin: boolean }) {
   const [tab, setTab] = useState<'home' | 'projects' | 'docs'>('home');

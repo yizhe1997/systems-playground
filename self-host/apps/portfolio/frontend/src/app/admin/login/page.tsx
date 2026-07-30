@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Shield } from "lucide-react";
 
 const pushBtn =
-  "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)] hover:translate-x-1 hover:translate-y-1";
+  "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-1";
 
 export default function AdminLoginPage() {
   return (

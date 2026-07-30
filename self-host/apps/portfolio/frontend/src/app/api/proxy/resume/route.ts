@@ -52,7 +52,11 @@ export async function GET(req: NextRequest) {
           ...req,
           name: redactedName,
           email: redactedEmail,
-          reason: req.reason ? "**********************" : ""
+          reason: req.reason ? "**********************" : "",
+          // AI-generated text paraphrases the redacted reason/context above -
+          // leaving it unredacted would undo the point of redacting reason.
+          legitimacy_reason: req.legitimacy_reason ? "**********************" : "",
+          role_fit_summary: req.role_fit_summary ? "**********************" : "",
         };
       });
       return NextResponse.json(redactedData);

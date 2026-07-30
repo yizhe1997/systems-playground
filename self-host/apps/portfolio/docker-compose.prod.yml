@@ -5,6 +5,10 @@
 services:
   backend:
     image: ${REGISTRY_HOST}/systems-playground-backend:latest
+    environment:
+      # Hardcoded rather than sourced from Infisical - not a secret, and it must
+      # match the frontend's tunnel hostname below exactly.
+      - FRONTEND_PUBLIC_URL=https://portfolio.38569123.xyz
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
       # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh - already live at

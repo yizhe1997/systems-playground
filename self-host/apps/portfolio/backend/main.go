@@ -9,6 +9,21 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
+// corsAllowedOrigins reuses FRONTEND_PUBLIC_URL (already set for email links -
+// same underlying concept: "where does my real frontend live") as the CORS
+// allowlist. The public, unauthenticated endpoints here (resume requests,
+// config, etc.) must not accept requests claiming to originate from anywhere
+// the operator didn't explicitly configure - AllowOrigins: "*" let literally
+// any site call them directly. Falls back to the two local-dev origins this
+// repo actually uses (npm run dev on :3000, the docker-compose frontend on
+// :8086) when unset, rather than defaulting back to a wildcard.
+func corsAllowedOrigins() string {
+	if v := os.Getenv("FRONTEND_PUBLIC_URL"); v != "" {
+		return v
+	}
+	return "http://localhost:3000,http://localhost:8086"
+}
+
 func main() {
 	app := fiber.New(fiber.Config{
 		AppName: "Systems Playground API",
@@ -17,7 +32,7 @@ func main() {
 	// Middleware
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*", // We'll lock this down later in production
+		AllowOrigins: corsAllowedOrigins(),
 		AllowHeaders: "Origin, Content-Type, Accept, X-Admin-Token",
 	}))
 

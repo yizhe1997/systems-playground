@@ -125,6 +125,10 @@ func RegisterResumeRoutes(app *fiber.App) {
 			go fireNotificationWebhook(webhookUrl, req)
 		}
 
+		// Requester shouldn't have to keep the tab open to see how it went -
+		// send a tracking link they can come back to from any device.
+		go sendRequestReceivedEmail(req.Email, req.Name, req.ID)
+
 		go runTriage(req.ID)
 
 		return c.Status(201).JSON(fiber.Map{"status": "success", "id": req.ID})
@@ -412,4 +416,42 @@ func sendEmailViaSMTP(toEmail string, name string, shareLink string, customSubje
 	}
 
 	return nil
+}
+
+// sendRequestReceivedEmail confirms the submission and gives the requester a
+// link back to the live status page - they shouldn't have to keep the tab
+// open while a human reviews the request.
+func sendRequestReceivedEmail(toEmail string, name string, requestID string) {
+	statusURL := fmt.Sprintf("%s/resume/status/%s", frontendPublicURL(), requestID)
+
+	smtpEmail := os.Getenv("SMTP_EMAIL")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+	if smtpEmail == "" || smtpPassword == "" {
+		log.Printf("📩 SIMULATED EMAIL TO %s: Track your request here: %s\n", toEmail, statusURL)
+		return
+	}
+
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+	auth := smtp.PlainAuth("", smtpEmail, smtpPassword, smtpHost)
+
+	subject := "Subject: Chin Yi Zhe - Resume request received\r\n"
+	mime := "MIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n"
+	body := fmt.Sprintf(
+		"<p>Hi %s,</p><p>Got your resume request - it's being triaged and reviewed now.</p><p><a href='%s'>Track its status here</a></p><p>Best regards,<br/>Chin Yi Zhe</p>",
+		name, statusURL,
+	)
+	msg := []byte("From: " + smtpEmail + "\r\nTo: " + toEmail + "\r\n" + subject + mime + body)
+
+	if err := smtp.SendMail(smtpHost+":"+smtpPort, auth, smtpEmail, []string{toEmail}, msg); err != nil {
+		log.Printf("⚠️ Failed to send request-received email to %s: %v", toEmail, err)
+	}
+}
+
+func frontendPublicURL() string {
+	url := os.Getenv("FRONTEND_PUBLIC_URL")
+	if url == "" {
+		return "http://localhost:8086"
+	}
+	return url
 }

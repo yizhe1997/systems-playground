@@ -11,6 +11,8 @@ const exploreLinks = [
   { href: '/about', label: 'About' },
 ];
 
+const isConfigured = (url: string) => !!url && url !== '#';
+
 const formatUrl = (url: string) => {
   if (!url || url === '#') return '#';
   return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
@@ -29,10 +31,14 @@ export default function SiteFooter() {
       .catch((err) => console.error('Failed to load footer config:', err));
   }, []);
 
+  const hasGithub = isConfigured(githubUrl);
+  const hasLinkedin = isConfigured(linkedinUrl);
+  const hasSocial = hasGithub || hasLinkedin;
+
   return (
     <footer className="pt-16 pb-8 border-t-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
       <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-2 sm:grid-cols-[2fr_1fr_1fr] gap-10 mb-14">
+        <div className={`grid grid-cols-2 ${hasSocial ? 'sm:grid-cols-[2fr_1fr_1fr]' : 'sm:grid-cols-[2fr_1fr]'} gap-10 mb-14`}>
           <div className="col-span-2 sm:col-span-1 max-w-sm">
             <div className="flex items-center gap-2 mb-4">
               <div
@@ -66,31 +72,37 @@ export default function SiteFooter() {
             </ul>
           </div>
 
-          <div>
-            <h4 className="font-bold mb-5 text-[var(--ds-yellow)]">Social</h4>
-            <div className="flex gap-4">
-              <a
-                href={formatUrl(githubUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="GitHub"
-                className="w-11 h-11 flex items-center justify-center bg-[#272727] border-2 border-black text-white hover:bg-[var(--ds-yellow)] hover:text-black transition-colors"
-                style={{ borderRadius: '0.5rem' }}
-              >
-                <GithubIcon />
-              </a>
-              <a
-                href={formatUrl(linkedinUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="LinkedIn"
-                className="w-11 h-11 flex items-center justify-center bg-[#272727] border-2 border-black text-white hover:bg-[var(--ds-yellow)] hover:text-black transition-colors"
-                style={{ borderRadius: '0.5rem' }}
-              >
-                <LinkedinIcon />
-              </a>
+          {hasSocial && (
+            <div>
+              <h4 className="font-bold mb-5 text-[var(--ds-yellow)]">Social</h4>
+              <div className="flex gap-4">
+                {hasGithub && (
+                  <a
+                    href={formatUrl(githubUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="GitHub"
+                    className="w-11 h-11 flex items-center justify-center bg-[#272727] border-2 border-black text-white hover:bg-[var(--ds-yellow)] hover:text-black transition-colors"
+                    style={{ borderRadius: '0.5rem' }}
+                  >
+                    <GithubIcon />
+                  </a>
+                )}
+                {hasLinkedin && (
+                  <a
+                    href={formatUrl(linkedinUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="LinkedIn"
+                    className="w-11 h-11 flex items-center justify-center bg-[#272727] border-2 border-black text-white hover:bg-[var(--ds-yellow)] hover:text-black transition-colors"
+                    style={{ borderRadius: '0.5rem' }}
+                  >
+                    <LinkedinIcon />
+                  </a>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="border-t border-white/10 pt-6">
