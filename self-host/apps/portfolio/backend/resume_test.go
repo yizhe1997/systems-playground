@@ -113,7 +113,9 @@ func TestSaveResumeRequest_UnknownID(t *testing.T) {
 // TestRunRetentionSweep_ClockStartsAtCreation is the explicit regression test
 // for the operator's requirement that retention is 30 days from CreatedAt for
 // every request regardless of status - a failed/never-resolved request does
-// not get a fresh clock just because it was retried.
+// not get a fresh clock just because it was retried. Retention anonymizes
+// (clears name/email/reason) rather than deleting the row - company, status,
+// and triage/legitimacy fields must survive for aggregate analysis.
 func TestRunRetentionSweep_ClockStartsAtCreation(t *testing.T) {
 	setupTestDB(t)
 
@@ -123,27 +125,52 @@ func TestRunRetentionSweep_ClockStartsAtCreation(t *testing.T) {
 
 	insertTestRequest(t, ResumeRequest{
 		ID: "old-failed", Name: "Old", Email: "old@example.com", Company: "Acme",
-		Status: "pending", CreatedAt: old, TriageStatus: "failed", TriageAttempts: 3,
+		Reason: "hiring", Status: "pending", CreatedAt: old, TriageStatus: "failed", TriageAttempts: 3,
 	})
 	insertTestRequest(t, ResumeRequest{
 		ID: "old-approved", Name: "Old2", Email: "old2@example.com", Company: "Acme",
-		Status: "approved", CreatedAt: old, TriageStatus: "complete",
+		Reason: "hiring", Status: "approved", CreatedAt: old, TriageStatus: "complete",
 	})
 	insertTestRequest(t, ResumeRequest{
 		ID: "recent", Name: "Recent", Email: "recent@example.com", Company: "Acme",
-		Status: "pending", CreatedAt: recent, TriageStatus: "queued",
+		Reason: "hiring", Status: "pending", CreatedAt: recent, TriageStatus: "queued",
 	})
 
 	runRetentionSweep(context.Background())
 
-	if got, _ := findResumeRequest(context.Background(), "old-failed"); got != nil {
-		t.Errorf("expected old failed request to be purged regardless of status, still found: %+v", got)
+	oldFailed, _ := findResumeRequest(context.Background(), "old-failed")
+	if oldFailed == nil {
+		t.Fatal("expected old failed request row to survive anonymization (not be deleted), got nil")
 	}
-	if got, _ := findResumeRequest(context.Background(), "old-approved"); got != nil {
-		t.Errorf("expected old approved request to be purged, still found: %+v", got)
+	if oldFailed.Name != "" || oldFailed.Email != "" || oldFailed.Reason != "" {
+		t.Errorf("expected old failed request to be anonymized regardless of status, still has PII: %+v", oldFailed)
 	}
-	if got, _ := findResumeRequest(context.Background(), "recent"); got == nil {
-		t.Error("expected recent request to survive the sweep, it was purged")
+	if oldFailed.Company != "Acme" || oldFailed.Status != "pending" {
+		t.Errorf("expected non-PII fields to survive anonymization, got: %+v", oldFailed)
+	}
+
+	oldApproved, _ := findResumeRequest(context.Background(), "old-approved")
+	if oldApproved == nil {
+		t.Fatal("expected old approved request row to survive anonymization, got nil")
+	}
+	if oldApproved.Name != "" || oldApproved.Email != "" || oldApproved.Reason != "" {
+		t.Errorf("expected old approved request to be anonymized, still has PII: %+v", oldApproved)
+	}
+
+	recentReq, _ := findResumeRequest(context.Background(), "recent")
+	if recentReq == nil {
+		t.Fatal("expected recent request to survive the sweep, got nil")
+	}
+	if recentReq.Name == "" || recentReq.Email == "" {
+		t.Error("expected recent request to keep its PII, it was anonymized early")
+	}
+
+	// Re-running the sweep against already-anonymized rows must be a no-op,
+	// not an error - this is the idempotency the `email != ''` WHERE clause
+	// is supposed to guarantee.
+	runRetentionSweep(context.Background())
+	if again, _ := findResumeRequest(context.Background(), "old-failed"); again == nil || again.Company != "Acme" {
+		t.Errorf("expected re-running the sweep to be a no-op on already-anonymized rows, got: %+v", again)
 	}
 }
 

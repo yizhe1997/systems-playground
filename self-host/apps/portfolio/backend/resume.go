@@ -14,8 +14,24 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/google/uuid"
 )
+
+// resumeRequestLimiter caps submissions per IP. This endpoint isn't just
+// spam-prone — every submission fires a real, billed Claude Haiku triage
+// call and an SMTP send, so a scripted flood has a real cost, not just an
+// annoyance. 5/hour is generous for a real applicant (nobody re-submits
+// that often) and expensive for a bot.
+var resumeRequestLimiter = limiter.New(limiter.Config{
+	Max:        5,
+	Expiration: 1 * time.Hour,
+	LimitReached: func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+			"error": "Too many requests. Please try again later.",
+		})
+	},
+})
 
 type ResumeRequest struct {
 	ID        string `json:"id"`
@@ -93,7 +109,7 @@ func saveResumeRequest(ctx context.Context, req *ResumeRequest) error {
 
 func RegisterResumeRoutes(app *fiber.App) {
 	// Public endpoint to submit a new resume request
-	app.Post("/api/resume/request", func(c *fiber.Ctx) error {
+	app.Post("/api/resume/request", resumeRequestLimiter, func(c *fiber.Ctx) error {
 		var req ResumeRequest
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
@@ -204,6 +220,15 @@ func RegisterResumeRoutes(app *fiber.App) {
 
 		// Process Action
 		if payload.Action == "approve" {
+			// A request left "pending" for 30+ days gets its contact info
+			// anonymized by the retention sweep (see runRetentionSweep) but
+			// keeps its status - there's no email left to deliver a link to,
+			// so fail clearly here instead of attempting (and silently
+			// failing) an SMTP send to an empty recipient.
+			if targetReq.Email == "" {
+				return c.Status(400).JSON(fiber.Map{"error": "This request's contact info was anonymized after 30 days and can no longer be approved"})
+			}
+
 			targetReq.Status = "approved"
 
 			// 1. Ask Filebrowser for a 24h expiring link
@@ -262,9 +287,10 @@ func RegisterResumeRoutes(app *fiber.App) {
 
 // startRetentionSweep runs an immediate sweep, then repeats daily. The
 // retention window is 30 days from CreatedAt for every request regardless of
-// status — a failed or never-resolved request is purged on the same clock as
-// a resolved one, since a stale pending request is either spam or something
-// forgotten, not something worth holding onto indefinitely.
+// status — a failed or never-resolved request is anonymized on the same
+// clock as a resolved one, since a stale pending request is either spam or
+// something forgotten, not something worth holding identifiable data on
+// indefinitely.
 func startRetentionSweep() {
 	go func() {
 		runRetentionSweep(context.Background())
@@ -275,24 +301,34 @@ func startRetentionSweep() {
 	}()
 }
 
+// runRetentionSweep anonymizes (not deletes) requests older than 30 days:
+// name, email, and reason — the fields that can identify or contain
+// free-text PII about the requester — are cleared, while company, status,
+// and the triage/legitimacy verdict survive so conversion/volume trends
+// stay analyzable without retaining anyone's contact info. The WHERE clause
+// doubles as the idempotency check: email is required at submission time
+// (see the POST handler), so `email != ''` is exactly "not yet anonymized"
+// and re-running this daily against already-anonymized rows is a no-op.
 func runRetentionSweep(ctx context.Context) {
 	if db == nil {
 		return
 	}
 
 	cutoff := time.Now().AddDate(0, 0, -30).UnixMilli()
-	res, err := db.ExecContext(ctx, "DELETE FROM resume_requests WHERE created_at < ?", cutoff)
+	res, err := db.ExecContext(ctx, `
+		UPDATE resume_requests SET name = '', email = '', reason = ''
+		WHERE created_at < ? AND email != ''`, cutoff)
 	if err != nil {
-		log.Printf("⚠️ Retention sweep: failed to purge resume_requests: %v", err)
+		log.Printf("⚠️ Retention sweep: failed to anonymize resume_requests: %v", err)
 		return
 	}
 
-	purged, err := res.RowsAffected()
-	if err != nil || purged == 0 {
+	anonymized, err := res.RowsAffected()
+	if err != nil || anonymized == 0 {
 		return
 	}
 
-	log.Printf("🧹 Retention sweep: purged %d resume request(s) older than 30 days", purged)
+	log.Printf("🧹 Retention sweep: anonymized %d resume request(s) older than 30 days", anonymized)
 }
 
 // ---------------------------------------------

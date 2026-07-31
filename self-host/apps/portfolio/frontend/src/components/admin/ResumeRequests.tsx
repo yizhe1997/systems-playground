@@ -246,11 +246,19 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
           </div>
         ) : (
           <div className="divide-y-2 divide-black">
-            {paginated.map(req => (
+            {paginated.map(req => {
+              // Retention sweep anonymizes name/email/reason 30 days after
+              // submission (see backend/resume.go runRetentionSweep) - it
+              // never deletes the row, so this state is expected and
+              // permanent, not missing/corrupted data.
+              const isAnonymized = !req.name && !req.email;
+              return (
               <div key={req.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1 flex-wrap">
-                    <h4 className="font-extrabold text-lg">{req.name}</h4>
+                    <h4 className="font-extrabold text-lg">
+                      {isAnonymized ? <span className="italic font-normal text-[var(--ds-charcoal)]/50">Anonymized</span> : req.name}
+                    </h4>
                     <span className="text-sm font-bold text-[var(--ds-charcoal)]/70 bg-black/5 px-2 py-0.5" style={{ borderRadius: '0.25rem' }}>{req.company}</span>
                     <span
                       className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-2 border-black"
@@ -260,7 +268,9 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                     </span>
                     <TriageBadge req={req} onRetry={handleRetriage} isAdmin={isAdmin} />
                   </div>
-                  {isAdmin ? (
+                  {isAnonymized ? (
+                    <span className="text-sm text-[var(--ds-charcoal)]/50 italic mb-3 inline-block">Contact info erased 30 days after submission</span>
+                  ) : isAdmin ? (
                     <a href={`mailto:${req.email}`} className="text-sm text-[var(--ds-charcoal)] hover:underline mb-3 inline-block">{req.email}</a>
                   ) : (
                     <span className="text-sm text-[var(--ds-charcoal)]/70 mb-3 inline-block">{req.email}</span>
@@ -290,17 +300,24 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                     >
                       Reject
                     </button>
-                    <button
-                      onClick={() => openApproveDialog(req.id, req.name)}
-                      className={`px-4 py-2 text-sm font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 ${pushBtnSm} bg-black text-white`}
-                      style={{ borderRadius: '0.5rem' }}
-                    >
-                      Approve &amp; Email Link
-                    </button>
+                    {isAnonymized ? (
+                      <span className="text-xs text-[var(--ds-charcoal)]/50 italic max-w-[12rem]">
+                        Can&apos;t approve &mdash; contact info anonymized
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => openApproveDialog(req.id, req.name)}
+                        className={`px-4 py-2 text-sm font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 ${pushBtnSm} bg-black text-white`}
+                        style={{ borderRadius: '0.5rem' }}
+                      >
+                        Approve &amp; Email Link
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

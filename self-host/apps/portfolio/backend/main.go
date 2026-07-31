@@ -27,6 +27,19 @@ func corsAllowedOrigins() string {
 func main() {
 	app := fiber.New(fiber.Config{
 		AppName: "Systems Playground API",
+		// cloudflared connects to this app over localhost (see
+		// infra/scripts/cloudflared-sync.sh — ingress is always
+		// http://localhost:<port>), so the raw TCP remote addr Fiber's
+		// c.IP() would otherwise return is cloudflared's own loopback
+		// connection, not the visitor's. Cloudflare Tunnel sets
+		// Cf-Connecting-Ip with the real client IP; trusting only the
+		// localhost hop and reading that header is what makes c.IP()
+		// (and anything keyed on it, e.g. the resume-request rate
+		// limiter) resolve to the actual visitor instead of bucketing
+		// every visitor together under cloudflared's address.
+		EnableTrustedProxyCheck: true,
+		TrustedProxies:          []string{"127.0.0.1", "::1"},
+		ProxyHeader:             "Cf-Connecting-Ip",
 	})
 
 	// Middleware

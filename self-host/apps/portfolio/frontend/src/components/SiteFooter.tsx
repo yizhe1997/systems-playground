@@ -11,6 +11,11 @@ const exploreLinks = [
   { href: '/about', label: 'About' },
 ];
 
+const legalLinks = [
+  { href: '/privacy', label: 'Privacy Policy' },
+  { href: '/terms', label: 'Terms & Conditions' },
+];
+
 const isConfigured = (url: string) => !!url && url !== '#';
 
 const formatUrl = (url: string) => {
@@ -38,7 +43,7 @@ export default function SiteFooter() {
   return (
     <footer className="pt-16 pb-8 border-t-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
       <div className="max-w-6xl mx-auto px-6">
-        <div className={`grid grid-cols-2 ${hasSocial ? 'sm:grid-cols-[2fr_1fr_1fr]' : 'sm:grid-cols-[2fr_1fr]'} gap-10 mb-14`}>
+        <div className={`grid grid-cols-2 ${hasSocial ? 'sm:grid-cols-[2fr_1fr_1fr_1fr]' : 'sm:grid-cols-[2fr_1fr_1fr]'} gap-10 mb-14`}>
           <div className="col-span-2 sm:col-span-1 max-w-sm">
             <div className="flex items-center gap-2 mb-4">
               <div
@@ -103,6 +108,22 @@ export default function SiteFooter() {
               </div>
             </div>
           )}
+
+          <div>
+            <h4 className="font-bold mb-5 text-[var(--ds-yellow)]">Legal</h4>
+            <ul className="space-y-3 text-sm">
+              {legalLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-white/70 hover:text-white hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="border-t border-white/10 pt-6">

@@ -1,24 +1,13 @@
-<!--
-DRAFT — NOT LEGAL ADVICE.
-Prepared by an AI assistant (Claude) as a starting point for the site owner to review, edit,
-and sign off on. This is not legal advice and no attorney-client relationship is created by
-this document. The governing-law / jurisdiction section is intentionally left open — see the
-matching note in privacy-policy.md — and should be filled in (or deliberately left general)
-by the site owner, not guessed at here.
-
-Last drafted: 2026-07-28. Delete this notice before publishing.
--->
-
 # Terms & Conditions
 
-**Last updated:** [DATE — fill in when published]
+**Last updated:** July 31, 2026
 
 Short version: this is a personal portfolio site. Look around, and if you want my resume, use
 the request form. Don't misuse the site. Nothing here is a guarantee of anything.
 
 ## 1. What this site is
 
-This is **[YOUR NAME]'s** personal portfolio, run by an individual, not a company. It showcases
+This is **Chin Yi Zhe's** personal portfolio, run by an individual, not a company. It showcases
 projects and provides a way to request a copy of my resume. By using this site, you agree to
 these terms.
 
@@ -69,11 +58,9 @@ content on it.
 
 ## 8. Governing law
 
-> **[CONFIRM — not yet determined.]** This section intentionally does not name a governing
-> jurisdiction. Which country/state's laws govern use of this site depends on where I (the
-> site owner) am based, which hasn't been finalized as of this draft. This should be filled in
-> — or the site owner may choose to leave it general — once that's settled, rather than guessed
-> at here.
+This section intentionally doesn't name a specific governing jurisdiction — it's a personal
+project, not a company with a legal team, and I'm not asserting a particular country or state's
+laws apply here.
 
 ## 9. Changes to these terms
 
@@ -82,10 +69,9 @@ will reflect the most recent change.
 
 ## 10. Contact
 
-Questions about these terms? Email me at **[YOUR EMAIL]**.
+Questions about these terms? Email me at **yzportal123@gmail.com**.
 
 ---
 
-*These terms were drafted with AI assistance and are provided as a starting point, not as legal
-advice. The governing-law section in particular needs the site owner's input before this is
-considered final.*
+*These terms were drafted with AI assistance. They aren't a substitute for legal advice from a
+licensed attorney.*

@@ -1,18 +1,6 @@
-<!--
-DRAFT — NOT LEGAL ADVICE.
-Prepared by an AI assistant (Claude) as a starting point for the site owner to review, edit,
-and sign off on. This is not legal advice and no attorney-client relationship is created by
-this document. Sections marked [CONFIRM] contain open questions the site owner should
-resolve — most importantly, which jurisdiction's laws (if any) apply to this site (see the
-"Your rights" section) — rather than assumptions made on the owner's behalf.
-
-Last drafted: 2026-07-28. Replace this comment block (and the "Last updated" line below)
-once reviewed, and delete this notice before publishing.
--->
-
 # Privacy Policy
 
-**Last updated:** [DATE — fill in when published]
+**Last updated:** July 31, 2026
 
 This page explains what information this website collects, why, and what happens to it. It's
 written in plain language because this is a personal portfolio site, not a company — there's no
@@ -20,7 +8,7 @@ legal or compliance department behind it, just me.
 
 ## Who this applies to
 
-This policy covers **[YOUR NAME]'s** personal portfolio website (this site). I run it myself, on
+This policy covers **Chin Yi Zhe's** personal portfolio website (this site). I run it myself, on
 infrastructure I self-host. It is not operated by a company or organization.
 
 ## What information I collect
@@ -47,7 +35,7 @@ gated behind this request form so I have some visibility into who's asking.
 Specifically, your submitted information is used to:
 
 1. Let me review the request and decide whether to approve or decline it.
-2. Generate and send you a time-limited download link if approved.
+2. Generate and send you a download link (expires 24 hours after it's sent) if approved.
 3. Contact you about your request (e.g. to follow up or ask a clarifying question).
 
 I don't use this data for marketing, don't add you to a mailing list, and don't use it for
@@ -83,7 +71,7 @@ marketing purposes. The only place your submitted information goes, besides my o
 - **My email provider**, if your request is approved — sending you the resume link requires
   sending an email, which necessarily passes through whatever SMTP/email service I use.
 - **Service providers that keep the site running** — e.g. the hosting infrastructure and
-  database (Redis) that store the submission while it's pending review. These are
+  database (SQLite) that store the submission while it's pending review. These are
   infrastructure I run myself, not third parties I hand data to; see the technical note below.
 
 I don't share your data with any other third party, and I don't use it to build advertising
@@ -91,26 +79,20 @@ profiles or sell it in any form.
 
 ## How long I keep your data
 
-Requests are stored (in a self-hosted database) from the moment you submit the form until
-they're either approved and fulfilled, declined, or otherwise resolved. After that:
-
-> **[CONFIRM — retention window not yet finalized.]** My current plan is to delete or
-> anonymize (remove your name, email, and reason, keeping only non-identifying record like
-> "approved" / "declined" and a date) resolved requests **90 days** after they're resolved.
-> Until this is implemented and confirmed, treat any submission as retained until I manually
-> delete it. If you'd like your data deleted sooner, email me at **[YOUR EMAIL]** and I'll
-> remove it.
-
-See the accompanying engineering note (separate from this policy) for the technical plan behind
-this — it isn't live yet as of this draft.
+**30 days after you submit a request**, regardless of whether it was approved, declined, or
+never resolved, a background job automatically anonymizes it: your **name, email address, and
+reason are permanently erased** and cannot be recovered. What's kept afterward is limited to
+non-identifying information — the company name, the request's status, and the AI legitimacy
+verdict — so I can still see aggregate trends (how many requests come in, from which companies,
+how many convert) without retaining anyone's personal contact information. This isn't a plan;
+it's already running on every submission. If you'd like your data erased sooner than 30 days,
+email me at **yzportal123@gmail.com** and I'll remove it manually.
 
 ## Your rights
 
-> **[CONFIRM — jurisdiction not yet determined.]** Depending on where you and I are each
-> located, you may have specific legal rights over your data (for example, under the EU/UK
-> GDPR or U.S. state laws like the CCPA/CPRA). I haven't yet determined which of these regimes,
-> if any, formally apply to this site, and I'm not asserting that none do — this is flagged here
-> as an open item for me to resolve, not a claim that no rights apply to you.
+I haven't formally determined which specific data-protection regime (e.g. EU/UK GDPR, U.S.
+state laws like the CCPA/CPRA) applies to this site — it's a personal project, not a company
+with a legal team, and I'm not making a specific compliance claim either way here.
 
 Regardless of what's legally required, as a matter of practice I will honor any reasonable
 request to:
@@ -119,7 +101,7 @@ request to:
 - Correct inaccurate data, or
 - Delete your data,
 
-if you email me at **[YOUR EMAIL]**.
+if you email me at **yzportal123@gmail.com**.
 
 ## Data security
 
@@ -144,11 +126,10 @@ emails for anything but resume requests.
 
 ## Contact
 
-Questions about this policy, or a request regarding your data? Email me at **[YOUR EMAIL]**.
+Questions about this policy, or a request regarding your data? Email me at
+**yzportal123@gmail.com**.
 
 ---
 
-*This policy was drafted with AI assistance and is provided as a starting point, not as legal
-advice. Sections marked [CONFIRM] need the site owner's input before this is considered final —
-in particular, confirming which jurisdiction's data-protection laws apply, and finalizing the
-retention window described above.*
+*This policy was drafted with AI assistance. It isn't a substitute for legal advice from a
+licensed attorney.*

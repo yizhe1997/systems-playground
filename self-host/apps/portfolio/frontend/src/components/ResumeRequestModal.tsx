@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -91,6 +92,18 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
               <label className="text-xs font-bold uppercase tracking-wider">Reason (optional)</label>
               <textarea value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} className={`${dsInput} resize-none`} placeholder="Hiring for a backend role..." rows={3} />
             </div>
+            <p className="text-xs text-[var(--ds-charcoal)]/60">
+              By submitting, you agree to the{' '}
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-black">
+                Privacy Policy
+              </Link>{' '}
+              and{' '}
+              <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-black">
+                Terms &amp; Conditions
+              </Link>
+              .
+            </p>
+
             <div className="pt-3 flex justify-end gap-3">
               <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm font-bold text-[var(--ds-charcoal)]/60 hover:text-black transition-colors">
                 Cancel
