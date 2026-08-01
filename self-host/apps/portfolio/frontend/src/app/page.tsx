@@ -82,9 +82,10 @@ export default function Home() {
   const filteredDocs = docs.filter(d => featuredDocs.includes(d.id)).slice(0, 4);
 
   return (
-    <main className="min-h-screen text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
+    <div className="min-h-screen text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
       <SiteHeader />
 
+      <main>
       {/* Hero - yellow ground + reactive grid */}
       <section className="relative border-b-2 border-black overflow-hidden" style={{ backgroundColor: 'var(--ds-yellow)' }}>
         <ReactiveGrid
@@ -305,7 +306,9 @@ export default function Home() {
         </div>
       </section>
 
+      </main>
+
       <SiteFooter />
-    </main>
+    </div>
   );
 }

@@ -6,9 +6,9 @@ export default async function ResumeStatusPage({ params }: { params: Promise<{ i
   const { id } = await params;
 
   return (
-    <main className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
+    <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
       <SiteHeader />
-      <div className="flex-1 max-w-4xl mx-auto px-6 py-20 w-full">
+      <main className="flex-1 max-w-4xl mx-auto px-6 py-20 w-full">
         <h1
           className="mb-6 text-black"
           style={{
@@ -44,8 +44,8 @@ export default async function ResumeStatusPage({ params }: { params: Promise<{ i
             dropped.
           </p>
         </div>
-      </div>
+      </main>
       <SiteFooter />
-    </main>
+    </div>
   );
 }

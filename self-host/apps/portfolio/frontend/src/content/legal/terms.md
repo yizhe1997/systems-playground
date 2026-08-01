@@ -69,7 +69,7 @@ will reflect the most recent change.
 
 ## 10. Contact
 
-Questions about these terms? Email me at **yzportal123@gmail.com**.
+Questions about these terms?
 
 ---
 

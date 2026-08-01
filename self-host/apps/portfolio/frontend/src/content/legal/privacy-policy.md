@@ -43,11 +43,12 @@ anything unrelated to your resume request.
 
 ## Automated triage with an AI model
 
+> **A human (me) makes the actual approve/decline decision.** The AI does not autonomously
+> approve, decline, or send anything — it only helps me review faster.
+
 Before I manually review each request, it's processed by an AI model (currently **Claude Haiku,
 via the Anthropic API**) to help me summarize and flag submissions — for example, surfacing a
-short summary or flagging spam-like submissions — so I can review requests faster. **A human
-(me) makes the actual approve/decline decision; the AI does not autonomously approve, decline, or
-send anything.**
+short summary or flagging spam-like submissions — so I can review requests faster.
 
 This means the contents of your submission (name, email, company, and reason) are sent to
 Anthropic's API as part of that automated step. A few relevant points about that:
@@ -79,14 +80,15 @@ profiles or sell it in any form.
 
 ## How long I keep your data
 
-**30 days after you submit a request**, regardless of whether it was approved, declined, or
-never resolved, a background job automatically anonymizes it: your **name, email address, and
-reason are permanently erased** and cannot be recovered. What's kept afterward is limited to
-non-identifying information — the company name, the request's status, and the AI legitimacy
-verdict — so I can still see aggregate trends (how many requests come in, from which companies,
-how many convert) without retaining anyone's personal contact information. This isn't a plan;
-it's already running on every submission. If you'd like your data erased sooner than 30 days,
-email me at **yzportal123@gmail.com** and I'll remove it manually.
+> **Your name, email, and reason are permanently erased 30 days after you submit a request** —
+> automatically, regardless of whether it was approved, declined, or never resolved. This isn't
+> a plan; it's already running on every submission.
+
+What's kept afterward is limited to non-identifying information — the company name, the
+request's status, and the AI legitimacy verdict — so I can still see aggregate trends (how many
+requests come in, from which companies, how many convert) without retaining anyone's personal
+contact information. If you'd like your data erased sooner than 30 days, email me at
+**yzportal123@gmail.com** and I'll remove it manually.
 
 ## Your rights
 
@@ -126,8 +128,7 @@ emails for anything but resume requests.
 
 ## Contact
 
-Questions about this policy, or a request regarding your data? Email me at
-**yzportal123@gmail.com**.
+Questions about this policy, or a request regarding your data?
 
 ---
 

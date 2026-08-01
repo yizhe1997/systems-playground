@@ -234,7 +234,7 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
           <option value="triaging">Triaging…</option>
           <option value="failed">Triage failed</option>
         </select>
-        <span className="text-xs font-bold text-[var(--ds-charcoal)]/50 ml-auto">
+        <span className="text-xs font-bold text-[var(--ds-charcoal)]/70 ml-auto">
           {filtered.length} of {requests.length}
         </span>
       </div>
@@ -257,7 +257,7 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1 flex-wrap">
                     <h4 className="font-extrabold text-lg">
-                      {isAnonymized ? <span className="italic font-normal text-[var(--ds-charcoal)]/50">Anonymized</span> : req.name}
+                      {isAnonymized ? <span className="italic font-normal text-[var(--ds-charcoal)]/70">Anonymized</span> : req.name}
                     </h4>
                     <span className="text-sm font-bold text-[var(--ds-charcoal)]/70 bg-black/5 px-2 py-0.5" style={{ borderRadius: '0.25rem' }}>{req.company}</span>
                     <span
@@ -269,7 +269,7 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                     <TriageBadge req={req} onRetry={handleRetriage} isAdmin={isAdmin} />
                   </div>
                   {isAnonymized ? (
-                    <span className="text-sm text-[var(--ds-charcoal)]/50 italic mb-3 inline-block">Contact info erased 30 days after submission</span>
+                    <span className="text-sm text-[var(--ds-charcoal)]/70 italic mb-3 inline-block">Contact info erased 30 days after submission</span>
                   ) : isAdmin ? (
                     <a href={`mailto:${req.email}`} className="text-sm text-[var(--ds-charcoal)] hover:underline mb-3 inline-block">{req.email}</a>
                   ) : (
@@ -282,11 +282,11 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                   )}
                   {req.role_fit_summary && (
                     <p className="text-xs text-[var(--ds-charcoal)]/70 mt-2">
-                      <span className="font-bold uppercase tracking-wider text-[10px] text-[var(--ds-charcoal)]/50 mr-1">AI read</span>
+                      <span className="font-bold uppercase tracking-wider text-[10px] text-[var(--ds-charcoal)]/70 mr-1">AI read</span>
                       {req.role_fit_summary}
                     </p>
                   )}
-                  <div className="text-[10px] text-[var(--ds-charcoal)]/50 mt-3 font-mono flex flex-wrap gap-x-3">
+                  <div className="text-[10px] text-[var(--ds-charcoal)]/70 mt-3 font-mono flex flex-wrap gap-x-3">
                     <span>Requested: {new Date(req.created_at).toLocaleString()}</span>
                     {req.ai_model && <span>Graded by: {req.ai_model}</span>}
                   </div>
@@ -301,7 +301,7 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                       Reject
                     </button>
                     {isAnonymized ? (
-                      <span className="text-xs text-[var(--ds-charcoal)]/50 italic max-w-[12rem]">
+                      <span className="text-xs text-[var(--ds-charcoal)]/70 italic max-w-[12rem]">
                         Can&apos;t approve &mdash; contact info anonymized
                       </span>
                     ) : (
@@ -383,7 +383,7 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
           <div className="flex justify-end gap-3 pt-2">
             <button
               onClick={() => setApproveDialog({ ...approveDialog, open: false })}
-              className="px-4 py-2 text-sm font-bold text-[var(--ds-charcoal)]/60 hover:text-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+              className="px-4 py-2 text-sm font-bold text-[var(--ds-charcoal)]/70 hover:text-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
             >
               Cancel
             </button>

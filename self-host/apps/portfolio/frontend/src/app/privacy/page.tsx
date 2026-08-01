@@ -1,9 +1,9 @@
 import { readFile } from 'fs/promises';
 import path from 'path';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import LegalDocument from '@/components/LegalDocument';
+import BackToTop from '@/components/BackToTop';
 
 export const metadata = {
   title: 'Privacy Policy',
@@ -14,12 +14,11 @@ export default async function PrivacyPage() {
     path.join(process.cwd(), 'src/content/legal/privacy-policy.md'),
     'utf-8'
   );
-  const body = raw.replace(/^# .+\n/, '').trim();
 
   return (
-    <main className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
+    <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
       <SiteHeader />
-      <div className="flex-1 max-w-4xl mx-auto px-6 py-20 w-full">
+      <main className="flex-1 max-w-4xl mx-auto px-6 py-20 w-full">
         <h1
           className="mb-12 text-black"
           style={{
@@ -33,11 +32,10 @@ export default async function PrivacyPage() {
           Privacy Policy
         </h1>
 
-        <div className="prose prose-headings:font-extrabold prose-a:text-black prose-a:underline max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
-        </div>
-      </div>
+        <LegalDocument raw={raw} contactEmail="yzportal123@gmail.com" />
+      </main>
       <SiteFooter />
-    </main>
+      <BackToTop />
+    </div>
   );
 }

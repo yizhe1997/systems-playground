@@ -34,9 +34,9 @@ export default function ProjectsPage() {
   }, []);
 
   return (
-    <main className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
+    <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
       <SiteHeader />
-      <div className="flex-1 max-w-6xl mx-auto px-6 py-20 w-full">
+      <main className="flex-1 max-w-6xl mx-auto px-6 py-20 w-full">
         <h1
           className="mb-12 text-black"
           style={{
@@ -112,8 +112,8 @@ export default function ProjectsPage() {
             })}
           </div>
         )}
-      </div>
+      </main>
       <SiteFooter />
-    </main>
+    </div>
   );
 }
