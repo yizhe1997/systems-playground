@@ -4,7 +4,7 @@ import { Mail } from 'lucide-react';
 import { slugify } from '@/lib/utils';
 
 export default function LegalDocument({ raw, contactEmail }: { raw: string; contactEmail?: string }) {
-  const body = raw.replace(/^# .+\n/, '').trim();
+  const body = raw.replace(/^\s*#[^\n]*\n+/, '').trim();
 
   const sections = Array.from(body.matchAll(/^## (.+)$/gm)).map((m) => ({
     text: m[1],

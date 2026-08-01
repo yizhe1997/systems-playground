@@ -62,7 +62,7 @@ export default function SiteFooter() {
           </div>
 
           <div>
-            <h4 className="font-bold mb-5 text-[var(--ds-yellow)]">Explore</h4>
+            <h3 className="font-bold mb-5 text-[var(--ds-yellow)]">Explore</h3>
             <ul className="space-y-3 text-sm">
               {exploreLinks.map((link) => (
                 <li key={link.href}>
@@ -77,9 +77,25 @@ export default function SiteFooter() {
             </ul>
           </div>
 
+          <div>
+            <h3 className="font-bold mb-5 text-[var(--ds-yellow)]">Legal</h3>
+            <ul className="space-y-3 text-sm">
+              {legalLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-white/70 hover:text-white hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           {hasSocial && (
             <div>
-              <h4 className="font-bold mb-5 text-[var(--ds-yellow)]">Social</h4>
+              <h3 className="font-bold mb-5 text-[var(--ds-yellow)]">Social</h3>
               <div className="flex gap-4">
                 {hasGithub && (
                   <a
@@ -108,22 +124,6 @@ export default function SiteFooter() {
               </div>
             </div>
           )}
-
-          <div>
-            <h4 className="font-bold mb-5 text-[var(--ds-yellow)]">Legal</h4>
-            <ul className="space-y-3 text-sm">
-              {legalLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-white/70 hover:text-white hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
         <div className="border-t border-white/10 pt-6">
