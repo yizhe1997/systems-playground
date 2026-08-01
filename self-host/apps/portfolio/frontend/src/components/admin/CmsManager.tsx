@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import AdminTabBar, { tabId, tabPanelId } from '@/components/admin/AdminTabBar';
 
 type Project = { id: string; title: string; description: string; tech_stack: string[]; live_url: string; github_url: string; };
 type Document = { id: string; title: string; description: string; folder_path: string; source_type: string; content_target: string; };
@@ -13,8 +12,7 @@ const dsInput =
 const pushBtnSm =
   "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-0.5 hover:translate-y-0.5";
 
-export default function CmsManager({ isAdmin }: { isAdmin: boolean }) {
-  const [tab, setTab] = useState<'home' | 'projects' | 'docs'>('home');
+export default function CmsManager({ isAdmin, section }: { isAdmin: boolean; section: 'homepage' | 'projects' | 'docs' }) {
   const [loading, setLoading] = useState(false);
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -90,23 +88,10 @@ export default function CmsManager({ isAdmin }: { isAdmin: boolean }) {
   };
 
   return (
-    <div className="mt-8 bg-white border-2 border-black shadow-[4px_4px_0px_0px_#000] overflow-hidden" style={{ borderRadius: '0.75rem' }}>
-      <div className="p-4 border-b-2 border-black bg-white">
-        <AdminTabBar
-          idPrefix="cms"
-          tabs={[
-            { value: 'home', label: 'Homepage Layout' },
-            { value: 'projects', label: 'Projects Registry' },
-            { value: 'docs', label: 'Docs & CMS' },
-          ]}
-          active={tab}
-          onChange={setTab}
-        />
-      </div>
-
+    <div className="bg-white border-2 border-black shadow-[4px_4px_0px_0px_#000] overflow-hidden" style={{ borderRadius: '0.75rem' }}>
       <div className="p-6">
-        {tab === 'home' && (
-          <div id={tabPanelId('cms', 'home')} role="tabpanel" aria-labelledby={tabId('cms', 'home')} className="space-y-6">
+        {section === 'homepage' && (
+          <div className="space-y-6">
             <h3 className="text-lg font-extrabold">Homepage Visibility Manager</h3>
             <p className="text-sm text-[var(--ds-charcoal)]/70 mb-2">Select which items appear on the main landing page.</p>
 
@@ -155,8 +140,8 @@ export default function CmsManager({ isAdmin }: { isAdmin: boolean }) {
           </div>
         )}
 
-        {tab === 'projects' && (
-          <div id={tabPanelId('cms', 'projects')} role="tabpanel" aria-labelledby={tabId('cms', 'projects')} className="space-y-6">
+        {section === 'projects' && (
+          <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-extrabold">Project Registry</h3>
@@ -215,8 +200,8 @@ export default function CmsManager({ isAdmin }: { isAdmin: boolean }) {
           </div>
         )}
 
-        {tab === 'docs' && (
-          <div id={tabPanelId('cms', 'docs')} role="tabpanel" aria-labelledby={tabId('cms', 'docs')} className="space-y-6">
+        {section === 'docs' && (
+          <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-extrabold">Document &amp; Folder Registry</h3>

@@ -44,6 +44,16 @@ export default function AdminLoginPage() {
             Sign in with Google SSO
           </button>
 
+          {process.env.NEXT_PUBLIC_DEV_LOGIN_ENABLED === 'true' && (
+            <button
+              onClick={() => signIn('dev-login', { callbackUrl: '/admin' })}
+              className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-red-600 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2"
+              style={{ borderRadius: '0.5rem' }}
+            >
+              ⚠ Dev Login (local only, no real auth)
+            </button>
+          )}
+
           <div className="mt-8 flex justify-center">
             <Link href="/" className="text-sm font-bold text-[var(--ds-charcoal)]/70 hover:text-black transition-colors">
               &larr; Back to Portfolio

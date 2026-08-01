@@ -159,3 +159,12 @@
     @apply font-sans;
   }
 }
+
+/* Sitewide custom cursor (UserCursor, mounted in layout.tsx) replaces the OS
+   pointer on precise-pointer devices. Scoped to `pointer: fine` so touch
+   devices - where UserCursor already renders nothing - are never affected. */
+@media (pointer: fine) {
+  * {
+    cursor: none !important;
+  }
+}

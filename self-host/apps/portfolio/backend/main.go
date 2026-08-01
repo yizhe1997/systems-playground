@@ -67,11 +67,15 @@ func main() {
 		resumeUrl, _ := GetConfig(c.Context(), "resumeUrl", "#")
 		linkedinUrl, _ := GetConfig(c.Context(), "linkedinUrl", "#")
 		githubUrl, _ := GetConfig(c.Context(), "githubUrl", "#")
+		// Default matches the About page's original hardcoded copy, so an
+		// operator who never touches this field sees no change on the site.
+		bio, _ := GetConfig(c.Context(), "bio", "Chin Yi Zhe — Backend / Platform Engineer. Builds and operates real self-hosted infrastructure, with AI as a working collaborator rather than a novelty.")
 
 		return c.JSON(fiber.Map{
 			"resumeUrl":   resumeUrl,
 			"linkedinUrl": linkedinUrl,
 			"githubUrl":   githubUrl,
+			"bio":         bio,
 		})
 	})
 
@@ -82,6 +86,7 @@ func main() {
 		ResumeUrl   string `json:"resumeUrl"`
 		LinkedinUrl string `json:"linkedinUrl"`
 		GithubUrl   string `json:"githubUrl"`
+		Bio         string `json:"bio"`
 	}
 
 	app.Post("/admin/config", func(c *fiber.Ctx) error {
@@ -100,6 +105,7 @@ func main() {
 		SetConfig(ctx, "resumeUrl", req.ResumeUrl)
 		SetConfig(ctx, "linkedinUrl", req.LinkedinUrl)
 		SetConfig(ctx, "githubUrl", req.GithubUrl)
+		SetConfig(ctx, "bio", req.Bio)
 
 		return c.JSON(fiber.Map{"status": "success", "message": "Configuration updated successfully"})
 	})
