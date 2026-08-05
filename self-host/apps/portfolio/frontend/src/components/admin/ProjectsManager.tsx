@@ -1,76 +1,27 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, ChevronUp, ChevronDown, Eye, ExternalLink, Code2 } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import ProjectIcon from '@/components/ProjectIcon';
+import ProjectRow, { type Project } from '@/components/ProjectRow';
 import IconPicker from '@/components/admin/IconPicker';
 import TagList from '@/components/admin/TagList';
+import MonthYearPicker from '@/components/admin/MonthYearPicker';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-  tech_stack: string[];
-  live_url: string;
-  github_url: string;
-  icon: string;
-  featured: boolean;
-};
+type AdminProject = Project & { featured: boolean };
 
 const fieldClass =
   'border-2 border-black rounded-[0.375rem] focus-visible:ring-0 focus-visible:shadow-[2px_2px_0px_0px_#000] transition-shadow h-9';
 
-const formatUrl = (url: string) => {
-  if (!url || url === '#') return '#';
-  return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
-};
-
-function ProjectCardPreview({ project }: { project: Project }) {
-  return (
-    <div className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000]" style={{ borderRadius: '0.75rem' }}>
-      <div
-        className="w-14 h-14 flex items-center justify-center mb-5 border-2 border-black"
-        style={{ backgroundColor: 'var(--ds-sage)', borderRadius: '0.5rem' }}
-      >
-        <ProjectIcon slug={project.icon} />
-      </div>
-      <h3 className="text-2xl font-extrabold mb-3" style={{ fontFamily: 'var(--ds-font-display)' }}>
-        {project.title || 'Untitled project'}
-      </h3>
-      <p className="text-sm text-[var(--ds-charcoal)]/80 leading-relaxed mb-5">
-        {project.description || 'No description yet.'}
-      </p>
-      <div className="flex flex-wrap gap-2 mb-6">
-        {project.tech_stack.map((tech) => (
-          <span key={tech} className="text-xs font-bold px-2.5 py-1 border-2 border-black" style={{ borderRadius: '0.375rem' }}>
-            {tech}
-          </span>
-        ))}
-      </div>
-      <div className="flex items-center gap-4 text-sm font-bold">
-        <a href={formatUrl(project.live_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:underline">
-          <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-          Live
-        </a>
-        <a href={formatUrl(project.github_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:underline">
-          <Code2 className="w-3.5 h-3.5" aria-hidden="true" />
-          Source
-        </a>
-      </div>
-    </div>
-  );
-}
-
 export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: boolean; onDirtyChange?: (dirty: boolean) => void }) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [baseline, setBaseline] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<AdminProject[]>([]);
+  const [baseline, setBaseline] = useState<AdminProject[]>([]);
   const [loading, setLoading] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const titleRefs = useRef<Record<number, HTMLInputElement | null>>({});
@@ -137,14 +88,14 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
 
   const addProject = () => {
     setProjects([
-      { id: Math.random().toString(36).substring(2, 8), title: '', description: '', tech_stack: [], live_url: '', github_url: '', icon: '', featured: false },
+      { id: Math.random().toString(36).substring(2, 8), title: '', description: '', tech_stack: [], live_url: '', start_date: '', end_date: '', icon: '', featured: false },
       ...projects,
     ]);
   };
 
   const removeProject = (i: number) => setProjects(projects.filter((_, idx) => idx !== i));
 
-  const update = (i: number, patch: Partial<Project>) => {
+  const update = (i: number, patch: Partial<AdminProject>) => {
     const n = [...projects];
     n[i] = { ...n[i], ...patch };
     setProjects(n);
@@ -249,13 +200,14 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
                   id={`proj-desc-${i}`}
                   value={p.description}
                   onChange={(e) => update(i, { description: e.target.value })}
-                  className="border-2 border-black rounded-[0.375rem] focus-visible:ring-0 focus-visible:shadow-[2px_2px_0px_0px_#000] transition-shadow min-h-[70px]"
-                  placeholder="Short description shown on the project card."
+                  className="border-2 border-black rounded-[0.375rem] focus-visible:ring-0 focus-visible:shadow-[2px_2px_0px_0px_#000] transition-shadow min-h-[100px] font-mono text-sm"
+                  placeholder={'Shown when the project row is expanded.\n\n- Markdown supported\n- **bold**, [links](https://...)\n- bullet lists like this one'}
                   disabled={!isAdmin}
                 />
+                <p className="text-[10px] text-[var(--ds-charcoal)]/50">Markdown supported (bullet lists, bold, links).</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor={`proj-icon-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
                     Icon (optional)
@@ -297,19 +249,23 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
                     disabled={!isAdmin}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor={`proj-github-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
-                    GitHub URL
-                  </Label>
-                  <Input
-                    id={`proj-github-${i}`}
-                    value={p.github_url}
-                    onChange={(e) => update(i, { github_url: e.target.value })}
-                    className={`text-xs ${fieldClass}`}
-                    placeholder="https://github.com/..."
-                    disabled={!isAdmin}
-                  />
-                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <MonthYearPicker
+                  label="Start"
+                  value={p.start_date}
+                  onChange={(v) => update(i, { start_date: v })}
+                  disabled={!isAdmin}
+                />
+                <MonthYearPicker
+                  label="End"
+                  value={p.end_date}
+                  onChange={(v) => update(i, { end_date: v })}
+                  disabled={!isAdmin}
+                  allowOngoing
+                  ongoingLabel="Ongoing"
+                />
               </div>
 
               <div>
@@ -348,12 +304,12 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
           style={{ fontFamily: 'var(--ds-font-body)', borderRadius: '0.75rem', boxShadow: '8px 8px 0px 0px #000' }}
         >
           <DialogHeader>
-            <DialogTitle className="text-xl text-black font-extrabold">Card preview</DialogTitle>
+            <DialogTitle className="text-xl text-black font-extrabold">Row preview</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
-              Unsaved changes — this is exactly how the card renders on the homepage and on <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">/projects</code>.
+              Unsaved changes — this is exactly how the row renders (expanded) on the homepage and on <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">/projects</code>.
             </DialogDescription>
           </DialogHeader>
-          {previewIndex !== null && projects[previewIndex] && <ProjectCardPreview project={projects[previewIndex]} />}
+          {previewIndex !== null && projects[previewIndex] && <ProjectRow project={projects[previewIndex]} defaultOpen />}
         </DialogContent>
       </Dialog>
     </div>

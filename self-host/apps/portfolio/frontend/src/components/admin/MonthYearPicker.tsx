@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 
 const MONTHS = [
@@ -31,6 +32,18 @@ export default function MonthYearPicker({
   // never render into a state with no way back to a real value.
   const isOngoing = Boolean(allowOngoing) && !value;
   const [y, m] = value ? value.split('-') : [String(currentYear), '01'];
+
+  // A required field (allowOngoing false) renders these selects showing a
+  // default month/year even when value is still "" - but nothing had ever
+  // written that default back to the parent, so the real stored value
+  // stayed blank unless the admin happened to touch a dropdown. Anything
+  // reading the real value (formatDateRange, validation) then silently
+  // treated it as unset. Sync it on mount so "looks filled in" and "is
+  // filled in" can't diverge.
+  useEffect(() => {
+    if (!allowOngoing && !value) onChange(`${currentYear}-01`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setMonth = (newM: string) => onChange(`${y}-${newM}`);
   const setYear = (newY: string) => onChange(`${newY}-${m}`);

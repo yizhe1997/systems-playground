@@ -2,26 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { FileDown, ExternalLink, Code2, ArrowRight, BookOpen } from 'lucide-react';
+import { FileDown, ArrowRight, BookOpen } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ReactiveGrid from '@/components/originkit/reactivegrid';
-import ProjectIcon from '@/components/ProjectIcon';
+import ProjectRow, { type Project as ProjectRowType } from '@/components/ProjectRow';
 import { formatPublishedDate } from '@/lib/format-date';
 import { useResumeRequest } from '@/components/ResumeRequestModal';
 import { fetchJson } from '@/lib/fetch-json';
 import { GithubIcon, LinkedinIcon } from '@/components/icons/social';
 
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-  tech_stack: string[];
-  live_url: string;
-  github_url: string;
-  icon: string;
-  featured: boolean;
-};
+type Project = ProjectRowType & { featured: boolean };
 
 type Post = {
   id: string;
@@ -211,7 +202,7 @@ export default function Home() {
 
       {/* Featured Projects - Bento Feature Grid */}
       <section id="projects" className="bg-white">
-        <div className="max-w-6xl mx-auto px-6 py-20">
+        <div className="max-w-3xl mx-auto px-6 py-20">
           <h2
             className="text-3xl sm:text-4xl mb-10 text-black"
             style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
@@ -225,41 +216,9 @@ export default function Home() {
               <p className="text-sm text-[var(--ds-charcoal)]/70">Real-world projects land here as they ship.</p>
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProjects.map((project) => (
-                  <div
-                    key={project.id}
-                    className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000]"
-                    style={{ borderRadius: '0.75rem' }}
-                  >
-                    <div
-                      className="w-14 h-14 flex items-center justify-center mb-5 border-2 border-black transition-colors"
-                      style={{ backgroundColor: 'var(--ds-sage)', borderRadius: '0.5rem' }}
-                    >
-                      <ProjectIcon slug={project.icon} />
-                    </div>
-                    <h3 className="text-2xl font-extrabold mb-3" style={{ fontFamily: 'var(--ds-font-display)' }}>{project.title}</h3>
-                    <p className="text-sm text-[var(--ds-charcoal)]/80 leading-relaxed mb-5">
-                      {project.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      {project.tech_stack.map((tech) => (
-                        <span key={tech} className="text-xs font-bold px-2.5 py-1 border-2 border-black" style={{ borderRadius: '0.375rem' }}>
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm font-bold">
-                      <a href={formatUrl(project.live_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-black">
-                        <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                        Live
-                      </a>
-                      <a href={formatUrl(project.github_url)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-black">
-                        <Code2 className="w-3.5 h-3.5" aria-hidden="true" />
-                        Source
-                      </a>
-                    </div>
-                  </div>
+            <div className="space-y-3">
+              {filteredProjects.map((project, i) => (
+                <ProjectRow key={project.id} project={project} defaultOpen={i === 0} />
               ))}
             </div>
           )}

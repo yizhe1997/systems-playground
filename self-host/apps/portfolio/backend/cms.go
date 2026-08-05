@@ -10,12 +10,17 @@ import (
 )
 
 type Project struct {
-	ID          string   `json:"id"`
-	Title       string   `json:"title"`
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	// Description is Markdown - rendered with react-markdown wherever it's
+	// shown, same convention as Post.Content.
 	Description string   `json:"description"`
 	TechStack   []string `json:"tech_stack"`
 	LiveUrl     string   `json:"live_url"`
-	GithubUrl   string   `json:"github_url"`
+	// StartDate/EndDate are "YYYY-MM"; empty EndDate means ongoing - same
+	// convention as ExperiencePosition.
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
 	// Icon is a simple-icons slug (e.g. "react", "docker"), same convention
 	// as StackSkill.Icon - resolved to a brand SVG by the frontend, or falls
 	// back to a generic icon when empty/unresolved.
