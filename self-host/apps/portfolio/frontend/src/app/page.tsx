@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { FileDown, ExternalLink, Code2, ArrowRight, Server, Boxes, Cpu } from 'lucide-react';
+import { FileDown, ExternalLink, Code2, ArrowRight, BookOpen } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ReactiveGrid from '@/components/originkit/reactivegrid';
+import ProjectIcon from '@/components/ProjectIcon';
+import { formatPublishedDate } from '@/lib/format-date';
 import { useResumeRequest } from '@/components/ResumeRequestModal';
 import { fetchJson } from '@/lib/fetch-json';
 import { GithubIcon, LinkedinIcon } from '@/components/icons/social';
@@ -17,9 +19,21 @@ type Project = {
   tech_stack: string[];
   live_url: string;
   github_url: string;
+  icon: string;
+  featured: boolean;
 };
 
-const iconByIndex = [Server, Boxes, Cpu];
+type Post = {
+  id: string;
+  title: string;
+  description: string;
+  cover_image_url: string;
+  published_date: string;
+  featured: boolean;
+};
+
+type CreditItem = { text: string; url: string };
+type CreditRow = { id: string; label: string; items: CreditItem[] };
 
 const pushBtn =
   "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-1";
@@ -27,9 +41,8 @@ const pushBtn =
 export default function Home() {
   const { open: openResumeRequest } = useResumeRequest();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [docs, setDocs] = useState<any[]>([]);
-  const [featuredProjects, setFeaturedProjects] = useState<string[]>([]);
-  const [featuredDocs, setFeaturedDocs] = useState<string[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [credits, setCredits] = useState<CreditRow[]>([]);
 
   const [resumeUrl, setResumeUrl] = useState<string>('#');
   const [linkedinUrl, setLinkedinUrl] = useState<string>('#');
@@ -45,11 +58,11 @@ export default function Home() {
   useEffect(() => {
     const loadOtherData = async () => {
       try {
-        const [configRes, projectsRes, docsRes, homepageRes] = await Promise.allSettled([
+        const [configRes, projectsRes, postsRes, creditsRes] = await Promise.allSettled([
           fetchJson<{ resumeUrl?: string; linkedinUrl?: string; githubUrl?: string }>('/api/config'),
           fetchJson<Project[]>('/api/projects'),
-          fetchJson<any[]>('/api/documents'),
-          fetchJson<{ featured_projects?: string[]; featured_docs?: string[] }>('/api/homepage'),
+          fetchJson<Post[]>('/api/posts'),
+          fetchJson<CreditRow[]>('/api/credits'),
         ]);
 
         if (configRes.status === 'fulfilled' && configRes.value) {
@@ -62,13 +75,12 @@ export default function Home() {
           setProjects(projectsRes.value || []);
         }
 
-        if (docsRes.status === 'fulfilled') {
-          setDocs(docsRes.value || []);
+        if (postsRes.status === 'fulfilled') {
+          setPosts(postsRes.value || []);
         }
 
-        if (homepageRes.status === 'fulfilled' && homepageRes.value) {
-          setFeaturedProjects(homepageRes.value.featured_projects || []);
-          setFeaturedDocs(homepageRes.value.featured_docs || []);
+        if (creditsRes.status === 'fulfilled') {
+          setCredits(creditsRes.value || []);
         }
       } catch (err) {
         console.error('Other data fetch failed:', err);
@@ -78,8 +90,8 @@ export default function Home() {
     loadOtherData();
   }, []);
 
-  const filteredProjects = projects.filter(p => featuredProjects.includes(p.id)).slice(0, 4);
-  const filteredDocs = docs.filter(d => featuredDocs.includes(d.id)).slice(0, 4);
+  const filteredProjects = projects.filter(p => p.featured).slice(0, 4);
+  const filteredPosts = posts.filter(p => p.featured).slice(0, 4);
 
   return (
     <div className="min-h-screen text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
@@ -214,9 +226,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProjects.map((project, index) => {
-                const Icon = iconByIndex[index % iconByIndex.length];
-                return (
+              {filteredProjects.map((project) => (
                   <div
                     key={project.id}
                     className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000]"
@@ -226,7 +236,7 @@ export default function Home() {
                       className="w-14 h-14 flex items-center justify-center mb-5 border-2 border-black transition-colors"
                       style={{ backgroundColor: 'var(--ds-sage)', borderRadius: '0.5rem' }}
                     >
-                      <Icon className="w-6 h-6 text-black" aria-hidden="true" />
+                      <ProjectIcon slug={project.icon} />
                     </div>
                     <h3 className="text-2xl font-extrabold mb-3" style={{ fontFamily: 'var(--ds-font-display)' }}>{project.title}</h3>
                     <p className="text-sm text-[var(--ds-charcoal)]/80 leading-relaxed mb-5">
@@ -250,8 +260,7 @@ export default function Home() {
                       </a>
                     </div>
                   </div>
-                );
-              })}
+              ))}
             </div>
           )}
 
@@ -265,44 +274,110 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Docs - dark charcoal section for contrast */}
-      <section id="docs" className="border-y-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
+      {/* Blog - dark charcoal section for contrast */}
+      <section id="blog" className="border-y-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
         <div className="max-w-6xl mx-auto px-6 py-20">
           <h2
             className="text-3xl sm:text-4xl mb-10 text-white"
             style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
           >
-            Docs
+            Blog
           </h2>
 
-          {filteredDocs.length === 0 ? (
+          {filteredPosts.length === 0 ? (
             <div className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000] max-w-md" style={{ borderRadius: '0.75rem' }}>
               <p className="font-bold mb-1">Nothing published yet</p>
-              <p className="text-sm text-[var(--ds-charcoal)]/70">Engineering write-ups land here as they&apos;re published.</p>
+              <p className="text-sm text-[var(--ds-charcoal)]/70">Write-ups land here as they&apos;re published.</p>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-6">
-              {filteredDocs.map((doc) => (
+              {filteredPosts.map((post) => (
                 <Link
-                  key={doc.id}
-                  href={`/docs/${doc.id}`}
-                  className="bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_#000] group focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  key={post.id}
+                  href={`/blog/${post.id}`}
+                  className="bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_#000] group focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   style={{ borderRadius: '0.75rem' }}
                 >
-                  <h3 className="text-lg font-extrabold mb-2 group-hover:underline">{doc.title}</h3>
-                  <p className="text-sm text-[var(--ds-charcoal)]/80 leading-relaxed">{doc.description}</p>
+                  {post.cover_image_url ? (
+                    <div className="aspect-video w-full overflow-hidden border-b-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={post.cover_image_url}
+                        alt=""
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="aspect-video w-full border-b-2 border-black flex items-center justify-center"
+                      style={{ backgroundColor: 'var(--ds-sage)' }}
+                    >
+                      <BookOpen className="w-10 h-10 text-black/40" aria-hidden="true" />
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <h3 className="text-lg font-extrabold mb-2 group-hover:underline">{post.title}</h3>
+                    {post.description && <p className="text-sm text-[var(--ds-charcoal)]/80 leading-relaxed mb-3 line-clamp-2">{post.description}</p>}
+                    {post.published_date && (
+                      <p className="text-xs font-mono text-[var(--ds-charcoal)]/60">Published on {formatPublishedDate(post.published_date)}</p>
+                    )}
+                  </div>
                 </Link>
               ))}
             </div>
           )}
 
-          <Link href="/docs" className="group mt-8 inline-flex items-center gap-1.5 font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
+          <Link href="/blog" className="group mt-8 inline-flex items-center gap-1.5 font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
             <span className="relative">
-              View all docs
+              View all posts
               <span className="absolute left-0 -bottom-0.5 h-0.5 w-full bg-white origin-left scale-x-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
             </span>
             <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" aria-hidden="true" />
           </Link>
+        </div>
+      </section>
+
+      {/* Credits - production notes, dark section continuing from Blog */}
+      <section id="credits" className="border-t-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <h2
+            className="text-3xl sm:text-4xl mb-10 text-white"
+            style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
+          >
+            Credits
+          </h2>
+
+          {credits.length === 0 ? (
+            <div className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000] max-w-md" style={{ borderRadius: '0.75rem' }}>
+              <p className="font-bold mb-1">Not published yet</p>
+              <p className="text-sm text-[var(--ds-charcoal)]/70">Production credits land here once they&apos;re curated.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-w-2xl">
+              {credits.map((row) => (
+                <div key={row.id} className="grid grid-cols-[110px_1fr] sm:grid-cols-[160px_1fr] gap-x-6 gap-y-1 items-start">
+                  <span className="text-right text-white/40 text-sm font-medium pt-0.5">{row.label}</span>
+                  <div className="flex flex-col gap-1">
+                    {row.items.map((item, idx) =>
+                      item.url ? (
+                        <a
+                          key={idx}
+                          href={formatUrl(item.url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-white underline underline-offset-2 decoration-white/30 hover:decoration-[var(--ds-yellow)] hover:text-[var(--ds-yellow)] transition-colors text-sm w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        >
+                          {item.text}
+                        </a>
+                      ) : (
+                        <span key={idx} className="text-white/70 text-sm">{item.text}</span>
+                      )
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

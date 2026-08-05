@@ -2,12 +2,12 @@
 
 import type { ReactNode } from 'react';
 import {
-  LayoutDashboard,
   FolderKanban,
   BookOpen,
   Layers,
   Briefcase,
   GraduationCap,
+  BookMarked,
   Inbox,
   Settings2,
   LogOut,
@@ -26,18 +26,18 @@ import {
 } from '@/components/ui/sidebar';
 
 export type AdminSection =
-  | 'homepage' | 'projects' | 'docs' | 'stack' | 'experience' | 'education'
+  | 'projects' | 'blog' | 'stack' | 'experience' | 'education' | 'credits'
   | 'resume' | 'settings';
 
 type NavItem = { key: AdminSection; label: string; icon: ReactNode };
 
 const contentItems: NavItem[] = [
-  { key: 'homepage', label: 'Homepage', icon: <LayoutDashboard /> },
   { key: 'projects', label: 'Projects', icon: <FolderKanban /> },
-  { key: 'docs', label: 'Docs', icon: <BookOpen /> },
+  { key: 'blog', label: 'Blog', icon: <BookOpen /> },
   { key: 'stack', label: 'Stack', icon: <Layers /> },
   { key: 'experience', label: 'Experience', icon: <Briefcase /> },
   { key: 'education', label: 'Education', icon: <GraduationCap /> },
+  { key: 'credits', label: 'Credits', icon: <BookMarked /> },
 ];
 
 const opsItems: NavItem[] = [
@@ -82,7 +82,7 @@ export default function AdminSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<a href="/" />}>
+            <SidebarMenuButton size="lg">
               <div
                 className="flex aspect-square size-8 items-center justify-center bg-black text-[var(--ds-yellow)] text-xs border-2 border-black"
                 style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, borderRadius: '0.5rem' }}
@@ -93,7 +93,7 @@ export default function AdminSidebar({
                 <span className="truncate font-bold" style={{ fontFamily: 'var(--ds-font-display)' }}>
                   Control Plane
                 </span>
-                <span className="truncate text-xs text-muted-foreground">systems-playground</span>
+                <span className="truncate text-xs text-muted-foreground">portfolio</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

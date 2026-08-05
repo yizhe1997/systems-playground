@@ -1,11 +1,16 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Trash2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import MonthYearPicker from '@/components/admin/MonthYearPicker';
+import TagList from '@/components/admin/TagList';
+import { formatDateRange } from '@/lib/date-range';
+
+const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
 type Education = {
   id: string;
@@ -20,21 +25,74 @@ type Education = {
 const fieldClass =
   'border-2 border-black rounded-[0.375rem] focus-visible:ring-0 focus-visible:shadow-[2px_2px_0px_0px_#000] transition-shadow h-9';
 
-export default function EducationManager({ isAdmin }: { isAdmin: boolean }) {
+function EducationCardPreview({ education }: { education: Education }) {
+  return (
+    <div className="border-2 border-black shadow-[4px_4px_0px_0px_#000] bg-white p-6 max-w-sm" style={{ borderRadius: '0.75rem' }}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h3 className="font-extrabold" style={{ fontFamily: 'var(--ds-font-display)' }}>
+          {education.school || 'Untitled school'}
+        </h3>
+        <span className="text-xs font-mono text-[var(--ds-charcoal)]/60 whitespace-nowrap">
+          {formatDateRange(education.start_date, education.end_date)}
+        </span>
+      </div>
+      {(education.degree || education.field_of_study) && (
+        <p className="text-sm text-[var(--ds-charcoal)]/80 mt-1">
+          {[education.degree, education.field_of_study].filter(Boolean).join(' — ')}
+        </p>
+      )}
+      {education.highlights.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {education.highlights.map((h) => (
+            <span key={h} className="text-xs font-bold px-2.5 py-1 border-2 border-black" style={{ borderRadius: '0.375rem' }}>
+              {h}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function EducationManager({ isAdmin, onDirtyChange }: { isAdmin: boolean; onDirtyChange?: (dirty: boolean) => void }) {
   const [schools, setSchools] = useState<Education[]>([]);
+  const [baseline, setBaseline] = useState<Education[]>([]);
   const [loading, setLoading] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const fieldRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const { toast } = useToast();
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
     fetch(`${url}/api/education`)
       .then((r) => r.json())
-      .then((data) => setSchools(data || []))
+      .then((data) => { const d = data || []; setSchools(d); setBaseline(d); })
       .catch(console.error);
   }, []);
 
+  const isDirty = JSON.stringify(schools) !== JSON.stringify(baseline);
+
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  const validate = (): { message: string; index: number }[] =>
+    schools
+      .map((s, i) => (s.school.trim() ? null : { message: `Education #${i + 1} needs a school.`, index: i }))
+      .filter((e): e is { message: string; index: number } => e !== null);
+
   const save = async () => {
     if (!isAdmin) return;
+    const errors = validate();
+    if (errors.length > 0) {
+      toast({
+        title: errors.length === 1 ? 'Missing required field' : `${errors.length} required fields missing`,
+        description: errors.map((e) => e.message).join(' '),
+        variant: 'destructive',
+      });
+      const el = fieldRefs.current[errors[0].index];
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus();
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/proxy/cms', {
@@ -42,8 +100,13 @@ export default function EducationManager({ isAdmin }: { isAdmin: boolean }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'education', payload: schools }),
       });
-      if (res.ok) toast({ title: 'Success', description: 'Saved Education to Redis!' });
-      else toast({ title: 'Error', description: 'Failed to save Education.', variant: 'destructive' });
+      if (res.ok) {
+        toast({ title: 'Success', description: 'Saved Education to Redis!' });
+        setBaseline(schools);
+      } else {
+        const body = await res.json().catch(() => null);
+        toast({ title: 'Error', description: body?.error || 'Failed to save Education.', variant: 'destructive' });
+      }
     } catch {
       toast({ title: 'Error', description: 'Network error.', variant: 'destructive' });
     }
@@ -93,10 +156,11 @@ export default function EducationManager({ isAdmin }: { isAdmin: boolean }) {
               <div className="flex gap-3 items-end">
                 <div className="flex-1 space-y-1.5">
                   <Label htmlFor={`school-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
-                    School name
+                    School name<RequiredMark />
                   </Label>
                   <Input
                     id={`school-${i}`}
+                    ref={(el) => { fieldRefs.current[i] = el; }}
                     value={s.school}
                     onChange={(e) => update(i, { school: e.target.value })}
                     className={`font-bold ${fieldClass}`}
@@ -104,16 +168,27 @@ export default function EducationManager({ isAdmin }: { isAdmin: boolean }) {
                     disabled={!isAdmin}
                   />
                 </div>
-                <Button
-                  onClick={() => removeSchool(i)}
-                  disabled={!isAdmin}
-                  variant="destructive"
-                  size="icon"
-                  aria-label="Remove school"
-                  className="shrink-0 border-2 border-black rounded-[0.5rem]"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    onClick={() => setPreviewIndex(i)}
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Preview"
+                    className="border-2 border-transparent hover:border-black rounded-[0.5rem]"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => removeSchool(i)}
+                    disabled={!isAdmin}
+                    variant="destructive"
+                    size="icon"
+                    aria-label="Remove school"
+                    className="border-2 border-black rounded-[0.5rem]"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
               <div className="flex gap-3">
@@ -164,14 +239,14 @@ export default function EducationManager({ isAdmin }: { isAdmin: boolean }) {
 
               <div className="space-y-1.5">
                 <Label htmlFor={`highlights-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
-                  Highlights / coursework (comma separated)
+                  Highlights / coursework
                 </Label>
-                <Input
+                <TagList
                   id={`highlights-${i}`}
-                  value={s.highlights.join(', ')}
-                  onChange={(e) => update(i, { highlights: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })}
+                  values={s.highlights}
+                  onChange={(v) => update(i, { highlights: v })}
                   className={`text-xs ${fieldClass}`}
-                  placeholder="Distributed Systems, Software Engineering, DSA"
+                  placeholder="Distributed Systems, Software Engineering..."
                   disabled={!isAdmin}
                 />
               </div>
@@ -183,12 +258,27 @@ export default function EducationManager({ isAdmin }: { isAdmin: boolean }) {
       <div className="p-6 border-t-2 border-black">
         <Button
           onClick={save}
-          disabled={!isAdmin || loading}
-          className="px-5 h-10 text-sm font-bold border-2 border-black rounded-[0.5rem] shadow-[4px_4px_0px_0px_#000] hover:shadow-none transition-all bg-black text-white hover:bg-black"
+          disabled={!isAdmin || loading || !isDirty}
+          className="px-5 h-10 text-sm font-bold border-2 border-black rounded-[0.5rem] shadow-[4px_4px_0px_0px_#000] hover:shadow-none transition-all bg-black text-white hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
         >
           {loading ? 'Saving...' : 'Save Education'}
         </Button>
       </div>
+
+      <Dialog open={previewIndex !== null} onOpenChange={(open) => !open && setPreviewIndex(null)}>
+        <DialogContent
+          className="sm:max-w-md bg-white border-2 border-black text-[var(--ds-charcoal)] ring-0"
+          style={{ fontFamily: 'var(--ds-font-body)', borderRadius: '0.75rem', boxShadow: '8px 8px 0px 0px #000' }}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl text-black font-extrabold">Card preview</DialogTitle>
+            <DialogDescription className="text-[var(--ds-charcoal)]/70">
+              Unsaved changes — this is exactly how the card renders on the <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">/about</code> page.
+            </DialogDescription>
+          </DialogHeader>
+          {previewIndex !== null && schools[previewIndex] && <EducationCardPreview education={schools[previewIndex]} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

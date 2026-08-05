@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      return NextResponse.json({ error: "Backend failed to update CMS" }, { status: response.status });
+      const body = await response.json().catch(() => null);
+      return NextResponse.json({ error: body?.error || "Backend failed to update CMS" }, { status: response.status });
     }
 
     return NextResponse.json({ status: "success" });

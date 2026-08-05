@@ -8,7 +8,7 @@ import ClickEffects from '@/components/originkit/clickeffects';
 
 const navLinks = [
   { href: '/projects', label: 'Projects' },
-  { href: '/docs', label: 'Docs' },
+  { href: '/blog', label: 'Blog' },
   { href: '/about', label: 'About' },
 ];
 

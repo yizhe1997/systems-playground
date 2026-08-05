@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ExternalLink, Code2, Server, Boxes, Cpu } from 'lucide-react';
+import { ExternalLink, Code2 } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import ProjectIcon from '@/components/ProjectIcon';
 import { fetchJson } from '@/lib/fetch-json';
 
 type Project = {
@@ -13,9 +14,8 @@ type Project = {
   tech_stack: string[];
   live_url: string;
   github_url: string;
+  icon: string;
 };
-
-const iconByIndex = [Server, Boxes, Cpu];
 
 const formatUrl = (url: string) => {
   if (!url || url === '#') return '#';
@@ -62,9 +62,7 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project, index) => {
-              const Icon = iconByIndex[index % iconByIndex.length];
-              return (
+            {projects.map((project) => (
                 <div
                   key={project.id}
                   className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000]"
@@ -74,7 +72,7 @@ export default function ProjectsPage() {
                     className="w-14 h-14 flex items-center justify-center mb-5 border-2 border-black"
                     style={{ backgroundColor: 'var(--ds-sage)', borderRadius: '0.5rem' }}
                   >
-                    <Icon className="w-6 h-6 text-black" aria-hidden="true" />
+                    <ProjectIcon slug={project.icon} />
                   </div>
                   <h2 className="text-2xl font-extrabold mb-3" style={{ fontFamily: 'var(--ds-font-display)' }}>
                     {project.title}
@@ -108,8 +106,7 @@ export default function ProjectsPage() {
                     </a>
                   </div>
                 </div>
-              );
-            })}
+            ))}
           </div>
         )}
       </main>

@@ -54,7 +54,6 @@ func main() {
 	initDB()
 
 	RegisterCMSRoutes(app)
-	RegisterFilebrowserRoutes(app)
 	RegisterResumeRoutes(app)
 
 	// --- PUBLIC API ENDPOINTS ---
