@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import SimpleIcon from '@/components/SimpleIcon';
 import { lookupIcon } from '@/lib/simple-icons';
 import IconPicker from '@/components/admin/IconPicker';
+import StatusToggle from '@/components/admin/StatusToggle';
 
 type StackSkill = { name: string; icon: string };
-type StackCategory = { id: string; name: string; skills: StackSkill[] };
+type StackCategory = { id: string; name: string; skills: StackSkill[]; status: string };
 
 const fieldClass =
   'border-2 border-black rounded-[0.375rem] focus-visible:ring-0 focus-visible:shadow-[2px_2px_0px_0px_#000] transition-shadow h-9';
@@ -49,12 +50,12 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
   const { toast } = useToast();
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-    fetch(`${url}/api/stack`)
+    const url = isAdmin ? '/api/proxy/cms?type=stack' : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085'}/api/stack`;
+    fetch(url)
       .then((r) => r.json())
       .then((data) => { const d = data || []; setCategories(d); setBaseline(d); })
       .catch(console.error);
-  }, []);
+  }, [isAdmin]);
 
   const isDirty = JSON.stringify(categories) !== JSON.stringify(baseline);
 
@@ -63,6 +64,7 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
   const validate = (): { message: string; key: string }[] => {
     const errors: { message: string; key: string }[] = [];
     categories.forEach((cat, i) => {
+      if (cat.status !== 'published') return;
       if (!cat.name.trim()) errors.push({ message: `Category #${i + 1} needs a name.`, key: `cat-${i}` });
       cat.skills.forEach((s, si) => {
         if (!s.name.trim()) errors.push({ message: `"${cat.name || `Category #${i + 1}`}" skill #${si + 1} needs a name.`, key: `skill-${i}-${si}` });
@@ -106,7 +108,7 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
   };
 
   const addCategory = () => {
-    setCategories([...categories, { id: Math.random().toString(36).substring(2, 8), name: '', skills: [] }]);
+    setCategories([...categories, { id: Math.random().toString(36).substring(2, 8), name: '', skills: [], status: 'draft' }]);
   };
 
   const removeCategory = (ci: number) => setCategories(categories.filter((_, i) => i !== ci));
@@ -165,6 +167,7 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
                     disabled={!isAdmin}
                   />
                 </div>
+                <StatusToggle value={cat.status} onChange={(v) => { const n = [...categories]; n[ci].status = v; setCategories(n); }} disabled={!isAdmin} />
                 <div className="flex gap-1 shrink-0">
                   <Button
                     onClick={() => setPreviewIndex(ci)}
@@ -271,6 +274,9 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
             <DialogTitle className="text-xl text-black font-extrabold">Card preview</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
               Unsaved changes — this is exactly how the card renders on the <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">/about</code> page.
+              {previewIndex !== null && categories[previewIndex]?.status !== 'published' && (
+                <span className="block mt-2 font-bold text-black">This category is a Draft and won&apos;t appear on the live site until Published.</span>
+              )}
             </DialogDescription>
           </DialogHeader>
           {previewIndex !== null && categories[previewIndex] && <StackCardPreview category={categories[previewIndex]} />}

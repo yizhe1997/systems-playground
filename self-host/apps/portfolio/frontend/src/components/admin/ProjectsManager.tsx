@@ -11,10 +11,11 @@ import ProjectRow, { type Project } from '@/components/ProjectRow';
 import IconPicker from '@/components/admin/IconPicker';
 import TagList from '@/components/admin/TagList';
 import MonthYearPicker from '@/components/admin/MonthYearPicker';
+import StatusToggle from '@/components/admin/StatusToggle';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
-type AdminProject = Project & { featured: boolean };
+type AdminProject = Project & { featured: boolean; status: string };
 
 const fieldClass =
   'border-2 border-black rounded-[0.375rem] focus-visible:ring-0 focus-visible:shadow-[2px_2px_0px_0px_#000] transition-shadow h-9';
@@ -27,29 +28,34 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
   const titleRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const { toast } = useToast();
 
+  // Admins fetch through the authenticated proxy so drafts (excluded from
+  // the public /api/projects response) still show up here to keep editing.
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-    fetch(`${url}/api/projects`)
+    const url = isAdmin ? '/api/proxy/cms?type=projects' : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085'}/api/projects`;
+    fetch(url)
       .then((r) => r.json())
       .then((data) => { const d = data || []; setProjects(d); setBaseline(d); })
       .catch(console.error);
-  }, []);
+  }, [isAdmin]);
 
   const isDirty = JSON.stringify(projects) !== JSON.stringify(baseline);
 
   useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
-  // Every item needs at least a title - an untitled project still saves
-  // "successfully" but has nothing for a homepage/projects-page card to
-  // display, so it's effectively silent junk data rather than a real error
-  // anywhere else in the stack. Caught here before the request even goes
-  // out; the backend independently re-checks the same rule (cms.go). All
-  // offending items are reported at once - flagging only the first meant a
-  // second (third, fourth...) blank title only surfaced after fixing and
-  // resaving, one at a time.
+  // Only Published items are validated - a Draft is explicitly a
+  // work-in-progress save, so it must never be blocked by incomplete
+  // fields (that's the whole point of drafts: don't lose progress). An
+  // untitled *published* project still saves "successfully" but has
+  // nothing for a homepage/projects-page card to display, so it's
+  // effectively silent junk data rather than a real error anywhere else in
+  // the stack. Caught here before the request even goes out; the backend
+  // independently re-checks the same rule (cms.go). All offending items are
+  // reported at once - flagging only the first meant a second (third,
+  // fourth...) blank title only surfaced after fixing and resaving, one at
+  // a time.
   const validate = (): { message: string; index: number }[] =>
     projects
-      .map((p, i) => (p.title.trim() ? null : { message: `Project #${i + 1} needs a title.`, index: i }))
+      .map((p, i) => (p.status === 'published' && !p.title.trim() ? { message: `Project #${i + 1} needs a title.`, index: i } : null))
       .filter((e): e is { message: string; index: number } => e !== null);
 
   const save = async () => {
@@ -88,7 +94,7 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
 
   const addProject = () => {
     setProjects([
-      { id: Math.random().toString(36).substring(2, 8), title: '', description: '', tech_stack: [], live_url: '', start_date: '', end_date: '', icon: '', featured: false },
+      { id: Math.random().toString(36).substring(2, 8), title: '', description: '', tech_stack: [], live_url: '', start_date: '', end_date: '', icon: '', featured: false, status: 'draft' },
       ...projects,
     ]);
   };
@@ -149,6 +155,7 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
                     disabled={!isAdmin}
                   />
                 </div>
+                <StatusToggle value={p.status} onChange={(v) => update(i, { status: v })} disabled={!isAdmin} />
                 <div className="flex gap-1 shrink-0">
                   <Button
                     onClick={() => move(i, -1)}
@@ -307,6 +314,9 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
             <DialogTitle className="text-xl text-black font-extrabold">Row preview</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
               Unsaved changes — this is exactly how the row renders (expanded) on the homepage and on <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">/projects</code>.
+              {previewIndex !== null && projects[previewIndex]?.status !== 'published' && (
+                <span className="block mt-2 font-bold text-black">This project is a Draft and won&apos;t appear on the live site until Published.</span>
+              )}
             </DialogDescription>
           </DialogHeader>
           {previewIndex !== null && projects[previewIndex] && <ProjectRow project={projects[previewIndex]} defaultOpen />}

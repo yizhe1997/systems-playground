@@ -31,6 +31,9 @@ type Project struct {
 	// same convention as Experience/Education/Stack; there is no separate
 	// numeric rank field to drift out of sync with it.
 	Featured bool `json:"featured"`
+	// Status is "draft" or "published" - see the Status doc comment on Post
+	// for the full contract (also applies here and to every other CMS type).
+	Status string `json:"status"`
 }
 
 type Post struct {
@@ -60,6 +63,16 @@ type Post struct {
 	// Featured controls homepage visibility directly on the item - see
 	// Project.Featured.
 	Featured bool `json:"featured"`
+	// Status is "draft" or "published". Draft items are excluded from every
+	// public /api/* GET route (see filterPublished below) but still
+	// returned in full to the authenticated /admin/cms/* GET routes, so the
+	// admin panel can keep editing/resuming work that never has to pass
+	// validation until it's actually published - see the per-type admin.Post
+	// handlers below, which only enforce required fields when Status is
+	// "published". Blank Status (pre-existing data saved before this field
+	// existed) is treated as published by filterPublished, so nothing that
+	// was already live silently disappeared when this shipped.
+	Status string `json:"status"`
 }
 
 type CreditItem struct {
@@ -70,9 +83,10 @@ type CreditItem struct {
 }
 
 type CreditRow struct {
-	ID    string       `json:"id"`
-	Label string       `json:"label"`
-	Items []CreditItem `json:"items"`
+	ID     string       `json:"id"`
+	Label  string       `json:"label"`
+	Items  []CreditItem `json:"items"`
+	Status string       `json:"status"`
 }
 
 type StackSkill struct {
@@ -87,6 +101,7 @@ type StackCategory struct {
 	ID     string       `json:"id"`
 	Name   string       `json:"name"`
 	Skills []StackSkill `json:"skills"`
+	Status string       `json:"status"`
 }
 
 type ExperiencePosition struct {
@@ -115,6 +130,7 @@ type Experience struct {
 	// Positions is ordered newest-first by admin's own arrangement, same
 	// convention as Projects/Documents - the frontend doesn't re-sort.
 	Positions []ExperiencePosition `json:"positions"`
+	Status    string               `json:"status"`
 }
 
 type Education struct {
@@ -125,6 +141,7 @@ type Education struct {
 	StartDate    string   `json:"start_date"`
 	EndDate      string   `json:"end_date"`
 	Highlights   []string `json:"highlights"`
+	Status       string   `json:"status"`
 }
 
 func authMiddleware(c *fiber.Ctx) error {
@@ -136,8 +153,23 @@ func authMiddleware(c *fiber.Ctx) error {
 	return c.Next()
 }
 
+// filterPublished drops draft items for every public /api/* GET route - the
+// admin/cms/* GET routes below return the unfiltered array (including
+// drafts) since the admin panel needs to keep editing them. Blank Status
+// (data saved before this field existed) is treated as published, not
+// draft, so nothing already-live silently vanished when this shipped.
+func filterPublished[T any](items []T, getStatus func(T) string) []T {
+	out := make([]T, 0, len(items))
+	for _, item := range items {
+		if getStatus(item) != "draft" {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
 func RegisterCMSRoutes(app *fiber.App) {
-	// Public GET routes
+	// Public GET routes - published items only
 	app.Get("/api/projects", func(c *fiber.Ctx) error {
 		val, err := redisClient.Get(c.Context(), "cms:projects").Result()
 		if err != nil {
@@ -145,7 +177,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var projects []Project
 		json.Unmarshal([]byte(val), &projects)
-		return c.JSON(projects)
+		return c.JSON(filterPublished(projects, func(p Project) string { return p.Status }))
 	})
 
 	app.Get("/api/posts", func(c *fiber.Ctx) error {
@@ -155,7 +187,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var posts []Post
 		json.Unmarshal([]byte(val), &posts)
-		return c.JSON(posts)
+		return c.JSON(filterPublished(posts, func(p Post) string { return p.Status }))
 	})
 
 	app.Get("/api/credits", func(c *fiber.Ctx) error {
@@ -165,7 +197,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var rows []CreditRow
 		json.Unmarshal([]byte(val), &rows)
-		return c.JSON(rows)
+		return c.JSON(filterPublished(rows, func(r CreditRow) string { return r.Status }))
 	})
 
 	app.Get("/api/stack", func(c *fiber.Ctx) error {
@@ -175,7 +207,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var categories []StackCategory
 		json.Unmarshal([]byte(val), &categories)
-		return c.JSON(categories)
+		return c.JSON(filterPublished(categories, func(cat StackCategory) string { return cat.Status }))
 	})
 
 	app.Get("/api/experience", func(c *fiber.Ctx) error {
@@ -185,7 +217,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var experience []Experience
 		json.Unmarshal([]byte(val), &experience)
-		return c.JSON(experience)
+		return c.JSON(filterPublished(experience, func(e Experience) string { return e.Status }))
 	})
 
 	app.Get("/api/education", func(c *fiber.Ctx) error {
@@ -195,11 +227,73 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var education []Education
 		json.Unmarshal([]byte(val), &education)
-		return c.JSON(education)
+		return c.JSON(filterPublished(education, func(e Education) string { return e.Status }))
 	})
 
 	// Protected Admin Routes
 	admin := app.Group("/admin/cms", authMiddleware)
+
+	// Admin GET routes - unfiltered (drafts included), for the admin panel
+	// to load and keep editing work-in-progress items.
+	admin.Get("/projects", func(c *fiber.Ctx) error {
+		val, err := redisClient.Get(c.Context(), "cms:projects").Result()
+		if err != nil {
+			return c.JSON([]Project{})
+		}
+		var projects []Project
+		json.Unmarshal([]byte(val), &projects)
+		return c.JSON(projects)
+	})
+
+	admin.Get("/posts", func(c *fiber.Ctx) error {
+		val, err := redisClient.Get(c.Context(), "cms:posts").Result()
+		if err != nil {
+			return c.JSON([]Post{})
+		}
+		var posts []Post
+		json.Unmarshal([]byte(val), &posts)
+		return c.JSON(posts)
+	})
+
+	admin.Get("/credits", func(c *fiber.Ctx) error {
+		val, err := redisClient.Get(c.Context(), "cms:credits").Result()
+		if err != nil {
+			return c.JSON([]CreditRow{})
+		}
+		var rows []CreditRow
+		json.Unmarshal([]byte(val), &rows)
+		return c.JSON(rows)
+	})
+
+	admin.Get("/stack", func(c *fiber.Ctx) error {
+		val, err := redisClient.Get(c.Context(), "cms:stack").Result()
+		if err != nil {
+			return c.JSON([]StackCategory{})
+		}
+		var categories []StackCategory
+		json.Unmarshal([]byte(val), &categories)
+		return c.JSON(categories)
+	})
+
+	admin.Get("/experience", func(c *fiber.Ctx) error {
+		val, err := redisClient.Get(c.Context(), "cms:experience").Result()
+		if err != nil {
+			return c.JSON([]Experience{})
+		}
+		var experience []Experience
+		json.Unmarshal([]byte(val), &experience)
+		return c.JSON(experience)
+	})
+
+	admin.Get("/education", func(c *fiber.Ctx) error {
+		val, err := redisClient.Get(c.Context(), "cms:education").Result()
+		if err != nil {
+			return c.JSON([]Education{})
+		}
+		var education []Education
+		json.Unmarshal([]byte(val), &education)
+		return c.JSON(education)
+	})
 
 	admin.Post("/projects", func(c *fiber.Ctx) error {
 		var projects []Project
@@ -208,6 +302,9 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var errs []string
 		for i, p := range projects {
+			if p.Status != "published" {
+				continue
+			}
 			if strings.TrimSpace(p.Title) == "" {
 				errs = append(errs, fmt.Sprintf("Project #%d needs a title", i+1))
 			}
@@ -227,6 +324,9 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var errs []string
 		for i, p := range posts {
+			if p.Status != "published" {
+				continue
+			}
 			if strings.TrimSpace(p.Title) == "" {
 				errs = append(errs, fmt.Sprintf("Post #%d needs a title", i+1))
 			}
@@ -253,6 +353,9 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var errs []string
 		for i, row := range rows {
+			if row.Status != "published" {
+				continue
+			}
 			if strings.TrimSpace(row.Label) == "" {
 				errs = append(errs, fmt.Sprintf("Row #%d needs a label", i+1))
 			}
@@ -277,6 +380,9 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var errs []string
 		for i, cat := range categories {
+			if cat.Status != "published" {
+				continue
+			}
 			if strings.TrimSpace(cat.Name) == "" {
 				errs = append(errs, fmt.Sprintf("Category #%d needs a name", i+1))
 			}
@@ -301,6 +407,9 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var errs []string
 		for i, exp := range experience {
+			if exp.Status != "published" {
+				continue
+			}
 			if strings.TrimSpace(exp.Company) == "" {
 				errs = append(errs, fmt.Sprintf("Company #%d needs a name", i+1))
 			}
@@ -325,6 +434,9 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var errs []string
 		for i, edu := range education {
+			if edu.Status != "published" {
+				continue
+			}
 			if strings.TrimSpace(edu.School) == "" {
 				errs = append(errs, fmt.Sprintf("Education #%d needs a school", i+1))
 			}

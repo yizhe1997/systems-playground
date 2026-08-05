@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatPublishedDate } from '@/lib/format-date';
+import StatusToggle from '@/components/admin/StatusToggle';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
@@ -30,6 +31,7 @@ type Post = {
   cover_image_url: string;
   published_date: string;
   featured: boolean;
+  status: string;
 };
 
 const fieldClass =
@@ -137,21 +139,26 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
   const fieldRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const { toast } = useToast();
 
+  // Admins fetch through the authenticated proxy so drafts (excluded from
+  // the public /api/posts response) still show up here to keep editing.
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-    fetch(`${url}/api/posts`)
+    const url = isAdmin ? '/api/proxy/cms?type=posts' : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085'}/api/posts`;
+    fetch(url)
       .then((r) => r.json())
       .then((data) => { const d = data || []; setPosts(d); setBaseline(d); })
       .catch(console.error);
-  }, []);
+  }, [isAdmin]);
 
   const isDirty = JSON.stringify(posts) !== JSON.stringify(baseline);
 
   useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
+  // Drafts skip validation entirely - a draft is explicitly a
+  // work-in-progress save, and must never be blocked by incomplete fields.
   const validate = (): ValidationError[] => {
     const errors: ValidationError[] = [];
     posts.forEach((p, i) => {
+      if (p.status !== 'published') return;
       if (!p.title.trim()) errors.push({ message: `Post #${i + 1} needs a title.`, index: i, field: 'title' });
       if (p.source_type === 'external_url') {
         if (!p.content_target.trim()) errors.push({ message: `Post #${i + 1} needs a raw URL.`, index: i, field: 'target' });
@@ -206,7 +213,7 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
       {
         id: Math.random().toString(36).substring(2, 8),
         title: '', description: '', source_type: 'native', content_target: '', content: '',
-        cover_image_url: '', published_date: '', featured: false,
+        cover_image_url: '', published_date: '', featured: false, status: 'draft',
       },
       ...posts,
     ]);
@@ -270,6 +277,7 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
                     disabled={!isAdmin}
                   />
                 </div>
+                <StatusToggle value={p.status} onChange={(v) => update(i, { status: v })} disabled={!isAdmin} />
                 <div className="flex gap-1 shrink-0">
                   <Button
                     onClick={() => move(i, -1)}
@@ -448,6 +456,9 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
             <DialogTitle className="text-xl text-black font-extrabold">Post preview</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
               Unsaved changes — see how this renders on the homepage card vs. the full <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">/blog</code> page.
+              {previewIndex !== null && posts[previewIndex]?.status !== 'published' && (
+                <span className="block mt-2 font-bold text-black">This post is a Draft and won&apos;t appear on the live site until Published.</span>
+              )}
             </DialogDescription>
           </DialogHeader>
           {previewIndex !== null && posts[previewIndex] && (

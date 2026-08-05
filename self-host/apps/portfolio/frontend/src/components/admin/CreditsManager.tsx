@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import StatusToggle from '@/components/admin/StatusToggle';
 
 type CreditItem = { text: string; url: string };
-type CreditRow = { id: string; label: string; items: CreditItem[] };
+type CreditRow = { id: string; label: string; items: CreditItem[]; status: string };
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
@@ -57,12 +58,12 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
   const { toast } = useToast();
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-    fetch(`${url}/api/credits`)
+    const url = isAdmin ? '/api/proxy/cms?type=credits' : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085'}/api/credits`;
+    fetch(url)
       .then((r) => r.json())
       .then((data) => { const d = data || []; setRows(d); setBaseline(d); })
       .catch(console.error);
-  }, []);
+  }, [isAdmin]);
 
   const isDirty = JSON.stringify(rows) !== JSON.stringify(baseline);
 
@@ -71,6 +72,7 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
   const validate = (): { message: string; key: string }[] => {
     const errors: { message: string; key: string }[] = [];
     rows.forEach((row, i) => {
+      if (row.status !== 'published') return;
       if (!row.label.trim()) errors.push({ message: `Row #${i + 1} needs a label.`, key: `row-${i}` });
       row.items.forEach((it, ji) => {
         if (!it.text.trim()) errors.push({ message: `"${row.label || `Row #${i + 1}`}" item #${ji + 1} needs text.`, key: `item-${i}-${ji}` });
@@ -114,7 +116,7 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
   };
 
   const addRow = () => {
-    setRows([...rows, { id: Math.random().toString(36).substring(2, 8), label: '', items: [] }]);
+    setRows([...rows, { id: Math.random().toString(36).substring(2, 8), label: '', items: [], status: 'draft' }]);
   };
 
   const removeRow = (i: number) => setRows(rows.filter((_, idx) => idx !== i));
@@ -193,6 +195,7 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
                     disabled={!isAdmin}
                   />
                 </div>
+                <StatusToggle value={row.status} onChange={(v) => updateRow(i, { status: v })} disabled={!isAdmin} />
                 <div className="flex gap-1 shrink-0">
                   <Button
                     onClick={() => moveRow(i, -1)}
@@ -305,6 +308,9 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
             <DialogTitle className="text-xl text-black font-extrabold">Row preview</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
               Unsaved changes — the Credits section sits on a dark background on the homepage, shown here for context.
+              {previewIndex !== null && rows[previewIndex]?.status !== 'published' && (
+                <span className="block mt-2 font-bold text-black">This row is a Draft and won&apos;t appear on the live site until Published.</span>
+              )}
             </DialogDescription>
           </DialogHeader>
           {previewIndex !== null && rows[previewIndex] && <CreditRowPreview row={rows[previewIndex]} />}

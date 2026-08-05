@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import MonthYearPicker from '@/components/admin/MonthYearPicker';
 import TagList from '@/components/admin/TagList';
+import StatusToggle from '@/components/admin/StatusToggle';
 import { formatDateRange, formatDuration } from '@/lib/date-range';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
@@ -28,6 +29,7 @@ type Company = {
   location: string;
   location_type: string;
   positions: Position[];
+  status: string;
 };
 
 const fieldClass =
@@ -111,12 +113,12 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
   const { toast } = useToast();
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-    fetch(`${url}/api/experience`)
+    const url = isAdmin ? '/api/proxy/cms?type=experience' : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085'}/api/experience`;
+    fetch(url)
       .then((r) => r.json())
       .then((data) => { const d = data || []; setCompanies(d); setBaseline(d); })
       .catch(console.error);
-  }, []);
+  }, [isAdmin]);
 
   const isDirty = JSON.stringify(companies) !== JSON.stringify(baseline);
 
@@ -125,6 +127,7 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
   const validate = (): { message: string; key: string }[] => {
     const errors: { message: string; key: string }[] = [];
     companies.forEach((co, i) => {
+      if (co.status !== 'published') return;
       if (!co.company.trim()) errors.push({ message: `Company #${i + 1} needs a name.`, key: `co-${i}` });
       co.positions.forEach((p, pi) => {
         if (!p.title.trim()) errors.push({ message: `"${co.company || `Company #${i + 1}`}" position #${pi + 1} needs a title.`, key: `pos-${i}-${pi}` });
@@ -169,7 +172,7 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
 
   const addCompany = () => {
     setCompanies([
-      { id: Math.random().toString(36).substring(2, 8), company: '', location: '', location_type: 'Remote', positions: [emptyPosition()] },
+      { id: Math.random().toString(36).substring(2, 8), company: '', location: '', location_type: 'Remote', positions: [emptyPosition()], status: 'draft' },
       ...companies,
     ]);
   };
@@ -235,6 +238,7 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
                       disabled={!isAdmin}
                     />
                   </div>
+                  <StatusToggle value={co.status} onChange={(v) => { const n = [...companies]; n[ci].status = v; setCompanies(n); }} disabled={!isAdmin} />
                   <div className="flex gap-1 shrink-0">
                     <Button
                       onClick={() => setPreviewIndex(ci)}
@@ -416,6 +420,9 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
             <DialogTitle className="text-xl text-black font-extrabold">Card preview</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
               Unsaved changes — this is exactly how the card renders on the <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">/about</code> page.
+              {previewIndex !== null && companies[previewIndex]?.status !== 'published' && (
+                <span className="block mt-2 font-bold text-black">This company is a Draft and won&apos;t appear on the live site until Published.</span>
+              )}
             </DialogDescription>
           </DialogHeader>
           {previewIndex !== null && companies[previewIndex] && <ExperienceCardPreview company={companies[previewIndex]} />}

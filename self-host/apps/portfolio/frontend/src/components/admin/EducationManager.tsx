@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import MonthYearPicker from '@/components/admin/MonthYearPicker';
 import TagList from '@/components/admin/TagList';
+import StatusToggle from '@/components/admin/StatusToggle';
 import { formatDateRange } from '@/lib/date-range';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
@@ -20,6 +21,7 @@ type Education = {
   start_date: string;
   end_date: string;
   highlights: string[];
+  status: string;
 };
 
 const fieldClass =
@@ -63,12 +65,12 @@ export default function EducationManager({ isAdmin, onDirtyChange }: { isAdmin: 
   const { toast } = useToast();
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-    fetch(`${url}/api/education`)
+    const url = isAdmin ? '/api/proxy/cms?type=education' : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085'}/api/education`;
+    fetch(url)
       .then((r) => r.json())
       .then((data) => { const d = data || []; setSchools(d); setBaseline(d); })
       .catch(console.error);
-  }, []);
+  }, [isAdmin]);
 
   const isDirty = JSON.stringify(schools) !== JSON.stringify(baseline);
 
@@ -76,7 +78,7 @@ export default function EducationManager({ isAdmin, onDirtyChange }: { isAdmin: 
 
   const validate = (): { message: string; index: number }[] =>
     schools
-      .map((s, i) => (s.school.trim() ? null : { message: `Education #${i + 1} needs a school.`, index: i }))
+      .map((s, i) => (s.status === 'published' && !s.school.trim() ? { message: `Education #${i + 1} needs a school.`, index: i } : null))
       .filter((e): e is { message: string; index: number } => e !== null);
 
   const save = async () => {
@@ -115,7 +117,7 @@ export default function EducationManager({ isAdmin, onDirtyChange }: { isAdmin: 
 
   const addSchool = () => {
     setSchools([
-      { id: Math.random().toString(36).substring(2, 8), school: '', degree: '', field_of_study: '', start_date: '', end_date: '', highlights: [] },
+      { id: Math.random().toString(36).substring(2, 8), school: '', degree: '', field_of_study: '', start_date: '', end_date: '', highlights: [], status: 'draft' },
       ...schools,
     ]);
   };
@@ -168,6 +170,7 @@ export default function EducationManager({ isAdmin, onDirtyChange }: { isAdmin: 
                     disabled={!isAdmin}
                   />
                 </div>
+                <StatusToggle value={s.status} onChange={(v) => update(i, { status: v })} disabled={!isAdmin} />
                 <div className="flex gap-1 shrink-0">
                   <Button
                     onClick={() => setPreviewIndex(i)}
@@ -274,6 +277,9 @@ export default function EducationManager({ isAdmin, onDirtyChange }: { isAdmin: 
             <DialogTitle className="text-xl text-black font-extrabold">Card preview</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
               Unsaved changes — this is exactly how the card renders on the <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">/about</code> page.
+              {previewIndex !== null && schools[previewIndex]?.status !== 'published' && (
+                <span className="block mt-2 font-bold text-black">This entry is a Draft and won&apos;t appear on the live site until Published.</span>
+              )}
             </DialogDescription>
           </DialogHeader>
           {previewIndex !== null && schools[previewIndex] && <EducationCardPreview education={schools[previewIndex]} />}
