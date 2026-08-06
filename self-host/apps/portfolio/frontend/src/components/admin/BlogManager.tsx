@@ -1,7 +1,5 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Trash2, ChevronUp, ChevronDown, Eye, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
@@ -11,13 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatPublishedDate } from '@/lib/format-date';
 import StatusToggle from '@/components/admin/StatusToggle';
+import MDXContent from '@/components/mdx/MDXContent';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
 type Post = {
   id: string;
   title: string;
-  description: string;
   source_type: string;
   // content_target is the raw markdown URL - only meaningful when
   // source_type is "external_url".
@@ -55,7 +53,6 @@ function PostCardPreview({ post }: { post: Post }) {
       )}
       <div className="p-6">
         <h3 className="text-lg font-extrabold mb-2">{post.title || 'Untitled post'}</h3>
-        {post.description && <p className="text-sm text-[var(--ds-charcoal)]/70 leading-relaxed mb-3">{post.description}</p>}
         {post.published_date && (
           <p className="text-xs font-mono text-[var(--ds-charcoal)]/60">Published on {formatPublishedDate(post.published_date)}</p>
         )}
@@ -116,14 +113,11 @@ function PostPagePreview({ post }: { post: Post }) {
         <h1 className="text-2xl mb-2 leading-tight text-black" style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800 }}>
           {post.title || 'Untitled post'}
         </h1>
-        <p className="text-sm text-[var(--ds-charcoal)]/80 font-medium">{post.description}</p>
         {post.published_date && (
           <p className="text-xs font-mono text-[var(--ds-charcoal)]/60 mt-2">Published on {formatPublishedDate(post.published_date)}</p>
         )}
       </div>
-      <div className="prose prose-sm prose-headings:font-extrabold prose-a:text-black prose-a:underline max-w-none">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-      </div>
+      <MDXContent source={content} />
     </article>
   );
 }
@@ -212,7 +206,7 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
     setPosts([
       {
         id: Math.random().toString(36).substring(2, 8),
-        title: '', description: '', source_type: 'native', content_target: '', content: '',
+        title: '', source_type: 'native', content_target: '', content: '',
         cover_image_url: '', published_date: '', featured: false, status: 'draft',
       },
       ...posts,
@@ -233,6 +227,23 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
     const n = [...posts];
     [n[i], n[j]] = [n[j], n[i]];
     setPosts(n);
+  };
+
+  // published_date is stamped automatically the first time a post goes
+  // live, not hand-typed - now that Status exists, "published" already
+  // means "this is live," so a separate manually-set date was redundant
+  // and could drift from reality (e.g. left blank, or backdated by
+  // accident). Only set if it isn't already there, so re-publishing after
+  // an unpublish doesn't overwrite the original date with today.
+  const updateStatus = (i: number, status: string) => {
+    const patch: Partial<Post> = { status };
+    if (status === 'published' && !posts[i].published_date) {
+      // Local calendar date, not toISOString()'s UTC date - the admin's
+      // "today" near midnight can otherwise land on the wrong day.
+      const d = new Date();
+      patch.published_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    update(i, patch);
   };
 
   return (
@@ -277,7 +288,7 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
                     disabled={!isAdmin}
                   />
                 </div>
-                <StatusToggle value={p.status} onChange={(v) => update(i, { status: v })} disabled={!isAdmin} />
+                <StatusToggle value={p.status} onChange={(v) => updateStatus(i, v)} disabled={!isAdmin} />
                 <div className="flex gap-1 shrink-0">
                   <Button
                     onClick={() => move(i, -1)}
@@ -322,47 +333,24 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor={`post-desc-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
-                  Description
+                <Label htmlFor={`post-cover-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
+                  Cover image URL (optional)
                 </Label>
                 <Input
-                  id={`post-desc-${i}`}
-                  value={p.description}
-                  onChange={(e) => update(i, { description: e.target.value })}
-                  className={fieldClass}
-                  placeholder="Short description shown on the post card."
+                  id={`post-cover-${i}`}
+                  value={p.cover_image_url}
+                  onChange={(e) => update(i, { cover_image_url: e.target.value })}
+                  className={`text-xs ${fieldClass}`}
+                  placeholder="https://..."
                   disabled={!isAdmin}
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor={`post-cover-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
-                    Cover image URL (optional)
-                  </Label>
-                  <Input
-                    id={`post-cover-${i}`}
-                    value={p.cover_image_url}
-                    onChange={(e) => update(i, { cover_image_url: e.target.value })}
-                    className={`text-xs ${fieldClass}`}
-                    placeholder="https://..."
-                    disabled={!isAdmin}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor={`post-date-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
-                    Published date (optional)
-                  </Label>
-                  <input
-                    id={`post-date-${i}`}
-                    type="date"
-                    value={p.published_date}
-                    onChange={(e) => update(i, { published_date: e.target.value })}
-                    className={`w-full px-2.5 ${fieldClass}`}
-                    disabled={!isAdmin}
-                  />
-                </div>
-              </div>
+              {p.published_date && (
+                <p className="text-xs font-mono text-[var(--ds-charcoal)]/60">
+                  Published on {formatPublishedDate(p.published_date)} — stamped automatically the first time this went live, not editable.
+                </p>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="sm:w-1/4 space-y-1.5">
@@ -391,9 +379,12 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
                       value={p.content_target}
                       onChange={(e) => update(i, { content_target: e.target.value })}
                       className={`text-xs ${fieldClass}`}
-                      placeholder="https://raw.github..."
+                      placeholder="https://raw.githubusercontent.com/..."
                       disabled={!isAdmin}
                     />
+                    <p className="text-[10px] text-[var(--ds-charcoal)]/50">
+                      Must be a URL that returns the raw markdown text directly, not a web page. A GitHub file&apos;s normal (&quot;blob&quot;) URL won&apos;t work — use the <code className="bg-black/5 px-1 rounded">raw.githubusercontent.com</code> or Gist &quot;raw&quot; link instead. Use the <span className="font-bold">Preview</span> button&apos;s &quot;Full post page&quot; tab to confirm it actually loads before publishing.
+                    </p>
                   </div>
                 ) : (
                   <div className="flex-1 space-y-1.5">
@@ -503,7 +494,7 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
                 onChange={(e) => update(editingIndex, { content: e.target.value })}
                 className="w-full h-full p-8 font-mono text-[13px] leading-relaxed resize-none outline-none bg-transparent text-white"
                 spellCheck={false}
-                placeholder="# Write your markdown here..."
+                placeholder={'# Write your markdown here...\n\nSupports GitHub-flavored markdown, syntax-highlighted code blocks, and\n<YouTubeEmbed videoId="..." title="..." /> for video embeds.'}
                 disabled={!isAdmin}
                 autoFocus
               />

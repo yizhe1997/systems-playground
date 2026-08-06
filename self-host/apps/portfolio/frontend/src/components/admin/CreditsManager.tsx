@@ -137,19 +137,21 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
 
   const addItem = (i: number) => {
     const n = [...rows];
-    n[i].items = [...n[i].items, { text: '', url: '' }];
+    n[i] = { ...n[i], items: [...n[i].items, { text: '', url: '' }] };
     setRows(n);
   };
 
   const removeItem = (i: number, j: number) => {
     const n = [...rows];
-    n[i].items = n[i].items.filter((_, idx) => idx !== j);
+    n[i] = { ...n[i], items: n[i].items.filter((_, idx) => idx !== j) };
     setRows(n);
   };
 
   const updateItem = (i: number, j: number, patch: Partial<CreditItem>) => {
     const n = [...rows];
-    n[i].items[j] = { ...n[i].items[j], ...patch };
+    const items = [...n[i].items];
+    items[j] = { ...items[j], ...patch };
+    n[i] = { ...n[i], items };
     setRows(n);
   };
 

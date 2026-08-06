@@ -11,7 +11,6 @@ import { formatPublishedDate } from '@/lib/format-date';
 type Post = {
   id: string;
   title: string;
-  description: string;
   cover_image_url: string;
   published_date: string;
 };
@@ -92,9 +91,6 @@ export default function BlogIndex() {
                 )}
                 <div className="p-6">
                   <h2 className="text-lg font-extrabold mb-2 group-hover:underline">{post.title}</h2>
-                  {post.description && (
-                    <p className="text-sm text-[var(--ds-charcoal)]/70 leading-relaxed mb-3 line-clamp-2">{post.description}</p>
-                  )}
                   {post.published_date && (
                     <p className="text-xs font-mono text-[var(--ds-charcoal)]/60">
                       Published on {formatPublishedDate(post.published_date)}

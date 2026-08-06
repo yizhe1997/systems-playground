@@ -113,15 +113,33 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
 
   const removeCategory = (ci: number) => setCategories(categories.filter((_, i) => i !== ci));
 
+  // Always replace the category (and skill) object rather than mutating it
+  // in place - categories/baseline share the same object references until
+  // touched, so an in-place write here silently edits baseline too and the
+  // dirty check (JSON.stringify comparison) can never see a difference.
+  const updateCategory = (ci: number, patch: Partial<StackCategory>) => {
+    const next = [...categories];
+    next[ci] = { ...next[ci], ...patch };
+    setCategories(next);
+  };
+
+  const updateSkill = (ci: number, si: number, patch: Partial<StackSkill>) => {
+    const next = [...categories];
+    const skills = [...next[ci].skills];
+    skills[si] = { ...skills[si], ...patch };
+    next[ci] = { ...next[ci], skills };
+    setCategories(next);
+  };
+
   const addSkill = (ci: number) => {
     const next = [...categories];
-    next[ci].skills = [...next[ci].skills, { name: '', icon: '' }];
+    next[ci] = { ...next[ci], skills: [...next[ci].skills, { name: '', icon: '' }] };
     setCategories(next);
   };
 
   const removeSkill = (ci: number, si: number) => {
     const next = [...categories];
-    next[ci].skills = next[ci].skills.filter((_, i) => i !== si);
+    next[ci] = { ...next[ci], skills: next[ci].skills.filter((_, i) => i !== si) };
     setCategories(next);
   };
 
@@ -161,13 +179,13 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
                     id={`cat-name-${ci}`}
                     ref={(el) => { fieldRefs.current[`cat-${ci}`] = el; }}
                     value={cat.name}
-                    onChange={(e) => { const n = [...categories]; n[ci].name = e.target.value; setCategories(n); }}
+                    onChange={(e) => updateCategory(ci, { name: e.target.value })}
                     className={`font-bold ${fieldClass}`}
                     placeholder="e.g. Frontend"
                     disabled={!isAdmin}
                   />
                 </div>
-                <StatusToggle value={cat.status} onChange={(v) => { const n = [...categories]; n[ci].status = v; setCategories(n); }} disabled={!isAdmin} />
+                <StatusToggle value={cat.status} onChange={(v) => updateCategory(ci, { status: v })} disabled={!isAdmin} />
                 <div className="flex gap-1 shrink-0">
                   <Button
                     onClick={() => setPreviewIndex(ci)}
@@ -214,7 +232,7 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
                       <Input
                         ref={(el) => { fieldRefs.current[`skill-${ci}-${si}`] = el; }}
                         value={skill.name}
-                        onChange={(e) => { const n = [...categories]; n[ci].skills[si].name = e.target.value; setCategories(n); }}
+                        onChange={(e) => updateSkill(ci, si, { name: e.target.value })}
                         className={fieldClass}
                         placeholder="TypeScript"
                         disabled={!isAdmin}
@@ -222,7 +240,7 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
                       />
                       <IconPicker
                         value={skill.icon}
-                        onChange={(v) => { const n = [...categories]; n[ci].skills[si].icon = v; setCategories(n); }}
+                        onChange={(v) => updateSkill(ci, si, { icon: v })}
                         className={`font-mono text-xs ${fieldClass}`}
                         placeholder="Search a brand..."
                         disabled={!isAdmin}

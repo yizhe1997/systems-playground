@@ -1,18 +1,16 @@
 'use client';
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { ArrowLeft, ArrowRight, Check, Copy, FileText, Link as LinkIcon } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import MDXContent from '@/components/mdx/MDXContent';
 import { fetchJson } from '@/lib/fetch-json';
 import { formatPublishedDate } from '@/lib/format-date';
 
 type Post = {
   id: string;
   title: string;
-  description: string;
   source_type: string;
   content_target: string;
   content: string;
@@ -20,12 +18,28 @@ type Post = {
   published_date: string;
 };
 
+// Newest first by published_date; posts without a date keep their admin
+// (array) order and sort after every dated post - mirrors blog/page.tsx's
+// listing order so prev/next here matches what "All posts" shows.
+function sortPosts(posts: Post[]) {
+  return [...posts].sort((a, b) => {
+    if (a.published_date && b.published_date) return b.published_date.localeCompare(a.published_date);
+    if (a.published_date) return -1;
+    if (b.published_date) return 1;
+    return 0;
+  });
+}
+
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [content, setContent] = useState<string>('');
   const [post, setPost] = useState<Post | null>(null);
+  const [prevPost, setPrevPost] = useState<Post | null>(null);
+  const [nextPost, setNextPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copiedPage, setCopiedPage] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -42,6 +56,11 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         }
 
         setPost(target);
+
+        const sorted = sortPosts(posts);
+        const idx = sorted.findIndex((p) => p.id === id);
+        setPrevPost(idx > 0 ? sorted[idx - 1] : null);
+        setNextPost(idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null);
 
         let rawMarkdown = '';
         if (target.source_type === 'external_url') {
@@ -65,6 +84,47 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     fetchPost();
   }, [id]);
 
+  // navigator.clipboard.writeText can reject (denied permission, insecure
+  // context, older Safari) - fall back to the legacy execCommand approach
+  // rather than failing the click silently.
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return ok;
+      } catch {
+        return false;
+      }
+    }
+  };
+
+  const copyPage = async () => {
+    if (await copyText(content)) {
+      setCopiedPage(true);
+      setTimeout(() => setCopiedPage(false), 2000);
+    }
+  };
+
+  const copyLink = async () => {
+    if (await copyText(window.location.href)) {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
+  const toolbarButtonClass =
+    'inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 border-2 border-black bg-white hover:bg-[var(--ds-yellow)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black';
+
   return (
     <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
       <SiteHeader />
@@ -87,30 +147,74 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           </div>
         ) : (
           <article>
-            {post?.cover_image_url && (
-              <div className="aspect-video w-full overflow-hidden border-2 border-black shadow-[4px_4px_0px_0px_#000] mb-10" style={{ borderRadius: '0.75rem' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={post.cover_image_url} alt="" className="w-full h-full object-cover" />
-              </div>
-            )}
-            <div className="mb-10 pb-8 border-b-2 border-black">
+            <div className="mb-6 pb-8 border-b-2 border-black">
               <h1
                 className="text-3xl lg:text-4xl mb-4 leading-tight text-black"
                 style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
               >
                 {post?.title}
               </h1>
-              {post?.description && <p className="text-lg text-[var(--ds-charcoal)]/80 font-medium">{post.description}</p>}
               {post?.published_date && (
-                <p className="text-sm font-mono text-[var(--ds-charcoal)]/60 mt-4">
+                <p className="text-sm font-mono text-[var(--ds-charcoal)]/60">
                   Published on {formatPublishedDate(post.published_date)}
                 </p>
               )}
             </div>
 
-            <div className="prose prose-headings:font-extrabold prose-a:text-black prose-a:underline prose-pre:bg-[var(--ds-charcoal)] prose-pre:text-white prose-pre:border-2 prose-pre:border-black mt-8 max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            <div className="flex flex-wrap items-center gap-2 mb-10">
+              <button type="button" onClick={copyPage} className={toolbarButtonClass}>
+                {copiedPage ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
+                {copiedPage ? 'Copied!' : 'Copy page'}
+              </button>
+              <a href={`/blog/${id}/raw`} target="_blank" rel="noopener noreferrer" className={toolbarButtonClass}>
+                <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                View as Markdown
+              </a>
+              <button type="button" onClick={copyLink} className={toolbarButtonClass}>
+                {copiedLink ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <LinkIcon className="w-3.5 h-3.5" aria-hidden="true" />}
+                {copiedLink ? 'Copied!' : 'Copy link'}
+              </button>
             </div>
+
+            <MDXContent
+              source={content}
+              proseClassName="prose prose-headings:font-extrabold prose-a:text-black prose-a:underline prose-pre:bg-[var(--ds-charcoal)] prose-pre:text-white prose-pre:border-2 prose-pre:border-black max-w-none"
+            />
+
+            {(prevPost || nextPost) && (
+              <nav aria-label="More posts" className="flex items-stretch gap-4 mt-16 pt-8 border-t-2 border-black">
+                {prevPost ? (
+                  <Link
+                    href={`/blog/${prevPost.id}`}
+                    className="group flex-1 flex items-center gap-2 p-4 border-2 border-black hover:bg-[var(--ds-yellow)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                    style={{ borderRadius: '0.75rem' }}
+                  >
+                    <ArrowLeft className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[var(--ds-charcoal)]/60 mb-0.5">Previous</p>
+                      <p className="text-sm font-bold truncate group-hover:underline">{prevPost.title}</p>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex-1" />
+                )}
+                {nextPost ? (
+                  <Link
+                    href={`/blog/${nextPost.id}`}
+                    className="group flex-1 flex items-center justify-end gap-2 p-4 border-2 border-black text-right hover:bg-[var(--ds-yellow)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                    style={{ borderRadius: '0.75rem' }}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[var(--ds-charcoal)]/60 mb-0.5">Next</p>
+                      <p className="text-sm font-bold truncate group-hover:underline">{nextPost.title}</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  </Link>
+                ) : (
+                  <div className="flex-1" />
+                )}
+              </nav>
+            )}
           </article>
         )}
       </main>

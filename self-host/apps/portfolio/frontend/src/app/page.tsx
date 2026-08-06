@@ -17,7 +17,6 @@ type Project = ProjectRowType & { featured: boolean };
 type Post = {
   id: string;
   title: string;
-  description: string;
   cover_image_url: string;
   published_date: string;
   featured: boolean;
@@ -276,7 +275,6 @@ export default function Home() {
                   )}
                   <div className="p-6">
                     <h3 className="text-lg font-extrabold mb-2 group-hover:underline">{post.title}</h3>
-                    {post.description && <p className="text-sm text-[var(--ds-charcoal)]/80 leading-relaxed mb-3 line-clamp-2">{post.description}</p>}
                     {post.published_date && (
                       <p className="text-xs font-mono text-[var(--ds-charcoal)]/60">Published on {formatPublishedDate(post.published_date)}</p>
                     )}

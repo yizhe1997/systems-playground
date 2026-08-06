@@ -179,21 +179,33 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
 
   const removeCompany = (i: number) => setCompanies(companies.filter((_, idx) => idx !== i));
 
+  // Always replace the company (and position) object rather than mutating it
+  // in place - companies/baseline share the same object references until
+  // touched, so an in-place write here silently edits baseline too and the
+  // dirty check (JSON.stringify comparison) can never see a difference.
+  const updateCompany = (ci: number, patch: Partial<Company>) => {
+    const n = [...companies];
+    n[ci] = { ...n[ci], ...patch };
+    setCompanies(n);
+  };
+
   const addPosition = (ci: number) => {
     const n = [...companies];
-    n[ci].positions = [...n[ci].positions, emptyPosition()];
+    n[ci] = { ...n[ci], positions: [...n[ci].positions, emptyPosition()] };
     setCompanies(n);
   };
 
   const removePosition = (ci: number, pi: number) => {
     const n = [...companies];
-    n[ci].positions = n[ci].positions.filter((_, i) => i !== pi);
+    n[ci] = { ...n[ci], positions: n[ci].positions.filter((_, i) => i !== pi) };
     setCompanies(n);
   };
 
   const updatePosition = (ci: number, pi: number, patch: Partial<Position>) => {
     const n = [...companies];
-    n[ci].positions[pi] = { ...n[ci].positions[pi], ...patch };
+    const positions = [...n[ci].positions];
+    positions[pi] = { ...positions[pi], ...patch };
+    n[ci] = { ...n[ci], positions };
     setCompanies(n);
   };
 
@@ -232,13 +244,13 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
                       id={`co-name-${ci}`}
                       ref={(el) => { fieldRefs.current[`co-${ci}`] = el; }}
                       value={co.company}
-                      onChange={(e) => { const n = [...companies]; n[ci].company = e.target.value; setCompanies(n); }}
+                      onChange={(e) => updateCompany(ci, { company: e.target.value })}
                       className={`font-bold ${fieldClass}`}
                       placeholder="Acme Corp"
                       disabled={!isAdmin}
                     />
                   </div>
-                  <StatusToggle value={co.status} onChange={(v) => { const n = [...companies]; n[ci].status = v; setCompanies(n); }} disabled={!isAdmin} />
+                  <StatusToggle value={co.status} onChange={(v) => updateCompany(ci, { status: v })} disabled={!isAdmin} />
                   <div className="flex gap-1 shrink-0">
                     <Button
                       onClick={() => setPreviewIndex(ci)}
@@ -269,7 +281,7 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
                     <Input
                       id={`co-loc-${ci}`}
                       value={co.location}
-                      onChange={(e) => { const n = [...companies]; n[ci].location = e.target.value; setCompanies(n); }}
+                      onChange={(e) => updateCompany(ci, { location: e.target.value })}
                       className={fieldClass}
                       placeholder="Singapore"
                       disabled={!isAdmin}
@@ -282,7 +294,7 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
                     <select
                       id={`co-loctype-${ci}`}
                       value={co.location_type}
-                      onChange={(e) => { const n = [...companies]; n[ci].location_type = e.target.value; setCompanies(n); }}
+                      onChange={(e) => updateCompany(ci, { location_type: e.target.value })}
                       className={`w-full ${selectClass}`}
                       disabled={!isAdmin}
                     >

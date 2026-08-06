@@ -37,10 +37,9 @@ type Project struct {
 }
 
 type Post struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	SourceType  string `json:"source_type"` // "external_url" or "native"
+	ID         string `json:"id"`
+	Title      string `json:"title"`
+	SourceType string `json:"source_type"` // "external_url" or "native"
 	// ContentTarget is the raw markdown URL - only meaningful when
 	// SourceType is "external_url".
 	ContentTarget string `json:"content_target"`
@@ -51,7 +50,7 @@ type Post struct {
 	// was ever saved) was the source of the "Open Editor" 404s and the
 	// unanswerable "what happens to the file on a source-type switch"
 	// question. Storing it as a normal field removes the whole failure
-	// mode - it saves and loads exactly like Title or Description do.
+	// mode - it saves and loads exactly like Title does.
 	Content string `json:"content"`
 	// CoverImageUrl is optional - shown atop the card on the homepage/blog
 	// listing and at the top of the post page. Blank renders a text-only
