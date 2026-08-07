@@ -350,10 +350,7 @@ func generateFilebrowserShareLink(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	fbUrl := os.Getenv("FILEBROWSER_PUBLIC_URL")
-	if fbUrl == "" {
-		fbUrl = "http://host.docker.internal:8088"
-	}
+	fbUrl := filebrowserPublicURL()
 
 	// Fetch dynamic path from Redis global settings
 	resumePath, err := GetConfig(ctx, "resumeUrl", "/resume.pdf")
@@ -398,8 +395,11 @@ func generateFilebrowserShareLink(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("no hash returned from filebrowser")
 	}
 
-	// Construct the public URL
-	publicDomain := os.Getenv("FILEBROWSER_PUBLIC_URL") // e.g. https://files.yourdomain.com
+	// Distinct from fbUrl above: that's the Docker-internal address this
+	// backend uses to reach Filebrowser (host.docker.internal), but this URL
+	// is emailed to a human and opened in their browser, so its fallback
+	// must be something actually reachable from outside the container.
+	publicDomain := os.Getenv("FILEBROWSER_PUBLIC_URL")
 	if publicDomain == "" {
 		publicDomain = "http://localhost:8088"
 	}

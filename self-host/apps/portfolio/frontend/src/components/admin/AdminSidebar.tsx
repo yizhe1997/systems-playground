@@ -2,6 +2,8 @@
 
 import type { ReactNode } from 'react';
 import {
+  Home,
+  UserRound,
   FolderKanban,
   BookOpen,
   Layers,
@@ -9,7 +11,6 @@ import {
   GraduationCap,
   BookMarked,
   Inbox,
-  Settings2,
   LogOut,
   ExternalLink,
 } from 'lucide-react';
@@ -26,12 +27,14 @@ import {
 } from '@/components/ui/sidebar';
 
 export type AdminSection =
-  | 'projects' | 'blog' | 'stack' | 'experience' | 'education' | 'credits'
-  | 'resume' | 'settings';
+  | 'homepage' | 'about' | 'projects' | 'blog' | 'stack' | 'experience' | 'education' | 'credits'
+  | 'resume';
 
 type NavItem = { key: AdminSection; label: string; icon: ReactNode };
 
 const contentItems: NavItem[] = [
+  { key: 'homepage', label: 'Homepage', icon: <Home /> },
+  { key: 'about', label: 'About', icon: <UserRound /> },
   { key: 'projects', label: 'Projects', icon: <FolderKanban /> },
   { key: 'blog', label: 'Blog', icon: <BookOpen /> },
   { key: 'stack', label: 'Stack', icon: <Layers /> },
@@ -42,12 +45,16 @@ const contentItems: NavItem[] = [
 
 const opsItems: NavItem[] = [
   { key: 'resume', label: 'Resume Requests', icon: <Inbox /> },
-  { key: 'settings', label: 'Settings', icon: <Settings2 /> },
 ];
 
 export const sectionLabels: Record<AdminSection, string> = Object.fromEntries(
   [...contentItems, ...opsItems].map((i) => [i.key, i.label])
 ) as Record<AdminSection, string>;
+
+export const sectionCategories: Record<AdminSection, string> = Object.fromEntries([
+  ...contentItems.map((i) => [i.key, 'Content']),
+  ...opsItems.map((i) => [i.key, 'Operations']),
+]) as Record<AdminSection, string>;
 
 export default function AdminSidebar({
   active,
