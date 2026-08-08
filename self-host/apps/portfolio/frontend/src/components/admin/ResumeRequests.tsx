@@ -340,6 +340,38 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
     }
   };
 
+  // Soft delete: clears name/email on demand, same fields the 30-day
+  // retention sweep clears automatically (see backend/resume.go
+  // runRetentionSweep) - company/reason/status/triage verdict stay, and
+  // there's no hard-delete route to fall back to.
+  const handleRedact = async (id: string, name: string) => {
+    if (!isAdmin) return;
+    if (!window.confirm(`Redact ${name || 'this request'}'s name and email? This can't be undone - the request itself stays, but its contact info is gone for good.`)) {
+      return;
+    }
+    const previous = [...requests];
+    setRequests(reqs => reqs.map(r => r.id === id ? { ...r, name: '', email: '' } : r));
+
+    try {
+      const res = await fetch('/api/proxy/resume/redact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        toast({ title: "Redacted", description: "Name and email cleared." });
+        fetchRequests();
+      } else {
+        const errorData = await res.json();
+        toast({ title: "Error", description: errorData.error || "Failed to redact request", variant: "destructive" });
+        setRequests(previous);
+      }
+    } catch (e) {
+      toast({ title: "Error", description: 'Network error', variant: "destructive" });
+      setRequests(previous);
+    }
+  };
+
   if (loading) return (
     <div role="status" aria-live="polite" className="text-sm font-bold text-[var(--ds-charcoal)]/70 p-8 text-center bg-white border-2 border-black" style={{ borderRadius: '0.75rem' }}>
       Loading requests&hellip;
@@ -456,7 +488,7 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
             </TableHeader>
             <TableBody>
               {paginated.map(req => {
-                // Retention sweep anonymizes name/email/reason 30 days after
+                // Retention sweep anonymizes name/email 30 days after
                 // submission (see backend/resume.go runRetentionSweep) - it
                 // never deletes the row, so this state is expected and
                 // permanent, not missing/corrupted data.
@@ -519,6 +551,14 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
                               )}
                               <DropdownMenuItem variant="destructive" onClick={() => handleAction(req.id, 'reject')}>
                                 Reject
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {isAdmin && !isAnonymized && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem variant="destructive" onClick={() => handleRedact(req.id, req.name)}>
+                                Delete (redact name &amp; email)
                               </DropdownMenuItem>
                             </>
                           )}
@@ -684,22 +724,31 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
                     {viewing.ai_model && <span>Graded by: {viewing.ai_model}</span>}
                   </div>
                 </div>
-                {isAdmin && viewing.status === 'pending' && (
+                {isAdmin && !isAnonymized && (
                   <SheetFooter className="flex-row justify-end gap-3">
                     <Button
                       variant="ghost"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => handleAction(viewing.id, 'reject')}
+                      className="text-red-600 hover:text-red-700 mr-auto"
+                      onClick={() => handleRedact(viewing.id, viewing.name)}
                     >
-                      Reject
+                      Delete
                     </Button>
-                    {!isAnonymized && (
-                      <Button
-                        className={`border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none ${pushBtnSm} bg-black text-white rounded-[0.5rem]`}
-                        onClick={() => openApproveDialog(viewing.id, viewing.name)}
-                      >
-                        Approve &amp; Email Link
-                      </Button>
+                    {viewing.status === 'pending' && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleAction(viewing.id, 'reject')}
+                        >
+                          Reject
+                        </Button>
+                        <Button
+                          className={`border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none ${pushBtnSm} bg-black text-white rounded-[0.5rem]`}
+                          onClick={() => openApproveDialog(viewing.id, viewing.name)}
+                        >
+                          Approve &amp; Email Link
+                        </Button>
+                      </>
                     )}
                   </SheetFooter>
                 )}

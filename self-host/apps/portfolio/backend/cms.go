@@ -313,6 +313,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		data, _ := json.Marshal(projects)
 		redisClient.Set(c.Context(), "cms:projects", data, 0)
+		recordAudit(c.Context(), actorFromRequest(c), "cms.projects.update", "cms", "projects", fmt.Sprintf("%d item(s)", len(projects)))
 		return c.JSON(fiber.Map{"status": "success"})
 	})
 
@@ -342,6 +343,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		data, _ := json.Marshal(posts)
 		redisClient.Set(c.Context(), "cms:posts", data, 0)
+		recordAudit(c.Context(), actorFromRequest(c), "cms.posts.update", "cms", "posts", fmt.Sprintf("%d item(s)", len(posts)))
 		return c.JSON(fiber.Map{"status": "success"})
 	})
 
@@ -369,6 +371,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		data, _ := json.Marshal(rows)
 		redisClient.Set(c.Context(), "cms:credits", data, 0)
+		recordAudit(c.Context(), actorFromRequest(c), "cms.credits.update", "cms", "credits", fmt.Sprintf("%d item(s)", len(rows)))
 		return c.JSON(fiber.Map{"status": "success"})
 	})
 
@@ -396,6 +399,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		data, _ := json.Marshal(categories)
 		redisClient.Set(c.Context(), "cms:stack", data, 0)
+		recordAudit(c.Context(), actorFromRequest(c), "cms.stack.update", "cms", "stack", fmt.Sprintf("%d item(s)", len(categories)))
 		return c.JSON(fiber.Map{"status": "success"})
 	})
 
@@ -423,6 +427,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		data, _ := json.Marshal(experience)
 		redisClient.Set(c.Context(), "cms:experience", data, 0)
+		recordAudit(c.Context(), actorFromRequest(c), "cms.experience.update", "cms", "experience", fmt.Sprintf("%d item(s)", len(experience)))
 		return c.JSON(fiber.Map{"status": "success"})
 	})
 
@@ -445,6 +450,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		data, _ := json.Marshal(education)
 		redisClient.Set(c.Context(), "cms:education", data, 0)
+		recordAudit(c.Context(), actorFromRequest(c), "cms.education.update", "cms", "education", fmt.Sprintf("%d item(s)", len(education)))
 		return c.JSON(fiber.Map{"status": "success"})
 	})
 }

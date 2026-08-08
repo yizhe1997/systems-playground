@@ -84,6 +84,12 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/admin/login",
+    // Without this, a rejected sign-in (see the signIn callback above) lands
+    // on NextAuth's own built-in /api/auth/error page - plain, unstyled, and
+    // nothing like the rest of this site. Routing errors back to the same
+    // branded login page (which reads ?error= itself) keeps every outcome of
+    // signing in on one consistent screen.
+    error: "/admin/login",
   },
 };
 

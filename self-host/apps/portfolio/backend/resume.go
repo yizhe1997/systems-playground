@@ -62,18 +62,23 @@ type ResumeRequest struct {
 	RoleFitSummary   string `json:"role_fit_summary,omitempty"`
 	TriageError      string `json:"triage_error,omitempty"`
 	TriageAttempts   int    `json:"triage_attempts,omitempty"`
+
+	// UpdatedBy is the admin email that performed the last approve/reject/
+	// retriage action, from the X-Admin-User header the frontend proxy sets
+	// (see audit.go's actorFromRequest) - blank until the first admin action.
+	UpdatedBy string `json:"updated_by,omitempty"`
 }
 
 const resumeRequestColumns = `id, name, email, company, reason, status, created_at,
 	triage_status, ai_model, legitimacy, legitimacy_reason, role_fit_summary,
-	triage_error, triage_attempts, hiring_agency, work_type, industry, salary_range, job_posting_url`
+	triage_error, triage_attempts, hiring_agency, work_type, industry, salary_range, job_posting_url, updated_by`
 
 func scanResumeRequest(row interface{ Scan(...any) error }) (*ResumeRequest, error) {
 	var r ResumeRequest
 	err := row.Scan(&r.ID, &r.Name, &r.Email, &r.Company, &r.Reason, &r.Status, &r.CreatedAt,
 		&r.TriageStatus, &r.AIModel, &r.Legitimacy, &r.LegitimacyReason, &r.RoleFitSummary,
 		&r.TriageError, &r.TriageAttempts, &r.HiringAgency, &r.WorkType,
-		&r.Industry, &r.SalaryRange, &r.JobPostingURL)
+		&r.Industry, &r.SalaryRange, &r.JobPostingURL, &r.UpdatedBy)
 	if err != nil {
 		return nil, err
 	}
@@ -102,12 +107,14 @@ func saveResumeRequest(ctx context.Context, req *ResumeRequest) error {
 			name = ?, email = ?, company = ?, reason = ?, status = ?,
 			triage_status = ?, ai_model = ?, legitimacy = ?, legitimacy_reason = ?,
 			role_fit_summary = ?, triage_error = ?, triage_attempts = ?,
-			hiring_agency = ?, work_type = ?, industry = ?, salary_range = ?, job_posting_url = ?
+			hiring_agency = ?, work_type = ?, industry = ?, salary_range = ?, job_posting_url = ?,
+			updated_by = ?
 		WHERE id = ?`,
 		req.Name, req.Email, req.Company, req.Reason, req.Status,
 		req.TriageStatus, req.AIModel, req.Legitimacy, req.LegitimacyReason,
 		req.RoleFitSummary, req.TriageError, req.TriageAttempts,
 		req.HiringAgency, req.WorkType, req.Industry, req.SalaryRange, req.JobPostingURL,
+		req.UpdatedBy,
 		req.ID)
 	if err != nil {
 		return err
@@ -280,9 +287,12 @@ func RegisterResumeRoutes(app *fiber.App) {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid action. Use 'approve' or 'reject'"})
 		}
 
+		actor := actorFromRequest(c)
+		targetReq.UpdatedBy = actor
 		if err := saveResumeRequest(ctx, targetReq); err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to update request status"})
 		}
+		recordAudit(ctx, actor, "resume_request."+payload.Action, "resume_request", id, targetReq.Name)
 
 		return c.JSON(fiber.Map{"status": "success", "request": targetReq})
 	})
@@ -300,15 +310,47 @@ func RegisterResumeRoutes(app *fiber.App) {
 			return c.Status(404).JSON(fiber.Map{"error": "Request not found"})
 		}
 
+		actor := actorFromRequest(c)
 		targetReq.TriageStatus = "queued"
 		targetReq.TriageError = ""
+		targetReq.UpdatedBy = actor
 		if err := saveResumeRequest(ctx, targetReq); err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to requeue triage"})
 		}
+		recordAudit(ctx, actor, "resume_request.retriage", "resume_request", id, "")
 
 		go runTriage(id)
 
 		return c.JSON(fiber.Map{"status": "success"})
+	})
+
+	// Manually redact a single request's PII on demand - the same fields
+	// runRetentionSweep clears automatically at 30 days (name, email), just
+	// triggered immediately instead of waiting. This is a soft delete: the
+	// row and its non-identifying fields (company, reason, status, triage
+	// verdict) stay - there's no hard-delete route.
+	admin.Post("/requests/:id/redact", func(c *fiber.Ctx) error {
+		ctx := c.Context()
+		id := c.Params("id")
+
+		targetReq, err := findResumeRequest(ctx, id)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to read requests"})
+		}
+		if targetReq == nil {
+			return c.Status(404).JSON(fiber.Map{"error": "Request not found"})
+		}
+
+		actor := actorFromRequest(c)
+		targetReq.Name = ""
+		targetReq.Email = ""
+		targetReq.UpdatedBy = actor
+		if err := saveResumeRequest(ctx, targetReq); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to redact request"})
+		}
+		recordAudit(ctx, actor, "resume_request.redact", "resume_request", id, "")
+
+		return c.JSON(fiber.Map{"status": "success", "request": targetReq})
 	})
 
 	startRetentionSweep()
@@ -331,13 +373,16 @@ func startRetentionSweep() {
 }
 
 // runRetentionSweep anonymizes (not deletes) requests older than 30 days:
-// name, email, and reason — the fields that can identify or contain
-// free-text PII about the requester — are cleared, while company, status,
-// and the triage/legitimacy verdict survive so conversion/volume trends
-// stay analyzable without retaining anyone's contact info. The WHERE clause
-// doubles as the idempotency check: email is required at submission time
-// (see the POST handler), so `email != ''` is exactly "not yet anonymized"
-// and re-running this daily against already-anonymized rows is a no-op.
+// name and email — the two fields that directly identify the requester —
+// are cleared, while company, reason, status, and the triage/legitimacy
+// verdict survive so conversion/volume trends (and *why* people are asking,
+// e.g. which roles/industries) stay analyzable. Reason deliberately isn't
+// cleared here: like company, it's operational context ("hiring for a
+// backend role"), not identity data - the same judgment call already made
+// for company. The WHERE clause doubles as the idempotency check: email is
+// required at submission time (see the POST handler), so `email != ''` is
+// exactly "not yet anonymized" and re-running this daily against
+// already-anonymized rows is a no-op.
 func runRetentionSweep(ctx context.Context) {
 	if db == nil {
 		return
@@ -345,7 +390,7 @@ func runRetentionSweep(ctx context.Context) {
 
 	cutoff := time.Now().AddDate(0, 0, -30).UnixMilli()
 	res, err := db.ExecContext(ctx, `
-		UPDATE resume_requests SET name = '', email = '', reason = ''
+		UPDATE resume_requests SET name = '', email = ''
 		WHERE created_at < ? AND email != ''`, cutoff)
 	if err != nil {
 		log.Printf("⚠️ Retention sweep: failed to anonymize resume_requests: %v", err)

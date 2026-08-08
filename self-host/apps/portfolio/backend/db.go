@@ -33,6 +33,25 @@ CREATE TABLE IF NOT EXISTS resume_requests (
 CREATE INDEX IF NOT EXISTS idx_resume_requests_created_at ON resume_requests(created_at);
 `
 
+// auditLogSchema is a single, centralized log of admin actions across every
+// resource (resume requests, config, CMS content, resume files) - added
+// instead of created_by/updated_by columns on every individual table, since
+// most of those (CMS content) aren't even row-based (see cms.go - each type
+// is one whole-array blob in Redis), so a per-table "who touched this row"
+// column doesn't fit. This is what answers "who did X and when".
+const auditLogSchema = `
+CREATE TABLE IF NOT EXISTS audit_log (
+	id TEXT PRIMARY KEY,
+	created_at INTEGER NOT NULL,
+	actor TEXT NOT NULL DEFAULT '',
+	action TEXT NOT NULL,
+	target_type TEXT NOT NULL DEFAULT '',
+	target_id TEXT NOT NULL DEFAULT '',
+	detail TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at);
+`
+
 // resumeRequestsColumnMigrations adds columns to an already-existing
 // resume_requests table - CREATE TABLE IF NOT EXISTS above only handles a
 // fresh database, not new fields on a table that was already created by an
@@ -47,6 +66,7 @@ var resumeRequestsColumnMigrations = []string{
 	"ALTER TABLE resume_requests ADD COLUMN industry TEXT NOT NULL DEFAULT ''",
 	"ALTER TABLE resume_requests ADD COLUMN salary_range TEXT NOT NULL DEFAULT ''",
 	"ALTER TABLE resume_requests ADD COLUMN job_posting_url TEXT NOT NULL DEFAULT ''",
+	"ALTER TABLE resume_requests ADD COLUMN updated_by TEXT NOT NULL DEFAULT ''",
 }
 
 // resumeRequestsColumnDrops removes columns the app no longer uses. This
@@ -89,6 +109,9 @@ func initDB() {
 		log.Fatalf("❌ Failed to set SQLite busy timeout: %v", err)
 	}
 	if _, err := conn.ExecContext(ctx, resumeRequestsSchema); err != nil {
+		log.Fatalf("❌ Failed to migrate SQLite schema: %v", err)
+	}
+	if _, err := conn.ExecContext(ctx, auditLogSchema); err != nil {
 		log.Fatalf("❌ Failed to migrate SQLite schema: %v", err)
 	}
 	for _, stmt := range resumeRequestsColumnMigrations {

@@ -26,6 +26,19 @@ func setupTestDB(t *testing.T) {
 	if _, err := conn.ExecContext(context.Background(), resumeRequestsSchema); err != nil {
 		t.Fatalf("failed to migrate schema: %v", err)
 	}
+	if _, err := conn.ExecContext(context.Background(), auditLogSchema); err != nil {
+		t.Fatalf("failed to migrate schema: %v", err)
+	}
+	// Mirror initDB()'s post-CREATE-TABLE migrations, not just the base
+	// schema - resumeRequestColumns/scanResumeRequest expect columns (e.g.
+	// hiring_agency, updated_by) that only exist after these run. Letting
+	// this drift from initDB() is exactly what silently broke every test
+	// here once those columns were added for real.
+	for _, stmt := range resumeRequestsColumnMigrations {
+		if _, err := conn.ExecContext(context.Background(), stmt); err != nil {
+			t.Fatalf("failed to apply column migration %q: %v", stmt, err)
+		}
+	}
 
 	prev := db
 	db = conn
@@ -114,8 +127,8 @@ func TestSaveResumeRequest_UnknownID(t *testing.T) {
 // for the operator's requirement that retention is 30 days from CreatedAt for
 // every request regardless of status - a failed/never-resolved request does
 // not get a fresh clock just because it was retried. Retention anonymizes
-// (clears name/email/reason) rather than deleting the row - company, status,
-// and triage/legitimacy fields must survive for aggregate analysis.
+// (clears name/email) rather than deleting the row - company, reason,
+// status, and triage/legitimacy fields must survive for aggregate analysis.
 func TestRunRetentionSweep_ClockStartsAtCreation(t *testing.T) {
 	setupTestDB(t)
 
@@ -142,19 +155,22 @@ func TestRunRetentionSweep_ClockStartsAtCreation(t *testing.T) {
 	if oldFailed == nil {
 		t.Fatal("expected old failed request row to survive anonymization (not be deleted), got nil")
 	}
-	if oldFailed.Name != "" || oldFailed.Email != "" || oldFailed.Reason != "" {
+	if oldFailed.Name != "" || oldFailed.Email != "" {
 		t.Errorf("expected old failed request to be anonymized regardless of status, still has PII: %+v", oldFailed)
 	}
-	if oldFailed.Company != "Acme" || oldFailed.Status != "pending" {
-		t.Errorf("expected non-PII fields to survive anonymization, got: %+v", oldFailed)
+	if oldFailed.Company != "Acme" || oldFailed.Status != "pending" || oldFailed.Reason != "hiring" {
+		t.Errorf("expected non-PII fields (including reason) to survive anonymization, got: %+v", oldFailed)
 	}
 
 	oldApproved, _ := findResumeRequest(context.Background(), "old-approved")
 	if oldApproved == nil {
 		t.Fatal("expected old approved request row to survive anonymization, got nil")
 	}
-	if oldApproved.Name != "" || oldApproved.Email != "" || oldApproved.Reason != "" {
+	if oldApproved.Name != "" || oldApproved.Email != "" {
 		t.Errorf("expected old approved request to be anonymized, still has PII: %+v", oldApproved)
+	}
+	if oldApproved.Reason != "hiring" {
+		t.Errorf("expected reason to survive anonymization, got: %+v", oldApproved)
 	}
 
 	recentReq, _ := findResumeRequest(context.Background(), "recent")
@@ -386,5 +402,55 @@ func TestAdminRetriage_RequeuesFailedRequest(t *testing.T) {
 	stored, _ := findResumeRequest(context.Background(), "abc")
 	if stored.TriageStatus != "complete" || stored.Legitimacy != "legit" {
 		t.Errorf("expected fake triage result to be applied, got %+v", stored)
+	}
+}
+
+// TestAdminRedact_ClearsOnlyNameAndEmail is the regression test for the
+// manual "Delete" action mirroring runRetentionSweep's own field list - it
+// must clear exactly name/email (not reason, company, or status) and must
+// not delete the row.
+func TestAdminRedact_ClearsOnlyNameAndEmail(t *testing.T) {
+	app := newTestApp(t)
+	insertTestRequest(t, ResumeRequest{
+		ID: "abc", Name: "Jane", Email: "jane@example.com", Company: "Acme",
+		Reason: "hiring", Status: "approved", CreatedAt: time.Now().UnixMilli(), TriageStatus: "complete",
+	})
+
+	req := httptest.NewRequest("POST", "/admin/resume/requests/abc/redact", nil)
+	req.Header.Set("X-Admin-Token", "test-admin-token")
+	req.Header.Set("X-Admin-User", "yizhechin97@gmail.com")
+
+	resp, err := app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+
+	stored, _ := findResumeRequest(context.Background(), "abc")
+	if stored == nil {
+		t.Fatal("expected the row to survive redaction (soft delete), got nil")
+	}
+	if stored.Name != "" || stored.Email != "" {
+		t.Errorf("expected name/email to be cleared, got %+v", stored)
+	}
+	if stored.Company != "Acme" || stored.Reason != "hiring" || stored.Status != "approved" {
+		t.Errorf("expected company/reason/status to survive redaction, got %+v", stored)
+	}
+	if stored.UpdatedBy != "yizhechin97@gmail.com" {
+		t.Errorf("expected updated_by to record the actor, got %+v", stored)
+	}
+}
+
+func TestAdminRedact_NotFound(t *testing.T) {
+	app := newTestApp(t)
+
+	req := httptest.NewRequest("POST", "/admin/resume/requests/does-not-exist/redact", nil)
+	req.Header.Set("X-Admin-Token", "test-admin-token")
+
+	resp, _ := app.Test(req, -1)
+	if resp.StatusCode != 404 {
+		t.Fatalf("expected 404, got %d", resp.StatusCode)
 	}
 }

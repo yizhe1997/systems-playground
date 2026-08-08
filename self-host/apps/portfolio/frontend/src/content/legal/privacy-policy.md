@@ -80,15 +80,15 @@ profiles or sell it in any form.
 
 ## How long I keep your data
 
-> **Your name, email, and reason are permanently erased 30 days after you submit a request** —
+> **Your name and email are permanently erased 30 days after you submit a request** —
 > automatically, regardless of whether it was approved, declined, or never resolved. This isn't
 > a plan; it's already running on every submission.
 
-What's kept afterward is limited to non-identifying information — the company name, the
-request's status, and the AI legitimacy verdict — so I can still see aggregate trends (how many
-requests come in, from which companies, how many convert) without retaining anyone's personal
-contact information. If you'd like your data erased sooner than 30 days, email me at
-**yzportal123@gmail.com** and I'll remove it manually.
+What's kept afterward is limited to non-identifying information — the company name, your stated
+reason, the request's status, and the AI legitimacy verdict — so I can still see aggregate trends
+(how many requests come in, from which companies, for what roles, how many convert) without
+retaining anyone's personal contact information. If you'd like your data erased sooner than 30
+days, email me at **yzportal123@gmail.com** and I'll remove it manually.
 
 ## Your rights
 

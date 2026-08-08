@@ -17,18 +17,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const response = await fetch(`${backendApiUrl}/admin/resume/requests/${body.id}/action`, {
+    const response = await fetch(`${backendApiUrl}/admin/resume/requests/${body.id}/redact`, {
       method: "POST",
       headers: {
         "X-Admin-Token": psk,
         "X-Admin-User": session.user.email || "",
-        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ action: body.action, subject: body.subject, body: body.body, resumePaths: body.resumePaths }),
     });
 
     if (!response.ok) {
-      let errorMsg = "Backend failed to process action";
+      let errorMsg = "Backend failed to redact request";
       try {
         const errData = await response.json();
         if (errData.error) errorMsg = errData.error;
@@ -39,7 +37,7 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("[Proxy Error] Failed to reach Golang backend resume action endpoint:", error);
+    console.error("[Proxy Error] Failed to reach Golang backend redact endpoint:", error);
     return NextResponse.json({ error: "Backend unreachable" }, { status: 502 });
   }
 }

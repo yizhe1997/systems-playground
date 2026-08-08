@@ -210,6 +210,8 @@ func RegisterFilebrowserRoutes(app *fiber.App) {
 			return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": fmt.Sprintf("Filebrowser rejected the upload (status %d).", resp.StatusCode)})
 		}
 
+		recordAudit(c.Context(), actorFromRequest(c), "resume_file.upload", "resume_file", storedFilename, originalName)
+
 		return c.JSON(fiber.Map{"status": "success", "path": uploadPath, "name": originalName, "filename": storedFilename})
 	})
 
@@ -240,6 +242,8 @@ func RegisterFilebrowserRoutes(app *fiber.App) {
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 			return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": fmt.Sprintf("Filebrowser rejected the delete request (status %d).", resp.StatusCode)})
 		}
+
+		recordAudit(c.Context(), actorFromRequest(c), "resume_file.delete", "resume_file", filename, "")
 
 		return c.JSON(fiber.Map{"status": "success"})
 	})

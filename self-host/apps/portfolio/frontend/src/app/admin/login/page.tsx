@@ -1,15 +1,48 @@
 "use client";
 
+import { Suspense } from "react";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Shield } from "lucide-react";
+import { Shield, AlertTriangle } from "lucide-react";
+import ClickEffects from "@/components/originkit/clickeffects";
 
 const pushBtn =
   "transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-1";
 
+// NextAuth redirects rejected sign-ins here with ?error=... (see the `error`
+// page config in the NextAuth options) instead of its own built-in
+// /api/auth/error screen, which doesn't match this site at all. Split into
+// its own component since useSearchParams needs a Suspense boundary on a
+// prerendered page.
+function SignInError() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  if (!error) return null;
+
+  const message =
+    error === "AccessDenied"
+      ? "That Google account isn't authorized for admin access."
+      : "Sign-in failed. Please try again.";
+
+  return (
+    <div
+      role="alert"
+      className="mb-6 w-full flex items-start gap-2 border-2 border-red-600 bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
+      style={{ borderRadius: '0.5rem' }}
+    >
+      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+      {message}
+    </div>
+  );
+}
+
 export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-white text-[var(--ds-charcoal)] flex flex-col justify-center py-12 sm:px-6 lg:px-8" style={{ fontFamily: 'var(--ds-font-body)' }}>
+      <div className="fixed inset-0 pointer-events-none z-[100]">
+        <ClickEffects interactionMode="burst" duration={0.4} strokeWidth={3} effectSize={70} showLabel={false} />
+      </div>
       <div className="sm:mx-auto sm:w-full sm:max-w-md flex flex-col items-center">
         <div
           className="w-16 h-16 bg-black flex items-center justify-center mb-6 border-2 border-black"
@@ -30,6 +63,10 @@ export default function AdminLoginPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_#000] py-8 px-4 sm:px-10" style={{ borderRadius: '0.75rem' }}>
+          <Suspense fallback={null}>
+            <SignInError />
+          </Suspense>
+
           <button
             onClick={() => signIn("google", { callbackUrl: "/admin" })}
             className={`w-full flex items-center justify-center gap-3 py-3 px-4 border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none ${pushBtn} text-sm font-bold bg-black text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2`}

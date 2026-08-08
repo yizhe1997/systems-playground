@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         "X-Admin-Token": psk,
+        "X-Admin-User": session.user.email || "",
       },
     });
 

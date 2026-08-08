@@ -2,12 +2,39 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 )
+
+// slogHTTPMiddleware replaces fiber's default plain-text request logger with
+// structured JSON lines - method/path/status/latency/ip as real fields, not
+// text to grep. Promtail already ships every container's stdout into Loki
+// (see infra/observability), so this is what makes those logs filterable by
+// field in Grafana instead of just full-text searchable.
+func slogHTTPMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		start := time.Now()
+		err := c.Next()
+
+		attrs := []any{
+			"method", c.Method(),
+			"path", c.Path(),
+			"status", c.Response().StatusCode(),
+			"latency_ms", time.Since(start).Milliseconds(),
+			"ip", c.IP(),
+		}
+		if err != nil {
+			attrs = append(attrs, "error", err.Error())
+		}
+		slog.Info("http.request", attrs...)
+
+		return err
+	}
+}
 
 // corsAllowedOrigins reuses FRONTEND_PUBLIC_URL (already set for email links -
 // same underlying concept: "where does my real frontend live") as the CORS
@@ -25,6 +52,8 @@ func corsAllowedOrigins() string {
 }
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+
 	app := fiber.New(fiber.Config{
 		AppName: "Systems Playground API",
 		// cloudflared connects to this app over localhost (see
@@ -43,7 +72,7 @@ func main() {
 	})
 
 	// Middleware
-	app.Use(logger.New())
+	app.Use(slogHTTPMiddleware())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: corsAllowedOrigins(),
 		AllowHeaders: "Origin, Content-Type, Accept, X-Admin-Token",
@@ -110,6 +139,8 @@ func main() {
 		SetConfig(ctx, "githubUrl", req.GithubUrl)
 		SetConfig(ctx, "bio", req.Bio)
 		SetConfig(ctx, "heroDescription", req.HeroDescription)
+
+		recordAudit(ctx, actorFromRequest(c), "config.update", "config", "", "")
 
 		return c.JSON(fiber.Map{"status": "success", "message": "Configuration updated successfully"})
 	})

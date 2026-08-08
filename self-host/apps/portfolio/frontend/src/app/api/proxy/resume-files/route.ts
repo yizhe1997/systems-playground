@@ -9,19 +9,19 @@ function backendAndKey() {
   };
 }
 
-async function requireAdmin() {
+async function requireAdmin(): Promise<{ denied: NextResponse | null; email: string }> {
   const session = await getServerSession(authOptions);
   if (!session || !session.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return { denied: NextResponse.json({ error: "Unauthorized" }, { status: 401 }), email: "" };
   }
   if (session.user.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden: Admins Only" }, { status: 403 });
+    return { denied: NextResponse.json({ error: "Forbidden: Admins Only" }, { status: 403 }), email: "" };
   }
-  return null;
+  return { denied: null, email: session.user.email || "" };
 }
 
 export async function GET() {
-  const denied = await requireAdmin();
+  const { denied } = await requireAdmin();
   if (denied) return denied;
 
   const { backendApiUrl, psk } = backendAndKey();
@@ -46,7 +46,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin();
+  const { denied, email } = await requireAdmin();
   if (denied) return denied;
 
   const { backendApiUrl, psk } = backendAndKey();
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     const response = await fetch(`${backendApiUrl}/admin/resume-files`, {
       method: "POST",
-      headers: { "X-Admin-Token": psk },
+      headers: { "X-Admin-Token": psk, "X-Admin-User": email },
       body: forwardForm,
     });
     const body = await response.json().catch(() => null);
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const denied = await requireAdmin();
+  const { denied, email } = await requireAdmin();
   if (denied) return denied;
 
   const { backendApiUrl, psk } = backendAndKey();
@@ -97,7 +97,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const response = await fetch(`${backendApiUrl}/admin/resume-files/${encodeURIComponent(filename)}`, {
       method: "DELETE",
-      headers: { "X-Admin-Token": psk },
+      headers: { "X-Admin-Token": psk, "X-Admin-User": email },
     });
     const body = await response.json().catch(() => null);
     if (!response.ok) {
