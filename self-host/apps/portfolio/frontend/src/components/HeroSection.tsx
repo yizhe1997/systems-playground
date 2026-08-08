@@ -1,6 +1,7 @@
 'use client';
 import { FileDown } from 'lucide-react';
 import ReactiveGrid from '@/components/originkit/reactivegrid';
+import CrystalGlow from '@/components/originkit/crystal-glow';
 import { GithubIcon, LinkedinIcon } from '@/components/icons/social';
 
 const pushBtn =
@@ -65,12 +66,18 @@ export default function HeroSection({
             builds
             <br />
             <span
-              className="text-white drop-shadow-[4px_4px_0px_#000]"
-              style={{
-                WebkitTextStroke: '4px black',
-              }}
+              className="inline-block align-middle"
+              style={{ width: 'fit-content', height: '1em', marginLeft: -32, overflow: 'visible' }}
             >
-              REAL
+              <CrystalGlow
+                text="REAL"
+                fontFamily="var(--ds-font-display)"
+                fontWeight={800}
+                fontSize="clamp(2.5rem, 7vw, 6rem)"
+                textColor="#ffffff"
+                shadowColor="#000000"
+                glareColor="rgba(255,255,255,0.85)"
+              />
             </span>
             <br />
             systems.
