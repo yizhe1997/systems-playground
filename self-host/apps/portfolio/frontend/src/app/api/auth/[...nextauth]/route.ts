@@ -48,32 +48,34 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
+    // Hard gate: this app has admin-only pages with sensitive data, not a
+    // public read-only mode, so anyone outside ADMIN_EMAILS is rejected here
+    // - before a session/cookie ever exists - rather than let them sign in
+    // and gate access afterward. Returning false makes NextAuth redirect to
+    // the sign-in page with an error, no partial/viewer session created.
+    async signIn({ user, account }) {
+      // dev-login is a separate, local-only provider - already double-gated
+      // by devLoginEnabled + NODE_ENV up top, not a bypass of this check.
+      if (account?.provider === "dev-login") return true;
+
+      const whitelistedEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
+      if (!user.email || !whitelistedEmails.includes(user.email.toLowerCase())) {
+        console.log(`[Auth] Rejected sign-in from non-admin email: ${user.email}`);
+        return false;
+      }
+      return true;
+    },
     async jwt({ token, user }) {
-      // 1. This block runs the first time they log in
+      // signIn above already guarantees only admins (or the dev-login user)
+      // ever reach here, so there's no ADMIN_EMAILS re-check or "viewer"
+      // branch needed - every session that exists at all is an admin session.
       if (user && user.email) {
         const roleFromDevLogin = (user as { role?: string }).role;
-        if (roleFromDevLogin) {
-          // Only ever set by the dev-login credentials provider above, which
-          // only exists when devLoginEnabled is true - trust it directly
-          // rather than re-deriving from ADMIN_EMAILS.
-          token.role = roleFromDevLogin;
-          return token;
-        }
-
-        const whitelistedEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
-
-        // 2. Inject their RBAC role into the JWT token payload
-        if (whitelistedEmails.includes(user.email.toLowerCase())) {
-          token.role = "admin";
-        } else {
-          token.role = "viewer";
-          console.log(`[Auth] Issued Read-Only 'viewer' token to: ${user.email}`);
-        }
+        token.role = roleFromDevLogin || "admin";
       }
       return token;
     },
     async session({ session, token }) {
-      // 3. This block exposes the JWT payload to the Next.js React components
       if (session.user) {
         session.user.role = token.role as string;
       }

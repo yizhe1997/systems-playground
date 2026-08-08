@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
           Control Plane Access
         </h1>
         <p className="mt-4 text-center text-sm text-[var(--ds-charcoal)]/70 leading-relaxed px-4">
-          This login portal is exposed so that anonymous visitors can experience the read-only view of the custom admin dashboard and container orchestration plane. It is not for public configuration.
+          Restricted to authorized accounts only.
         </p>
       </div>
 

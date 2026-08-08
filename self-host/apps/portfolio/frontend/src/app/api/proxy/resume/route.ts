@@ -5,11 +5,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // No viewer role exists - every session that can exist at all is an admin
+  // session (see the signIn callback in the NextAuth config), so this is a
+  // plain auth check, not a role branch. There's nothing left to redact for.
+  if (!session || !session.user || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden: Admins Only" }, { status: 403 });
   }
-
-  const isAdmin = session.user.role === "admin";
 
   const backendApiUrl = process.env.INTERNAL_BACKEND_URL || "http://backend:8080";
   const psk = process.env.ADMIN_API_KEY;
@@ -30,38 +31,6 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await response.json();
-
-    // Redact PII (Name and Email) for non-admins to showcase the UI securely
-    if (!isAdmin && Array.isArray(data)) {
-      const redactedData = data.map((req: any) => {
-        // e.g., john.doe@gmail.com -> j***@g***.com
-        let redactedEmail = "***@***.***";
-        if (req.email && req.email.includes("@")) {
-          const [user, domain] = req.email.split("@");
-          const domainParts = domain.split(".");
-          redactedEmail = `${user.charAt(0)}***@${domainParts[0].charAt(0)}***.${domainParts[1]}`;
-        }
-
-        // e.g., John Doe -> J*** D***
-        let redactedName = "*** ***";
-        if (req.name) {
-          redactedName = req.name.split(" ").map((n: string) => n.charAt(0) + "***").join(" ");
-        }
-
-        return {
-          ...req,
-          name: redactedName,
-          email: redactedEmail,
-          reason: req.reason ? "**********************" : "",
-          // AI-generated text paraphrases the redacted reason/context above -
-          // leaving it unredacted would undo the point of redacting reason.
-          legitimacy_reason: req.legitimacy_reason ? "**********************" : "",
-          role_fit_summary: req.role_fit_summary ? "**********************" : "",
-        };
-      });
-      return NextResponse.json(redactedData);
-    }
-
     return NextResponse.json(data);
   } catch (error) {
     console.error("[Proxy Error] Failed to reach Golang backend resume requests endpoint:", error);
