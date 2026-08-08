@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
         "X-Admin-Token": psk,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ action: body.action, subject: body.subject, body: body.body }),
+      body: JSON.stringify({ action: body.action, subject: body.subject, body: body.body, resumePaths: body.resumePaths }),
     });
 
     if (!response.ok) {

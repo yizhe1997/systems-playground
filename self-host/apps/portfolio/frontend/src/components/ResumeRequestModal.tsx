@@ -3,7 +3,7 @@
 import { createContext, useContext, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, ChevronDown, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
@@ -13,6 +13,8 @@ const pushBtn =
 const dsInput =
   'w-full px-3 py-2.5 bg-white border-2 border-black rounded-[0.5rem] text-[var(--ds-charcoal)] placeholder:text-[var(--ds-charcoal)]/40 focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow';
 
+const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
+
 const ResumeRequestModalContext = createContext<{ open: () => void } | null>(null);
 
 export function useResumeRequest() {
@@ -21,12 +23,24 @@ export function useResumeRequest() {
   return ctx;
 }
 
+const emptyForm = {
+  name: '', email: '', company: '', reason: '',
+  hiring_agency: '', work_type: '', industry: '', salary_range: '', job_posting_url: '',
+};
+
 export function ResumeRequestProvider({ children }: { children: React.ReactNode }) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', company: '', reason: '' });
+  const [form, setForm] = useState(emptyForm);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+
+  const canSubmit =
+    form.name.trim() !== '' &&
+    form.company.trim() !== '' &&
+    form.email.trim() !== '' &&
+    form.reason.trim() !== '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +55,8 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
       if (res.ok) {
         const { id } = await res.json();
         setModalOpen(false);
-        setForm({ name: '', email: '', company: '', reason: '' });
+        setForm(emptyForm);
+        setAdvancedOpen(false);
         router.push(`/resume/status/${id}`);
       } else {
         toast({ title: "Couldn't send that", description: 'Try again in a moment.', variant: 'destructive' });
@@ -77,20 +92,61 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
           </p>
           <form onSubmit={handleSubmit} className="space-y-4 mt-2 text-sm">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider">Name</label>
+              <label className="text-xs font-bold uppercase tracking-wider">Name<RequiredMark /></label>
               <input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={dsInput} placeholder="Jane Doe" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider">Company</label>
+              <label className="text-xs font-bold uppercase tracking-wider">Hiring company<RequiredMark /></label>
               <input required value={form.company} onChange={e => setForm({...form, company: e.target.value})} className={dsInput} placeholder="Acme, Inc." />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider">Email</label>
+              <label className="text-xs font-bold uppercase tracking-wider">Email<RequiredMark /></label>
               <input required type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className={dsInput} placeholder="jane@acme.com" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider">Reason (optional)</label>
-              <textarea value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} className={`${dsInput} resize-none`} placeholder="Hiring for a backend role..." rows={3} />
+              <label className="text-xs font-bold uppercase tracking-wider">Reason<RequiredMark /></label>
+              <textarea required value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} className={`${dsInput} resize-none`} placeholder="Hiring for a backend role..." rows={3} />
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={() => setAdvancedOpen(o => !o)}
+                aria-expanded={advancedOpen}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--ds-charcoal)]/70 hover:text-black transition-colors"
+              >
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                Advanced (optional)
+              </button>
+              {advancedOpen && (
+                <div className="space-y-4 mt-3 pl-1">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider">Hiring agency</label>
+                    <input value={form.hiring_agency} onChange={e => setForm({...form, hiring_agency: e.target.value})} className={dsInput} placeholder="If you're recruiting on the hiring company's behalf" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider">Work type</label>
+                    <select value={form.work_type} onChange={e => setForm({...form, work_type: e.target.value})} className={dsInput}>
+                      <option value="">Not specified</option>
+                      <option value="Remote">Remote</option>
+                      <option value="Hybrid">Hybrid</option>
+                      <option value="Onsite">Onsite</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider">Industry</label>
+                    <input value={form.industry} onChange={e => setForm({...form, industry: e.target.value})} className={dsInput} placeholder="Fintech, Healthcare, Gaming..." />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider">Salary range</label>
+                    <input value={form.salary_range} onChange={e => setForm({...form, salary_range: e.target.value})} className={dsInput} placeholder="$120k - $150k annual" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider">Job posting URL</label>
+                    <input value={form.job_posting_url} onChange={e => setForm({...form, job_posting_url: e.target.value})} className={dsInput} placeholder="https://acme.com/careers/backend-engineer" />
+                  </div>
+                </div>
+              )}
             </div>
             <p className="text-xs text-[var(--ds-charcoal)]/70">
               By submitting, you agree to the{' '}
@@ -110,7 +166,7 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
               </button>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !canSubmit}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-[4px_4px_0px_0px_#000] disabled:hover:translate-x-0 disabled:hover:translate-y-0 ${pushBtn} focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2`}
                 style={{ borderRadius: '0.75rem' }}
               >

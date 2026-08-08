@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "modernc.org/sqlite"
 )
@@ -31,6 +32,32 @@ CREATE TABLE IF NOT EXISTS resume_requests (
 );
 CREATE INDEX IF NOT EXISTS idx_resume_requests_created_at ON resume_requests(created_at);
 `
+
+// resumeRequestsColumnMigrations adds columns to an already-existing
+// resume_requests table - CREATE TABLE IF NOT EXISTS above only handles a
+// fresh database, not new fields on a table that was already created by an
+// earlier version of this schema. Each entry is applied with ALTER TABLE ...
+// ADD COLUMN, ignoring "duplicate column" so re-running on every startup is
+// a no-op once applied. There's no migration framework here - this is
+// intentionally the simplest thing that works for a single-table, low-churn
+// schema.
+var resumeRequestsColumnMigrations = []string{
+	"ALTER TABLE resume_requests ADD COLUMN hiring_agency TEXT NOT NULL DEFAULT ''",
+	"ALTER TABLE resume_requests ADD COLUMN work_type TEXT NOT NULL DEFAULT ''",
+	"ALTER TABLE resume_requests ADD COLUMN industry TEXT NOT NULL DEFAULT ''",
+	"ALTER TABLE resume_requests ADD COLUMN salary_range TEXT NOT NULL DEFAULT ''",
+	"ALTER TABLE resume_requests ADD COLUMN job_posting_url TEXT NOT NULL DEFAULT ''",
+}
+
+// resumeRequestsColumnDrops removes columns the app no longer uses. This
+// project hasn't shipped yet, so there's no real data or external consumer
+// to preserve compatibility for - unlike the ADD list above, it's fine to
+// actually clean these up instead of leaving them as vestigial data.
+// Guarded the same way: ignore "no such column" so re-running is a no-op.
+var resumeRequestsColumnDrops = []string{
+	"ALTER TABLE resume_requests DROP COLUMN position",
+	"ALTER TABLE resume_requests DROP COLUMN company_url",
+}
 
 func initDB() {
 	path := os.Getenv("SQLITE_PATH")
@@ -63,6 +90,16 @@ func initDB() {
 	}
 	if _, err := conn.ExecContext(ctx, resumeRequestsSchema); err != nil {
 		log.Fatalf("❌ Failed to migrate SQLite schema: %v", err)
+	}
+	for _, stmt := range resumeRequestsColumnMigrations {
+		if _, err := conn.ExecContext(ctx, stmt); err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+			log.Fatalf("❌ Failed to apply SQLite column migration %q: %v", stmt, err)
+		}
+	}
+	for _, stmt := range resumeRequestsColumnDrops {
+		if _, err := conn.ExecContext(ctx, stmt); err != nil && !strings.Contains(err.Error(), "no such column") {
+			log.Fatalf("❌ Failed to apply SQLite column drop %q: %v", stmt, err)
+		}
 	}
 
 	db = conn

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
+import { MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ChevronUp, ChevronDown, ChevronsUpDown, SlidersHorizontal, ExternalLink, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
@@ -15,8 +15,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuCheckboxItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+
+type ResumeFile = { name: string; filename: string; path: string; size: number; modified: string };
 
 type ResumeRequest = {
   id: string;
@@ -33,7 +36,27 @@ type ResumeRequest = {
   role_fit_summary?: string;
   triage_error?: string;
   triage_attempts?: number;
+  hiring_agency?: string;
+  work_type?: string;
+  industry?: string;
+  salary_range?: string;
+  job_posting_url?: string;
 };
+
+type SortField = 'name' | 'company' | 'created_at';
+
+// job_posting_url is deliberately not offered as a table column - it's the
+// one field that's a link to somewhere third parties chose, not just text,
+// and belongs in the details Sheet where opening it is a conscious action
+// (see the Sheet's Copy-not-auto-link treatment) rather than something that
+// can get glanced at, or misclicked, while scanning a dense table row.
+type OptionalColumnKey = 'work_type' | 'hiring_agency' | 'industry' | 'salary_range';
+const OPTIONAL_COLUMNS: { key: OptionalColumnKey; label: string }[] = [
+  { key: 'work_type', label: 'Work type' },
+  { key: 'hiring_agency', label: 'Hiring agency' },
+  { key: 'industry', label: 'Industry' },
+  { key: 'salary_range', label: 'Salary range' },
+];
 
 const dsInput =
   'w-full px-3 py-2.5 bg-white border-2 border-black rounded-[0.5rem] text-[var(--ds-charcoal)] placeholder:text-[var(--ds-charcoal)]/40 focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow';
@@ -45,6 +68,37 @@ const badgePill = 'border-2 border-black rounded-full text-[10px] font-bold uppe
 
 const menuContentClass =
   'border-2 border-black rounded-[0.5rem] shadow-[4px_4px_0px_0px_#000] bg-white text-[var(--ds-charcoal)] p-1';
+
+function SortableHead({
+  label,
+  field,
+  sortField,
+  sortDir,
+  onSort,
+  className = '',
+}: {
+  label: string;
+  field: SortField;
+  sortField: SortField;
+  sortDir: 'asc' | 'desc';
+  onSort: (field: SortField) => void;
+  className?: string;
+}) {
+  const active = sortField === field;
+  const Icon = active ? (sortDir === 'asc' ? ChevronUp : ChevronDown) : ChevronsUpDown;
+  return (
+    <TableHead className={`text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)] ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSort(field)}
+        className={`inline-flex items-center gap-1 hover:opacity-70 transition-opacity ${active ? '' : 'opacity-70'}`}
+      >
+        {label}
+        <Icon className="w-3 h-3" />
+      </button>
+    </TableHead>
+  );
+}
 
 const PAGE_SIZES = [10, 20, 30, 40, 50];
 
@@ -109,7 +163,7 @@ function TriageBadge({ req, onRetry, isAdmin }: { req: ResumeRequest; onRetry: (
   );
 }
 
-export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
+export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin: boolean; activeResumePath?: string }) {
   const [requests, setRequests] = useState<ResumeRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -120,6 +174,33 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
 
+  // Sorting - free-text/date columns only (name, company, requested);
+  // Status and AI Verdict stay filter-only, they're categorical enough that a
+  // dedicated filter dropdown already covers what sorting them would offer.
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir(field === 'created_at' ? 'desc' : 'asc');
+    }
+  };
+
+  // Advanced fields are hidden by default - most requests leave them blank,
+  // so showing all of them always would mostly be empty-cell clutter.
+  const [visibleColumns, setVisibleColumns] = useState<Set<OptionalColumnKey>>(new Set());
+  const toggleColumn = (key: OptionalColumnKey) => {
+    setVisibleColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+  const activeOptionalColumns = OPTIONAL_COLUMNS.filter((c) => visibleColumns.has(c.key));
+
   // Details sheet state
   const [viewingId, setViewingId] = useState<string | null>(null);
 
@@ -127,13 +208,49 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
   const [approveDialog, setApproveDialog] = useState<{ open: boolean; reqId: string | null; name: string }>({ open: false, reqId: null, name: '' });
   const [emailSubject, setEmailSubject] = useState('Chin Yi Zhe - Requested Resume');
   const [emailBody, setEmailBody] = useState('');
+  const [resumeFiles, setResumeFiles] = useState<ResumeFile[]>([]);
+  const [selectedResumePaths, setSelectedResumePaths] = useState<string[]>([]);
+  const [copiedJobUrl, setCopiedJobUrl] = useState(false);
 
   const { toast } = useToast();
+
+  // Copy, don't auto-link: job_posting_url is a URL a third party chose, not
+  // one we control - rendering it as a clickable <a> would open it with one
+  // reflexive click. Copying forces a deliberate paste (into a browser, or a
+  // URL scanner first) instead.
+  const copyJobUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopiedJobUrl(true);
+    setTimeout(() => setCopiedJobUrl(false), 2000);
+  };
 
   const openApproveDialog = (id: string, name: string) => {
     setEmailSubject('Chin Yi Zhe - Requested Resume');
     setEmailBody(`Hi {{name}},\n\nThank you for your interest! As requested, here is the link to download my resume.\n\n{{link}}\n\nBest regards,\nChin Yi Zhe`);
+    // Pre-check whatever's marked "Active" in Resume / CV Files - the fast
+    // path stays a single click, but nothing stops picking a different one
+    // (or several) before sending.
+    setSelectedResumePaths(activeResumePath ? [activeResumePath] : []);
     setApproveDialog({ open: true, reqId: id, name });
+    // Refetch rather than trust the mount-time list - the separate "Upload
+    // Attachment" dialog on this same page can add/remove files without
+    // this component remounting.
+    fetchResumeFiles();
+  };
+
+  const toggleResumePath = (path: string) => {
+    setSelectedResumePaths((prev) => (prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]));
   };
 
   const fetchRequests = async () => {
@@ -149,15 +266,27 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
     }
   };
 
+  const fetchResumeFiles = async () => {
+    try {
+      const res = await fetch('/api/proxy/resume-files', { cache: 'no-store' });
+      if (res.ok) {
+        setResumeFiles((await res.json()) || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     fetchRequests();
-  }, []);
+    if (isAdmin) fetchResumeFiles();
+  }, [isAdmin]);
 
   useEffect(() => {
     setPage(1);
   }, [statusFilter, legitimacyFilter, search, pageSize]);
 
-  const handleAction = async (id: string, action: 'approve' | 'reject', subject?: string, body?: string) => {
+  const handleAction = async (id: string, action: 'approve' | 'reject', subject?: string, body?: string, resumePaths?: string[]) => {
     if (!isAdmin) return;
     const previous = [...requests];
 
@@ -169,7 +298,7 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
       const res = await fetch('/api/proxy/resume/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action, subject, body })
+        body: JSON.stringify({ id, action, subject, body, resumePaths })
       });
 
       if (res.ok) {
@@ -230,7 +359,15 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
       const q = search.toLowerCase();
       return r.name.toLowerCase().includes(q) || r.company.toLowerCase().includes(q) || r.email.toLowerCase().includes(q);
     })
-    .sort((a, b) => b.created_at - a.created_at);
+    .sort((a, b) => {
+      let cmp: number;
+      if (sortField === 'created_at') {
+        cmp = a.created_at - b.created_at;
+      } else {
+        cmp = (a[sortField] || '').toLowerCase().localeCompare((b[sortField] || '').toLowerCase());
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -270,6 +407,27 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
             <SelectItem value="failed">Triage failed</SelectItem>
           </SelectContent>
         </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="outline" className="border-2 border-black rounded-[0.5rem] h-9 bg-white font-bold text-sm">
+                <SlidersHorizontal className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" />
+                Columns
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" className={menuContentClass}>
+            {OPTIONAL_COLUMNS.map((c) => (
+              <DropdownMenuCheckboxItem
+                key={c.key}
+                checked={visibleColumns.has(c.key)}
+                onCheckedChange={() => toggleColumn(c.key)}
+              >
+                {c.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <span className="text-xs font-bold text-[var(--ds-charcoal)]/70 ml-auto">
           {filtered.length} of {requests.length}
         </span>
@@ -284,11 +442,15 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
           <Table>
             <TableHeader className="bg-[var(--ds-yellow)]/40">
               <TableRow className="border-b-2 border-black hover:bg-transparent">
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]">Requester</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]">Company</TableHead>
+                <SortableHead label="Requester" field="name" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                <TableHead className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]">Email</TableHead>
+                <SortableHead label="Company" field="company" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                {activeOptionalColumns.map((c) => (
+                  <TableHead key={c.key} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]">{c.label}</TableHead>
+                ))}
                 <TableHead className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]">Status</TableHead>
                 <TableHead className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]">AI Verdict</TableHead>
-                <TableHead className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]">Requested</TableHead>
+                <SortableHead label="Requested" field="created_at" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
                 <TableHead className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -310,7 +472,13 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                         {isAnonymized ? <span className="italic font-normal text-[var(--ds-charcoal)]/70">Anonymized</span> : req.name}
                       </Button>
                     </TableCell>
+                    <TableCell className="text-sm text-[var(--ds-charcoal)]/80">
+                      {isAnonymized ? <span className="text-[var(--ds-charcoal)]/40">—</span> : req.email}
+                    </TableCell>
                     <TableCell className="text-sm text-[var(--ds-charcoal)]/80">{req.company || '—'}</TableCell>
+                    {activeOptionalColumns.map((c) => (
+                      <TableCell key={c.key} className="text-sm text-[var(--ds-charcoal)]/80">{req[c.key] || '—'}</TableCell>
+                    ))}
                     <TableCell><StatusBadge status={req.status} /></TableCell>
                     <TableCell><TriageBadge req={req} onRetry={handleRetriage} isAdmin={isAdmin} /></TableCell>
                     <TableCell className="text-xs font-mono text-[var(--ds-charcoal)]/70 whitespace-nowrap">
@@ -327,6 +495,10 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                         />
                         <DropdownMenuContent align="end" className={menuContentClass}>
                           <DropdownMenuItem onClick={() => setViewingId(req.id)}>View details</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => window.open(`/resume/status/${req.id}`, '_blank', 'noopener,noreferrer')}>
+                            <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                            View status page
+                          </DropdownMenuItem>
                           {isAdmin && !isAnonymized && (
                             <DropdownMenuItem onClick={() => window.location.assign(`mailto:${req.email}`)}>
                               Email requester
@@ -457,6 +629,35 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
                     <span className="text-[var(--ds-charcoal)]/70">{viewing.email}</span>
                   )}
 
+                  {(viewing.work_type || viewing.hiring_agency || viewing.industry || viewing.salary_range) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewing.work_type && <Badge variant="outline" className={badgePill}>{viewing.work_type}</Badge>}
+                      {viewing.industry && <Badge variant="outline" className={badgePill}>{viewing.industry}</Badge>}
+                      {viewing.salary_range && <Badge variant="outline" className={badgePill}>{viewing.salary_range}</Badge>}
+                      {viewing.hiring_agency && <Badge variant="outline" className={badgePill}>via {viewing.hiring_agency}</Badge>}
+                    </div>
+                  )}
+
+                  {viewing.job_posting_url && (
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70 mb-1">Job posting URL</p>
+                      <div className="flex items-start gap-2">
+                        <span className="text-xs text-[var(--ds-charcoal)]/70 break-all flex-1">{viewing.job_posting_url}</span>
+                        <button
+                          type="button"
+                          onClick={() => copyJobUrl(viewing.job_posting_url!)}
+                          className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70 hover:text-black"
+                        >
+                          {copiedJobUrl ? <Check className="w-3 h-3" aria-hidden="true" /> : <Copy className="w-3 h-3" aria-hidden="true" />}
+                          {copiedJobUrl ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-[var(--ds-charcoal)]/50 mt-1">
+                        Not auto-linked - a submitted URL is untrusted input. Copy it and check it before opening.
+                      </p>
+                    </div>
+                  )}
+
                   {viewing.reason && (
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70 mb-1">Reason</p>
@@ -518,11 +719,42 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
             <DialogTitle className="text-xl text-black font-extrabold">Approve Request</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
               Customize the email that will be sent to <strong className="text-black">{approveDialog.name}</strong>.
-              Use <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{name}}"}</code> and <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{link}}"}</code> as template variables.
+              Use <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{name}}"}</code> and <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{link}}"}</code> as template variables - <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{link}}"}</code> expands to a list if more than one resume is checked below.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider">Attach</label>
+              {resumeFiles.length === 0 ? (
+                <p className="text-sm text-[var(--ds-charcoal)]/60">
+                  No resume files uploaded yet - add one from the &quot;Upload Attachment&quot; button on this page first.
+                </p>
+              ) : (
+                <ul className="border-2 border-black divide-y-2 divide-black" style={{ borderRadius: '0.5rem', overflow: 'hidden' }}>
+                  {resumeFiles.map((file) => (
+                    <li key={file.path} className="flex items-center gap-2 px-3 py-2">
+                      <input
+                        type="checkbox"
+                        id={`attach-${file.path}`}
+                        checked={selectedResumePaths.includes(file.path)}
+                        onChange={() => toggleResumePath(file.path)}
+                        className="accent-black"
+                      />
+                      <label htmlFor={`attach-${file.path}`} className="text-sm font-bold flex-1 min-w-0 truncate cursor-pointer">
+                        {file.name}
+                      </label>
+                      {file.path === activeResumePath && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/50 shrink-0">Active</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {selectedResumePaths.length === 0 && (
+                <p className="text-xs font-bold text-red-600">Select at least one resume to send.</p>
+              )}
+            </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-wider">Email Subject</label>
               <input
@@ -550,8 +782,9 @@ export default function ResumeRequests({ isAdmin }: { isAdmin: boolean }) {
               Cancel
             </button>
             <button
-              onClick={() => handleAction(approveDialog.reqId!, 'approve', emailSubject, emailBody)}
-              className={`px-5 py-2 text-sm font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none ${pushBtnSm} bg-black text-white`}
+              onClick={() => handleAction(approveDialog.reqId!, 'approve', emailSubject, emailBody, selectedResumePaths)}
+              disabled={selectedResumePaths.length === 0}
+              className={`px-5 py-2 text-sm font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none ${pushBtnSm} bg-black text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-[4px_4px_0px_0px_#000] disabled:hover:translate-x-0 disabled:hover:translate-y-0`}
               style={{ borderRadius: '0.5rem' }}
             >
               Send Secure Link

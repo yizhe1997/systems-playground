@@ -14,7 +14,14 @@ type InteractionMode =
     | "sniper";
 
 interface Props {
+    /** Fill/stroke color of the effect itself. */
     color?: string;
+    /** Outline color drawn around the effect so it stays visible regardless
+     * of what's under it - a flat single color can't contrast against both
+     * this site's light (yellow/white) and dark (charcoal) sections, so
+     * every shape gets a thin halo of this color instead of trying to
+     * detect and switch color per background. */
+    haloColor?: string;
     interactionMode?: InteractionMode;
     duration?: number;
     strokeWidth?: number;
@@ -26,8 +33,15 @@ interface Props {
     labelFont?: CSSProperties;
 }
 
+// Four 1px offset drop-shadows in each cardinal direction give a crisp solid
+// outline around whatever the element paints (SVG strokes or a filled div
+// alike) - cheaper and simpler than duplicating every shape to draw a halo.
+const haloFilter = (haloColor: string) =>
+    `drop-shadow(1px 0 0 ${haloColor}) drop-shadow(-1px 0 0 ${haloColor}) drop-shadow(0 1px 0 ${haloColor}) drop-shadow(0 -1px 0 ${haloColor})`;
+
 export default function ClickEffects({
-    color = "#ffffff",
+    color = "#000000",
+    haloColor = "#ffffff",
     interactionMode = "sniper",
     duration = 0.3,
     strokeWidth = 2,
@@ -91,6 +105,7 @@ export default function ClickEffects({
         position: "absolute",
         left: x - effectSize / 2,
         top: y - effectSize / 2,
+        filter: haloFilter(haloColor),
         width: effectSize,
         height: effectSize,
         pointerEvents: "none",
@@ -275,6 +290,7 @@ export default function ClickEffects({
                             borderRadius: "50%",
                             pointerEvents: "none",
                             transform: `rotate(${rotation}deg)`,
+                            filter: haloFilter(haloColor),
                         }}
                         ref={(el) => {
                             if (!el || el.dataset.animated) return;
@@ -586,6 +602,7 @@ export default function ClickEffects({
                                     pointerEvents: "none",
                                     transformOrigin: "center",
                                     transform: `rotate(${rotation}deg)`,
+                                    filter: haloFilter(haloColor),
                                 }}
                                 ref={(el) => {
                                     if (!el || el.dataset.animated) return;

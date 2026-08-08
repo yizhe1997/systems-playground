@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/smtp"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -37,10 +38,21 @@ type ResumeRequest struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Email     string `json:"email"`
-	Company   string `json:"company"`
+	Company   string `json:"company"` // labeled "Hiring company" on the public form - the company with the open role
 	Reason    string `json:"reason"`
 	Status    string `json:"status"` // pending, approved, rejected
 	CreatedAt int64  `json:"created_at"`
+
+	// Optional context, collected in the public form's "Advanced" section -
+	// none of these gate submission the way Name/Email/Company/Reason do.
+	// There's no Position field: Reason is mandatory and already elicits the
+	// role ("Hiring for a backend role...") so a separate field just asks the
+	// same thing twice.
+	HiringAgency  string `json:"hiring_agency,omitempty"` // set when a recruiting agency is asking on the hiring company's behalf
+	WorkType      string `json:"work_type,omitempty"`     // Remote, Hybrid, Onsite, or blank
+	Industry      string `json:"industry,omitempty"`
+	SalaryRange   string `json:"salary_range,omitempty"`
+	JobPostingURL string `json:"job_posting_url,omitempty"` // a real posting is a stronger legitimacy signal than a bare company URL
 
 	// AI triage — set by runTriage() in triage.go
 	TriageStatus     string `json:"triage_status"` // queued, processing, complete, failed
@@ -54,13 +66,14 @@ type ResumeRequest struct {
 
 const resumeRequestColumns = `id, name, email, company, reason, status, created_at,
 	triage_status, ai_model, legitimacy, legitimacy_reason, role_fit_summary,
-	triage_error, triage_attempts`
+	triage_error, triage_attempts, hiring_agency, work_type, industry, salary_range, job_posting_url`
 
 func scanResumeRequest(row interface{ Scan(...any) error }) (*ResumeRequest, error) {
 	var r ResumeRequest
 	err := row.Scan(&r.ID, &r.Name, &r.Email, &r.Company, &r.Reason, &r.Status, &r.CreatedAt,
 		&r.TriageStatus, &r.AIModel, &r.Legitimacy, &r.LegitimacyReason, &r.RoleFitSummary,
-		&r.TriageError, &r.TriageAttempts)
+		&r.TriageError, &r.TriageAttempts, &r.HiringAgency, &r.WorkType,
+		&r.Industry, &r.SalaryRange, &r.JobPostingURL)
 	if err != nil {
 		return nil, err
 	}
@@ -88,11 +101,13 @@ func saveResumeRequest(ctx context.Context, req *ResumeRequest) error {
 		UPDATE resume_requests SET
 			name = ?, email = ?, company = ?, reason = ?, status = ?,
 			triage_status = ?, ai_model = ?, legitimacy = ?, legitimacy_reason = ?,
-			role_fit_summary = ?, triage_error = ?, triage_attempts = ?
+			role_fit_summary = ?, triage_error = ?, triage_attempts = ?,
+			hiring_agency = ?, work_type = ?, industry = ?, salary_range = ?, job_posting_url = ?
 		WHERE id = ?`,
 		req.Name, req.Email, req.Company, req.Reason, req.Status,
 		req.TriageStatus, req.AIModel, req.Legitimacy, req.LegitimacyReason,
 		req.RoleFitSummary, req.TriageError, req.TriageAttempts,
+		req.HiringAgency, req.WorkType, req.Industry, req.SalaryRange, req.JobPostingURL,
 		req.ID)
 	if err != nil {
 		return err
@@ -115,8 +130,8 @@ func RegisterResumeRoutes(app *fiber.App) {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 		}
 
-		if req.Name == "" || req.Email == "" || req.Company == "" {
-			return c.Status(400).JSON(fiber.Map{"error": "Name, email, and company are required"})
+		if req.Name == "" || req.Email == "" || req.Company == "" || req.Reason == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "Name, email, hiring company, and reason are required"})
 		}
 
 		req.ID = uuid.New().String()
@@ -125,9 +140,10 @@ func RegisterResumeRoutes(app *fiber.App) {
 		req.TriageStatus = "queued"
 
 		_, err := db.ExecContext(c.Context(), `
-			INSERT INTO resume_requests (id, name, email, company, reason, status, created_at, triage_status)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-			req.ID, req.Name, req.Email, req.Company, req.Reason, req.Status, req.CreatedAt, req.TriageStatus)
+			INSERT INTO resume_requests (id, name, email, company, reason, status, created_at, triage_status, hiring_agency, work_type, industry, salary_range, job_posting_url)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			req.ID, req.Name, req.Email, req.Company, req.Reason, req.Status, req.CreatedAt, req.TriageStatus,
+			req.HiringAgency, req.WorkType, req.Industry, req.SalaryRange, req.JobPostingURL)
 		if err != nil {
 			log.Printf("❌ Failed to save resume request: %v", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to save request"})
@@ -200,9 +216,10 @@ func RegisterResumeRoutes(app *fiber.App) {
 		id := c.Params("id")
 
 		type ActionPayload struct {
-			Action  string `json:"action"` // "approve" or "reject"
-			Subject string `json:"subject"`
-			Body    string `json:"body"`
+			Action      string   `json:"action"` // "approve" or "reject"
+			Subject     string   `json:"subject"`
+			Body        string   `json:"body"`
+			ResumePaths []string `json:"resumePaths"` // Filebrowser paths to attach - required for "approve"
 		}
 		var payload ActionPayload
 		if err := c.BodyParser(&payload); err != nil {
@@ -229,20 +246,32 @@ func RegisterResumeRoutes(app *fiber.App) {
 				return c.Status(400).JSON(fiber.Map{"error": "This request's contact info was anonymized after 30 days and can no longer be approved"})
 			}
 
+			// Which resume(s) to attach is the admin's explicit choice made in
+			// the approve dialog, not a fallback default - a silent single
+			// "the configured resume" default stopped making sense the moment
+			// more than one resume file could exist.
+			if len(payload.ResumePaths) == 0 {
+				return c.Status(400).JSON(fiber.Map{"error": "Select at least one resume to attach before approving."})
+			}
+
 			targetReq.Status = "approved"
 
-			// 1. Ask Filebrowser for a 24h expiring link
-			shareLink, err := generateFilebrowserShareLink(ctx)
-			if err != nil {
-				log.Printf("❌ Failed to generate share link: %v", err)
-				return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("Failed to generate secure link: %v", err)})
+			// 1. Ask Filebrowser for a 24h expiring link per selected resume
+			links := make([]ResumeLink, 0, len(payload.ResumePaths))
+			for _, path := range payload.ResumePaths {
+				url, err := generateFilebrowserShareLink(path)
+				if err != nil {
+					log.Printf("❌ Failed to generate share link for %s: %v", path, err)
+					return c.Status(500).JSON(fiber.Map{"error": fmt.Sprintf("Failed to generate a secure link for %s: %v", storedFilenameToDisplayName(filepath.Base(path)), err)})
+				}
+				links = append(links, ResumeLink{Name: storedFilenameToDisplayName(filepath.Base(path)), URL: url})
 			}
 
 			// 2. Send the Email via SendGrid/Resend API
-			err = sendEmailViaSMTP(targetReq.Email, targetReq.Name, shareLink, payload.Subject, payload.Body)
+			err = sendEmailViaSMTP(targetReq.Email, targetReq.Name, links, payload.Subject, payload.Body)
 			if err != nil {
 				log.Printf("❌ Failed to send email: %v", err)
-				return c.Status(500).JSON(fiber.Map{"error": "Failed to send email. Link was generated."})
+				return c.Status(500).JSON(fiber.Map{"error": "Failed to send email. Link(s) were generated."})
 			}
 
 		} else if payload.Action == "reject" {
@@ -336,14 +365,26 @@ func runRetentionSweep(ctx context.Context) {
 // ---------------------------------------------
 
 func fireNotificationWebhook(url string, req ResumeRequest) {
-	payload := map[string]any{
-		"content": fmt.Sprintf("🚨 **New Resume Request!**\n**Name:** %s\n**Company:** %s\n**Reason:** %s\n\nLogin to the Control Plane to approve.", req.Name, req.Company, req.Reason),
+	content := fmt.Sprintf("🚨 **New Resume Request!**\n**Name:** %s\n**Hiring company:** %s\n**Reason:** %s", req.Name, req.Company, req.Reason)
+	if req.SalaryRange != "" {
+		content += fmt.Sprintf("\n**Salary range:** %s", req.SalaryRange)
 	}
+	content += "\n\nLogin to the Control Plane to approve."
+
+	payload := map[string]any{"content": content}
 	jsonPayload, _ := json.Marshal(payload)
 	http.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
 }
 
-func generateFilebrowserShareLink(ctx context.Context) (string, error) {
+// ResumeLink pairs a share URL with the resume's display name (the original
+// filename, recovered from its uuid__original.ext stored name - see
+// storedFilenameToDisplayName in filebrowser.go) for use in the approval email.
+type ResumeLink struct {
+	Name string
+	URL  string
+}
+
+func generateFilebrowserShareLink(resumePath string) (string, error) {
 	// Get internal filebrowser API token
 	token, err := getFilebrowserToken()
 	if err != nil {
@@ -351,12 +392,6 @@ func generateFilebrowserShareLink(ctx context.Context) (string, error) {
 	}
 
 	fbUrl := filebrowserPublicURL()
-
-	// Fetch dynamic path from Redis global settings
-	resumePath, err := GetConfig(ctx, "resumeUrl", "/resume.pdf")
-	if err != nil || resumePath == "" {
-		resumePath = "/resume.pdf"
-	}
 
 	// Ensure the path starts with a slash
 	if len(resumePath) > 0 && resumePath[0] != '/' {
@@ -407,13 +442,43 @@ func generateFilebrowserShareLink(ctx context.Context) (string, error) {
 	return fmt.Sprintf("%s/share/%s", publicDomain, hash), nil
 }
 
-func sendEmailViaSMTP(toEmail string, name string, shareLink string, customSubject string, customBody string) error {
+// resumeLinksHTML renders one or more resume links for the {{link}} template
+// token - a single anchor for one resume (matches the original single-resume
+// email's look), or a bulleted list once there's more than one so the
+// recipient can tell them apart.
+func resumeLinksHTML(links []ResumeLink) string {
+	if len(links) == 1 {
+		return fmt.Sprintf("<a href='%s'>%s (Expires in 24 hours)</a>", links[0].URL, links[0].Name)
+	}
+	var sb strings.Builder
+	sb.WriteString("<ul>")
+	for _, l := range links {
+		sb.WriteString(fmt.Sprintf("<li><a href='%s'>%s (Expires in 24 hours)</a></li>", l.URL, l.Name))
+	}
+	sb.WriteString("</ul>")
+	return sb.String()
+}
+
+// resumeLinksRaw renders the {{raw_link}} template token - plain "Name: URL"
+// per resume, newline-separated, for admins who want the bare URL(s) rather
+// than a pre-built link element.
+func resumeLinksRaw(links []ResumeLink) string {
+	parts := make([]string, len(links))
+	for i, l := range links {
+		parts[i] = fmt.Sprintf("%s: %s", l.Name, l.URL)
+	}
+	return strings.Join(parts, "\n")
+}
+
+func sendEmailViaSMTP(toEmail string, name string, links []ResumeLink, customSubject string, customBody string) error {
 	smtpEmail := os.Getenv("SMTP_EMAIL")
 	smtpPassword := os.Getenv("SMTP_PASSWORD")
 
 	if smtpEmail == "" || smtpPassword == "" {
 		log.Println("⚠️ SMTP credentials not set. Skipping actual email dispatch (Simulation Mode).")
-		log.Printf("📩 SIMULATED EMAIL TO %s: Here is your link: %s\n", toEmail, shareLink)
+		for _, l := range links {
+			log.Printf("📩 SIMULATED EMAIL TO %s: %s -> %s\n", toEmail, l.Name, l.URL)
+		}
 		return nil
 	}
 
@@ -435,13 +500,17 @@ func sendEmailViaSMTP(toEmail string, name string, shareLink string, customSubje
 
 	body := customBody
 	if body == "" {
-		body = fmt.Sprintf("<p>Hi %s,</p><p>Thank you for your interest! As requested, here is the link to download my resume.</p><p><a href='%s'>Download Resume (Expires in 24 hours)</a></p><p>Best regards,<br/>Chin Yi Zhe</p>", name, shareLink)
+		intro := "here is the link to download my resume."
+		if len(links) > 1 {
+			intro = "here are the links to download my resume."
+		}
+		body = fmt.Sprintf("<p>Hi %s,</p><p>Thank you for your interest! As requested, %s</p><p>%s</p><p>Best regards,<br/>Chin Yi Zhe</p>", name, intro, resumeLinksHTML(links))
 	} else {
 		// Replace line breaks with HTML line breaks and inject variables
 		body = strings.ReplaceAll(body, "\n", "<br/>")
 		body = strings.ReplaceAll(body, "{{name}}", name)
-		body = strings.ReplaceAll(body, "{{link}}", fmt.Sprintf("<a href='%s'>Download Resume (Expires in 24 hours)</a>", shareLink))
-		body = strings.ReplaceAll(body, "{{raw_link}}", shareLink)
+		body = strings.ReplaceAll(body, "{{link}}", resumeLinksHTML(links))
+		body = strings.ReplaceAll(body, "{{raw_link}}", resumeLinksRaw(links))
 	}
 
 	msg := []byte("From: " + from + "\r\nTo: " + toEmail + "\r\n" + subject + mime + body)

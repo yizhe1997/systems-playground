@@ -18,7 +18,7 @@ export default function SiteHeader() {
   return (
     <>
       <div className="fixed inset-0 pointer-events-none z-[100]">
-        <ClickEffects interactionMode="burst" color="#171e19" duration={0.4} strokeWidth={3} effectSize={70} showLabel={false} />
+        <ClickEffects interactionMode="burst" duration={0.4} strokeWidth={3} effectSize={70} showLabel={false} />
       </div>
       <header className="sticky top-0 z-50 w-full h-20 bg-[var(--ds-yellow)] border-b-2 border-black flex items-center">
       <div className="max-w-6xl mx-auto px-6 w-full flex items-center justify-between sm:grid sm:grid-cols-[1fr_auto_1fr]">

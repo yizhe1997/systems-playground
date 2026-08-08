@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
@@ -67,10 +69,23 @@ func getFilebrowserToken() (string, error) {
 }
 
 type ResumeFile struct {
-	Name     string `json:"name"`
-	Path     string `json:"path"`
+	Name     string `json:"name"`     // display name (original filename, as uploaded)
+	Filename string `json:"filename"` // unique stored filename under resumeFilesDir - what delete targets
+	Path     string `json:"path"`     // full Filebrowser path - what "active resume" tracks
 	Size     int64  `json:"size"`
 	Modified string `json:"modified"`
+}
+
+// storedFilenameToDisplayName recovers the original filename from a
+// uuid__original.ext stored name (see the upload handler). Falls back to the
+// raw stored name for anything without that separator, so a file that
+// somehow predates this scheme still lists instead of erroring.
+func storedFilenameToDisplayName(stored string) string {
+	parts := strings.SplitN(stored, "__", 2)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return stored
 }
 
 // filebrowserUnavailableError is returned (as a JSON body, not a panic) any
@@ -134,7 +149,13 @@ func RegisterFilebrowserRoutes(app *fiber.App) {
 			if item.IsDir {
 				continue
 			}
-			files = append(files, ResumeFile{Name: item.Name, Path: item.Path, Size: item.Size, Modified: item.Modified})
+			files = append(files, ResumeFile{
+				Name:     storedFilenameToDisplayName(item.Name),
+				Filename: item.Name,
+				Path:     item.Path,
+				Size:     item.Size,
+				Modified: item.Modified,
+			})
 		}
 		return c.JSON(files)
 	})
@@ -164,8 +185,13 @@ func RegisterFilebrowserRoutes(app *fiber.App) {
 		// filepath.Base strips any directory components from the
 		// client-supplied filename - without it, a crafted filename like
 		// "../../etc/whatever" would let an upload write outside resumeFilesDir.
-		filename := filepath.Base(fileHeader.Filename)
-		uploadPath := fmt.Sprintf("%s/%s", resumeFilesDir, filename)
+		originalName := filepath.Base(fileHeader.Filename)
+		// Prefixing with a UUID keeps the stored filename unique regardless of
+		// what the admin names their files - without this, uploading a second
+		// "resume.pdf" silently overwrote the first one (?override=true was
+		// doing exactly what it says) instead of adding a second file.
+		storedFilename := uuid.New().String() + "__" + originalName
+		uploadPath := fmt.Sprintf("%s/%s", resumeFilesDir, storedFilename)
 
 		req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/resources%s?override=true", filebrowserPublicURL(), uploadPath), bytes.NewReader(content))
 		if err != nil {
@@ -184,7 +210,7 @@ func RegisterFilebrowserRoutes(app *fiber.App) {
 			return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": fmt.Sprintf("Filebrowser rejected the upload (status %d).", resp.StatusCode)})
 		}
 
-		return c.JSON(fiber.Map{"status": "success", "path": uploadPath, "name": filename})
+		return c.JSON(fiber.Map{"status": "success", "path": uploadPath, "name": originalName, "filename": storedFilename})
 	})
 
 	admin.Delete("/:filename", func(c *fiber.Ctx) error {

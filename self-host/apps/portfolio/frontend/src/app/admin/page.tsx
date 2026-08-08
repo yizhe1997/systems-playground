@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
-import { Eye } from 'lucide-react';
+import { Eye, Paperclip } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast"
 import ProjectsManager from "@/components/admin/ProjectsManager"
 import BlogManager from "@/components/admin/BlogManager"
@@ -12,6 +12,7 @@ import ExperienceManager from "@/components/admin/ExperienceManager"
 import EducationManager from "@/components/admin/EducationManager"
 import CreditsManager from "@/components/admin/CreditsManager"
 import ResumeFileUpload from "@/components/admin/ResumeFileUpload"
+import ClickEffects from "@/components/originkit/clickeffects"
 import HeroSection from "@/components/HeroSection"
 import AboutPageBody, {
   type StackCategory,
@@ -72,6 +73,7 @@ export default function AdminDashboard() {
   // lazily (only once, on first open) since the field being previewed here
   // is just the bio - the rest of that page's content isn't editable here.
   const [previewField, setPreviewField] = useState<'hero' | 'bio' | null>(null);
+  const [resumeFilesDialogOpen, setResumeFilesDialogOpen] = useState(false);
   const [aboutPreviewData, setAboutPreviewData] = useState<{ stack: StackCategory[]; experience: CompanyExperience[]; education: Education[] } | null>(null);
   const [loadingAboutPreview, setLoadingAboutPreview] = useState(false);
 
@@ -333,6 +335,9 @@ export default function AdminDashboard() {
 
   return (
     <TooltipProvider>
+      <div className="fixed inset-0 pointer-events-none z-[100]">
+        <ClickEffects interactionMode="burst" duration={0.4} strokeWidth={3} effectSize={70} showLabel={false} />
+      </div>
       <SidebarProvider style={{ fontFamily: 'var(--ds-font-body)' } as React.CSSProperties}>
         <AdminSidebar
           active={section}
@@ -512,21 +517,23 @@ export default function AdminDashboard() {
             {section === 'credits' && <CreditsManager isAdmin={isAdmin} onDirtyChange={setSectionDirty} />}
 
             {section === 'resume' && (
-              <div className="space-y-8">
-                <div>
-                  <h2 className="text-xl font-extrabold mb-2">Resume Requests</h2>
-                  <p className="text-sm text-[var(--ds-charcoal)]/70">Manage incoming requests for your private resume PDF.</p>
+              <div className="space-y-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-xl font-extrabold mb-2">Resume Requests</h2>
+                    <p className="text-sm text-[var(--ds-charcoal)]/70">Manage incoming requests for your private resume PDF.</p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => setResumeFilesDialogOpen(true)}
+                    className="shrink-0 border-2 border-black rounded-[0.5rem] font-bold bg-black text-white hover:bg-black/90"
+                  >
+                    <Paperclip className="w-4 h-4" aria-hidden="true" />
+                    Upload Attachment
+                  </Button>
                 </div>
 
-                <div className="border-2 border-black bg-white p-8 shadow-[4px_4px_0px_0px_#000]" style={{ borderRadius: '0.75rem' }}>
-                  <h3 className="text-lg font-extrabold mb-1">Resume / CV Files</h3>
-                  <p className="text-sm text-[var(--ds-charcoal)]/70 mb-6">
-                    Upload one or more resume/CV files, then mark one &quot;Active&quot; — that&apos;s the file a 24h expiring link is generated for when a request below is approved. Uploads, deletes, and setting the active file all save immediately.
-                  </p>
-                  <ResumeFileUpload isAdmin={isAdmin} activePath={resumeUrl} onActivePathChange={setActiveResume} />
-                </div>
-
-                <ResumeRequests isAdmin={isAdmin} />
+                <ResumeRequests isAdmin={isAdmin} activeResumePath={resumeUrl} />
               </div>
             )}
           </main>
@@ -597,6 +604,21 @@ export default function AdminDashboard() {
               </div>
             )
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={resumeFilesDialogOpen} onOpenChange={setResumeFilesDialogOpen}>
+        <DialogContent
+          className="sm:max-w-lg max-h-[85vh] overflow-y-auto bg-white border-2 border-black text-[var(--ds-charcoal)] ring-0"
+          style={{ fontFamily: 'var(--ds-font-body)', borderRadius: '0.75rem', boxShadow: '8px 8px 0px 0px #000' }}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl text-black font-extrabold">Resume / CV Files</DialogTitle>
+            <DialogDescription className="text-[var(--ds-charcoal)]/70">
+              Upload one or more resume/CV files, then mark one &quot;Active&quot; — that&apos;s the file a 24h expiring link is generated for when a request is approved. Uploads, deletes, and setting the active file all save immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <ResumeFileUpload isAdmin={isAdmin} activePath={resumeUrl} onActivePathChange={setActiveResume} />
         </DialogContent>
       </Dialog>
     </TooltipProvider>

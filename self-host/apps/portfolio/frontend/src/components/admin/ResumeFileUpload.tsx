@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { FileText, Trash2, UploadCloud, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-type ResumeFile = { name: string; path: string; size: number; modified: string };
+type ResumeFile = { name: string; filename: string; path: string; size: number; modified: string };
 
 const formatBytes = (bytes: number) => {
   if (!bytes) return '0 KB';
@@ -104,7 +104,7 @@ export default function ResumeFileUpload({
     if (!isAdmin) return;
     setDeletingPath(file.path);
     try {
-      const res = await fetch(`/api/proxy/resume-files?filename=${encodeURIComponent(file.name)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/proxy/resume-files?filename=${encodeURIComponent(file.filename)}`, { method: 'DELETE' });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
         toast({ title: 'Error', description: body?.error || `Couldn't delete "${file.name}".`, variant: 'destructive' });
