@@ -62,7 +62,8 @@ export default function HeroSection({
           >
             Chin Yi Zhe
             <br />
-            builds{' '}
+            builds
+            <br />
             <span
               className="text-white drop-shadow-[4px_4px_0px_#000]"
               style={{
@@ -70,7 +71,8 @@ export default function HeroSection({
               }}
             >
               REAL
-            </span>{' '}
+            </span>
+            <br />
             systems.
           </h1>
 

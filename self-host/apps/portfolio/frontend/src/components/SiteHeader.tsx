@@ -33,7 +33,7 @@ export default function SiteHeader() {
             className="font-extrabold text-lg tracking-tight text-black"
             style={{ fontFamily: 'var(--ds-font-display)' }}
           >
-            Systems
+            Portfolio
           </span>
         </Link>
 
