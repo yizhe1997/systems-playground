@@ -66,13 +66,20 @@ function PostPagePreview({ post }: { post: Post }) {
   const [loading, setLoading] = useState(post.source_type === 'external_url');
   const [error, setError] = useState<string | null>(null);
 
+  // Native content is fully derived from props - sync it during render
+  // (React's documented "adjust state on prop change" pattern) instead of
+  // as the effect's first synchronous act. The external_url branch below is
+  // left untouched: it's a genuine async fetch, a legitimate effect.
+  const [prevNativeContent, setPrevNativeContent] = useState(post.source_type === 'native' ? post.content : null);
+  if (post.source_type === 'native' && post.content !== prevNativeContent) {
+    setPrevNativeContent(post.content);
+    setContent(post.content);
+    setLoading(false);
+    setError(null);
+  }
+
   useEffect(() => {
-    if (post.source_type === 'native') {
-      setContent(post.content);
-      setLoading(false);
-      setError(null);
-      return;
-    }
+    if (post.source_type === 'native') return;
     let cancelled = false;
     const load = async () => {
       setLoading(true);

@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import useSWR from 'swr';
 import { MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ChevronUp, ChevronDown, ChevronsUpDown, SlidersHorizontal, ExternalLink, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -57,6 +58,12 @@ const OPTIONAL_COLUMNS: { key: OptionalColumnKey; label: string }[] = [
   { key: 'industry', label: 'Industry' },
   { key: 'salary_range', label: 'Salary range' },
 ];
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Request to ${url} failed: ${res.status}`);
+  return res.json();
+};
 
 const dsInput =
   'w-full px-3 py-2.5 bg-white border-2 border-black rounded-[0.5rem] text-[var(--ds-charcoal)] placeholder:text-[var(--ds-charcoal)]/40 focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow';
@@ -164,8 +171,12 @@ function TriageBadge({ req, onRetry, isAdmin }: { req: ResumeRequest; onRetry: (
 }
 
 export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin: boolean; activeResumePath?: string }) {
-  const [requests, setRequests] = useState<ResumeRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  // SWR owns the fetch-on-mount lifecycle for both lists - replacing the old
+  // effect-plus-state pattern. mutateRequests/mutateResumeFiles below drive
+  // the optimistic updates the action handlers need (approve/reject/
+  // retriage/redact), matching what manual setRequests+revert used to do.
+  const { data: requests = [], isLoading: loading, mutate: mutateRequests } = useSWR<ResumeRequest[]>('/api/proxy/resume', fetcher);
+  const { data: resumeFiles = [], mutate: mutateResumeFiles } = useSWR<ResumeFile[]>(isAdmin ? '/api/proxy/resume-files' : null, fetcher);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
@@ -173,6 +184,16 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+
+  // Reset to page 1 whenever filters/search/pageSize change, during render
+  // (React's documented "adjust state when a dependency changes" pattern)
+  // rather than in an effect that fires a render after.
+  const filterKey = `${statusFilter}|${legitimacyFilter}|${search}|${pageSize}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setPage(1);
+  }
 
   // Sorting - free-text/date columns only (name, company, requested);
   // Status and AI Verdict stay filter-only, they're categorical enough that a
@@ -208,7 +229,6 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
   const [approveDialog, setApproveDialog] = useState<{ open: boolean; reqId: string | null; name: string }>({ open: false, reqId: null, name: '' });
   const [emailSubject, setEmailSubject] = useState('Chin Yi Zhe - Requested Resume');
   const [emailBody, setEmailBody] = useState('');
-  const [resumeFiles, setResumeFiles] = useState<ResumeFile[]>([]);
   const [selectedResumePaths, setSelectedResumePaths] = useState<string[]>([]);
   const [copiedJobUrl, setCopiedJobUrl] = useState(false);
 
@@ -243,55 +263,25 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
     // (or several) before sending.
     setSelectedResumePaths(activeResumePath ? [activeResumePath] : []);
     setApproveDialog({ open: true, reqId: id, name });
-    // Refetch rather than trust the mount-time list - the separate "Upload
-    // Attachment" dialog on this same page can add/remove files without
-    // this component remounting.
-    fetchResumeFiles();
+    // Revalidate rather than trust the mount-time list - the separate
+    // "Upload Attachment" dialog on this same page can add/remove files
+    // without this component remounting.
+    mutateResumeFiles();
   };
 
   const toggleResumePath = (path: string) => {
     setSelectedResumePaths((prev) => (prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]));
   };
 
-  const fetchRequests = async () => {
-    try {
-      const res = await fetch('/api/proxy/resume');
-      if (res.ok) {
-        setRequests(await res.json());
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchResumeFiles = async () => {
-    try {
-      const res = await fetch('/api/proxy/resume-files', { cache: 'no-store' });
-      if (res.ok) {
-        setResumeFiles((await res.json()) || []);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  useEffect(() => {
-    fetchRequests();
-    if (isAdmin) fetchResumeFiles();
-  }, [isAdmin]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [statusFilter, legitimacyFilter, search, pageSize]);
-
   const handleAction = async (id: string, action: 'approve' | 'reject', subject?: string, body?: string, resumePaths?: string[]) => {
     if (!isAdmin) return;
-    const previous = [...requests];
+    const previous = requests;
 
-    // Optimistic update
-    setRequests(reqs => reqs.map(r => r.id === id ? { ...r, status: action === 'approve' ? 'approving...' : 'rejected' } : r));
+    // Optimistic update, no revalidation until we know the server call landed
+    mutateRequests(
+      previous.map(r => r.id === id ? { ...r, status: action === 'approve' ? 'approving...' : 'rejected' } : r),
+      { revalidate: false }
+    );
     setApproveDialog({ open: false, reqId: null, name: '' });
 
     try {
@@ -303,22 +293,25 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
 
       if (res.ok) {
         toast({ title: "Success", description: `Request ${action}d successfully` });
-        fetchRequests(); // Refresh actual state
+        mutateRequests(); // Refresh actual state
       } else {
         const errorData = await res.json();
         toast({ title: "Error", description: errorData.error || `Failed to ${action} request`, variant: "destructive" });
-        setRequests(previous); // Revert
+        mutateRequests(previous, { revalidate: false }); // Revert
       }
-    } catch (e) {
+    } catch {
       toast({ title: "Error", description: 'Network error', variant: "destructive" });
-      setRequests(previous);
+      mutateRequests(previous, { revalidate: false });
     }
   };
 
   const handleRetriage = async (id: string) => {
     if (!isAdmin) return;
-    const previous = [...requests];
-    setRequests(reqs => reqs.map(r => r.id === id ? { ...r, triage_status: 'queued', triage_error: '' } : r));
+    const previous = requests;
+    mutateRequests(
+      previous.map(r => r.id === id ? { ...r, triage_status: 'queued', triage_error: '' } : r),
+      { revalidate: false }
+    );
 
     try {
       const res = await fetch('/api/proxy/resume/retriage', {
@@ -328,15 +321,15 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
       });
       if (res.ok) {
         toast({ title: "Retriage started", description: "Re-running AI triage now." });
-        setTimeout(fetchRequests, 3000);
+        setTimeout(() => mutateRequests(), 3000);
       } else {
         const errorData = await res.json();
         toast({ title: "Error", description: errorData.error || "Failed to requeue triage", variant: "destructive" });
-        setRequests(previous);
+        mutateRequests(previous, { revalidate: false });
       }
-    } catch (e) {
+    } catch {
       toast({ title: "Error", description: 'Network error', variant: "destructive" });
-      setRequests(previous);
+      mutateRequests(previous, { revalidate: false });
     }
   };
 
@@ -349,8 +342,11 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
     if (!window.confirm(`Redact ${name || 'this request'}'s name and email? This can't be undone - the request itself stays, but its contact info is gone for good.`)) {
       return;
     }
-    const previous = [...requests];
-    setRequests(reqs => reqs.map(r => r.id === id ? { ...r, name: '', email: '' } : r));
+    const previous = requests;
+    mutateRequests(
+      previous.map(r => r.id === id ? { ...r, name: '', email: '' } : r),
+      { revalidate: false }
+    );
 
     try {
       const res = await fetch('/api/proxy/resume/redact', {
@@ -360,15 +356,15 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
       });
       if (res.ok) {
         toast({ title: "Redacted", description: "Name and email cleared." });
-        fetchRequests();
+        mutateRequests();
       } else {
         const errorData = await res.json();
         toast({ title: "Error", description: errorData.error || "Failed to redact request", variant: "destructive" });
-        setRequests(previous);
+        mutateRequests(previous, { revalidate: false });
       }
-    } catch (e) {
+    } catch {
       toast({ title: "Error", description: 'Network error', variant: "destructive" });
-      setRequests(previous);
+      mutateRequests(previous, { revalidate: false });
     }
   };
 

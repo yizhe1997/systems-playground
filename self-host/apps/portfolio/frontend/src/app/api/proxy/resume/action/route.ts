@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       try {
         const errData = await response.json();
         if (errData.error) errorMsg = errData.error;
-      } catch (e) {}
+      } catch {}
       return NextResponse.json({ error: errorMsg }, { status: response.status });
     }
 

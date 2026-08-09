@@ -1,5 +1,6 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import useSWR from 'swr';
 import { FileText, Trash2, UploadCloud, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -10,6 +11,13 @@ const formatBytes = (bytes: number) => {
   const kb = bytes / 1024;
   if (kb < 1024) return `${kb.toFixed(kb < 10 ? 1 : 0)} KB`;
   return `${(kb / 1024).toFixed(1)} MB`;
+};
+
+const fetcher = async (url: string): Promise<ResumeFile[]> => {
+  const res = await fetch(url, { cache: 'no-store' });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(body?.error || 'Failed to load resume files.');
+  return body || [];
 };
 
 // Filebrowser is a separate, optional service - reachable, misconfigured, or
@@ -24,42 +32,20 @@ export default function ResumeFileUpload({
   activePath: string;
   onActivePathChange: (path: string) => void;
 }) {
-  const [files, setFiles] = useState<ResumeFile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const loadFiles = useCallback(async () => {
-    if (!isAdmin) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/proxy/resume-files', { cache: 'no-store' });
-      const body = await res.json().catch(() => null);
-      if (!res.ok) {
-        setError(body?.error || 'Failed to load resume files.');
-        setFiles([]);
-        return;
-      }
-      setFiles(body || []);
-    } catch {
-      setError('Network error while loading resume files.');
-      setFiles([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [isAdmin]);
-
-  useEffect(() => {
-    loadFiles();
-  }, [loadFiles]);
+  // SWR owns the fetch-on-mount + manual-refresh lifecycle - passing a null
+  // key when !isAdmin is SWR's documented way to skip fetching conditionally,
+  // replacing the old "if (!isAdmin) return" early-out inside an effect.
+  const { data: files = [], error, isLoading, mutate } = useSWR<ResumeFile[]>(
+    isAdmin ? '/api/proxy/resume-files' : null,
+    fetcher
+  );
+  const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
 
   const uploadFiles = async (fileList: FileList | File[]) => {
     if (!isAdmin) return;
@@ -97,7 +83,7 @@ export default function ResumeFileUpload({
     if (!activePath && lastUploadedPath) {
       onActivePathChange(lastUploadedPath);
     }
-    await loadFiles();
+    await mutate();
   };
 
   const handleDelete = async (file: ResumeFile) => {
@@ -113,7 +99,9 @@ export default function ResumeFileUpload({
       if (activePath === file.path) {
         onActivePathChange('');
       }
-      setFiles((prev) => prev.filter((f) => f.path !== file.path));
+      // Update the local cache immediately instead of waiting on a
+      // revalidation round-trip - the delete already succeeded server-side.
+      await mutate((current) => (current || []).filter((f) => f.path !== file.path), { revalidate: false });
     } catch {
       toast({ title: 'Error', description: 'Network error while deleting the file.', variant: 'destructive' });
     } finally {
@@ -155,9 +143,9 @@ export default function ResumeFileUpload({
         />
       </label>
 
-      {loading ? (
+      {isLoading ? (
         <p className="text-sm text-[var(--ds-charcoal)]/60">Loading files…</p>
-      ) : error ? (
+      ) : errorMessage ? (
         <div
           role="alert"
           className="flex items-start gap-2 border-2 border-black bg-[var(--ds-yellow)] p-4"
@@ -165,10 +153,10 @@ export default function ResumeFileUpload({
         >
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
           <div className="flex-1">
-            <p className="text-sm font-bold">{error}</p>
+            <p className="text-sm font-bold">{errorMessage}</p>
             <button
               type="button"
-              onClick={loadFiles}
+              onClick={() => mutate()}
               className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold underline hover:no-underline"
             >
               <RefreshCw className="w-3 h-3" aria-hidden="true" />

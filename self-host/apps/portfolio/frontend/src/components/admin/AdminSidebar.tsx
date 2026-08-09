@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import {
   Home,
   UserRound,
@@ -133,7 +134,7 @@ export default function AdminSidebar({
             </div>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="View Portfolio" render={<a href="/" />}>
+            <SidebarMenuButton tooltip="View Portfolio" render={<Link href="/" />}>
               <ExternalLink />
               <span>View Portfolio</span>
             </SidebarMenuButton>

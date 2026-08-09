@@ -22,10 +22,21 @@ export default function MDXContent({ source, proseClassName = DEFAULT_PROSE_CLAS
   const [Content, setContent] = useState<ComponentType<{ components?: typeof mdxComponents }> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  // Clear the previous render's result during render, not as the first
+  // synchronous act inside the effect - React's documented pattern for
+  // "reset state when a prop changes" (react.dev/learn/you-might-not-need-an-effect).
+  // The effect below still owns the actual async work (compiling MDX is a
+  // legitimate side effect), it just no longer calls setState synchronously
+  // at its own top level - only from the resolved/rejected promise callbacks.
+  const [prevSource, setPrevSource] = useState(source);
+  if (source !== prevSource) {
+    setPrevSource(source);
     setContent(null);
     setError(null);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
     evaluate(source, {
       ...runtime,
       remarkPlugins: [remarkGfm],

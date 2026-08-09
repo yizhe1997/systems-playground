@@ -39,7 +39,15 @@ export default function SiteHeader() {
 
         <nav className="hidden sm:flex items-center gap-8 font-bold text-sm justify-self-center">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:opacity-70 transition-opacity">
+            // py-3 -my-3 expands the tap target to WCAG 2.2's 24px AA floor
+            // (closer to the 44px mobile guideline) without changing the
+            // visible gap between links - the negative margin cancels the
+            // padding's effect on surrounding layout.
+            <Link
+              key={link.href}
+              href={link.href}
+              className="inline-block py-3 -my-3 hover:opacity-70 transition-opacity"
+            >
               {link.label}
             </Link>
           ))}

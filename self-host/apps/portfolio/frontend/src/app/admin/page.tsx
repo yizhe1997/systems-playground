@@ -119,6 +119,15 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    // Fetching data on mount is a React-sanctioned effect use case
+    // (react.dev/reference/react/useEffect#fetching-data-with-effects).
+    // This doesn't move to SWR like the read-only admin lists did: it seeds
+    // 5 pieces of *editable* form state plus configBaseline, which the
+    // dirty-check/save/revert flow below deliberately lets diverge from
+    // after the initial load - that "fetch once, then locally diverge from
+    // a baseline" semantic fights SWR's continuously-revalidating cache
+    // model rather than fitting it.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchConfig();
   }, []);
 

@@ -10,6 +10,7 @@ import {
     useTransform,
     animate,
     type SpringOptions,
+    type MotionValue,
 } from "framer-motion"
 
 /**
@@ -128,8 +129,11 @@ export default function UserCursor(props: Props) {
         }
         return { x: labelOffsetX, y: labelOffsetY }
     }, [
-        labelOffsetOverride?.x,
-        labelOffsetOverride?.y,
+        // The branch below tests labelOffsetOverride's own truthiness, not
+        // just its x/y members - without the object itself in the deps, a
+        // change from undefined to an empty {} (both members still
+        // undefined) wouldn't recompute even though the branch taken changes.
+        labelOffsetOverride,
         labelOffsetUseDefault,
         labelOffsetX,
         labelOffsetY,
@@ -444,12 +448,12 @@ export default function UserCursor(props: Props) {
 function CursorLayer(props: {
     layerStyle: React.CSSProperties
     visible: boolean
-    arrowX: any
-    arrowY: any
-    labelX: any
-    labelY: any
-    labelRotation: any
-    scale: any
+    arrowX: MotionValue<number>
+    arrowY: MotionValue<number>
+    labelX: MotionValue<number>
+    labelY: MotionValue<number>
+    labelRotation: MotionValue<number>
+    scale: MotionValue<number>
     showLabel: boolean
     color: string
     size: number

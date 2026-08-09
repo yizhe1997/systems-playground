@@ -33,7 +33,6 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [credits, setCredits] = useState<CreditRow[]>([]);
 
-  const [resumeUrl, setResumeUrl] = useState<string>('#');
   const [linkedinUrl, setLinkedinUrl] = useState<string>('#');
   const [githubUrl, setGithubUrl] = useState<string>('#');
   const [heroDescription, setHeroDescription] = useState<string>(DEFAULT_HERO_DESCRIPTION);
@@ -54,7 +53,6 @@ export default function Home() {
         ]);
 
         if (configRes.status === 'fulfilled' && configRes.value) {
-          if (configRes.value.resumeUrl) setResumeUrl(configRes.value.resumeUrl);
           if (configRes.value.linkedinUrl) setLinkedinUrl(configRes.value.linkedinUrl);
           if (configRes.value.githubUrl) setGithubUrl(configRes.value.githubUrl);
           if (configRes.value.heroDescription) setHeroDescription(configRes.value.heroDescription);
