@@ -55,7 +55,13 @@ export default function ProjectRow({ project, index = 0 }: { project: Project; i
 
   const CardTag = hasLive ? 'a' : 'div';
   const cardProps = hasLive
-    ? { href: formatUrl(project.live_url), target: '_blank', rel: 'noopener noreferrer', 'aria-label': `${project.title || 'Untitled project'} (opens live project)` }
+    ? {
+        href: formatUrl(project.live_url),
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        'aria-label': `${project.title || 'Untitled project'} (opens live project)`,
+        'data-cursor-label': 'View',
+      }
     : {};
 
   return (

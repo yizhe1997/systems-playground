@@ -90,6 +90,7 @@ export default function HeroSection({
           <div className="flex flex-wrap gap-4">
             <button
               onClick={onRequestResume}
+              data-cursor-label="Request"
               className={`inline-flex items-center gap-2 px-6 py-3.5 bg-black text-white font-bold border-2 border-black shadow-[8px_8px_0px_0px_#000] hover:shadow-none ${pushBtn} focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2`}
               style={{ borderRadius: '0.75rem' }}
             >
@@ -101,6 +102,7 @@ export default function HeroSection({
                 href={formatUrl(githubUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-cursor-label="Open"
                 className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
                 style={{ borderRadius: '0.75rem' }}
               >
@@ -113,6 +115,7 @@ export default function HeroSection({
                 href={formatUrl(linkedinUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-cursor-label="Open"
                 className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
                 style={{ borderRadius: '0.75rem' }}
               >

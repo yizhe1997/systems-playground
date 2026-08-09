@@ -68,6 +68,7 @@ export default function SiteFooter() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
+                    data-cursor-label="Go"
                     className="inline-block py-2.5 -my-2.5 text-white/70 hover:text-white hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   >
                     {link.label}
@@ -84,6 +85,7 @@ export default function SiteFooter() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
+                    data-cursor-label="Read"
                     className="inline-block py-2.5 -my-2.5 text-white/70 hover:text-white hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   >
                     {link.label}
@@ -103,6 +105,7 @@ export default function SiteFooter() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="GitHub"
+                    data-cursor-label="Open"
                     className="w-11 h-11 flex items-center justify-center bg-[#272727] border-2 border-black text-white hover:bg-[var(--ds-yellow)] hover:text-black transition-colors"
                     style={{ borderRadius: '0.5rem' }}
                   >
@@ -115,6 +118,7 @@ export default function SiteFooter() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="LinkedIn"
+                    data-cursor-label="Open"
                     className="w-11 h-11 flex items-center justify-center bg-[#272727] border-2 border-black text-white hover:bg-[var(--ds-yellow)] hover:text-black transition-colors"
                     style={{ borderRadius: '0.5rem' }}
                   >

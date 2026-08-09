@@ -7,10 +7,11 @@ export default function SiteCursor() {
     <UserCursor
       name="Yi Zhe"
       color="#FFFFFF"
-      textColor="#FFFFFF"
+      textColor="#000000"
       size={40}
       labelTiltStrength={25}
-      showLabel={false}
+      showLabel={true}
+      clickLabel="Click"
       offsetX={0}
       offsetY={0}
       labelOffsetUseDefault={true}

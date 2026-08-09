@@ -22,7 +22,7 @@ export default function SiteHeader() {
       </div>
       <header className="sticky top-0 z-50 w-full h-20 bg-[var(--ds-yellow)] border-b-2 border-black flex items-center">
       <div className="max-w-6xl mx-auto px-6 w-full flex items-center justify-between sm:grid sm:grid-cols-[1fr_auto_1fr]">
-        <Link href="/" className="flex items-center gap-2 group justify-self-start" aria-label="Home">
+        <Link href="/" data-cursor-label="Home" className="flex items-center gap-2 group justify-self-start" aria-label="Home">
           <div
             className="w-10 h-10 flex items-center justify-center bg-black text-[var(--ds-yellow)] text-sm border-2 border-black group-hover:rotate-6 transition-transform"
             style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, borderRadius: '0.5rem' }}
@@ -46,6 +46,7 @@ export default function SiteHeader() {
             <Link
               key={link.href}
               href={link.href}
+              data-cursor-label="Go"
               className="inline-block py-3 -my-3 hover:opacity-70 transition-opacity"
             >
               {link.label}
@@ -56,7 +57,7 @@ export default function SiteHeader() {
         <div className="sm:hidden justify-self-end">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <button aria-label="Open navigation" className="p-2.5 -mr-2.5 text-black">
+              <button aria-label="Open navigation" data-cursor-label="Menu" className="p-2.5 -mr-2.5 text-black">
                 <Menu className="w-6 h-6" />
               </button>
             </SheetTrigger>
@@ -74,6 +75,7 @@ export default function SiteHeader() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
+                    data-cursor-label="Go"
                     className="block py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                   >
                     {link.label}

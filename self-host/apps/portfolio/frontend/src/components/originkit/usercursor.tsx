@@ -40,6 +40,7 @@ export default function UserCursor(props: Props) {
         size,
         labelTiltStrength,
         showLabel,
+        clickLabel,
         // Flat offsets (Framer-friendly).
         offsetX,
         offsetY,
@@ -94,6 +95,12 @@ export default function UserCursor(props: Props) {
     // fullScreen mode). `pressed` = mouse button is currently down.
     const [hovering, setHovering] = useState(false)
     const [pressed, setPressed] = useState(false)
+    // Text for the current clickable target under the pointer, or null when
+    // not over one. Read from a `data-cursor-label` attribute on the target
+    // (or its nearest matching ancestor) when present, else `clickLabel`.
+    // Drives the label pill instead of the static `name` whenever the
+    // caller hasn't supplied a fully custom `label` override.
+    const [hoverLabel, setHoverLabel] = useState<string | null>(null)
 
     // Fixed spring configs (good defaults). Arrow is snappier; label trails.
     const arrowSpring = useMemo<SpringOptions>(
@@ -224,6 +231,20 @@ export default function UserCursor(props: Props) {
             labelTiltTarget.set(sign * norm * labelTiltStrength)
 
             if (fullScreen) setHovering(true)
+
+            // Clickable-target detection: walk up from the real DOM target
+            // (not the container, which always matches under fullScreen) to
+            // find the nearest interactive ancestor. A per-element
+            // data-cursor-label wins over the generic clickLabel default.
+            const target = e.target as HTMLElement | null
+            const clickableEl = target?.closest?.(
+                'a[href], button:not(:disabled), [role="button"], summary, [data-cursor-label]'
+            ) as HTMLElement | null
+            setHoverLabel(
+                clickableEl
+                    ? clickableEl.getAttribute("data-cursor-label") || clickLabel
+                    : null
+            )
         }
 
         const onDown = () => setPressed(true)
@@ -232,6 +253,7 @@ export default function UserCursor(props: Props) {
         const onEnter = () => setHovering(true)
         const onLeave = () => {
             setHovering(false)
+            setHoverLabel(null)
             // Reset velocity sample so re-entering doesn't yield a huge dt.
             lastSampleRef.current = null
             // Settle label tilt back to neutral on leave.
@@ -277,6 +299,7 @@ export default function UserCursor(props: Props) {
         mouseX,
         mouseY,
         labelTiltTarget,
+        clickLabel,
     ])
 
     // --- visibility resolution ----------------------------------------------
@@ -362,8 +385,16 @@ export default function UserCursor(props: Props) {
     }, [arrow, color, size])
 
     // --- label content -------------------------------------------------------
+    // A caller-supplied `label` override is fully custom content, shown
+    // whenever the cursor itself is visible (not hover-gated - that's the
+    // "advanced override" escape hatch). Otherwise the pill shows whatever
+    // clickable element is currently under the pointer (`hoverLabel`,
+    // resolved in the mousemove handler above) and is hidden the rest of
+    // the time. `name` no longer drives default label text - it was a
+    // static signature, superseded by this hover-driven affordance.
+    const isHoverDrivenLabel = label === undefined || label === null
     const labelContent: React.ReactNode = useMemo(() => {
-        if (label !== undefined && label !== null) return label
+        if (!isHoverDrivenLabel) return label
         return (
             <div
                 className={classNames?.labelText}
@@ -379,10 +410,14 @@ export default function UserCursor(props: Props) {
                     letterSpacing: 0.1,
                 }}
             >
-                {name}
+                {hoverLabel}
             </div>
         )
-    }, [label, name, textColor, size, classNames?.labelText])
+    }, [isHoverDrivenLabel, label, hoverLabel, textColor, size, classNames?.labelText])
+
+    // Advanced override stays visible whenever the cursor itself is;
+    // hover-driven mode additionally requires an actual hoverLabel.
+    const labelVisible = isHoverDrivenLabel ? Boolean(hoverLabel) : true
 
     // --- early bail-outs ----------------------------------------------------
     if (isTouchDevice) return null
@@ -422,6 +457,7 @@ export default function UserCursor(props: Props) {
                 <CursorLayer
                     layerStyle={layerStyle}
                     visible={visible}
+                    labelVisible={visible && labelVisible}
                     arrowX={arrowX}
                     arrowY={arrowY}
                     labelX={labelTranslateX}
@@ -448,6 +484,7 @@ export default function UserCursor(props: Props) {
 function CursorLayer(props: {
     layerStyle: React.CSSProperties
     visible: boolean
+    labelVisible: boolean
     arrowX: MotionValue<number>
     arrowY: MotionValue<number>
     labelX: MotionValue<number>
@@ -464,6 +501,7 @@ function CursorLayer(props: {
     const {
         layerStyle,
         visible,
+        labelVisible,
         arrowX,
         arrowY,
         labelX,
@@ -495,11 +533,11 @@ function CursorLayer(props: {
                         scale,
                         background: color,
                         borderRadius: 999,
+                        border: "2px solid #000000",
                         // Pill padding scales with Size (≈5/10px at size 28).
                         padding: `${size * 0.18}px ${size * 0.36}px`,
-                        boxShadow:
-                            "0 4px 12px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)",
-                        opacity: visible ? 1 : 0,
+                        boxShadow: "3px 3px 0px 0px #000000",
+                        opacity: labelVisible ? 1 : 0,
                         transformOrigin: "0% 50%",
                         transition: "opacity 140ms ease",
                         willChange: "transform, opacity",
@@ -564,6 +602,9 @@ type Props = {
 
     // Behavior
     showLabel: boolean
+    // Generic label text for a hovered clickable element that doesn't set
+    // its own `data-cursor-label`. Ignored when `label` is supplied.
+    clickLabel: string
 
     // Offsets — flat (controllable) form.
     offsetX: number
@@ -590,6 +631,7 @@ const COMPONENT_DEFAULTS = {
     offsetX: 0,
     offsetY: 0,
     showLabel: true,
+    clickLabel: "Click",
     name: "Robert",
     textColor: "#000000",
     labelTiltStrength: 25,

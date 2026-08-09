@@ -150,11 +150,11 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
             </div>
             <p className="text-xs text-[var(--ds-charcoal)]/70">
               By submitting, you agree to the{' '}
-              <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-black">
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer" data-cursor-label="Read" className="underline hover:text-black">
                 Privacy Policy
               </Link>{' '}
               and{' '}
-              <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-black">
+              <Link href="/terms" target="_blank" rel="noopener noreferrer" data-cursor-label="Read" className="underline hover:text-black">
                 Terms &amp; Conditions
               </Link>
               .
@@ -167,6 +167,7 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
               <button
                 type="submit"
                 disabled={submitting || !canSubmit}
+                data-cursor-label="Send"
                 className={`inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-[4px_4px_0px_0px_#000] disabled:hover:translate-x-0 disabled:hover:translate-y-0 ${pushBtn} focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2`}
                 style={{ borderRadius: '0.75rem' }}
               >

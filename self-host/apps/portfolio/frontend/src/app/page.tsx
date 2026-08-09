@@ -102,7 +102,7 @@ export default function Home() {
             >
               Featured projects
             </h2>
-            <Link href="/projects" className="group inline-flex items-center gap-1.5 font-bold shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black">
+            <Link href="/projects" data-cursor-label="Browse" className="group inline-flex items-center gap-1.5 font-bold shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black">
               <span className="relative">
                 View all projects
                 <span className="absolute left-0 -bottom-0.5 h-0.5 w-full bg-black origin-left scale-x-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
@@ -147,6 +147,7 @@ export default function Home() {
                 <Link
                   key={post.id}
                   href={`/blog/${post.id}`}
+                  data-cursor-label="Read"
                   className="bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_#000] group focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   style={{ borderRadius: '0.75rem' }}
                 >
@@ -178,7 +179,7 @@ export default function Home() {
             </div>
           )}
 
-          <Link href="/blog" className="group mt-8 inline-flex items-center gap-1.5 font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
+          <Link href="/blog" data-cursor-label="Browse" className="group mt-8 inline-flex items-center gap-1.5 font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
             <span className="relative">
               View all posts
               <span className="absolute left-0 -bottom-0.5 h-0.5 w-full bg-white origin-left scale-x-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
@@ -216,6 +217,7 @@ export default function Home() {
                           href={formatUrl(item.url)}
                           target="_blank"
                           rel="noopener noreferrer"
+                          data-cursor-label="Open"
                           className="text-white underline underline-offset-2 decoration-white/30 hover:decoration-[var(--ds-yellow)] hover:text-[var(--ds-yellow)] transition-colors text-sm w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                         >
                           {item.text}
