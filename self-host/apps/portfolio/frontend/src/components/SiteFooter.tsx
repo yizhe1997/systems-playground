@@ -53,7 +53,7 @@ export default function SiteFooter() {
                 YZ
               </div>
               <span className="font-extrabold text-2xl tracking-tight text-white" style={{ fontFamily: 'var(--ds-font-display)' }}>
-                Systems
+                Portfolio
               </span>
             </div>
             <p className="text-sm text-[var(--ds-sage)]">

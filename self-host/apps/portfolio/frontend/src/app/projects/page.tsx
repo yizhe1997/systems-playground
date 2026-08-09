@@ -20,7 +20,7 @@ export default function ProjectsPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
       <SiteHeader />
-      <main className="flex-1 max-w-3xl mx-auto px-6 py-20 w-full">
+      <main className="flex-1 max-w-6xl mx-auto px-6 py-20 w-full">
         <h1
           className="mb-12 text-black"
           style={{
@@ -45,9 +45,9 @@ export default function ProjectsPage() {
             <p className="text-sm text-[var(--ds-charcoal)]/70">Real-world projects land here as they ship.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project, i) => (
-              <ProjectRow key={project.id} project={project} defaultOpen={i === 0} />
+              <ProjectRow key={project.id} project={project} index={i} />
             ))}
           </div>
         )}

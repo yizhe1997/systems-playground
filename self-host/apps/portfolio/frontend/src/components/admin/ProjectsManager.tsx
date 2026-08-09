@@ -319,7 +319,7 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
               )}
             </DialogDescription>
           </DialogHeader>
-          {previewIndex !== null && projects[previewIndex] && <ProjectRow project={projects[previewIndex]} defaultOpen />}
+          {previewIndex !== null && projects[previewIndex] && <ProjectRow project={projects[previewIndex]} index={previewIndex} />}
         </DialogContent>
       </Dialog>
     </div>

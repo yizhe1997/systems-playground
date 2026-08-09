@@ -77,7 +77,7 @@ export default function Home() {
     loadOtherData();
   }, []);
 
-  const filteredProjects = projects.filter(p => p.featured).slice(0, 4);
+  const filteredProjects = projects.filter(p => p.featured).slice(0, 3);
   const filteredPosts = posts.filter(p => p.featured).slice(0, 4);
 
   return (
@@ -94,13 +94,22 @@ export default function Home() {
 
       {/* Featured Projects - Bento Feature Grid */}
       <section id="projects" className="bg-white">
-        <div className="max-w-3xl mx-auto px-6 py-20">
-          <h2
-            className="text-3xl sm:text-4xl mb-10 text-black"
-            style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
-          >
-            Featured projects
-          </h2>
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <div className="flex items-baseline justify-between gap-6 flex-wrap mb-9">
+            <h2
+              className="text-black uppercase"
+              style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: '38px', letterSpacing: '-0.02em' }}
+            >
+              Featured projects
+            </h2>
+            <Link href="/projects" className="group inline-flex items-center gap-1.5 font-bold shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black">
+              <span className="relative">
+                View all projects
+                <span className="absolute left-0 -bottom-0.5 h-0.5 w-full bg-black origin-left scale-x-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
+              </span>
+              <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" aria-hidden="true" />
+            </Link>
+          </div>
 
           {filteredProjects.length === 0 ? (
             <div className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000] max-w-md" style={{ borderRadius: '0.75rem' }}>
@@ -108,20 +117,12 @@ export default function Home() {
               <p className="text-sm text-[var(--ds-charcoal)]/70">Real-world projects land here as they ship.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProjects.map((project, i) => (
-                <ProjectRow key={project.id} project={project} defaultOpen={i === 0} />
+                <ProjectRow key={project.id} project={project} index={i} />
               ))}
             </div>
           )}
-
-          <Link href="/projects" className="group mt-8 inline-flex items-center gap-1.5 font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-black">
-            <span className="relative">
-              View all projects
-              <span className="absolute left-0 -bottom-0.5 h-0.5 w-full bg-black origin-left scale-x-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
-            </span>
-            <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" aria-hidden="true" />
-          </Link>
         </div>
       </section>
 
