@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import ProjectRow, { type Project } from '@/components/ProjectRow';
+import EmptyProjectCard from '@/components/EmptyProjectCard';
 import { fetchJson } from '@/lib/fetch-json';
 
 export default function ProjectsPage() {
@@ -36,19 +37,11 @@ export default function ProjectsPage() {
 
         {loading ? (
           <p role="status" aria-live="polite" className="text-sm font-bold text-[var(--ds-charcoal)]/70">Loading&hellip;</p>
-        ) : projects.length === 0 ? (
-          <div
-            className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000] max-w-md"
-            style={{ borderRadius: '0.75rem' }}
-          >
-            <p className="font-bold mb-1">Nothing shipped here yet</p>
-            <p className="text-sm text-[var(--ds-charcoal)]/70">Real-world projects land here as they ship.</p>
-          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project, i) => (
-              <ProjectRow key={project.id} project={project} index={i} />
-            ))}
+            {projects.length === 0
+              ? [0, 1, 2].map((i) => <EmptyProjectCard key={i} />)
+              : projects.map((project, i) => <ProjectRow key={project.id} project={project} index={i} />)}
           </div>
         )}
       </main>

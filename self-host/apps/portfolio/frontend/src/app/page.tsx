@@ -7,6 +7,7 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import HeroSection from '@/components/HeroSection';
 import ProjectRow, { type Project as ProjectRowType } from '@/components/ProjectRow';
+import EmptyProjectCard from '@/components/EmptyProjectCard';
 import { formatPublishedDate } from '@/lib/format-date';
 import { useResumeRequest } from '@/components/ResumeRequestModal';
 import { fetchJson } from '@/lib/fetch-json';
@@ -111,18 +112,14 @@ export default function Home() {
             </Link>
           </div>
 
-          {filteredProjects.length === 0 ? (
-            <div className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000] max-w-md" style={{ borderRadius: '0.75rem' }}>
-              <p className="font-bold mb-1">Nothing shipped here yet</p>
-              <p className="text-sm text-[var(--ds-charcoal)]/70">Real-world projects land here as they ship.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProjects.map((project, i) => (
-                <ProjectRow key={project.id} project={project} index={i} />
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map((project, i) => (
+              <ProjectRow key={project.id} project={project} index={i} />
+            ))}
+            {Array.from({ length: Math.max(0, 3 - filteredProjects.length) }).map((_, i) => (
+              <EmptyProjectCard key={`empty-${i}`} />
+            ))}
+          </div>
         </div>
       </section>
 
