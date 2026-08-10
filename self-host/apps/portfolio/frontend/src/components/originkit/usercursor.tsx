@@ -13,6 +13,12 @@ import {
     type MotionValue,
 } from "framer-motion"
 
+// Fallback width for the edge-flip check (see labelFlipped) before the
+// label pill has ever been measured - e.g. its very first paint, where
+// labelWidthRef hasn't had a real offsetWidth to record yet. Every render
+// after that uses the pill's actual measured width instead.
+const LABEL_WIDTH_ESTIMATE = 150
+
 /**
  * UserCursor — a custom cursor follower that replaces the OS cursor inside
  * its surface. An arrow glyph tracks the pointer with spring physics; a
@@ -89,6 +95,13 @@ export default function UserCursor(props: Props) {
 
     // --- container refs ------------------------------------------------------
     const containerRef = useRef<HTMLDivElement | null>(null)
+    // The label pill's own DOM node, measured after each text change so the
+    // edge-flip (below) can use the pill's REAL width instead of a guess -
+    // a flat overestimate made the flipped position sit needlessly far from
+    // the cursor for short labels. LABEL_WIDTH_ESTIMATE remains only as the
+    // fallback before the first real measurement lands.
+    const labelElRef = useRef<HTMLDivElement | null>(null)
+    const labelWidthRef = useRef(LABEL_WIDTH_ESTIMATE)
 
     // --- visible state (gated by trigger + presence) ------------------------
     // `hovering` = pointer is over the surface (or has moved at least once in
@@ -101,6 +114,13 @@ export default function UserCursor(props: Props) {
     // Drives the label pill instead of the static `name` whenever the
     // caller hasn't supplied a fully custom `label` override.
     const [hoverLabel, setHoverLabel] = useState<string | null>(null)
+    // True when the label's normal rightward offset would push it past the
+    // right edge of the viewport - flips it to render leftward of the
+    // cursor instead so it stays on-screen near the right edge. Checked
+    // against the pill's real measured width (labelWidthRef) so the flipped
+    // gap matches the normal gap instead of reserving a worst-case amount
+    // of space for every label regardless of how short its text is.
+    const [labelFlipped, setLabelFlipped] = useState(false)
 
     // Fixed spring configs (good defaults). Arrow is snappier; label trails.
     const arrowSpring = useMemo<SpringOptions>(
@@ -245,6 +265,17 @@ export default function UserCursor(props: Props) {
                     ? clickableEl.getAttribute("data-cursor-label") || clickLabel
                     : null
             )
+
+            // Edge flip: only meaningful in fullScreen mode, where `x` is
+            // viewport-relative and window.innerWidth is the real bound the
+            // label could overflow past. labelWidthRef holds the pill's
+            // actual last-measured width (see the effect below), so this
+            // reacts to the current text's real size, not a worst-case guess.
+            if (fullScreen && typeof window !== "undefined") {
+                setLabelFlipped(
+                    x + resolvedLabelOffset.x + labelWidthRef.current > window.innerWidth
+                )
+            }
         }
 
         const onDown = () => setPressed(true)
@@ -296,6 +327,7 @@ export default function UserCursor(props: Props) {
         labelTiltStrength,
         resolvedOffset.x,
         resolvedOffset.y,
+        resolvedLabelOffset.x,
         mouseX,
         mouseY,
         labelTiltTarget,
@@ -342,10 +374,17 @@ export default function UserCursor(props: Props) {
 
     // --- transform composition ----------------------------------------------
     // Arrow x/y already include `resolvedOffset` (we baked it into mouseX/Y).
-    // Label position adds `resolvedLabelOffset` on top.
+    // Label position adds `resolvedLabelOffset` on top - or, when
+    // labelFlipped, anchors the pill's left edge exactly its own measured
+    // width to the left of where the normal offset would put its right
+    // edge, so the flipped gap mirrors the normal one instead of reserving
+    // extra space regardless of how short the text actually is.
+    const effectiveLabelOffsetX = labelFlipped
+        ? -(resolvedLabelOffset.x + labelWidthRef.current)
+        : resolvedLabelOffset.x
     const labelTranslateX = useTransform(
         labelX,
-        (v) => v + resolvedLabelOffset.x
+        (v) => v + effectiveLabelOffsetX
     )
     const labelTranslateY = useTransform(
         labelY,
@@ -415,6 +454,15 @@ export default function UserCursor(props: Props) {
         )
     }, [isHoverDrivenLabel, label, hoverLabel, textColor, size, classNames?.labelText])
 
+    // Re-measure the pill's real rendered width whenever its text changes
+    // (not on every mousemove - text only changes when the hovered target
+    // does). onMove reads labelWidthRef directly, so no re-subscription of
+    // the pointer-listener effect is needed when this updates.
+    useEffect(() => {
+        const el = labelElRef.current
+        if (el && el.offsetWidth > 0) labelWidthRef.current = el.offsetWidth
+    }, [hoverLabel, label])
+
     // Advanced override stays visible whenever the cursor itself is;
     // hover-driven mode additionally requires an actual hoverLabel.
     const labelVisible = isHoverDrivenLabel ? Boolean(hoverLabel) : true
@@ -458,6 +506,7 @@ export default function UserCursor(props: Props) {
                     layerStyle={layerStyle}
                     visible={visible}
                     labelVisible={visible && labelVisible}
+                    labelElRef={labelElRef}
                     arrowX={arrowX}
                     arrowY={arrowY}
                     labelX={labelTranslateX}
@@ -485,6 +534,7 @@ function CursorLayer(props: {
     layerStyle: React.CSSProperties
     visible: boolean
     labelVisible: boolean
+    labelElRef: React.RefObject<HTMLDivElement | null>
     arrowX: MotionValue<number>
     arrowY: MotionValue<number>
     labelX: MotionValue<number>
@@ -502,6 +552,7 @@ function CursorLayer(props: {
         layerStyle,
         visible,
         labelVisible,
+        labelElRef,
         arrowX,
         arrowY,
         labelX,
@@ -522,6 +573,7 @@ function CursorLayer(props: {
                 always visually on top. */}
             {showLabel && (
                 <motion.div
+                    ref={labelElRef}
                     className={classNames?.label}
                     style={{
                         position: "absolute",
