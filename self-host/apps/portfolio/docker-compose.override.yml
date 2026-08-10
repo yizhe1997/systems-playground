@@ -7,6 +7,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    environment:
+      # Drives resumeFilesDir() in filebrowser.go - keeps local test uploads
+      # in /resumes/dev, separate from real production attachments in
+      # /resumes/prod (same Filebrowser instance/FILEBROWSER_PUBLIC_URL as
+      # prod, so without this split they'd land in the same folder).
+      - APP_ENV=development
 
   frontend:
     build:

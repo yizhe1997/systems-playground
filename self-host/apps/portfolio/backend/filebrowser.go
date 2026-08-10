@@ -17,11 +17,34 @@ import (
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
 
+// appEnv reports the deployment environment ("development" or "production"),
+// driven by APP_ENV (set explicitly per docker-compose.override.yml /
+// docker-compose.prod.yml - see resumeFilesDir). Defaults to "development"
+// when unset: a binary run outside either compose file (a bare `go run`, a
+// misconfigured deploy) is far more likely to be a local/test run than a
+// real production deploy, and a real prod deploy always sets this
+// explicitly - see docker-compose.prod.yml.
+func appEnv() string {
+	if v := os.Getenv("APP_ENV"); v != "" {
+		return v
+	}
+	return "development"
+}
+
 // resumeFilesDir is where uploaded resume/CV files live in Filebrowser -
 // separate from anything an operator may have placed at the root via
 // Filebrowser's own UI, so the admin upload widget only ever lists files it
-// manages itself.
-const resumeFilesDir = "/resumes"
+// manages itself. Split into a per-environment subpath so local/dev testing
+// uploads never land next to real production resume attachments - dev and
+// prod currently point at the same Filebrowser instance (same
+// FILEBROWSER_PUBLIC_URL in both docker-compose.override.yml and
+// docker-compose.prod.yml), so without this split they'd share one folder.
+func resumeFilesDir() string {
+	if appEnv() == "production" {
+		return "/resumes/prod"
+	}
+	return "/resumes/dev"
+}
 
 func filebrowserPublicURL() string {
 	if v := os.Getenv("FILEBROWSER_PUBLIC_URL"); v != "" {
@@ -113,7 +136,7 @@ func RegisterFilebrowserRoutes(app *fiber.App) {
 			return filebrowserUnavailableError(c)
 		}
 
-		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/resources%s/", filebrowserPublicURL(), resumeFilesDir), nil)
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/resources%s/", filebrowserPublicURL(), resumeFilesDir()), nil)
 		req.Header.Set("X-Auth", token)
 
 		resp, err := httpClient.Do(req)
@@ -191,7 +214,7 @@ func RegisterFilebrowserRoutes(app *fiber.App) {
 		// "resume.pdf" silently overwrote the first one (?override=true was
 		// doing exactly what it says) instead of adding a second file.
 		storedFilename := uuid.New().String() + "__" + originalName
-		uploadPath := fmt.Sprintf("%s/%s", resumeFilesDir, storedFilename)
+		uploadPath := fmt.Sprintf("%s/%s", resumeFilesDir(), storedFilename)
 
 		req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/resources%s?override=true", filebrowserPublicURL(), uploadPath), bytes.NewReader(content))
 		if err != nil {
@@ -226,7 +249,7 @@ func RegisterFilebrowserRoutes(app *fiber.App) {
 			return filebrowserUnavailableError(c)
 		}
 
-		deletePath := fmt.Sprintf("%s/%s", resumeFilesDir, filename)
+		deletePath := fmt.Sprintf("%s/%s", resumeFilesDir(), filename)
 		req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/api/resources%s", filebrowserPublicURL(), deletePath), nil)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to build delete request."})

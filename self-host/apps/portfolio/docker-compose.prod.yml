@@ -9,6 +9,9 @@ services:
       # Hardcoded rather than sourced from Infisical - not a secret, and it must
       # match the frontend's tunnel hostname below exactly.
       - FRONTEND_PUBLIC_URL=https://portfolio.38569123.xyz
+      # Drives resumeFilesDir() in filebrowser.go - see the matching comment
+      # in docker-compose.override.yml.
+      - APP_ENV=production
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
       # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh - already live at
