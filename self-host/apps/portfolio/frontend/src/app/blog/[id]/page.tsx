@@ -8,6 +8,7 @@ import MDXContent from '@/components/mdx/MDXContent';
 import { fetchJson } from '@/lib/fetch-json';
 import { formatPublishedDate } from '@/lib/format-date';
 import { StarRating, StarRatingInput } from '@/components/StarRating';
+import { copyText } from '@/lib/copy-text';
 
 type Post = {
   id: string;
@@ -125,30 +126,6 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
     fetchPost();
   }, [id]);
-
-  // navigator.clipboard.writeText can reject (denied permission, insecure
-  // context, older Safari) - fall back to the legacy execCommand approach
-  // rather than failing the click silently.
-  const copyText = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      try {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        const ok = document.execCommand('copy');
-        document.body.removeChild(textarea);
-        return ok;
-      } catch {
-        return false;
-      }
-    }
-  };
 
   const copyPage = async () => {
     if (await copyText(content)) {

@@ -10,6 +10,7 @@ import ProjectRow, { type Project as ProjectRowType } from '@/components/Project
 import EmptyProjectCard from '@/components/EmptyProjectCard';
 import BlogCard from '@/components/BlogCard';
 import EmptyBlogCard from '@/components/EmptyBlogCard';
+import CopySectionLinkButton from '@/components/CopySectionLinkButton';
 import { useResumeRequest } from '@/components/ResumeRequestModal';
 import { fetchJson } from '@/lib/fetch-json';
 
@@ -101,10 +102,14 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="flex items-baseline justify-between gap-6 flex-wrap mb-9">
             <h2
-              className="text-3xl sm:text-4xl text-black"
+              className="group/heading inline-flex items-baseline gap-1.5 text-3xl sm:text-4xl text-black"
               style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
             >
-              Featured projects
+              <a href="#projects" className="hover:opacity-70 transition-opacity">Featured projects</a>
+              <sup className="text-sm font-mono font-medium text-[var(--ds-charcoal)]/50" style={{ top: '-0.6em' }}>
+                ({projects.length})
+              </sup>
+              <CopySectionLinkButton sectionId="projects" label="Projects" />
             </h2>
             <Link href="/projects" data-cursor-label="Browse" className="group inline-flex items-center gap-1.5 font-bold shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black">
               <span className="relative">
@@ -131,10 +136,14 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="flex items-baseline justify-between gap-6 flex-wrap mb-9">
             <h2
-              className="text-3xl sm:text-4xl text-white"
+              className="group/heading inline-flex items-baseline gap-1.5 text-3xl sm:text-4xl text-white"
               style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
             >
-              Blog
+              <a href="#blog" className="hover:opacity-70 transition-opacity">Blog</a>
+              <sup className="text-sm font-mono font-medium text-white/50" style={{ top: '-0.6em' }}>
+                ({posts.length})
+              </sup>
+              <CopySectionLinkButton sectionId="blog" label="Blog" />
             </h2>
             <Link href="/blog" data-cursor-label="Browse" className="group inline-flex items-center gap-1.5 font-bold shrink-0 text-[var(--ds-yellow)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
               <span className="relative">
