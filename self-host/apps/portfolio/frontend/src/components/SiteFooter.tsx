@@ -68,7 +68,7 @@ export default function SiteFooter() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    data-cursor-label="Go"
+                    data-cursor-label="Open"
                     className="inline-block py-2.5 -my-2.5 text-white/70 hover:text-white hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   >
                     {link.label}
@@ -85,7 +85,7 @@ export default function SiteFooter() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    data-cursor-label="Read"
+                    data-cursor-label="Open"
                     className="inline-block py-2.5 -my-2.5 text-white/70 hover:text-white hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   >
                     {link.label}

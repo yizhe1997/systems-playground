@@ -60,7 +60,7 @@ export default function ProjectRow({ project, index = 0 }: { project: Project; i
         target: '_blank',
         rel: 'noopener noreferrer',
         'aria-label': `${project.title || 'Untitled project'} (opens live project)`,
-        'data-cursor-label': 'View',
+        'data-cursor-label': 'Open',
       }
     : {};
 

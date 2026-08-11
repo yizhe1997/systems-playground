@@ -1,18 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { BookOpen } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import BlogCard from '@/components/BlogCard';
 import { fetchJson } from '@/lib/fetch-json';
-import { formatPublishedDate } from '@/lib/format-date';
 
 type Post = {
   id: string;
   title: string;
   cover_image_url: string;
   published_date: string;
+  rating_sum: number;
+  rating_count: number;
 };
 
 export default function BlogIndex() {
@@ -66,38 +66,7 @@ export default function BlogIndex() {
         ) : (
           <div className="grid sm:grid-cols-2 gap-6">
             {sorted.map((post) => (
-              <Link
-                key={post.id}
-                href={`/blog/${post.id}`}
-                className="group block bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_#000] hover:shadow-none transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                style={{ borderRadius: '0.75rem' }}
-              >
-                {post.cover_image_url ? (
-                  <div className="aspect-video w-full overflow-hidden border-b-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={post.cover_image_url}
-                      alt=""
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className="aspect-video w-full border-b-2 border-black flex items-center justify-center"
-                    style={{ backgroundColor: 'var(--ds-sage)' }}
-                  >
-                    <BookOpen className="w-10 h-10 text-black/40" aria-hidden="true" />
-                  </div>
-                )}
-                <div className="p-6">
-                  <h2 className="text-lg font-extrabold mb-2 group-hover:underline">{post.title}</h2>
-                  {post.published_date && (
-                    <p className="text-xs font-mono text-[var(--ds-charcoal)]/60">
-                      Published on {formatPublishedDate(post.published_date)}
-                    </p>
-                  )}
-                </div>
-              </Link>
+              <BlogCard key={post.id} post={post} />
             ))}
           </div>
         )}

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, ChevronUp, ChevronDown, Eye, BookOpen } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatPublishedDate } from '@/lib/format-date';
 import StatusToggle from '@/components/admin/StatusToggle';
 import MDXContent from '@/components/mdx/MDXContent';
+import { BlogCardPreview } from '@/components/BlogCard';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
@@ -29,6 +30,11 @@ type Post = {
   cover_image_url: string;
   published_date: string;
   featured: boolean;
+  // rating_sum/rating_count accumulate from real reader votes on the post
+  // page (POST /api/posts/:id/rate) - deliberately not an admin-editable
+  // field here. It round-trips through Save Blog untouched, same as id.
+  rating_sum: number;
+  rating_count: number;
   status: string;
 };
 
@@ -37,29 +43,6 @@ const fieldClass =
 
 const selectClass =
   'border-2 border-black rounded-[0.375rem] px-2 h-9 text-sm bg-white text-[var(--ds-charcoal)] focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed';
-
-function PostCardPreview({ post }: { post: Post }) {
-  return (
-    <div className="bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_#000] max-w-sm" style={{ borderRadius: '0.75rem' }}>
-      {post.cover_image_url ? (
-        <div className="aspect-video w-full overflow-hidden border-b-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={post.cover_image_url} alt="" className="w-full h-full object-cover" />
-        </div>
-      ) : (
-        <div className="aspect-video w-full border-b-2 border-black flex items-center justify-center" style={{ backgroundColor: 'var(--ds-sage)' }}>
-          <BookOpen className="w-10 h-10 text-black/40" aria-hidden="true" />
-        </div>
-      )}
-      <div className="p-6">
-        <h3 className="text-lg font-extrabold mb-2">{post.title || 'Untitled post'}</h3>
-        {post.published_date && (
-          <p className="text-xs font-mono text-[var(--ds-charcoal)]/60">Published on {formatPublishedDate(post.published_date)}</p>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function PostPagePreview({ post }: { post: Post }) {
   const [content, setContent] = useState(post.source_type === 'native' ? post.content : '');
@@ -214,7 +197,7 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
       {
         id: Math.random().toString(36).substring(2, 8),
         title: '', source_type: 'native', content_target: '', content: '',
-        cover_image_url: '', published_date: '', featured: false, status: 'draft',
+        cover_image_url: '', published_date: '', featured: false, rating_sum: 0, rating_count: 0, status: 'draft',
       },
       ...posts,
     ]);
@@ -430,6 +413,12 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
                   Every post appears on <code className="bg-black/5 px-1 rounded">/blog</code> regardless. Featured additionally shows it on the homepage (max 4).
                 </p>
               </div>
+
+              <p className="text-xs font-mono text-[var(--ds-charcoal)]/60">
+                {p.rating_count > 0
+                  ? `Rated ${(p.rating_sum / p.rating_count).toFixed(1)}/5 from ${p.rating_count} reader${p.rating_count === 1 ? '' : 's'} — accumulated from votes on the post page, not editable here.`
+                  : 'Not yet rated by any readers.'}
+              </p>
             </div>
           ))}
         </div>
@@ -466,7 +455,7 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
                 <TabsTrigger value="page">Full post page</TabsTrigger>
               </TabsList>
               <TabsContent value="card" className="pt-4">
-                <PostCardPreview post={posts[previewIndex]} />
+                <BlogCardPreview post={posts[previewIndex]} />
               </TabsContent>
               <TabsContent value="page" className="pt-4">
                 <PostPagePreview post={posts[previewIndex]} />

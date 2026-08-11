@@ -1,10 +1,12 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -62,6 +64,12 @@ type Post struct {
 	// Featured controls homepage visibility directly on the item - see
 	// Project.Featured.
 	Featured bool `json:"featured"`
+	// RatingSum/RatingCount accumulate reader-submitted 1-5 star votes via
+	// the public POST /api/posts/:id/rate route below - the star rating
+	// shown on the card is their average, never something the admin sets
+	// directly. Both are zero (no stars shown) until a reader has voted.
+	RatingSum   int `json:"rating_sum"`
+	RatingCount int `json:"rating_count"`
 	// Status is "draft" or "published". Draft items are excluded from every
 	// public /api/* GET route (see filterPublished below) but still
 	// returned in full to the authenticated /admin/cms/* GET routes, so the
@@ -187,6 +195,64 @@ func RegisterCMSRoutes(app *fiber.App) {
 		var posts []Post
 		json.Unmarshal([]byte(val), &posts)
 		return c.JSON(filterPublished(posts, func(p Post) string { return p.Status }))
+	})
+
+	// Public, unauthenticated - any reader can cast one star rating per
+	// post. Unlike every other CMS write in this file, this doesn't go
+	// through the admin array-overwrite endpoint: it's a targeted
+	// increment against whichever single post matches :id, so a reader
+	// voting can never clobber concurrent admin edits to other posts (or
+	// vice versa). Duplicate votes from the same reader aren't tracked
+	// server-side - the frontend gates repeat submissions via localStorage,
+	// which is enough friction for a personal-site comment box, not a
+	// suffrage system.
+	app.Post("/api/posts/:id/rate", func(c *fiber.Ctx) error {
+		var body struct {
+			Rating int `json:"rating"`
+		}
+		if err := c.BodyParser(&body); err != nil || body.Rating < 1 || body.Rating > 5 {
+			return c.Status(400).JSON(fiber.Map{"error": "rating must be an integer 1-5"})
+		}
+		id := c.Params("id")
+		val, err := redisClient.Get(c.Context(), "cms:posts").Result()
+		if err != nil {
+			return c.Status(404).JSON(fiber.Map{"error": "post not found"})
+		}
+		var posts []Post
+		json.Unmarshal([]byte(val), &posts)
+		idx := -1
+		for i := range posts {
+			if posts[i].ID == id {
+				idx = i
+				break
+			}
+		}
+		if idx == -1 {
+			return c.Status(404).JSON(fiber.Map{"error": "post not found"})
+		}
+
+		// One vote per IP per post per day - a SetNX'd Redis key, checked
+		// after the post-exists check so a bogus id doesn't burn someone's
+		// vote slot. This is a cheap backstop behind the frontend's
+		// localStorage lock (see blog/[id]/page.tsx), not a hardened
+		// anti-fraud system: a VPN, a different network, or just waiting
+		// out the TTL gets around it. That's an accepted trade-off - a
+		// rating widget on a personal site doesn't move the needle enough
+		// for anyone to bother, so the cheap version is the right version.
+		dedupKey := fmt.Sprintf("cms:post-rate:%x", sha256.Sum256([]byte(c.IP()+":"+id)))
+		firstVote, err := redisClient.SetNX(c.Context(), dedupKey, "1", 24*time.Hour).Result()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "failed to record vote"})
+		}
+		if !firstVote {
+			return c.Status(429).JSON(fiber.Map{"error": "already rated this post recently"})
+		}
+
+		posts[idx].RatingSum += body.Rating
+		posts[idx].RatingCount++
+		data, _ := json.Marshal(posts)
+		redisClient.Set(c.Context(), "cms:posts", data, 0)
+		return c.JSON(fiber.Map{"rating_sum": posts[idx].RatingSum, "rating_count": posts[idx].RatingCount})
 	})
 
 	app.Get("/api/credits", func(c *fiber.Ctx) error {

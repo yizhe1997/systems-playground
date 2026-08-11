@@ -150,11 +150,11 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
             </div>
             <p className="text-xs text-[var(--ds-charcoal)]/70">
               By submitting, you agree to the{' '}
-              <Link href="/privacy" target="_blank" rel="noopener noreferrer" data-cursor-label="Read" className="underline hover:text-black">
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer" data-cursor-label="Open" className="underline hover:text-black">
                 Privacy Policy
               </Link>{' '}
               and{' '}
-              <Link href="/terms" target="_blank" rel="noopener noreferrer" data-cursor-label="Read" className="underline hover:text-black">
+              <Link href="/terms" target="_blank" rel="noopener noreferrer" data-cursor-label="Open" className="underline hover:text-black">
                 Terms &amp; Conditions
               </Link>
               .

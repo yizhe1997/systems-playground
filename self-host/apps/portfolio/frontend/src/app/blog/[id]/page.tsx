@@ -7,6 +7,7 @@ import SiteFooter from '@/components/SiteFooter';
 import MDXContent from '@/components/mdx/MDXContent';
 import { fetchJson } from '@/lib/fetch-json';
 import { formatPublishedDate } from '@/lib/format-date';
+import { StarRating, StarRatingInput } from '@/components/StarRating';
 
 type Post = {
   id: string;
@@ -16,6 +17,8 @@ type Post = {
   content: string;
   cover_image_url: string;
   published_date: string;
+  rating_sum: number;
+  rating_count: number;
 };
 
 // Newest first by published_date; posts without a date keep their admin
@@ -40,6 +43,45 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   const [error, setError] = useState<string | null>(null);
   const [copiedPage, setCopiedPage] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [myRating, setMyRating] = useState<number | null>(null);
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [rateBlocked, setRateBlocked] = useState(false);
+
+  // A reader's own vote is remembered per-post in localStorage so the
+  // picker locks into "you already rated this" on repeat visits without a
+  // round-trip. The backend also enforces one vote per IP per post per day
+  // (see the /rate route) as a cheap backstop for a cleared localStorage or
+  // a different browser on the same network - that's the 429 branch below.
+  useEffect(() => {
+    const stored = localStorage.getItem(`blog-rating-${id}`);
+    setMyRating(stored ? Number(stored) : null);
+  }, [id]);
+
+  const rate = async (n: number) => {
+    if (myRating || submittingRating) return;
+    setSubmittingRating(true);
+    try {
+      const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
+      const res = await fetch(`${url}/api/posts/${id}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: n }),
+      });
+      if (res.ok) {
+        const data: { rating_sum: number; rating_count: number } = await res.json();
+        setPost((p) => (p ? { ...p, rating_sum: data.rating_sum, rating_count: data.rating_count } : p));
+        localStorage.setItem(`blog-rating-${id}`, String(n));
+        setMyRating(n);
+      } else if (res.status === 429) {
+        setRateBlocked(true);
+      }
+    } catch {
+      // Silently drop - a failed vote isn't worth an error banner on an
+      // otherwise-successfully-loaded post page.
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -180,6 +222,28 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
               source={content}
               proseClassName="prose prose-headings:font-extrabold prose-a:text-black prose-a:underline prose-pre:bg-[var(--ds-charcoal)] prose-pre:text-white prose-pre:border-2 prose-pre:border-black max-w-none"
             />
+
+            <div className="mt-16 pt-8 border-t-2 border-black">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70 mb-3">Rate this post</h2>
+              <div className="flex items-center gap-3">
+                <StarRatingInput value={myRating ?? 0} onChange={rate} disabled={myRating !== null || rateBlocked || submittingRating} />
+                <p className="text-sm text-[var(--ds-charcoal)]/70">
+                  {myRating
+                    ? `Thanks — you rated this ${myRating} star${myRating === 1 ? '' : 's'}.`
+                    : rateBlocked
+                      ? "Looks like you've already rated this post recently."
+                      : submittingRating
+                        ? 'Submitting…'
+                        : 'Click a star to rate this post.'}
+                </p>
+              </div>
+              {post && post.rating_count > 0 && (
+                <div className="mt-2 flex items-center gap-2">
+                  <StarRating average={post.rating_sum / post.rating_count} count={post.rating_count} size={14} showCount />
+                  <span className="text-xs font-mono text-[var(--ds-charcoal)]/50">overall</span>
+                </div>
+              )}
+            </div>
 
             {(prevPost || nextPost) && (
               <nav aria-label="More posts" className="flex items-stretch gap-4 mt-16 pt-8 border-t-2 border-black">

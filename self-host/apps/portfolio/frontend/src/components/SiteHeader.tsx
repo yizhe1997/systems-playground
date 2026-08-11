@@ -46,7 +46,7 @@ export default function SiteHeader() {
             <Link
               key={link.href}
               href={link.href}
-              data-cursor-label="Go"
+              data-cursor-label="Open"
               className="inline-block py-3 -my-3 hover:opacity-70 transition-opacity"
             >
               {link.label}
@@ -75,7 +75,7 @@ export default function SiteHeader() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    data-cursor-label="Go"
+                    data-cursor-label="Open"
                     className="block py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                   >
                     {link.label}

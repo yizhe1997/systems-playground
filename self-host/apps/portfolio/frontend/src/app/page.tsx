@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, BookOpen } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import HeroSection from '@/components/HeroSection';
 import ProjectRow, { type Project as ProjectRowType } from '@/components/ProjectRow';
 import EmptyProjectCard from '@/components/EmptyProjectCard';
-import { formatPublishedDate } from '@/lib/format-date';
+import BlogCard from '@/components/BlogCard';
+import EmptyBlogCard from '@/components/EmptyBlogCard';
 import { useResumeRequest } from '@/components/ResumeRequestModal';
 import { fetchJson } from '@/lib/fetch-json';
 
@@ -20,6 +21,8 @@ type Post = {
   cover_image_url: string;
   published_date: string;
   featured: boolean;
+  rating_sum: number;
+  rating_count: number;
 };
 
 type CreditItem = { text: string; url: string };
@@ -98,14 +101,14 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="flex items-baseline justify-between gap-6 flex-wrap mb-9">
             <h2
-              className="text-black uppercase"
-              style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: '38px', letterSpacing: '-0.02em' }}
+              className="text-3xl sm:text-4xl text-black"
+              style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
             >
               Featured projects
             </h2>
             <Link href="/projects" data-cursor-label="Browse" className="group inline-flex items-center gap-1.5 font-bold shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black">
               <span className="relative">
-                View all projects
+                Browse all projects
                 <span className="absolute left-0 -bottom-0.5 h-0.5 w-full bg-black origin-left scale-x-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
               </span>
               <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" aria-hidden="true" />
@@ -126,76 +129,38 @@ export default function Home() {
       {/* Blog - dark charcoal section for contrast */}
       <section id="blog" className="border-y-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
         <div className="max-w-6xl mx-auto px-6 py-20">
-          <h2
-            className="text-3xl sm:text-4xl mb-10 text-white"
-            style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
-          >
-            Blog
-          </h2>
+          <div className="flex items-baseline justify-between gap-6 flex-wrap mb-9">
+            <h2
+              className="text-3xl sm:text-4xl text-white"
+              style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
+            >
+              Blog
+            </h2>
+            <Link href="/blog" data-cursor-label="Browse" className="group inline-flex items-center gap-1.5 font-bold shrink-0 text-[var(--ds-yellow)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
+              <span className="relative">
+                Browse all posts
+                <span className="absolute left-0 -bottom-0.5 h-0.5 w-full bg-[var(--ds-yellow)] origin-left scale-x-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
+              </span>
+              <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" aria-hidden="true" />
+            </Link>
+          </div>
 
-          {filteredPosts.length === 0 ? (
-            <div className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000] max-w-md" style={{ borderRadius: '0.75rem' }}>
-              <p className="font-bold mb-1">Nothing published yet</p>
-              <p className="text-sm text-[var(--ds-charcoal)]/70">Write-ups land here as they&apos;re published.</p>
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-6">
-              {filteredPosts.map((post) => (
-                <Link
-                  key={post.id}
-                  href={`/blog/${post.id}`}
-                  data-cursor-label="Read"
-                  className="bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_#000] group focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  style={{ borderRadius: '0.75rem' }}
-                >
-                  {post.cover_image_url ? (
-                    <div className="aspect-video w-full overflow-hidden border-b-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={post.cover_image_url}
-                        alt=""
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className="aspect-video w-full border-b-2 border-black flex items-center justify-center"
-                      style={{ backgroundColor: 'var(--ds-sage)' }}
-                    >
-                      <BookOpen className="w-10 h-10 text-black/40" aria-hidden="true" />
-                    </div>
-                  )}
-                  <div className="p-6">
-                    <h3 className="text-lg font-extrabold mb-2 group-hover:underline">{post.title}</h3>
-                    {post.published_date && (
-                      <p className="text-xs font-mono text-[var(--ds-charcoal)]/60">Published on {formatPublishedDate(post.published_date)}</p>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          <Link href="/blog" data-cursor-label="Browse" className="group mt-8 inline-flex items-center gap-1.5 font-bold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
-            <span className="relative">
-              View all posts
-              <span className="absolute left-0 -bottom-0.5 h-0.5 w-full bg-white origin-left scale-x-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
-            </span>
-            <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" aria-hidden="true" />
-          </Link>
+          <div className="grid sm:grid-cols-2 gap-6">
+            {filteredPosts.map((post) => (
+              <BlogCard key={post.id} post={post} />
+            ))}
+            {Array.from({ length: Math.max(0, 4 - filteredPosts.length) }).map((_, i) => (
+              <EmptyBlogCard key={`empty-${i}`} />
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Credits - production notes, dark section continuing from Blog */}
-      <section id="credits" className="border-t-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-20">
-          <h2
-            className="text-3xl sm:text-4xl mb-10 text-white"
-            style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
-          >
-            Credits
-          </h2>
-
+      {/* Credits - production notes, untitled by design; a light-gray band
+          between Blog and the dark Footer rather than a third dark section
+          in a row. */}
+      <section id="credits" className="border-y-2 border-black" style={{ backgroundColor: 'var(--ds-sage)' }}>
+        <div className="max-w-6xl mx-auto px-6 py-16">
           {credits.length === 0 ? (
             <div className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000] max-w-md" style={{ borderRadius: '0.75rem' }}>
               <p className="font-bold mb-1">Not published yet</p>
@@ -205,7 +170,7 @@ export default function Home() {
             <div className="space-y-3 max-w-2xl">
               {credits.map((row) => (
                 <div key={row.id} className="grid grid-cols-[110px_1fr] sm:grid-cols-[160px_1fr] gap-x-6 gap-y-1 items-start">
-                  <span className="text-right text-white/40 text-sm font-medium pt-0.5">{row.label}</span>
+                  <span className="text-right text-[var(--ds-charcoal)]/50 text-sm font-medium pt-0.5">{row.label}</span>
                   <div className="flex flex-col gap-1">
                     {row.items.map((item, idx) =>
                       item.url ? (
@@ -215,12 +180,12 @@ export default function Home() {
                           target="_blank"
                           rel="noopener noreferrer"
                           data-cursor-label="Open"
-                          className="text-white underline underline-offset-2 decoration-white/30 hover:decoration-[var(--ds-yellow)] hover:text-[var(--ds-yellow)] transition-colors text-sm w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                          className="text-[var(--ds-charcoal)] underline underline-offset-2 decoration-black/30 hover:decoration-black hover:text-black transition-colors text-sm w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                         >
                           {item.text}
                         </a>
                       ) : (
-                        <span key={idx} className="text-white/70 text-sm">{item.text}</span>
+                        <span key={idx} className="text-[var(--ds-charcoal)]/70 text-sm">{item.text}</span>
                       )
                     )}
                   </div>
