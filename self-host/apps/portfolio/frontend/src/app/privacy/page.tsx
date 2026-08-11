@@ -3,7 +3,6 @@ import path from 'path';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import LegalDocument from '@/components/LegalDocument';
-import BackToTop from '@/components/BackToTop';
 
 export const metadata = {
   title: 'Privacy Policy',
@@ -35,7 +34,6 @@ export default async function PrivacyPage() {
         <LegalDocument raw={raw} contactEmail="yzportal123@gmail.com" />
       </main>
       <SiteFooter />
-      <BackToTop />
     </div>
   );
 }

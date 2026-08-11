@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import Providers from "./providers";
 import SiteCursor from "@/components/SiteCursor";
+import BackToTop from "@/components/BackToTop";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,6 +52,7 @@ export default function RootLayout({
         <Providers>{children}</Providers>
         <Toaster />
         <SiteCursor />
+        <BackToTop />
       </body>
     </html>
   );
