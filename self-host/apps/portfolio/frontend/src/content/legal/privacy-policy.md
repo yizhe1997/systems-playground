@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** July 31, 2026
+**Last updated:** August 11, 2026
 
 This page explains what information this website collects, why, and what happens to it. It's
 written in plain language because this is a personal portfolio site, not a company — there's no
@@ -13,7 +13,7 @@ infrastructure I self-host. It is not operated by a company or organization.
 
 ## What information I collect
 
-The only personal information this site collects is through the **"Request resume" form**. When
+The only place this site asks you to identify yourself is the **"Request resume" form**. When
 you submit that form, I collect:
 
 - **Name** — so I know who's asking and can address you by name in a reply.
@@ -22,9 +22,22 @@ you submit that form, I collect:
 - **Reason** *(optional free-text field)* — anything you choose to tell me about why you want the
   resume (e.g. "hiring for a backend role").
 
-I don't use cookies, analytics trackers, or any other method to collect personal data on this
-site outside of that form. Visiting the site to read about my projects doesn't send me anything
-about you.
+I don't use cookies, analytics trackers, or any similar tracking technology anywhere on this
+site, and nothing outside that form asks you to identify yourself.
+
+That said, two things happen automatically as part of running any website — worth naming even
+though neither one identifies you:
+
+- **Server access logs.** Like virtually every web server, mine logs each request's IP address,
+  the page requested, and a timestamp. This is how I catch abuse and debug problems, not how I
+  track visitors — it's not tied to anything you submit through the resume form. These logs are
+  kept for 14 days and then automatically deleted.
+- **Blog post ratings.** If you click a star to rate a post, that vote is anonymous — I only ever
+  store the running total and count, never anything tied back to you. To stop the same visitor
+  voting on a loop, the vote is checked against a one-way hash of your IP address (not the
+  address itself, and not reversible back into one) that expires after 24 hours. Your own browser
+  also remembers your vote locally, on your device only, so the button doesn't ask you to vote
+  again on a repeat visit.
 
 ## Why I collect it
 

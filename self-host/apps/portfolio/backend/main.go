@@ -1,9 +1,12 @@
 package main
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,12 +23,26 @@ func slogHTTPMiddleware() fiber.Handler {
 		start := time.Now()
 		err := c.Next()
 
+		ip := c.IP()
+		// The anonymous post-rating vote (POST /api/posts/:id/rate, see
+		// cms.go) deliberately never stores the visitor's raw IP - it only
+		// keeps a one-way SHA-256 hash as a cheap per-IP dedup key. Logging
+		// the plaintext IP here would quietly undo that and leave it sitting
+		// in Loki anyway, so this route logs a hash of just the IP instead
+		// (deliberately not the exact dedup key, which is also salted with
+		// the post id - hashing the IP alone keeps the same visitor's hash
+		// consistent across posts, which is what you'd actually want for
+		// spotting one visitor hammering /rate across many posts).
+		if strings.HasPrefix(c.Path(), "/api/posts/") && strings.HasSuffix(c.Path(), "/rate") {
+			ip = fmt.Sprintf("hashed:%x", sha256.Sum256([]byte(ip)))
+		}
+
 		attrs := []any{
 			"method", c.Method(),
 			"path", c.Path(),
 			"status", c.Response().StatusCode(),
 			"latency_ms", time.Since(start).Milliseconds(),
-			"ip", c.IP(),
+			"ip", ip,
 		}
 		if err != nil {
 			attrs = append(attrs, "error", err.Error())
