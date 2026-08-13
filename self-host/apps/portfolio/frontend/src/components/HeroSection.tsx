@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FileDown, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import ReactiveGrid from '@/components/originkit/reactivegrid';
 import CrystalGlow from '@/components/originkit/crystal-glow';
@@ -76,6 +76,14 @@ const GALLERY_FACE_IMAGES = [
   { src: faceTile('#ffffff', FACES[5]) },
 ];
 
+const HEADING_STYLE = {
+  fontFamily: 'var(--ds-font-display)',
+  fontSize: 'clamp(1.75rem, 6vw, 2.75rem)',
+  lineHeight: 0.92,
+  color: 'var(--ds-yellow)',
+  letterSpacing: '-0.01em',
+} as const;
+
 const GALLERY_TILE_SIZE = 80;
 const BROWSER_CONTENT_HEIGHT = 320;
 
@@ -96,6 +104,20 @@ export default function HeroSection({
 }) {
   const [pageIndex, setPageIndex] = useState(0);
 
+  // Fewer decorative face tiles on very narrow screens - a safety margin on
+  // top of GravityGallery's own wall-resize fix, so the pile has less
+  // chance of needing to stack taller than the mockup's fixed mobile height
+  // even before that fix kicks in. GitHub/LinkedIn are real links, so they
+  // stay regardless of width.
+  const [narrowGallery, setNarrowGallery] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 380px)');
+    const update = () => setNarrowGallery(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
   // The GitHub/LinkedIn tiles only exist in the gallery when those links are
   // actually configured - same isConfigured() gate as the real buttons above.
   const galleryImages = [
@@ -105,7 +127,7 @@ export default function HeroSection({
     ...(isConfigured(linkedinUrl)
       ? [{ src: svgTile('#0a66c2', `<g transform="translate(8,8) scale(2)"><path d="${LINKEDIN_PATH}" fill="#fff"/></g>`), href: formatUrl(linkedinUrl) }]
       : []),
-    ...GALLERY_FACE_IMAGES,
+    ...(narrowGallery ? GALLERY_FACE_IMAGES.slice(0, 3) : GALLERY_FACE_IMAGES),
   ];
 
   // Pages the fake browser mockup below cycles through via its header's
@@ -136,17 +158,34 @@ export default function HeroSection({
               </span>
             </div>
             <div className="relative flex-1 overflow-hidden flex items-center justify-center" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
-              <div
-                className="font-extrabold text-center uppercase"
-                style={{
-                  fontFamily: 'var(--ds-font-display)',
-                  fontSize: 'clamp(1.75rem, 6vw, 2.75rem)',
-                  lineHeight: 0.92,
-                  color: 'var(--ds-yellow)',
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                LET&apos;S<br />CONNECT
+              <div className="flex flex-col items-center">
+                <div className="font-extrabold text-center uppercase" style={HEADING_STYLE}>
+                  LET&apos;S<br />CONNECT
+                </div>
+                {/* Same layer as the heading above (part of the backdrop,
+                    behind the tiles) - it's fine for a tile to land on top
+                    of this exactly like a tile can land on top of the
+                    heading text itself; that's the existing, accepted
+                    behavior here, not something this hint needs to be
+                    exempt from. */}
+                <div className="mt-3 flex items-center gap-2 whitespace-nowrap">
+                  <span
+                    className="font-bold text-xs uppercase tracking-widest"
+                    style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-yellow)' }}
+                  >
+                    click me
+                  </span>
+                  <svg width="30" height="12" viewBox="0 0 30 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="0" y1="6" x2="22" y2="6" stroke="#ffe17c" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M18 1 L24 6 L18 11" stroke="#ffe17c" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1.5" y="1.5" width="25" height="25" rx="5" stroke="#ffe17c" strokeWidth="1.5" />
+                    <circle cx="14" cy="14" r="8" stroke="#ffe17c" strokeWidth="1.5" />
+                    <path d="M10.5 12.5h1.8M15.7 12.5h1.8" stroke="#ffe17c" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M10.3 17q3.7 3 7.4 0" stroke="#ffe17c" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                  </svg>
+                </div>
               </div>
             </div>
             <div
@@ -196,15 +235,19 @@ export default function HeroSection({
         influence={75}
         style={{ position: 'absolute', inset: 0 }}
       />
-      <div className="relative z-10 max-w-6xl mx-auto px-6 py-20 sm:py-28 grid lg:grid-cols-2 gap-14 items-center">
-        <div>
-          <span
-            className="inline-flex items-center px-4 py-1.5 bg-white border-2 border-black text-xs font-bold mb-6"
-            style={{ borderRadius: '0.75rem' }}
-          >
-            BACKEND / PLATFORM ENGINEER
-          </span>
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-20 sm:py-28 grid lg:grid-cols-2 lg:grid-rows-[auto_1fr_auto] gap-x-14 items-center lg:items-stretch">
+        <span
+          className="lg:row-start-1 lg:col-start-1 inline-flex items-center justify-self-center lg:justify-self-start px-4 py-1.5 bg-white border-2 border-black text-xs font-bold mb-6"
+          style={{ borderRadius: '0.75rem' }}
+        >
+          BACKEND / PLATFORM ENGINEER
+        </span>
 
+        {/* Heading + description share this row with the mockup - the
+            mockup's height (see lg:h-full below) stretches to match
+            whatever this block naturally renders at, so the badge and
+            button above/below stay outside the height it's matched to. */}
+        <div className="lg:row-start-2 lg:col-start-1 text-center lg:text-left">
           <h1
             className="text-black mb-6"
             style={{
@@ -237,29 +280,31 @@ export default function HeroSection({
             SYSTEMS.
           </h1>
 
-          <p className="text-lg font-medium max-w-md mb-8">
+          <p className="text-lg font-medium max-w-md mx-auto lg:mx-0 mb-8">
             {description}
           </p>
+        </div>
 
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={onRequestResume}
-              data-cursor-label="Request"
-              className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
-              style={{ borderRadius: '0.75rem' }}
-            >
-              <FileDown className="w-4 h-4" aria-hidden="true" />
-              Request resume
-            </button>
-          </div>
+        <div className="lg:row-start-3 lg:col-start-1 flex flex-wrap gap-4 justify-center lg:justify-start">
+          <button
+            onClick={onRequestResume}
+            data-cursor-label="Request"
+            className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+            style={{ borderRadius: '0.75rem' }}
+          >
+            <FileDown className="w-4 h-4" aria-hidden="true" />
+            Request resume
+          </button>
         </div>
 
         {/* Browser mockup - real stack info, not fabricated charts/revenue.
             Purely aesthetic chrome (traffic lights, address bar) around a
             small set of swipeable "pages"; nothing here fetches or
-            navigates anywhere. */}
-        <div className="bg-white border-2 border-black shadow-[12px_12px_0px_0px_#000]" style={{ borderRadius: '0.75rem' }}>
-          <div className="bg-black" style={{ borderRadius: '0.6rem 0.6rem 0 0' }}>
+            navigates anywhere. Pinned to row 2 (see lg:grid-rows above) so
+            its lg:h-full only stretches to match the heading+description
+            block beside it, not the badge or button too. */}
+        <div className="mt-14 lg:mt-0 lg:col-start-2 lg:row-start-2 bg-white border-2 border-black shadow-[12px_12px_0px_0px_#000] lg:h-full lg:flex lg:flex-col" style={{ borderRadius: '0.75rem' }}>
+          <div className="bg-black lg:shrink-0" style={{ borderRadius: '0.6rem 0.6rem 0 0' }}>
             <div className="h-9 flex items-center gap-1.5 px-3">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ff5f57' }} />
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#febc2e' }} />
@@ -293,7 +338,7 @@ export default function HeroSection({
               </div>
             </div>
           </div>
-          <div style={{ height: BROWSER_CONTENT_HEIGHT }} className="overflow-hidden">
+          <div style={{ height: BROWSER_CONTENT_HEIGHT }} className="overflow-hidden lg:!h-auto lg:flex-1">
             {page.content}
           </div>
         </div>

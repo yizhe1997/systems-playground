@@ -140,7 +140,21 @@ export default function Physics(props: any) {
         })
 
         const bounding = container.getBoundingClientRect()
-        makeWalls(bounding, engine.world, wallOptions)
+        let walls = makeWalls(bounding, engine.world, wallOptions)
+
+        // Walls are static bodies placed from a one-time measurement, so if
+        // the container is resized after mount (responsive breakpoint
+        // change, window drag) they'd stay put while the visible box moves -
+        // bodies resting near an edge would end up outside the new box,
+        // clipped or seemingly "lost" beyond it. Re-measure and rebuild the
+        // walls whenever the container's box actually changes; Matter's own
+        // collision resolution then pushes any now-overlapping body back
+        // inside on the next tick.
+        const ro = new ResizeObserver(() => {
+            M.Composite.remove(engine.world, walls)
+            walls = makeWalls(container.getBoundingClientRect(), engine.world, wallOptions)
+        })
+        ro.observe(container)
 
         let mouseConstraint: any = null
         const onLeave = () =>
@@ -206,6 +220,7 @@ export default function Physics(props: any) {
 
         return () => {
             cancelAnimationFrame(rafRef.current)
+            ro.disconnect()
             if (mouseEnable)
                 container.removeEventListener("mouseleave", onLeave)
             M.World.clear(engine.world, false)
