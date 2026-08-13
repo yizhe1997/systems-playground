@@ -87,6 +87,21 @@ const HEADING_STYLE = {
 const GALLERY_TILE_SIZE = 80;
 const BROWSER_CONTENT_HEIGHT = 320;
 
+// Fake numbers for the browser mockup's "analytics" page - loosely modeled
+// on chanhdai.com's Insights panel (stat cards + a visitors sparkline), but
+// swapped for metrics that actually matter for this site (resume requests,
+// not generic pageviews). Not wired to anything real - see the disclaimer
+// rendered above these cards.
+const ANALYTICS_STATS: { label: string; value: string; delta: string; trend: 'up' | 'down' | 'neutral'; bg: string }[] = [
+  { label: 'Visitors (30d)', value: '2,481', delta: '+12.4%', trend: 'up', bg: 'var(--ds-sage)' },
+  { label: 'Resumes requested', value: '37', delta: '+6 this month', trend: 'up', bg: 'var(--ds-yellow)' },
+  { label: 'Approved', value: '24', delta: '65% of requests', trend: 'neutral', bg: '#ffffff' },
+  { label: 'Rejected', value: '5', delta: '14% of requests', trend: 'neutral', bg: '#ffffff' },
+];
+// A fixed (not random) sequence so server and client render identical
+// markup - Math.random() here would be a hydration mismatch.
+const ANALYTICS_BAR_HEIGHTS = [35, 50, 40, 65, 55, 70, 60, 80, 45, 90, 75, 60, 85, 100];
+
 // Shared between the live homepage and the admin Settings preview dialog -
 // a hand-copied mockup drifts from the real thing the moment either side
 // changes, so this is the actual hero markup, parameterized on the fields
@@ -201,20 +216,53 @@ export default function HeroSection({
       ),
     },
     {
-      path: 'tech-stack',
+      path: 'analytics',
       content: (
-        <div className="p-6 space-y-3">
-          <div className="border-2 border-black p-4" style={{ backgroundColor: 'var(--ds-sage)', borderRadius: '0.5rem' }}>
-            <p className="text-xs font-bold uppercase tracking-wider mb-1">Stack</p>
-            <p className="text-sm font-medium">Go &middot; Next.js &middot; Docker</p>
+        <div className="p-3 h-full overflow-hidden flex flex-col gap-2" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
+          {/* Explicit, can't-miss disclaimer - these numbers are made up for
+              the mockup, not pulled from anything real. */}
+          <div
+            className="shrink-0 flex items-center gap-2 px-2.5 py-1.5 border-2"
+            style={{ borderColor: 'var(--ds-yellow)', borderStyle: 'dashed', borderRadius: '0.4rem' }}
+          >
+            <span className="text-xs leading-none shrink-0">&#9888;&#65039;</span>
+            <span
+              className="text-[9px] font-bold uppercase tracking-wide leading-tight"
+              style={{ color: 'var(--ds-yellow)', fontFamily: 'var(--ds-font-display)' }}
+            >
+              Sample data &mdash; not wired up yet
+            </span>
           </div>
-          <div className="border-2 border-black p-4" style={{ backgroundColor: 'var(--ds-yellow)', borderRadius: '0.5rem' }}>
-            <p className="text-xs font-bold uppercase tracking-wider mb-1">Hosting</p>
-            <p className="text-sm font-medium">Self-hosted, own hardware</p>
+
+          <div className="grid grid-cols-2 gap-2 shrink-0">
+            {ANALYTICS_STATS.map((stat) => (
+              <div
+                key={stat.label}
+                className="border-2 border-black p-2"
+                style={{ backgroundColor: stat.bg, borderRadius: '0.5rem' }}
+              >
+                <p className="text-[8px] font-bold uppercase tracking-wider mb-0.5 opacity-70">{stat.label}</p>
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <p className="text-base font-extrabold" style={{ fontFamily: 'var(--ds-font-display)' }}>{stat.value}</p>
+                  <span
+                    className="text-[9px] font-bold whitespace-nowrap"
+                    style={{ color: stat.trend === 'up' ? '#166534' : stat.trend === 'down' ? '#991b1b' : 'rgba(0,0,0,0.5)' }}
+                  >
+                    {stat.trend === 'up' ? '↑ ' : stat.trend === 'down' ? '↓ ' : ''}
+                    {stat.delta}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="border-2 border-black p-4 bg-white" style={{ borderRadius: '0.5rem' }}>
-            <p className="text-xs font-bold uppercase tracking-wider mb-1">Build process</p>
-            <p className="text-sm font-medium">AI-assisted, documented end to end</p>
+
+          <div className="flex-1 min-h-0 border-2 border-black bg-white p-2 flex flex-col" style={{ borderRadius: '0.5rem' }}>
+            <p className="text-[8px] font-bold uppercase tracking-wider mb-1 opacity-60 shrink-0">Visitors &mdash; last 14 days</p>
+            <div className="flex-1 min-h-0 flex items-end gap-1">
+              {ANALYTICS_BAR_HEIGHTS.map((h, i) => (
+                <div key={i} className="flex-1 bg-black" style={{ height: `${h}%`, borderRadius: '1px 1px 0 0' }} />
+              ))}
+            </div>
           </div>
         </div>
       ),
