@@ -38,3 +38,6 @@ services:
       # docker-compose.yml.
       - cloudflare.tunnel.hostname=portfolio.38569123.xyz
       - cloudflare.tunnel.port=8086
+  redis:
+    ports:
+      - "16379:6379"
