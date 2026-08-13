@@ -105,7 +105,7 @@ export default function Home() {
               className="group/heading inline-flex items-baseline gap-1.5 text-3xl sm:text-4xl text-black"
               style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
             >
-              <a href="#projects" className="hover:opacity-70 transition-opacity">Featured projects</a>
+              <a href="#projects" className="hover:opacity-70 transition-opacity">FEATURED PROJECTS</a>
               <sup className="text-sm font-mono font-medium text-[var(--ds-charcoal)]/50" style={{ top: '-0.6em' }}>
                 ({projects.length})
               </sup>
@@ -139,7 +139,7 @@ export default function Home() {
               className="group/heading inline-flex items-baseline gap-1.5 text-3xl sm:text-4xl text-white"
               style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
             >
-              <a href="#blog" className="hover:opacity-70 transition-opacity">Blog</a>
+              <a href="#blog" className="hover:opacity-70 transition-opacity">BLOG</a>
               <sup className="text-sm font-mono font-medium text-white/50" style={{ top: '-0.6em' }}>
                 ({posts.length})
               </sup>

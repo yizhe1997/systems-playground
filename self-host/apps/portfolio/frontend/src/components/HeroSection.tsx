@@ -215,9 +215,9 @@ export default function HeroSection({
               letterSpacing: '-0.02em',
             }}
           >
-            Chin Yi Zhe
+            CHIN YI ZHE
             <br />
-            builds
+            BUILDS
             <br />
             <span
               className="inline-block align-middle"
@@ -234,7 +234,7 @@ export default function HeroSection({
               />
             </span>
             <br />
-            systems.
+            SYSTEMS.
           </h1>
 
           <p className="text-lg font-medium max-w-md mb-8">
@@ -258,7 +258,7 @@ export default function HeroSection({
             Purely aesthetic chrome (traffic lights, address bar) around a
             small set of swipeable "pages"; nothing here fetches or
             navigates anywhere. */}
-        <div className="hidden lg:block bg-white border-2 border-black shadow-[12px_12px_0px_0px_#000]" style={{ borderRadius: '0.75rem' }}>
+        <div className="bg-white border-2 border-black shadow-[12px_12px_0px_0px_#000]" style={{ borderRadius: '0.75rem' }}>
           <div className="bg-black" style={{ borderRadius: '0.6rem 0.6rem 0 0' }}>
             <div className="h-9 flex items-center gap-1.5 px-3">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ff5f57' }} />
