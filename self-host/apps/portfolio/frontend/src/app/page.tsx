@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import SiteHeader from '@/components/SiteHeader';
@@ -11,6 +11,7 @@ import EmptyProjectCard from '@/components/EmptyProjectCard';
 import BlogCard from '@/components/BlogCard';
 import EmptyBlogCard from '@/components/EmptyBlogCard';
 import CopySectionLinkButton from '@/components/CopySectionLinkButton';
+import LEDTicker from '@/components/originkit/pixel-led-display';
 import { useResumeRequest } from '@/components/ResumeRequestModal';
 import { fetchJson } from '@/lib/fetch-json';
 
@@ -100,7 +101,7 @@ export default function Home() {
       {/* Featured Projects - Bento Feature Grid */}
       <section id="projects" className="bg-white">
         <div className="max-w-6xl mx-auto px-6 py-20">
-          <div className="flex items-baseline justify-between gap-6 flex-wrap mb-9">
+          <div className="flex items-baseline justify-between gap-6 flex-wrap mb-2">
             <h2
               className="group/heading inline-flex items-baseline gap-1.5 text-3xl sm:text-4xl text-black"
               style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
@@ -119,6 +120,9 @@ export default function Home() {
               <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" aria-hidden="true" />
             </Link>
           </div>
+          <p className="text-base font-medium text-[var(--ds-charcoal)]/60 mb-9">
+            Bored? Here&apos;s proof I actually build stuff instead of just saying I do.
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project, i) => (
@@ -134,7 +138,7 @@ export default function Home() {
       {/* Blog - dark charcoal section for contrast */}
       <section id="blog" className="border-y-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
         <div className="max-w-6xl mx-auto px-6 py-20">
-          <div className="flex items-baseline justify-between gap-6 flex-wrap mb-9">
+          <div className="flex items-baseline justify-between gap-6 flex-wrap mb-2">
             <h2
               className="group/heading inline-flex items-baseline gap-1.5 text-3xl sm:text-4xl text-white"
               style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
@@ -153,6 +157,9 @@ export default function Home() {
               <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" aria-hidden="true" />
             </Link>
           </div>
+          <p className="text-base font-medium text-white/60 mb-9">
+            Nothing to do? Wanna read some blogs?
+          </p>
 
           <div className="grid sm:grid-cols-2 gap-6">
             {filteredPosts.map((post) => (
@@ -171,15 +178,37 @@ export default function Home() {
       <section id="credits" className="border-y-2 border-black" style={{ backgroundColor: 'var(--ds-sage)' }}>
         <div className="max-w-6xl mx-auto px-6 py-16">
           {credits.length === 0 ? (
-            <div className="bg-white border-2 border-black p-8 shadow-[4px_4px_0px_0px_#000] max-w-md" style={{ borderRadius: '0.75rem' }}>
-              <p className="font-bold mb-1">Not published yet</p>
-              <p className="text-sm text-[var(--ds-charcoal)]/70">Production credits land here once they&apos;re curated.</p>
+            // No custom separator - the component's own small built-in gap
+            // between repeats (a few blank columns) is enough at this full
+            // width. A bigger padded gap (tried earlier) left a stretch of
+            // the band with no text at all in view; this keeps the strip
+            // continuous, usually with a second repeat's edge already
+            // visible before the first one fully exits.
+            <div className="h-12">
+              <LEDTicker
+                items={['No credits available yet']}
+                separator=""
+                onColor="rgba(23, 30, 25, 0.45)"
+                offColor="rgba(0, 0, 0, 0)"
+                textSize={34}
+                dotSize={5}
+                dotQuantity={10}
+                speed={24}
+              />
             </div>
           ) : (
-            <div className="space-y-3 max-w-2xl">
+            // One shared grid (not one grid per row) so every row's label
+            // column lines up on the same right edge and every value column
+            // starts flush on the same left edge - grid-cols-[auto_auto]
+            // sizes each column to its own widest cell instead of a fixed
+            // px guess. w-fit then shrinks the whole grid down to that
+            // natural content width, so mx-auto centers the compact
+            // label+value block as a unit instead of centering an
+            // invisible box that's wider than what's actually drawn in it.
+            <div className="mx-auto w-fit grid grid-cols-[auto_auto] gap-x-6 gap-y-3 items-baseline">
               {credits.map((row) => (
-                <div key={row.id} className="grid grid-cols-[110px_1fr] sm:grid-cols-[160px_1fr] gap-x-6 gap-y-1 items-start">
-                  <span className="text-right text-[var(--ds-charcoal)]/50 text-sm font-medium pt-0.5">{row.label}</span>
+                <Fragment key={row.id}>
+                  <span className="text-right text-[var(--ds-charcoal)]/50 text-sm font-medium">{row.label}</span>
                   <div className="flex flex-col gap-1">
                     {row.items.map((item, idx) =>
                       item.url ? (
@@ -189,16 +218,16 @@ export default function Home() {
                           target="_blank"
                           rel="noopener noreferrer"
                           data-cursor-label="Open"
-                          className="text-[var(--ds-charcoal)] underline underline-offset-2 decoration-black/30 hover:decoration-black hover:text-black transition-colors text-sm w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                          className="text-black underline underline-offset-2 decoration-black/30 hover:decoration-black transition-colors text-sm font-bold w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                         >
                           {item.text}
                         </a>
                       ) : (
-                        <span key={idx} className="text-[var(--ds-charcoal)]/70 text-sm">{item.text}</span>
+                        <span key={idx} className="text-black text-sm font-bold">{item.text}</span>
                       )
                     )}
                   </div>
-                </div>
+                </Fragment>
               ))}
             </div>
           )}

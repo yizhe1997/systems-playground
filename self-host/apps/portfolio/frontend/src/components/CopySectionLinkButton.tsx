@@ -27,9 +27,9 @@ export default function CopySectionLinkButton({ sectionId, label }: { sectionId:
       onClick={handleCopy}
       aria-label={`Copy link to ${label} section`}
       data-cursor-label="Copy"
-      className="inline-flex items-center justify-center w-6 h-6 shrink-0 self-center text-current opacity-0 group-hover/heading:opacity-100 focus-visible:opacity-100 hover:opacity-60 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-current rounded-md"
+      className="inline-flex items-center justify-center w-8 h-8 shrink-0 self-center text-current opacity-0 group-hover/heading:opacity-100 focus-visible:opacity-100 hover:opacity-60 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-current rounded-md"
     >
-      {copied ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Link2 className="w-3.5 h-3.5" aria-hidden="true" />}
+      {copied ? <Check className="w-5 h-5" aria-hidden="true" /> : <Link2 className="w-5 h-5" aria-hidden="true" />}
     </button>
   );
 }
