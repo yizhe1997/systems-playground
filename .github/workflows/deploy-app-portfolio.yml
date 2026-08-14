@@ -20,6 +20,19 @@ on:
       - completed
   workflow_dispatch:
 
+concurrency:
+  # Backend and frontend builds finish independently, so a single push
+  # touching both fires this workflow twice - without this, both runs land
+  # on the same host at once and race each other's `docker compose up -d`
+  # to stop/recreate/rebind the same container ports (the actual cause of
+  # the repeated "address already in use" failures, not a stray process on
+  # the host). cancel-in-progress stays false: a deploy mid-flight should
+  # finish, not be killed and leave containers half-swapped: the second run
+  # queues and runs after, which is a no-op anyway since it'll pull the
+  # same image the first run already deployed.
+  group: deploy-portfolio
+  cancel-in-progress: false
+
 jobs:
   deploy:
     # Skip if this run was triggered by a failed/cancelled build — no point redeploying the old
