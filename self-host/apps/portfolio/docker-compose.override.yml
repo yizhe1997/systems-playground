@@ -7,6 +7,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    ports:
+      - "8085:8080"
     environment:
       # Drives resumeFilesDir() in filebrowser.go - keeps local test uploads
       # in /resumes/dev, separate from real production attachments in
@@ -20,6 +22,8 @@ services:
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8085
+    ports:
+      - "8086:3000"
     env_file:
       - ./frontend/.env
 
