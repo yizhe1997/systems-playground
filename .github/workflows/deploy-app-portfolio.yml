@@ -127,8 +127,26 @@ jobs:
           docker compose ps -a --status created -q | xargs -r docker rm -f
 
           echo "🔄 Gracefully recreating containers..."
-          docker compose up -d
-          
+          # Recreating a container with a static host port publish requires the old one to
+          # fully release that port before the new one can bind it - on a host this busy
+          # (lots of accumulated iptables/network state across many long-running containers),
+          # that release sometimes lands a beat after Compose already tries the new bind,
+          # failing with "address already in use" even though nothing else actually wants the
+          # port. This is a known Docker/Moby race during recreate, not something fixable from
+          # the compose file - a short retry is the standard mitigation, since the port is
+          # reliably free by the second attempt.
+          for attempt in 1 2 3; do
+            if docker compose up -d; then
+              break
+            fi
+            if [ "$attempt" = 3 ]; then
+              echo "❌ docker compose up -d failed after 3 attempts"
+              exit 1
+            fi
+            echo "⚠️ docker compose up -d failed (attempt $attempt/3) - likely a port-release race, retrying in 5s..."
+            sleep 5
+          done
+
           echo "🧹 Cleaning up old images..."
           docker image prune -f
 
