@@ -207,13 +207,152 @@ else
   (Use svc.sh, not './run.sh' directly, or the runner dies on reboot.) Re-run this script afterwards."
 fi
 
+# --- 10. systemd services (Docker daemon, infra layer, cloudflared, cloudflared-sync) ---------
+# Runs everything under systemd's own supervision instead of an external trigger shelling into a
+# script: Restart=always on the two long-running daemons (cloudflared, cloudflared-sync) means a
+# crash gets them back automatically, not just at the next full reboot - a real gap this used to
+# have (see self-host/infra/scripts/README.md). The infra layer itself becomes a native Ubuntu
+# boot dependency instead of something external (Windows Task Scheduler, on a WSL2 host) has to
+# remember to trigger directly. Requires systemd as PID 1 (WSL2: `[boot] systemd=true` in
+# /etc/wsl.conf, default on modern WSL2/Ubuntu; native Ubuntu: always true) - if that's not the
+# case, this whole step is skipped; follow the manual pattern in docs/DEPLOYMENT.md section 2
+# instead.
+if [ "$(ps -p 1 -o comm= 2>/dev/null)" != "systemd" ]; then
+  warn "PID 1 isn't systemd on this host — skipping systemd service setup. See docs/DEPLOYMENT.md section 2 for the manual alternative."
+else
+  SYSTEMD_SRC_DIR="$REPO_DIR/self-host/infra/scripts/systemd"
+  USER_UNIT_DIR="$HOME/.config/systemd/user"
+  mkdir -p "$USER_UNIT_DIR"
+
+  # Picks up CLOUDFLARED_SYNC_ENABLED (and anything else deploy-infra-scripts.yml has already
+  # written) if a first CI deploy has already happened — harmless no-op otherwise.
+  if [ -f "$INFRA_BASE_DIR/.env" ]; then
+    source <(tr -d '\r' < "$INFRA_BASE_DIR/.env")
+  fi
+
+  # 10a. Docker's own systemd unit, replacing wsl-startup.sh's old manual `service docker start`.
+  if systemctl is-enabled --quiet docker.service 2>/dev/null; then
+    ok "docker.service already enabled."
+  else
+    log "Enabling docker.service..."
+    sudo systemctl enable docker.service
+    ok "docker.service enabled — will start automatically on boot from now on."
+  fi
+
+  # 10b. Infra layer (Infisical, registry, everything else under $INFRA_BASE_DIR) as a native
+  # boot-time oneshot. On a WSL2 host this replaces Windows Task Scheduler as the direct trigger
+  # for wsl-startup.sh/wsl-shutdown.sh entirely — Task Scheduler's only remaining job becomes
+  # making sure the WSL2 VM itself boots at all (see docs/DEPLOYMENT.md section 2), since systemd
+  # inside Ubuntu now owns everything past that point. Skipped until those scripts are actually
+  # deployed (deploy-infra-scripts.yml, section 3) — re-run this script afterwards to pick it up.
+  INFRA_UNIT="/etc/systemd/system/systems-playground-infra.service"
+  if [ ! -f "$INFRA_BASE_DIR/wsl-startup.sh" ]; then
+    log "$INFRA_BASE_DIR/wsl-startup.sh isn't deployed yet (that happens via deploy-infra-scripts.yml, section 3) — skipping the infra-layer systemd unit for now."
+  elif systemctl is-enabled --quiet systems-playground-infra.service 2>/dev/null; then
+    ok "systems-playground-infra.service already installed and enabled."
+  else
+    log "Installing systems-playground-infra.service..."
+    sed "s#<INFRA_BASE_DIR>#$INFRA_BASE_DIR#g" "$SYSTEMD_SRC_DIR/systems-playground-infra.service" | \
+      sudo tee "$INFRA_UNIT" >/dev/null
+    sudo systemctl daemon-reload
+    sudo systemctl enable systems-playground-infra.service
+    ok "systems-playground-infra.service installed and enabled (runs at next boot). Start it now with: sudo systemctl start systems-playground-infra.service"
+  fi
+
+  # 10b-ii. Apps layer (portfolio, and any future ones under $APP_BASE_DIR), same pattern as the
+  # infra oneshot above, ordered after it (see the unit file's own header comment for why that's
+  # `After=`, not `Requires=`). Skipped until deploy-app-scripts.yml has actually run once.
+  APPS_SYSTEMD_SRC_DIR="$REPO_DIR/self-host/apps/scripts/systemd"
+  APPS_UNIT="/etc/systemd/system/systems-playground-apps.service"
+  if [ ! -f "$APP_BASE_DIR/wsl-startup.sh" ]; then
+    log "$APP_BASE_DIR/wsl-startup.sh isn't deployed yet (that happens via deploy-app-scripts.yml) — skipping the apps-layer systemd unit for now."
+  elif systemctl is-enabled --quiet systems-playground-apps.service 2>/dev/null; then
+    ok "systems-playground-apps.service already installed and enabled."
+  else
+    log "Installing systems-playground-apps.service..."
+    sed "s#<APP_BASE_DIR>#$APP_BASE_DIR#g" "$APPS_SYSTEMD_SRC_DIR/systems-playground-apps.service" | \
+      sudo tee "$APPS_UNIT" >/dev/null
+    sudo systemctl daemon-reload
+    sudo systemctl enable systems-playground-apps.service
+    ok "systems-playground-apps.service installed and enabled (runs at next boot). Start it now with: sudo systemctl start systems-playground-apps.service"
+  fi
+
+  # 10b-iii. Daily backup timers for both layers - wsl-backup.sh existed but had nothing calling
+  # it automatically until now (previously suggested a Windows Task Scheduler entry, same as
+  # startup/shutdown used to). Distinct unit names per layer (not both "wsl-backup.service") so
+  # installing one doesn't clobber the other's file in the shared /etc/systemd/system/ namespace.
+  for layer in infra:INFRA_BASE_DIR apps:APP_BASE_DIR; do
+    LAYER_NAME="${layer%%:*}"
+    LAYER_DIR_VAR="${layer##*:}"
+    LAYER_DIR="${!LAYER_DIR_VAR}"
+    LAYER_SYSTEMD_SRC="$REPO_DIR/self-host/$LAYER_NAME/scripts/systemd"
+    UNIT_BASENAME="systems-playground-$LAYER_NAME-backup"
+    PLACEHOLDER="<$(printf '%s' "$LAYER_DIR_VAR")>"
+
+    if [ ! -f "$LAYER_DIR/wsl-backup.sh" ]; then
+      log "$LAYER_DIR/wsl-backup.sh isn't deployed yet — skipping the $LAYER_NAME backup timer for now."
+    elif systemctl is-enabled --quiet "$UNIT_BASENAME.timer" 2>/dev/null; then
+      ok "$UNIT_BASENAME.timer already installed and enabled."
+    else
+      log "Installing $UNIT_BASENAME.service/.timer..."
+      sed "s#$PLACEHOLDER#$LAYER_DIR#g" "$LAYER_SYSTEMD_SRC/$UNIT_BASENAME.service" | \
+        sudo tee "/etc/systemd/system/$UNIT_BASENAME.service" >/dev/null
+      sudo cp "$LAYER_SYSTEMD_SRC/$UNIT_BASENAME.timer" "/etc/systemd/system/$UNIT_BASENAME.timer"
+      sudo systemctl daemon-reload
+      sudo systemctl enable --now "$UNIT_BASENAME.timer"
+      ok "$UNIT_BASENAME.timer installed and enabled (backs up daily; runs the service directly too, right now, with: sudo systemctl start $UNIT_BASENAME.service)."
+    fi
+  done
+
+  # 10c. cloudflared + cloudflared-sync as user-level units (not system units): both already run
+  # as this user, not root, so a user unit lets cloudflared-sync.sh restart cloudflared via
+  # `systemctl --user restart` with no sudo/polkit rule needed. `loginctl enable-linger` is what
+  # makes user units start at boot even without an interactive login session — the whole point.
+  if ! loginctl show-user "$USER" 2>/dev/null | grep -q "Linger=yes"; then
+    log "Enabling lingering for $USER (lets this user's systemd units start at boot without a login session)..."
+    sudo loginctl enable-linger "$USER"
+    ok "Lingering enabled."
+  else
+    ok "Lingering already enabled for $USER."
+  fi
+
+  if [ ! -f "$HOME/.cloudflared/config.yml" ]; then
+    log "Tunnel not configured yet (no ~/.cloudflared/config.yml) — skipping cloudflared.service for now. Re-run this script after completing steps 6-8 above."
+  else
+    if systemctl --user is-enabled --quiet cloudflared.service 2>/dev/null; then
+      ok "cloudflared.service (user) already installed and enabled."
+    else
+      log "Installing cloudflared.service (user)..."
+      sed "s#<INFRA_BASE_DIR>#$INFRA_BASE_DIR#g" "$SYSTEMD_SRC_DIR/cloudflared.service" > "$USER_UNIT_DIR/cloudflared.service"
+      systemctl --user daemon-reload
+      systemctl --user enable --now cloudflared.service
+      ok "cloudflared.service (user) installed, enabled, and started."
+    fi
+
+    if [ "${CLOUDFLARED_SYNC_ENABLED:-false}" != "true" ]; then
+      ok "CLOUDFLARED_SYNC_ENABLED isn't true — leaving cloudflared-sync.service uninstalled (opt-in, see docs/DEPLOYMENT.md section 1)."
+    elif [ ! -f "$INFRA_BASE_DIR/cloudflared-sync.sh" ]; then
+      log "cloudflared-sync.sh isn't deployed to $INFRA_BASE_DIR yet (deploy-infra-scripts.yml, section 3) — skipping cloudflared-sync.service for now."
+    elif systemctl --user is-enabled --quiet cloudflared-sync.service 2>/dev/null; then
+      ok "cloudflared-sync.service (user) already installed and enabled."
+    else
+      log "Installing cloudflared-sync.service (user)..."
+      sed "s#<INFRA_BASE_DIR>#$INFRA_BASE_DIR#g" "$SYSTEMD_SRC_DIR/cloudflared-sync.service" > "$USER_UNIT_DIR/cloudflared-sync.service"
+      systemctl --user daemon-reload
+      systemctl --user enable --now cloudflared-sync.service
+      ok "cloudflared-sync.service (user) installed, enabled, and started."
+    fi
+  fi
+fi
+
 # --- Done ------------------------------------------------------------------------------------
 ok "Bootstrap complete."
 cat <<EOF
 
 Remaining one-time manual setup (not scriptable — see each doc for why):
   - Infisical admin/org/machine-identity setup: self-host/infra/infisical/README.md ("Bootstrap" section)
-  - Windows Task Scheduler entries for wsl-startup.sh/wsl-shutdown.sh: docs/DEPLOYMENT.md section 2
+  - Windows/WSL2 hosts only: a Task Scheduler entry that just wakes the WSL2 VM at boot (systemd
+    inside Ubuntu now handles everything past that point) — docs/DEPLOYMENT.md section 2.
 EOF
 }
 

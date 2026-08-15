@@ -7,10 +7,14 @@
 # setup_file() runs the real scripts once, in sequence (start, snapshot, shutdown, snapshot)
 # against a throwaway fake $INFRA_BASE_DIR: two fake generic services plus a fake "infisical"
 # (directory name is what triggers the health-check special case, not the image) that answers its
-# health check instantly, and a stubbed cloudflared binary that reports "Connection established"
-# instantly, so the tunnel step succeeds in seconds instead of the real script's up-to-6-minute
-# retry loop. Each @test below then makes its own independent assertion against the captured
-# results, so one broken behavior doesn't hide the rest.
+# health check instantly. Each @test below then makes its own independent assertion against the
+# captured results, so one broken behavior doesn't hide the rest.
+#
+# No cloudflared stub here anymore - wsl-startup.sh/wsl-shutdown.sh no longer touch cloudflared at
+# all (it runs as its own systemd user unit now, see self-host/infra/scripts/systemd/ and
+# docs/DEPLOYMENT.md section 2), so there's nothing left in these two scripts for a cloudflared
+# stub to exercise. That mechanism has no equivalent container-based coverage in this suite - it
+# depends on a real systemd instance, which these bats fixtures don't run.
 
 setup_file() {
   REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
@@ -18,17 +22,10 @@ setup_file() {
   cd "$REPO_ROOT"
 
   export TEST_DIR="$BATS_FILE_TMPDIR/infra"
-  export STUB_DIR="$BATS_FILE_TMPDIR/stub-bin"
-  mkdir -p "$TEST_DIR" "$STUB_DIR"
+  mkdir -p "$TEST_DIR"
 
   cp self-host/infra/scripts/wsl-startup.sh self-host/infra/scripts/wsl-shutdown.sh "$TEST_DIR/"
   chmod +x "$TEST_DIR"/wsl-*.sh
-
-  export TUNNEL_NAME=test-tunnel
-  cat > "$TEST_DIR/.env" <<EOF
-CLOUDFLARED_LOG_DIR=$TEST_DIR/cloudflared.log
-TUNNEL_NAME=$TUNNEL_NAME
-EOF
 
   # Fake infisical fixture, named "bats-infisical" rather than the real "infisical" -- Compose
   # infers a project's identity from directory basename alone, so a fixture literally named
@@ -65,16 +62,6 @@ services:
     command: sleep infinity
 EOF
 
-  cat > "$STUB_DIR/cloudflared" <<'EOF'
-#!/bin/bash
-# Test stub: immediately report a healthy tunnel connection and hang, standing in for a real
-# `cloudflared tunnel run` process.
-echo "Connection established"
-sleep 3600
-EOF
-  chmod +x "$STUB_DIR/cloudflared"
-  export PATH="$STUB_DIR:$PATH"
-
   cd "$TEST_DIR"
 
   set +e
@@ -99,26 +86,10 @@ teardown_file() {
   cd "$TEST_DIR" 2>/dev/null || true
   docker compose -f bats-infisical/docker-compose.yml -p bats-infisical down 2>/dev/null || true
   docker compose -f widget/docker-compose.yml -p widget down 2>/dev/null || true
-  # wsl-startup.sh's `nohup cloudflared tunnel run "$TUNNEL_NAME" &` is meant to survive its
-  # parent shell (correct for production - the tunnel outlives the script that started it) but
-  # that means the stub process started here (a plain `sleep 3600`) is never reaped by anything in
-  # this test file either - wsl-shutdown.sh doesn't touch the tunnel at all (it's host-level
-  # connectivity, not a container). Left alone, that orphaned stub lingers for up to an hour,
-  # holding this test run's process tree/output pipes open the whole time - the exact "make
-  # test-infra just hangs at the end" symptom. wsl-startup.sh itself cleans up a stale previous
-  # instance at its own startup via `pkill -f`, but `pkill` isn't installed in every environment
-  # this test runs in (confirmed missing under Git Bash/MSYS2 on Windows - `pkill: command not
-  # found`, which made an earlier version of this line silently no-op via its own `|| true`) - use
-  # a plain ps/awk/kill pipeline instead, which needs nothing beyond POSIX ps and kill.
-  # Two patterns, not one: killing the stub's own "cloudflared tunnel run ..." process does NOT
-  # kill its "sleep 3600" child too (SIGKILL to a parent just reparents surviving children to
-  # PID 1 on Linux) - confirmed by hand, an earlier version of this teardown that only matched the
-  # first pattern still left the sleep behind as a live orphan. The stub script (defined above,
-  # right in this file) is the only thing that would ever produce a literal "sleep 3600" here, so
-  # matching that text directly is safe and specific to this test.
-  ps -ef | grep -E "cloudflared tunnel run $TUNNEL_NAME|sleep 3600" | grep -v grep | awk '{print $2}' | while read -r pid; do
-    kill -9 "$pid" 2>/dev/null || true
-  done
+  # No lingering-process cleanup needed anymore - wsl-startup.sh no longer spawns anything that
+  # outlives its own script process (that used to be the cloudflared tunnel stub, which was the
+  # exact cause of a previous "make test-infra just hangs at the end" bug). docker compose down
+  # above is enough on its own now.
 }
 
 @test "syntax: wsl-startup.sh" {
@@ -135,12 +106,6 @@ teardown_file() {
 
 @test "startup: infisical becomes healthy" {
   grep -qi "infisical is healthy" "$TEST_DIR/.startup.log"
-}
-
-@test "startup: cloudflare tunnel connects" {
-  # "Connection established" is the stub's own output, written to CLOUDFLARED_LOG_DIR, not to
-  # this log — what shows up here is the script's own confirmation after it reads that file back.
-  grep -qi "Tunnel connected" "$TEST_DIR/.startup.log"
 }
 
 @test "startup: reports complete" {

@@ -1,0 +1,12 @@
+# System-level unit (installed to /etc/systemd/system/ by scripts/bootstrap.sh) - fires this
+# layer's own systems-playground-apps-backup.service daily. Same Persistent=true reasoning as the
+# infra layer's timer (self-host/infra/scripts/systemd/systems-playground-infra-backup.timer).
+[Unit]
+Description=Daily timer for systems-playground-apps-backup.service
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

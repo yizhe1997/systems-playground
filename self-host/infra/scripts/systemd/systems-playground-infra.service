@@ -1,0 +1,27 @@
+# System-level unit (installed to /etc/systemd/system/ by scripts/bootstrap.sh, with
+# <INFRA_BASE_DIR> substituted for the real path). Runs as root, matching this project's prior
+# Windows Task Scheduler invocation (`wsl.exe -u root -e bash wsl-startup.sh`) exactly, so file
+# ownership under <INFRA_BASE_DIR> doesn't shift underneath an existing deployment. Replaces
+# Task Scheduler as the trigger entirely on a systemd host: this becomes a native boot dependency
+# instead of something external has to remember to invoke. RemainAfterExit=yes is what makes a
+# oneshot unit show as "active" for the whole time the containers it started are actually up,
+# rather than reverting to "inactive" the instant wsl-startup.sh's script process exits.
+[Unit]
+Description=Systems Playground infra layer (Docker Compose services)
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Infisical's own health-check loop alone can take up to 5 minutes before falling through
+# (see wsl-startup.sh), plus up to 5 more for the registry - comfortably generous margin over
+# that worst case rather than systemd's 90s default, which would kill this mid-startup.
+TimeoutStartSec=900
+ExecStart=/bin/bash <INFRA_BASE_DIR>/wsl-startup.sh
+ExecStop=/bin/bash <INFRA_BASE_DIR>/wsl-shutdown.sh
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -5,21 +5,22 @@ Deployed to `$INFRA_BASE_DIR` on the host by `deploy-infra-scripts.yml`, along w
 | Name | Type | Required? | Notes |
 |---|---|---|---|
 | `INFRA_BASE_DIR` | var | Yes | Real path, no safe default possible. |
-| `CLOUDFLARED_LOG_DIR` | var | Yes | Has a script-level fallback (`$HOME/.cloudflared/cloudflared.log`) but kept explicit by choice. |
 | `TUNNEL_NAME` | var | No | Falls back to `tunnel` — confirmed to match the actual tunnel name, safe to leave unset. |
 | `DISCORD_WEBHOOK_INFRA_ALERTS` | secret | No | Leave empty to disable alerts entirely. |
 | `BACKUP_DIR` | var | No | Falls back to `$SCRIPT_DIR/backups` (i.e. `$INFRA_BASE_DIR/backups`). Deliberately nested inside this layer's own directory, not a sibling of it — see the apps layer's `APP_BACKUP_DIR`, which uses a different GH var name specifically so the two layers' backups can never collide into the same folder. |
 | `BACKUP_RETENTION_DAYS` | var | No | Falls back to `14`. |
-| `CLOUDFLARED_SYNC_ENABLED` | var | No | Falls back to `false` (off) — deliberately opt-in, since it changes running behavior (auto-restarts cloudflared on config changes). Set to `true` to launch `cloudflared-sync.sh` on boot. See below. |
+| `CLOUDFLARED_SYNC_ENABLED` | var | No | Falls back to `false` (off) — deliberately opt-in, since it changes running behavior (auto-restarts cloudflared on config changes). Set to `true`, then re-run `scripts/bootstrap.sh` to actually install and start `cloudflared-sync.service` — setting the variable alone only updates `.env` on the next CI deploy, it doesn't start anything by itself. See below and `docs/DEPLOYMENT.md` section 2. |
 
-There's no `INFRA_LOG_DIR` GitHub var wired here at all (same as `APP_LOG_DIR` on the apps side) — `wsl-startup.sh`/`wsl-backup.sh`'s own fallback (`$SCRIPT_DIR/logs`, which always equals `$INFRA_BASE_DIR/logs` once deployed) is the only value anyone would realistically want. This is purely where these scripts write their own log output (`wsl-startup.log`, `wsl-backup.log`) — not container or app logs.
+No `CLOUDFLARED_LOG_DIR` anymore — `cloudflared`/`cloudflared-sync` run under `systemd` now (see below), whose own journal (`journalctl --user -u cloudflared.service`) replaced the explicit log-file redirect. There's also no `INFRA_LOG_DIR` GitHub var wired here at all (same as `APP_LOG_DIR` on the apps side) — `wsl-startup.sh`/`wsl-backup.sh`'s own fallback (`$SCRIPT_DIR/logs`, which always equals `$INFRA_BASE_DIR/logs` once deployed) is the only value anyone would realistically want. This is purely where these scripts write their own log output (`wsl-startup.log`, `wsl-backup.log`) — not container or app logs.
 
 | Script | Runs when | What it does |
 |---|---|---|
-| `wsl-startup.sh` | Windows Task Scheduler, on boot | Starts Docker, brings up every `self-host/infra/*/docker-compose.yml` (Infisical first, health-checked, since everything else depends on it for secrets; the self-hosted registry second, reachability-checked, since services like n8n pull their image from it rather than a public registry — see below), starts the Cloudflare tunnel, and (if `CLOUDFLARED_SYNC_ENABLED=true`) launches `cloudflared-sync.sh` in the background. |
-| `wsl-shutdown.sh` | Windows Task Scheduler, on shutdown | Stops every discovered infra service. |
-| `wsl-backup.sh` | **Not yet scheduled — deployed only.** See below. | Backs up every Docker named volume belonging to an infra-layer service, plus known bind-mounted paths (Filebrowser's files, Infisical's `.env`). Scoped to this layer only — see "How volumes get scoped" below. The apps layer has its own independent `wsl-backup.sh` (`self-host/apps/scripts/`) for its own volumes. |
-| `cloudflared-sync.sh` | Opt-in (`CLOUDFLARED_SYNC_ENABLED=true`), launched by `wsl-startup.sh`, runs continuously in the background | Keeps `~/.cloudflared/config.yml`'s ingress rules — and the matching Cloudflare DNS records — in sync with whichever running containers (anywhere on the host, not just this layer) are labelled `cloudflare.tunnel.hostname` / `cloudflare.tunnel.port`. See "Automatic Cloudflare Tunnel routing" below. |
+| `wsl-startup.sh` | `ExecStart` of the `systems-playground-infra.service` systemd oneshot (installed by `scripts/bootstrap.sh`) | Brings up every `self-host/infra/*/docker-compose.yml` (Infisical first, health-checked, since everything else depends on it for secrets; the self-hosted registry second, reachability-checked, since services like n8n pull their image from it rather than a public registry — see below). No longer starts Docker itself or the Cloudflare tunnel/sync loop — those are `systemd`'s job now (`docker.service`, `cloudflared.service`, `cloudflared-sync.service`), independent of this script's own lifecycle. See `docs/DEPLOYMENT.md` section 2 for the full picture, including the one Windows-side step this doesn't cover on a WSL2 host. |
+| `wsl-shutdown.sh` | `ExecStop` of the same `systems-playground-infra.service` unit | Stops every discovered infra service. |
+| `wsl-backup.sh` | Daily, via `systems-playground-infra-backup.timer` (systemd, installed by `scripts/bootstrap.sh`). See below. | Backs up every Docker named volume belonging to an infra-layer service, plus known bind-mounted paths (Filebrowser's files, Infisical's `.env`). Scoped to this layer only — see "How volumes get scoped" below. The apps layer has its own independent `wsl-backup.sh` (`self-host/apps/scripts/`) for its own volumes. |
+| `cloudflared-sync.sh` | Opt-in (`CLOUDFLARED_SYNC_ENABLED=true`), runs as its own `cloudflared-sync.service` systemd user unit, `Restart=always` | Keeps `~/.cloudflared/config.yml`'s ingress rules — and the matching Cloudflare DNS records — in sync with whichever running containers (anywhere on the host, not just this layer) are labelled `cloudflare.tunnel.hostname` / `cloudflare.tunnel.port`. See "Automatic Cloudflare Tunnel routing" below. |
+
+`systemd/` in this directory holds the unit files `scripts/bootstrap.sh` installs for this layer (`cloudflared.service`, `cloudflared-sync.service` as user units in `~/.config/systemd/user/`; `systems-playground-infra.service` and `systems-playground-infra-backup.service`/`.timer` as system units in `/etc/systemd/system/`, plus enabling Docker's own `docker.service`) — see `docs/DEPLOYMENT.md` section 2 for what each one does and why `cloudflared`/`cloudflared-sync` specifically are user-level rather than system-level.
 
 ## Automatic Cloudflare Tunnel routing
 
@@ -31,7 +32,7 @@ labels:
   - cloudflare.tunnel.port=8082   # the HOST port the service is published on
 ```
 
-Every ~30s (`CLOUDFLARED_SYNC_INTERVAL`, default 30), the script re-scans every running container on the host for both labels, regenerates the block between two marker comments in `config.yml` (`bootstrap.sh` templates those markers into a fresh `config.yml` automatically — see step 8 there), runs `cloudflared tunnel route dns` for any hostname that needs one, and restarts `cloudflared` to pick up the change. Missing either label skips that container entirely — it never guesses a port. Anything outside the marker block (the tunnel/credentials-file header, the catch-all 404, or any entry you'd rather manage by hand) is left untouched.
+Every ~30s (`CLOUDFLARED_SYNC_INTERVAL`, default 30), the script re-scans every running container on the host for both labels, regenerates the block between two marker comments in `config.yml` (`bootstrap.sh` templates those markers into a fresh `config.yml` automatically — see step 8 there), runs `cloudflared tunnel route dns` for any hostname that needs one, and restarts `cloudflared` to pick up the change via `systemctl --user restart cloudflared.service` — not a manual `pkill`/`nohup` — since `cloudflared` runs as its own supervised systemd unit now (see above) and a bare restart alongside `Restart=always` would race it. Missing either label skips that container entirely — it never guesses a port. Anything outside the marker block (the tunnel/credentials-file header, the catch-all 404, or any entry you'd rather manage by hand) is left untouched.
 
 Off by default (`CLOUDFLARED_SYNC_ENABLED` falls back to `false`) — turning it on is a deliberate choice, since it means `cloudflared` can restart itself automatically whenever a labelled container's set changes.
 
@@ -47,11 +48,7 @@ One exception: n8n's two volumes are declared `external: true` with fixed names,
 
 ## Scheduling the backup
 
-`wsl-backup.sh` is deployed to `$INFRA_BASE_DIR/wsl-backup.sh` but nothing calls it automatically yet — add a Windows Task Scheduler entry (same mechanism already used for startup/shutdown) to run it on whatever cadence you want, e.g.:
-
-```
-wsl.exe -d <your-distro> -- /home/<user>/infra/wsl-backup.sh
-```
+`wsl-backup.sh` runs daily via `systems-playground-infra-backup.timer` (`self-host/infra/scripts/systemd/`), installed and enabled by `scripts/bootstrap.sh` alongside the other systemd units — see `docs/DEPLOYMENT.md` section 2. `Persistent=true` on the timer means a missed run (host was off at the scheduled time) fires once the host is back, rather than silently skipping that day. Trigger one manually any time with `sudo systemctl start systems-playground-infra-backup.service`; check `systemctl list-timers systems-playground-infra-backup.timer` for when it last/next runs.
 
 Each run writes into a fresh timestamped folder under `$BACKUP_DIR` (default `$INFRA_BASE_DIR/backups`) and prunes anything older than `$BACKUP_RETENTION_DAYS` days (default 14).
 

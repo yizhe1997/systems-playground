@@ -9,13 +9,13 @@
 # retry/health-check loops (see wsl-startup.sh's Infisical/registry polling) - simpler, and
 # self-healing if this script itself was briefly down or missed a moment.
 #
-# Runs as a native background process alongside cloudflared itself (launched by wsl-startup.sh,
-# gated behind CLOUDFLARED_SYNC_ENABLED so existing hosts don't change behavior until it's
-# deliberately turned on) rather than as a Docker container: cloudflared runs natively on this
-# host, not containerized (see docs/DEPLOYMENT.md's "The host" section and ADR 003), and this
-# script needs to signal that same native process to restart - doing that from inside a container
-# would need `pid: host` plus a way to reach a process outside Docker's own namespace entirely,
-# more fragile than just living where cloudflared already lives.
+# Runs as a systemd user unit (self-host/infra/scripts/systemd/cloudflared-sync.service,
+# installed by scripts/bootstrap.sh, opt-in behind CLOUDFLARED_SYNC_ENABLED so existing hosts
+# don't change behavior until it's deliberately turned on) rather than as a Docker container:
+# cloudflared runs natively on this host, not containerized (see docs/DEPLOYMENT.md's "The host"
+# section and ADR 003), and this script needs to signal that same native process to restart -
+# doing that from inside a container would need `pid: host` plus a way to reach a process outside
+# Docker's own namespace entirely, more fragile than just living where cloudflared already lives.
 
 set -euo pipefail
 
@@ -23,7 +23,6 @@ CLOUDFLARED_DIR="${CLOUDFLARED_DIR:-$HOME/.cloudflared}"
 CONFIG_FILE="$CLOUDFLARED_DIR/config.yml"
 TUNNEL_NAME="${TUNNEL_NAME:-tunnel}"
 SYNC_INTERVAL="${CLOUDFLARED_SYNC_INTERVAL:-30}"
-CLOUDFLARED_LOG_DIR="${CLOUDFLARED_LOG_DIR:-$HOME/.cloudflared/cloudflared.log}"
 LOGFILE="${CLOUDFLARED_SYNC_LOG:-$HOME/infra/logs/cloudflared-sync.log}"
 mkdir -p "$(dirname "$LOGFILE")"
 
@@ -84,11 +83,14 @@ sync_once() {
       log "  [!] Failed to create/confirm DNS route for $hostname - check $LOGFILE"
   done
 
-  # Restart cloudflared to pick up the new config - the same pkill+relaunch pattern
-  # wsl-startup.sh itself already uses to clear a stale previous instance before starting fresh.
-  pkill -f "cloudflared tunnel run $TUNNEL_NAME" 2>/dev/null || true
-  sleep 1
-  nohup cloudflared tunnel run "$TUNNEL_NAME" > "$CLOUDFLARED_LOG_DIR" 2>&1 &
+  # Restart cloudflared to pick up the new config - cloudflared now runs as its own systemd user
+  # unit (self-host/infra/scripts/systemd/cloudflared.service, Restart=always), so ask systemd to
+  # restart it rather than pkill+relaunch a bare process ourselves. Using `systemctl --user` here
+  # instead of a plain `pkill`+`nohup` matters: both units run in this same user's systemd
+  # instance (no sudo needed), and going through systemd means there's exactly one supervisor in
+  # charge of the process - a manual nohup restart racing systemd's own Restart=always is exactly
+  # what produced two simultaneous tunnel connector "replicas" once before.
+  systemctl --user restart cloudflared.service
   log "cloudflared restarted with the updated config."
 }
 

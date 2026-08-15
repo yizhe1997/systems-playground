@@ -1,0 +1,14 @@
+# System-level unit (installed to /etc/systemd/system/ by scripts/bootstrap.sh, with
+# <APP_BASE_DIR> substituted for the real path). Triggered by the matching
+# systems-playground-apps-backup.timer, not run directly - `systemctl start
+# systems-playground-apps-backup.service` still works for a manual one-off run. Root, matching
+# systems-playground-apps.service.
+[Unit]
+Description=Systems Playground apps layer backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash <APP_BASE_DIR>/wsl-backup.sh
+User=root

@@ -1,0 +1,18 @@
+# System-level unit (installed to /etc/systemd/system/ by scripts/bootstrap.sh, with
+# <INFRA_BASE_DIR> substituted for the real path). Triggered by the matching
+# systems-playground-infra-backup.timer, not run directly - `systemctl start
+# systems-playground-infra-backup.service` still works for a manual one-off run. Root, matching
+# systems-playground-infra.service - wsl-backup.sh's own `docker run -v ...` backup-container
+# calls need the same Docker access. Named distinctly from the apps layer's own backup unit
+# (self-host/apps/scripts/systemd/) rather than both being called "wsl-backup.service" - both
+# would install to the same /etc/systemd/system/wsl-backup.service filename otherwise and the
+# second one installed would silently clobber the first.
+[Unit]
+Description=Systems Playground infra layer backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash <INFRA_BASE_DIR>/wsl-backup.sh
+User=root

@@ -1,0 +1,20 @@
+# User-level systemd unit (installed to ~/.config/systemd/user/ by scripts/bootstrap.sh, with
+# <INFRA_BASE_DIR> substituted for the real path). Same reasoning as cloudflared.service's own
+# header comment for why this is a user unit, not a system one. cloudflared-sync.sh itself calls
+# `systemctl --user restart cloudflared.service` when it detects an ingress change - that only
+# works without sudo because both units live in this same user's systemd instance.
+[Unit]
+Description=cloudflared-sync (systems-playground)
+After=cloudflared.service
+Requires=cloudflared.service
+
+[Service]
+Type=simple
+EnvironmentFile=-<INFRA_BASE_DIR>/.env
+Environment=CLOUDFLARED_SYNC_LOG=<INFRA_BASE_DIR>/logs/cloudflared-sync.log
+ExecStart=/bin/bash <INFRA_BASE_DIR>/cloudflared-sync.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

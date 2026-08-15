@@ -1,0 +1,20 @@
+# User-level systemd unit (installed to ~/.config/systemd/user/ by scripts/bootstrap.sh, with
+# <INFRA_BASE_DIR> substituted for the real path). Not a system unit: cloudflared already runs as
+# the regular host user (needs that user's own ~/.cloudflared/), and a user unit lets
+# cloudflared-sync.sh restart this via `systemctl --user restart` with no sudo/polkit rule needed.
+# Requires `loginctl enable-linger <user>` (also done by bootstrap.sh) so this actually starts at
+# boot instead of only when that user logs in interactively.
+[Unit]
+Description=Cloudflare Tunnel (systems-playground)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-<INFRA_BASE_DIR>/.env
+ExecStart=/bin/bash -c 'exec cloudflared tunnel run "${TUNNEL_NAME:-tunnel}"'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

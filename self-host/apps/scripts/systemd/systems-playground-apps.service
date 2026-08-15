@@ -1,0 +1,24 @@
+# System-level unit (installed to /etc/systemd/system/ by scripts/bootstrap.sh, with
+# <APP_BASE_DIR> substituted for the real path). Root, same reasoning as the infra layer's own
+# systems-playground-infra.service (self-host/infra/scripts/systemd/) - matches this project's
+# prior Task Scheduler invocation exactly. `After=systems-playground-infra.service` preserves the
+# same "infra boots first" ordering the old two-Task-Scheduler-tasks setup gave, but deliberately
+# NOT `Requires=` it - apps/scripts/wsl-startup.sh itself doesn't wait on or verify infra's health
+# either (see self-host/apps/scripts/README.md's "Boot ordering" section), so a failed infra
+# oneshot shouldn't hard-block this one from still attempting to start the apps layer.
+[Unit]
+Description=Systems Playground apps layer (Docker Compose services)
+After=network-online.target docker.service systems-playground-infra.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=600
+ExecStart=/bin/bash <APP_BASE_DIR>/wsl-startup.sh
+ExecStop=/bin/bash <APP_BASE_DIR>/wsl-shutdown.sh
+User=root
+
+[Install]
+WantedBy=multi-user.target

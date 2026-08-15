@@ -22,13 +22,10 @@ chmod 664 "$LOGFILE"
 exec > >(tee -a "$LOGFILE") 2>&1
 echo "=== App Startup $(date) ==="
 
-# Defensive, not load-bearing: the infra layer's own wsl-startup.sh already starts Docker and
-# runs first per the Windows Task Scheduler boot chain ("WSL2 Infra Startup" then "WSL2 Apps
-# Startup"). This is just here so the script still works if it's ever run standalone
-# (workflow_dispatch, manual testing, or boot ordering changes).
-echo "[*] Ensuring Docker is running..."
-sudo service docker start
-sleep 5
+# No manual Docker start here - this script now runs as the ExecStart of a systemd oneshot unit
+# (self-host/apps/scripts/systemd/systems-playground-apps.service, installed by
+# scripts/bootstrap.sh) ordered `Requires=docker.service`, and `After=` the infra layer's own
+# oneshot, so systemd already guarantees both are up before this script's first line runs.
 
 # Auto-discover app services: any subdirectory of SCRIPT_DIR with a docker-compose.yml. Compose
 # auto-merges a co-located docker-compose.override.yml (e.g. the portfolio's prod override) —

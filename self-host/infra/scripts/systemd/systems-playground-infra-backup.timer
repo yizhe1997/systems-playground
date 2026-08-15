@@ -1,0 +1,14 @@
+# System-level unit (installed to /etc/systemd/system/ by scripts/bootstrap.sh) - fires
+# systems-playground-infra-backup.service daily. Persistent=true catches up a missed run (host
+# was off at the scheduled time) on next boot instead of silently skipping that day entirely,
+# matching this project's existing "catch up rather than skip" philosophy for offline periods
+# (see docs/DEPLOYMENT.md's queued-deploy edge case).
+[Unit]
+Description=Daily timer for systems-playground-infra-backup.service
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
