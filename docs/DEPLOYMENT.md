@@ -87,12 +87,14 @@ $APP_BASE_DIR (e.g. /home/yizhe/apps)
 
 ```bash
 curl -fsSL -o bootstrap.sh https://raw.githubusercontent.com/yizhe1997/systems-playground/main/scripts/bootstrap.sh
-REPO_URL=<your-fork-url> bash bootstrap.sh   # REPO_URL defaults to yizhe1997/systems-playground if omitted
+REPO_URL=<your-fork-url> bash bootstrap.sh; rm -f bootstrap.sh   # REPO_URL defaults to yizhe1997/systems-playground if omitted
 ```
+
+`rm -f bootstrap.sh` cleans up the standalone downloaded copy once it's done — `;` rather than `&&` so that happens whether the run succeeded, paused, or failed, not just on success. Safe to remove unconditionally: step 4 (cloning the repo) runs before any of the manual-step pauses below, so by the time there's anything to re-run, a real clone already exists at `$REPO_DIR` (default `~/systems-playground`) with its own copy of this same script inside it.
 
 If you already have the repo cloned, `make bootstrap` from the repo root works the same way and reuses that clone instead of creating a second one.
 
-It pauses with printed instructions at the steps below that genuinely need a human: `cloudflared tunnel login` (browser auth), `cloudflared tunnel create`, and GitHub Actions runner registration (needs a fresh token from GitHub's UI each time). Re-run the script after completing each one. Sections 1 and 3 below describe what those manual steps are doing; the script exists so you don't have to hand-run the surrounding mechanical parts (installing `cloudflared`, writing the skeleton `config.yml`, downloading the runner binary) yourself.
+It pauses with printed instructions at the steps below that genuinely need a human: `cloudflared tunnel login` (browser auth), `cloudflared tunnel create`, and GitHub Actions runner registration (needs a fresh token from GitHub's UI each time). **Re-run from the clone** after completing each one (`cd ~/systems-playground && make bootstrap`, or `bash scripts/bootstrap.sh` from inside it) — not by re-downloading the standalone file again, since it's already been removed and the cloned copy is the one that stays current via `git pull` anyway. Sections 1 and 3 below describe what those manual steps are doing; the script exists so you don't have to hand-run the surrounding mechanical parts (installing `cloudflared`, writing the skeleton `config.yml`, downloading the runner binary) yourself.
 
 **Docker is conditional, not WSL-specific:** the script checks whether `docker` already works before installing anything; if it doesn't, it installs Docker Engine directly (the same steps as [Docker's official apt instructions](https://docs.docker.com/engine/install/ubuntu/)) regardless of whether the host is WSL2 or bare-metal Ubuntu — WSL2 runs a real Linux kernel, so there's no reason to special-case it. See [ADR 003](adrs/003-native-docker-engine-over-docker-desktop.md) for why this used to route WSL hosts to Docker Desktop instead, and the note above this section for a gotcha if this host previously relied on Docker Desktop's WSL integration.
 
