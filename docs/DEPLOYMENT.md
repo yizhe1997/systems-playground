@@ -4,7 +4,7 @@ This guide documents how to deploy the Systems Playground onto a self-managed Ub
 
 **Who this is for:** you have (or are about to make) your own fork of this repo and want to deploy it as your own running instance. Every command below deploys *your* copy — nothing here talks to the original author's server.
 
-**About the target host:** everything below is written for **any Ubuntu 22.04+ host** — bare metal, a VM, a cloud instance, or WSL2 on Windows. None of the core deployment steps (sections 0, 1, 3) are WSL-specific or Windows-specific at all — `bootstrap.sh` explicitly has no WSL branch, since WSL2 runs a real Linux kernel and installs everything the same way a native host does (see [ADR 003](adrs/003-native-docker-engine-over-docker-desktop.md)). Boot automation (section 2) is now `systemd`-based on **any** host type, WSL2 included — WSL2 has run real `systemd` as its init since it became the Ubuntu default, so it needs no special-casing here either. The one genuinely Windows-specific residue is making sure the WSL2 VM itself actually boots when Windows starts, since Windows has no native concept of "auto-start this Linux VM" — that's the one line item in the [Windows/WSL2-Specific Notes](#windowswsl2-specific-notes) section at the end. This project's own reference deployment happens to run on WSL2 (a NUC-class mini PC), which is why you'll see it mentioned as a concrete example throughout — but nothing here requires it.
+**About the target host:** everything below is written for **any Ubuntu 22.04+ host** — bare metal, a VM, a cloud instance, or WSL2 on Windows. None of the core deployment steps (sections 1, 2, 3, or the bulk of section 0) are WSL-specific or Windows-specific at all — `bootstrap.sh` explicitly has no WSL branch, since WSL2 runs a real Linux kernel and installs everything the same way a native host does (see [ADR 003](adrs/003-native-docker-engine-over-docker-desktop.md)). Boot automation (section 2) is `systemd`-based on **any** host type, WSL2 included — WSL2 has run real `systemd` as its init since it became the Ubuntu default, so it needs no special-casing there either. The one genuinely Windows-specific residue is making sure the WSL2 VM itself actually boots when Windows starts, since Windows has no native concept of "auto-start this Linux VM" — that's the one extra step at the end of section 0 (["If your host is Windows/WSL2"](#if-your-host-is-windowswsl2-one-more-one-time-step)), a few PowerShell cmdlets and nothing more. This project's own reference deployment happens to run on WSL2 (a NUC-class mini PC), which is why you'll see it mentioned as a concrete example throughout — but nothing here requires it.
 
 ## Before You Start
 
@@ -27,7 +27,7 @@ flowchart LR
 
 **What you'll need before starting:**
 
-- **An Ubuntu 22.04+ host.** Bare metal, a VM, a cloud instance, or WSL2 on Windows all work identically for sections 0, 1, and 3 below. If you're going the WSL2 route and haven't set it up yet, follow [Microsoft's official WSL install guide](https://learn.microsoft.com/en-us/windows/wsl/install) first — this doc picks up from there either way. No exact minimum hardware is specified in this repo, but the whole "scale-to-zero" design (see [ADR 001](../self-host/apps/portfolio/adrs/001-custom-go-control-plane.md)) exists specifically to keep steady-state resource use low, so modest hardware (a few GB of free RAM and disk) is enough to get started.
+- **An Ubuntu 22.04+ host.** Bare metal, a VM, a cloud instance, or WSL2 on Windows all work identically for sections 1, 2, and 3 below, and for the core of section 0 — WSL2 just has one extra one-time PowerShell step at the end of section 0, since Windows itself needs a nudge to boot the VM in the first place. If you're going the WSL2 route and haven't set it up yet, follow [Microsoft's official WSL install guide](https://learn.microsoft.com/en-us/windows/wsl/install) first — this doc picks up from there either way. No exact minimum hardware is specified in this repo, but the whole "scale-to-zero" design (see [ADR 001](../self-host/apps/portfolio/adrs/001-custom-go-control-plane.md)) exists specifically to keep steady-state resource use low, so modest hardware (a few GB of free RAM and disk) is enough to get started.
 - **Your own fork of this repo** on GitHub (needed for section 3 — the CI/CD runner deploys from your fork, not the original).
 - **A domain name you control, added to a free Cloudflare account.** You'll point subdomains of it at your services in section 1 — you can't complete that section without this.
 - Comfort with a Linux terminal is helpful but not required — nearly every mechanical step is scripted (section 0).
@@ -98,11 +98,29 @@ It pauses with printed instructions at the steps below that genuinely need a hum
 
 **Docker is conditional, not WSL-specific:** the script checks whether `docker` already works before installing anything; if it doesn't, it installs Docker Engine directly (the same steps as [Docker's official apt instructions](https://docs.docker.com/engine/install/ubuntu/)) regardless of whether the host is WSL2 or bare-metal Ubuntu — WSL2 runs a real Linux kernel, so there's no reason to special-case it. See [ADR 003](adrs/003-native-docker-engine-over-docker-desktop.md) for why this used to route WSL hosts to Docker Desktop instead, and the note above this section for a gotcha if this host previously relied on Docker Desktop's WSL integration.
 
-**Also installs and enables the systemd units** covered in section 2 below (Docker's own unit, the infra-layer oneshot, and the cloudflared/cloudflared-sync user units) — gracefully skipped step by step until their prerequisites exist (a tunnel, a first CI deploy), so re-running this script after completing later sections is how those get picked up. See section 2 for what each one does.
+**Also installs and enables every systemd unit** covered in section 2 below (Docker's own unit, the infra and apps oneshots, the cloudflared/cloudflared-sync user units, and both layers' daily backup timers) — gracefully skipped step by step until each one's own prerequisites exist (a tunnel, a first CI deploy), so re-running this script after completing later sections is how those get picked up. See section 2's table for what each one does.
 
-Infisical's admin/org/machine-identity setup stays fully manual — see [`self-host/infra/infisical/README.md`](../self-host/infra/infisical/README.md#bootstrap-one-time-manual---cannot-be-automated-via-ci-since-nothing-else-can-authenticate-to-this-yet) for why it can't be scripted. On a WSL2 host, one Windows-side Task Scheduler entry also stays manual — see [Windows/WSL2-Specific Notes](#windowswsl2-specific-notes).
+Infisical's admin/org/machine-identity setup stays fully manual — see [`self-host/infra/infisical/README.md`](../self-host/infra/infisical/README.md#bootstrap-one-time-manual---cannot-be-automated-via-ci-since-nothing-else-can-authenticate-to-this-yet) for why it can't be scripted. On a WSL2 host, one Windows-side Task Scheduler entry also stays manual — see ["If your host is Windows/WSL2"](#if-your-host-is-windowswsl2-one-more-one-time-step) below.
 
 **✅ Verify this worked:** run `docker --version` and `cloudflared --version` — both should print a version, not "command not found". Run `ls ~/infra ~/apps` — both directories should exist (empty for now; they get populated by the deploy workflows in section 3). If `bootstrap.sh` paused with a manual-step message instead of finishing, that's expected — follow that message, then re-run the script.
+
+### If your host is Windows/WSL2: one more one-time step
+
+Everything above runs identically whether the host is WSL2 or bare metal — Docker, `cloudflared`, the systemd units (section 2), all of it. The one thing genuinely specific to Windows: something has to actually **boot the WSL2 VM** when Windows starts, since Windows has no native concept of auto-starting a Linux VM — once it's running, `systemd` inside takes over completely. That's a one-time Windows-side Task Scheduler entry, and it's small enough to set up entirely from PowerShell rather than the old GUI wizard. Run this in an **elevated** PowerShell window (Run as Administrator — required for `-RunLevel Highest`):
+
+```powershell
+$action = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d Ubuntu -- true"
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Highest
+Register-ScheduledTask -TaskName "WSL Startup" -Action $action -Trigger $trigger -Principal $principal -Description "Wakes the WSL2 VM at boot - systemd inside Ubuntu handles startup from there."
+```
+
+- `-d Ubuntu` assumes your distro is literally named "Ubuntu" (`wsl -l -v` confirms — adjust the argument if yours differs).
+- `-- true` is a deliberate no-op — invoking `wsl.exe` at all is what boots the VM as a side effect, so the command run inside doesn't matter. Deliberately **not** `-u root -e bash wsl-startup.sh` — that would just re-run the infra bring-up a second time on top of what `systems-playground-infra.service` (section 2) already does natively.
+- `-LogonType S4U` runs the task as your own Windows account without needing to store a password — required here specifically because the "Ubuntu" distro is registered per-user; running this as `SYSTEM` instead would fail to find it at all.
+- `-RunLevel Highest` is the scripted equivalent of the old GUI wizard's "Run with highest privileges" checkbox.
+
+**Verify:** `Get-ScheduledTask -TaskName "WSL Startup" | Get-ScheduledTaskInfo` should show it registered with no errors. The real test is an actual Windows reboot, then the checks at the end of section 2.
 
 ---
 
@@ -154,7 +172,7 @@ ingress:
 
 ## 2. Automating Boot
 
-`systemd` now owns the whole boot/shutdown lifecycle on any host type — Docker's own unit, the infra layer as a native oneshot, and `cloudflared`/`cloudflared-sync` as their own long-running, self-restarting units. `bootstrap.sh` (section 0) installs and enables all of it; this section explains what each piece does and, for WSL2 specifically, the one thing `systemd` genuinely can't do on its own.
+`systemd` owns the whole boot/shutdown lifecycle now, identically on every host type — Docker's own unit, the infra and apps layers as native oneshots, `cloudflared`/`cloudflared-sync` as their own long-running self-restarting units, and daily backup timers. `bootstrap.sh` (section 0) installs and enables all of it. Nothing below differs between bare metal, a VM, or WSL2 — the *only* host-specific piece in this whole guide is the one-time Windows Task Scheduler entry from section 0's WSL2 sub-step, which exists purely to wake the VM so `systemd` inside it can take over. If that step's already done, there's nothing further to configure on any host type — the rest of this section is reference material for what's actually running, not more setup to do.
 
 Only the **infra** layer ships a startup/shutdown script pair in this repo (`self-host/infra/scripts/wsl-startup.sh` / `wsl-shutdown.sh`, deployed to `~/infra/`). It brings up every service under `~/infra/*/docker-compose.yml` (Infisical first since everything depends on it for secrets, then the self-hosted registry since services like n8n pull their image from it, then everything else). See [the scripts README](../self-host/infra/scripts/README.md) for the full ordering rationale. (Despite the `wsl-` prefix in the filenames — a holdover from when this repo only targeted WSL2 — the scripts themselves are plain bash with nothing WSL-specific in them; they run identically on native Ubuntu.)
 
@@ -174,28 +192,9 @@ Only the **infra** layer ships a startup/shutdown script pair in this repo (`sel
 
 Source: [`self-host/infra/scripts/systemd/`](../self-host/infra/scripts/systemd/) for the infra-layer units (`cloudflared.service`, `cloudflared-sync.service`, `systems-playground-infra.service`, `systems-playground-infra-backup.service`/`.timer`), [`self-host/apps/scripts/systemd/`](../self-host/apps/scripts/systemd/) for the apps-layer ones (`systems-playground-apps.service`, `systems-playground-apps-backup.service`/`.timer`) — mirroring the infra/apps directory split used everywhere else in this repo. `bootstrap.sh` templates `<INFRA_BASE_DIR>`/`<APP_BASE_DIR>` in each before installing — nothing to edit by hand.
 
-### If your host is native Ubuntu (bare metal or VM)
-
-Nothing further to do — `systemd` is already your host's own init, so the units above start on every boot the moment `bootstrap.sh` has enabled them. No extra step, no Task Scheduler equivalent needed at all.
-
-### If your host is Windows/WSL2
-
-Same units, same behavior, once the WSL2 VM is actually running — this project's own reference host runs exactly this setup. The one thing `systemd` can't do for you: Windows has no native concept of auto-starting a WSL2 VM at boot, something external has to invoke `wsl.exe` at least once to wake it. That's Task Scheduler's **entire** remaining job here — it no longer runs your scripts directly, it just makes sure the VM (and its `systemd`, and everything `systemd` starts) exists.
-
-1. Open **Task Scheduler** in Windows.
-2. Click **Create Basic Task...**
-3. **Name:** `WSL Startup`
-4. **Trigger:** `When the computer starts`.
-5. **Action:** `Start a program`
-6. **Program/script:** `wsl.exe`
-7. **Add arguments:** `-d Ubuntu -- true` — a trivial no-op; invoking `wsl.exe` at all is what boots the VM (and everything `systemd` starts inside it) as a side effect. Deliberately **not** `-u root -e bash wsl-startup.sh` anymore — that would just re-run the infra bring-up a second time on top of what `systems-playground-infra.service` already does natively.
-8. **Check:** "Run with highest privileges" in the task properties.
-
-**Shutdown:** nothing to configure — `systemd`'s own `ExecStop=wsl-shutdown.sh` on `systems-playground-infra.service` already runs on a graceful WSL2 shutdown, and `docker.service`/the cloudflared units stop the same way any `systemd` service does. If you're migrating an existing host from the old setup, remove any prior "WSL Shutdown" Task Scheduler entry (Event ID 1074) — it's redundant now and could race `systemd`'s own shutdown ordering.
-
 **Reboot recovery:** every service in `self-host/apps/portfolio/docker-compose.yml` (backend, frontend, redis) is set to `restart: unless-stopped`. Since `docker.service` now reliably comes back on boot on its own, Docker brings these containers back the moment the daemon restarts — no explicit boot script needed for the apps layer, unlike infra. It also plays correctly with scale-to-zero: `unless-stopped` respects an explicit `docker stop` (i.e. one issued by the Go control plane's reaper — the background process that automatically stops idle demo containers to save RAM, see [ADR 001](../self-host/apps/portfolio/adrs/001-custom-go-control-plane.md)), so a container the reaper intentionally stopped for inactivity stays stopped across a reboot rather than snapping back on.
 
-**✅ Verify this worked:** `systemctl status systems-playground-infra.service systems-playground-apps.service` (root) and `systemctl --user status cloudflared.service cloudflared-sync.service` should all show `active`. Run `docker ps` — you should see your infra containers (at minimum `infisical`, `registry`) *and* your apps (at minimum `portfolio`) listed as running. Run `cloudflared tunnel info <your-tunnel-name>` to confirm the tunnel shows an active connection. On WSL2, once the Task Scheduler entry above is in place, actually reboot Windows and repeat these checks afterward — confirming a manual `systemctl start` works isn't the same as confirming the whole chain survives a real reboot. If something's missing: `journalctl --user -u cloudflared.service -u cloudflared-sync.service` and `journalctl -u systems-playground-infra.service -u systems-playground-apps.service` (plus `~/infra/logs/wsl-startup.log` / `~/apps/logs/wsl-startup.log`) are where to look first.
+**✅ Verify this worked:** `systemctl status systems-playground-infra.service systems-playground-apps.service` (root) and `systemctl --user status cloudflared.service cloudflared-sync.service` should all show `active`. Run `docker ps` — you should see your infra containers (at minimum `infisical`, `registry`) *and* your apps (at minimum `portfolio`) listed as running. Run `cloudflared tunnel info <your-tunnel-name>` to confirm the tunnel shows an active connection. On WSL2, once section 0's Task Scheduler entry is in place, actually reboot Windows and repeat these checks afterward — confirming a manual `systemctl start` works isn't the same as confirming the whole chain survives a real reboot. If something's missing: `journalctl --user -u cloudflared.service -u cloudflared-sync.service` and `journalctl -u systems-playground-infra.service -u systems-playground-apps.service` (plus `~/infra/logs/wsl-startup.log` / `~/apps/logs/wsl-startup.log`) are where to look first.
 
 ---
 
@@ -243,7 +242,7 @@ Setup steps (`make bootstrap` downloads and extracts the runner binary for you �
 
 Everything above applies to any Ubuntu host. This section is the one place that collects things which only matter if your host specifically is Windows/WSL2 — if you're on bare metal or a VM, skip it.
 
-**Boot automation** is `systemd` here too, same as any other host — Task Scheduler's only remaining job is waking the WSL2 VM itself at boot, since Windows has no native way to auto-start a Linux VM on its own. See the [Windows/WSL2 subsection of section 2](#if-your-host-is-windowswsl2) above.
+**Boot automation** is `systemd` here too, same as any other host — Task Scheduler's only remaining job is waking the WSL2 VM itself at boot, since Windows has no native way to auto-start a Linux VM on its own. See ["If your host is Windows/WSL2"](#if-your-host-is-windowswsl2-one-more-one-time-step) in section 0 for the one-time PowerShell setup.
 
 **If this distro previously had Docker Desktop's "WSL Integration" toggle enabled for it:** disabling that toggle (or never having Docker Desktop at all) is the correct end state for this repo (see [ADR 003](adrs/003-native-docker-engine-over-docker-desktop.md) for why) — but if you're migrating an existing host away from that toggle, check `/usr/local/lib/docker/cli-plugins/` first. Docker Desktop's integration installs its CLI plugins (`docker compose`, `buildx`, etc.) there as symlinks pointing into Docker Desktop's own mount (`/mnt/wsl/docker-desktop/...`); those symlinks go dangling the moment integration is off, even though the native `dockerd` underneath is completely unaffected. Symptom looks like `docker: unknown command: docker compose`. Fix: move the stale directory aside (`sudo mv /usr/local/lib/docker/cli-plugins /usr/local/lib/docker/cli-plugins.bak-desktop`) and reinstall/confirm `docker-compose-plugin` via apt, which puts real (non-symlink) plugins back in that path. Docker Desktop itself can still be kept installed on Windows for other local dev work — just leave this distro's integration toggle off.
 
