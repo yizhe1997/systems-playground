@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, type Variants } from "framer-motion";
+import { motion, useAnimationControls, type Variants } from "framer-motion";
 
 interface SparkleButtonProps {
   text?: string;
@@ -14,6 +14,11 @@ interface SparkleButtonProps {
   glareSpeed?: number;
   glareDirection?: "left-to-right" | "right-to-left";
   transition?: object;
+  /** Play the glare sweep on mount, then again every `autoBlinkInterval` ms
+   * while idle - real hover still works as before and resets the idle timer. */
+  autoBlink?: boolean;
+  /** Idle delay between auto-blinks, in ms. */
+  autoBlinkInterval?: number;
 }
 
 export default function SparkleButton({
@@ -27,6 +32,8 @@ export default function SparkleButton({
   glareSpeed = 1,
   glareDirection = "left-to-right",
   transition = { type: "spring", stiffness: 400, damping: 25, mass: 1 },
+  autoBlink = false,
+  autoBlinkInterval = 15000,
 }: SparkleButtonProps) {
   const variants = React.useMemo<Variants>(() => {
     let hoverPos = 1;
@@ -61,6 +68,74 @@ export default function SparkleButton({
       },
     };
   }, [glareDirection, glareSpeed, transition]);
+
+  // Imperative control so the sweep can be triggered programmatically
+  // (autoBlink) without disturbing real whileHover, which framer-motion
+  // still prioritizes over `animate` whenever a genuine hover is active.
+  const controls = useAnimationControls();
+  const isHoveringRef = React.useRef(false);
+  const idleTimerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const holdTimerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const cancelledRef = React.useRef(false);
+
+  // Same hoverPos/restPos direction logic as the variants above, pulled out
+  // so the blink pulse below can target them directly.
+  const hoverPos = glareDirection === "right-to-left" ? 0 : 1;
+  const restPos = glareDirection === "right-to-left" ? 1 : 0;
+
+  // A real hover's own "hover" variant sweeps --pos over a full
+  // 1/glareSpeed seconds (~1s by default) - the right pace for a
+  // deliberate cursor dwell, but far too slow and gradual to actually read
+  // as "blinking" when it fires unprompted while attention is elsewhere;
+  // an earlier version that awaited that full sweep just looked like the
+  // text quietly lit up once, not a blink. This instead does two fast,
+  // explicit pulses of its own (bypassing the "hover"/"rest" variants'
+  // built-in timing entirely) - snappy enough to actually catch the eye.
+  const doFlash = React.useCallback(async () => {
+    for (let i = 0; i < 2; i++) {
+      if (cancelledRef.current || isHoveringRef.current) return;
+      await controls.start({ "--hover": 1, "--pos": hoverPos }, { duration: 0.18, ease: "easeOut" });
+      if (cancelledRef.current) return;
+      await new Promise<void>((resolve) => {
+        holdTimerRef.current = setTimeout(resolve, 120);
+      });
+      if (cancelledRef.current || isHoveringRef.current) return;
+      await controls.start({ "--hover": 0.4, "--pos": restPos }, { duration: 0.12, ease: "easeIn" });
+      if (cancelledRef.current) return;
+      await new Promise<void>((resolve) => {
+        holdTimerRef.current = setTimeout(resolve, 140);
+      });
+    }
+  }, [controls, hoverPos, restPos]);
+
+  const scheduleIdleFlash = React.useCallback(() => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      doFlash();
+      scheduleIdleFlash();
+    }, autoBlinkInterval);
+  }, [autoBlinkInterval, doFlash]);
+
+  React.useEffect(() => {
+    if (!autoBlink) return;
+    cancelledRef.current = false;
+    doFlash();
+    scheduleIdleFlash();
+    return () => {
+      cancelledRef.current = true;
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    };
+  }, [autoBlink, doFlash, scheduleIdleFlash]);
+
+  const handleHoverStart = () => {
+    isHoveringRef.current = true;
+    if (autoBlink && idleTimerRef.current) clearTimeout(idleTimerRef.current);
+  };
+  const handleHoverEnd = () => {
+    isHoveringRef.current = false;
+    if (autoBlink) scheduleIdleFlash();
+  };
 
   return (
     <div
@@ -122,6 +197,20 @@ export default function SparkleButton({
   z-index: 2;
   text-shadow: none;
   -webkit-text-stroke: calc(var(--font-size) * 0.045) var(--shadow);
+  /* Forces this span onto its own GPU compositing layer. Without it, an
+     animated background-position driving a background-clip:text gradient
+     (the glare sweep) can update its computed style correctly every frame
+     while the browser skips actually repainting the clipped text - visible
+     on a real, sustained hover (likely triggering a broader repaint some
+     other way) but not on the imperative controls.start() flashes used by
+     autoBlink, which is exactly what was reported: the --hover-driven pop
+     showed, the --pos-driven sweep never did. Redeclares the base span
+     rule's translate() here (rather than composing via a second transform
+     property, which isn't a thing) so adding translateZ(0) doesn't clobber
+     it - CSS transform is a single property, last declaration wins whole.
+  */
+  transform: translate(calc(var(--hover) * (var(--font-size) * 0.10)), calc(var(--hover) * (var(--font-size) * -0.10))) translateZ(0);
+  will-change: background-position, transform;
 }
 
 .sparkle-button svg {
@@ -172,9 +261,12 @@ export default function SparkleButton({
           } as React.CSSProperties
         }
         initial="rest"
+        animate={controls}
         whileHover="hover"
         whileTap="tap"
         variants={variants}
+        onHoverStart={handleHoverStart}
+        onHoverEnd={handleHoverEnd}
       >
         <Sparkle />
         <Sparkle />

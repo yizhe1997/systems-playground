@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
-import { Eye, Paperclip } from 'lucide-react';
+import { Eye, Paperclip, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast"
 import ProjectsManager from "@/components/admin/ProjectsManager"
 import BlogManager from "@/components/admin/BlogManager"
@@ -63,7 +63,10 @@ export default function AdminDashboard() {
   const [githubUrl, setGithubUrl] = useState<string>('');
   const [bio, setBio] = useState<string>('');
   const [heroDescription, setHeroDescription] = useState<string>('');
-  const [configBaseline, setConfigBaseline] = useState({ resumeUrl: '', linkedinUrl: '', githubUrl: '', bio: '', heroDescription: '' });
+  const [jobTitles, setJobTitles] = useState<string[]>([]);
+  const [configBaseline, setConfigBaseline] = useState<{
+    resumeUrl: string; linkedinUrl: string; githubUrl: string; bio: string; heroDescription: string; jobTitles: string[];
+  }>({ resumeUrl: '', linkedinUrl: '', githubUrl: '', bio: '', heroDescription: '', jobTitles: [] });
   const [savingHomepage, setSavingHomepage] = useState(false);
   const [savingAbout, setSavingAbout] = useState(false);
 
@@ -106,12 +109,14 @@ export default function AdminDashboard() {
         githubUrl: data.githubUrl || '',
         bio: data.bio || '',
         heroDescription: data.heroDescription || '',
+        jobTitles: Array.isArray(data.jobTitles) ? data.jobTitles : [],
       };
       setResumeUrl(next.resumeUrl);
       setLinkedinUrl(next.linkedinUrl);
       setGithubUrl(next.githubUrl);
       setBio(next.bio);
       setHeroDescription(next.heroDescription);
+      setJobTitles(next.jobTitles);
       setConfigBaseline(next);
     } catch (err) {
       console.error('Error fetching config:', err);
@@ -139,7 +144,8 @@ export default function AdminDashboard() {
   const homepageDirty =
     linkedinUrl !== configBaseline.linkedinUrl ||
     githubUrl !== configBaseline.githubUrl ||
-    heroDescription !== configBaseline.heroDescription;
+    heroDescription !== configBaseline.heroDescription ||
+    JSON.stringify(jobTitles) !== JSON.stringify(configBaseline.jobTitles);
 
   const aboutDirty = bio !== configBaseline.bio;
 
@@ -227,6 +233,7 @@ export default function AdminDashboard() {
       setLinkedinUrl(configBaseline.linkedinUrl);
       setGithubUrl(configBaseline.githubUrl);
       setHeroDescription(configBaseline.heroDescription);
+      setJobTitles(configBaseline.jobTitles);
     } else if (section === 'about') {
       setBio(configBaseline.bio);
     }
@@ -263,11 +270,12 @@ export default function AdminDashboard() {
           linkedinUrl,
           githubUrl,
           heroDescription,
+          jobTitles,
         }),
       });
       if (res.ok) {
         toast({ title: "Success", description: "Homepage settings saved!" });
-        setConfigBaseline((prev) => ({ ...prev, linkedinUrl, githubUrl, heroDescription }));
+        setConfigBaseline((prev) => ({ ...prev, linkedinUrl, githubUrl, heroDescription, jobTitles }));
       } else {
         toast({ title: "Error", description: "Failed to save homepage settings.", variant: "destructive" });
       }
@@ -292,6 +300,7 @@ export default function AdminDashboard() {
           linkedinUrl: configBaseline.linkedinUrl,
           githubUrl: configBaseline.githubUrl,
           heroDescription: configBaseline.heroDescription,
+          jobTitles: configBaseline.jobTitles,
           bio,
         }),
       });
@@ -325,6 +334,7 @@ export default function AdminDashboard() {
           linkedinUrl: configBaseline.linkedinUrl,
           githubUrl: configBaseline.githubUrl,
           heroDescription: configBaseline.heroDescription,
+          jobTitles: configBaseline.jobTitles,
           bio: configBaseline.bio,
         }),
       });
@@ -340,6 +350,17 @@ export default function AdminDashboard() {
       setResumeUrl(previous);
       toast({ title: "Error", description: "Network error while updating the active resume.", variant: "destructive" });
     }
+  };
+
+  const addJobTitle = () => setJobTitles([...jobTitles, '']);
+  const removeJobTitle = (i: number) => setJobTitles(jobTitles.filter((_, idx) => idx !== i));
+  const updateJobTitle = (i: number, value: string) => setJobTitles(jobTitles.map((t, idx) => (idx === i ? value : t)));
+  const moveJobTitle = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= jobTitles.length) return;
+    const next = [...jobTitles];
+    [next[i], next[j]] = [next[j], next[i]];
+    setJobTitles(next);
   };
 
   return (
@@ -412,6 +433,73 @@ export default function AdminDashboard() {
                       className={`${dsInput} disabled:opacity-50 disabled:cursor-not-allowed`}
                     />
                     <p className="text-xs text-[var(--ds-charcoal)]/70">The link for the &quot;GitHub&quot; button.</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider">Job Title Badge</span>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewField('hero')}
+                        className="inline-flex items-center gap-1 text-xs font-bold hover:underline"
+                      >
+                        <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+                        Preview
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {jobTitles.map((title, i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                          <input
+                            value={title}
+                            onChange={(e) => updateJobTitle(i, e.target.value)}
+                            placeholder="Backend / Platform Engineer"
+                            disabled={!isAdmin}
+                            className={`${dsInput} disabled:opacity-50 disabled:cursor-not-allowed`}
+                          />
+                          <div className="flex gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => moveJobTitle(i, -1)}
+                              disabled={!isAdmin || i === 0}
+                              aria-label="Move up"
+                              className="p-1.5 border-2 border-transparent hover:border-black rounded-[0.5rem] disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveJobTitle(i, 1)}
+                              disabled={!isAdmin || i === jobTitles.length - 1}
+                              aria-label="Move down"
+                              className="p-1.5 border-2 border-transparent hover:border-black rounded-[0.5rem] disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeJobTitle(i)}
+                              disabled={!isAdmin}
+                              aria-label="Remove job title"
+                              className="p-1.5 border-2 border-transparent hover:border-black rounded-[0.5rem] text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addJobTitle}
+                      disabled={!isAdmin}
+                      className="text-xs font-bold underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      + Add job title
+                    </button>
+                    <p className="text-xs text-[var(--ds-charcoal)]/70">
+                      Shown in the pill above the headline. Add more than one to cycle through them.
+                    </p>
                   </div>
 
                   <div className="space-y-1.5">
@@ -596,7 +684,7 @@ export default function AdminDashboard() {
           </DialogHeader>
           {previewField === 'hero' && (
             <div className="border-2 border-black overflow-hidden -mx-4 sm:mx-0" style={{ borderRadius: '0.5rem' }}>
-              <HeroSection description={heroDescription} githubUrl={githubUrl} linkedinUrl={linkedinUrl} onRequestResume={() => {}} />
+              <HeroSection description={heroDescription} jobTitles={jobTitles} githubUrl={githubUrl} linkedinUrl={linkedinUrl} onRequestResume={() => {}} />
             </div>
           )}
           {previewField === 'bio' && (

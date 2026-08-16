@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import ClickEffects from '@/components/originkit/clickeffects';
+import Typewriter from '@/components/originkit/typewriter';
 
 const navLinks = [
   { href: '/projects', label: 'Projects' },
@@ -24,16 +25,31 @@ export default function SiteHeader() {
       <div className="max-w-6xl mx-auto px-6 w-full flex items-center justify-between sm:grid sm:grid-cols-[1fr_auto_1fr]">
         <Link href="/" data-cursor-label="Home" className="flex items-center gap-2 group justify-self-start" aria-label="Home">
           <div
-            className="w-10 h-10 flex items-center justify-center bg-black text-[var(--ds-yellow)] text-sm border-2 border-black group-hover:rotate-6 transition-transform"
+            className="w-10 h-10 flex items-center justify-center bg-black text-[var(--ds-yellow)] text-sm border-2 border-black"
             style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, borderRadius: '0.5rem' }}
           >
             YZ
           </div>
-          <span
-            className="font-extrabold text-lg tracking-tight text-black"
-            style={{ fontFamily: 'var(--ds-font-display)' }}
-          >
-            Portfolio
+          <span className="inline-block align-middle" style={{ height: '1.375rem' }}>
+            <Typewriter
+              texts={['Portfolio', 'Showcase', 'Corner']}
+              color="#000000"
+              typedColor="#000000"
+              cursorColor="#000000"
+              cursorChar="_"
+              // Slower than the component's own default (0.07s/char type,
+              // 1.5s hold) - the default cycled through words too quickly
+              // to comfortably read.
+              ease={{ type: 'tween', duration: 0.11, delay: 2.6, ease: 'easeInOut' }}
+              deleteSpeed={0.16}
+              font={{
+                fontFamily: 'var(--ds-font-display)',
+                fontWeight: 800,
+                fontSize: '1.125rem',
+                letterSpacing: '-0.025em',
+                lineHeight: '1.4em',
+              }}
+            />
           </span>
         </Link>
 

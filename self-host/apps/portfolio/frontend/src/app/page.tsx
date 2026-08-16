@@ -33,6 +33,8 @@ type CreditRow = { id: string; label: string; items: CreditItem[] };
 const DEFAULT_HERO_DESCRIPTION =
   'Self-hosted infrastructure, actually running — with AI as a working collaborator, not a gimmick.';
 
+const DEFAULT_JOB_TITLES = ['BACKEND / PLATFORM ENGINEER'];
+
 export default function Home() {
   const { open: openResumeRequest } = useResumeRequest();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -42,6 +44,7 @@ export default function Home() {
   const [linkedinUrl, setLinkedinUrl] = useState<string>('#');
   const [githubUrl, setGithubUrl] = useState<string>('#');
   const [heroDescription, setHeroDescription] = useState<string>(DEFAULT_HERO_DESCRIPTION);
+  const [jobTitles, setJobTitles] = useState<string[]>(DEFAULT_JOB_TITLES);
 
   const formatUrl = (url: string) => {
     if (!url || url === '#') return '#';
@@ -52,7 +55,7 @@ export default function Home() {
     const loadOtherData = async () => {
       try {
         const [configRes, projectsRes, postsRes, creditsRes] = await Promise.allSettled([
-          fetchJson<{ resumeUrl?: string; linkedinUrl?: string; githubUrl?: string; heroDescription?: string }>('/api/config'),
+          fetchJson<{ resumeUrl?: string; linkedinUrl?: string; githubUrl?: string; heroDescription?: string; jobTitles?: string[] }>('/api/config'),
           fetchJson<Project[]>('/api/projects'),
           fetchJson<Post[]>('/api/posts'),
           fetchJson<CreditRow[]>('/api/credits'),
@@ -62,6 +65,7 @@ export default function Home() {
           if (configRes.value.linkedinUrl) setLinkedinUrl(configRes.value.linkedinUrl);
           if (configRes.value.githubUrl) setGithubUrl(configRes.value.githubUrl);
           if (configRes.value.heroDescription) setHeroDescription(configRes.value.heroDescription);
+          if (Array.isArray(configRes.value.jobTitles)) setJobTitles(configRes.value.jobTitles);
         }
 
         if (projectsRes.status === 'fulfilled') {
@@ -93,6 +97,7 @@ export default function Home() {
       <main>
       <HeroSection
         description={heroDescription}
+        jobTitles={jobTitles}
         githubUrl={githubUrl}
         linkedinUrl={linkedinUrl}
         onRequestResume={openResumeRequest}
@@ -121,7 +126,7 @@ export default function Home() {
             </Link>
           </div>
           <p className="text-base font-medium text-[var(--ds-charcoal)]/60 mb-9">
-            Bored? Here&apos;s proof I actually build stuff instead of just saying I do.
+            Take a look around — here&apos;s what I&apos;ve been building.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

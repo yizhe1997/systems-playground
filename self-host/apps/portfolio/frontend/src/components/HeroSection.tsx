@@ -1,6 +1,6 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { FileDown, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FileDown, ChevronLeft, ChevronRight, Lock, RotateCw } from 'lucide-react';
 import ReactiveGrid from '@/components/originkit/reactivegrid';
 import CrystalGlow from '@/components/originkit/crystal-glow';
 import GravityGallery from '@/components/originkit/gravitygallery';
@@ -86,6 +86,43 @@ const HEADING_STYLE = {
 
 const GALLERY_TILE_SIZE = 80;
 const BROWSER_CONTENT_HEIGHT = 320;
+// How long the loading state shows before the new page appears.
+const BROWSER_PAGE_LOAD_DELAY = 1100;
+
+// Deliberate loading-spinner transition for the fake-browser mockup's page
+// switches, in place of an instant swap or crossfade - a plain two-path
+// SMIL-animated ring (track + rotating arc), the same hand-styled inline-SVG
+// pattern used everywhere else in this component (no spinner package
+// needed for something this simple). `reason` swaps the caption depending
+// on whether a human clicked the nav arrows or the mockup auto-advanced
+// after sitting idle.
+function BrowserPageLoader({ reason }: { reason: 'manual' | 'idle' }) {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-2.5" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--ds-yellow)" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path
+          d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
+          opacity=".25"
+        />
+        <path d="M10.14,1.16a11,11,0,0,0-9,8.92A1.59,1.59,0,0,0,2.46,12,1.52,1.52,0,0,0,4.11,10.7a8,8,0,0,1,6.66-6.61A1.42,1.42,0,0,0,12,2.69h0A1.57,1.57,0,0,0,10.14,1.16Z">
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            dur="0.75s"
+            values="0 12 12;360 12 12"
+            repeatCount="indefinite"
+          />
+        </path>
+      </svg>
+      <span
+        className="text-[9px] font-bold uppercase tracking-widest opacity-70"
+        style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-yellow)' }}
+      >
+        {reason === 'idle' ? "Idle too long — switching pages" : 'Loading page…'}
+      </span>
+    </div>
+  );
+}
 
 // Fake numbers for the browser mockup's "analytics" page - loosely modeled
 // on chanhdai.com's Insights panel (stat cards + a visitors sparkline), but
@@ -102,22 +139,56 @@ const ANALYTICS_STATS: { label: string; value: string; delta: string; trend: 'up
 // markup - Math.random() here would be a hydration mismatch.
 const ANALYTICS_BAR_HEIGHTS = [35, 50, 40, 65, 55, 70, 60, 80, 45, 90, 75, 60, 85, 100];
 
+// Cycles through the configurable job-title list on a timer. A single title
+// just renders statically (no point animating something that never changes).
+function JobTitleCycler({ titles }: { titles: string[] }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (titles.length <= 1) return;
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % titles.length);
+    }, 3000);
+    return () => clearInterval(id);
+  }, [titles.length]);
+
+  return <span>{titles[index % titles.length]}</span>;
+}
+
 // Shared between the live homepage and the admin Settings preview dialog -
 // a hand-copied mockup drifts from the real thing the moment either side
 // changes, so this is the actual hero markup, parameterized on the fields
 // Settings can edit.
+const DEFAULT_JOB_TITLES = ['BACKEND / PLATFORM ENGINEER'];
+
 export default function HeroSection({
   description,
+  jobTitles = DEFAULT_JOB_TITLES,
   githubUrl,
   linkedinUrl,
   onRequestResume,
 }: {
   description: string;
+  jobTitles?: string[];
   githubUrl: string;
   linkedinUrl: string;
   onRequestResume: () => void;
 }) {
   const [pageIndex, setPageIndex] = useState(0);
+  // Mirrors pageIndex for reads from setInterval callbacks (auto-advance
+  // below) - safer than reading via a setState updater function purely as
+  // a side-effecting getter, which isn't guaranteed to run exactly once
+  // under React's Strict Mode.
+  const pageIndexRef = useRef(0);
+  useEffect(() => {
+    pageIndexRef.current = pageIndex;
+  }, [pageIndex]);
+  // True while the deliberate loading spinner (BrowserPageLoader) is shown
+  // between page switches - see goToPage below. pageLoadReason picks which
+  // caption BrowserPageLoader shows.
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [pageLoadReason, setPageLoadReason] = useState<'manual' | 'idle'>('manual');
+  const pageLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Fewer decorative face tiles on very narrow screens - a safety margin on
   // top of GravityGallery's own wall-resize fix, so the pile has less
@@ -183,23 +254,68 @@ export default function HeroSection({
                     heading text itself; that's the existing, accepted
                     behavior here, not something this hint needs to be
                     exempt from. */}
-                <div className="mt-3 flex items-center gap-2 whitespace-nowrap">
-                  <span
-                    className="font-bold text-xs uppercase tracking-widest"
-                    style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-yellow)' }}
-                  >
-                    click me
-                  </span>
-                  <svg width="30" height="12" viewBox="0 0 30 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <line x1="0" y1="6" x2="22" y2="6" stroke="#ffe17c" strokeWidth="2" strokeLinecap="round" />
-                    <path d="M18 1 L24 6 L18 11" stroke="#ffe17c" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1.5" y="1.5" width="25" height="25" rx="5" stroke="#ffe17c" strokeWidth="1.5" />
-                    <circle cx="14" cy="14" r="8" stroke="#ffe17c" strokeWidth="1.5" />
-                    <path d="M10.5 12.5h1.8M15.7 12.5h1.8" stroke="#ffe17c" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M10.3 17q3.7 3 7.4 0" stroke="#ffe17c" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-                  </svg>
+                {/* Both rows below share identical fixed-width slots for the
+                    label and the arrow (68px / 30px), each centered/aligned
+                    the same way regardless of that row's own icon or text -
+                    "click me"/"toss me" are 8 vs 7 characters and the two
+                    arrow icons are 30px vs 22px, so relying on natural
+                    content width left the second row's tile sitting a few
+                    px off from the first row's - not from the tile's own
+                    rotation, from the row's cumulative width before it. */}
+                <div className="mt-3 flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span
+                      className="font-bold text-xs uppercase tracking-widest inline-block"
+                      style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-yellow)', width: 68, textAlign: 'right' }}
+                    >
+                      click me
+                    </span>
+                    <span className="inline-flex items-center justify-center" style={{ width: 30 }}>
+                      <svg width="30" height="12" viewBox="0 0 30 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="0" y1="6" x2="22" y2="6" stroke="#ffe17c" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M18 1 L24 6 L18 11" stroke="#ffe17c" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="1.5" y="1.5" width="25" height="25" rx="5" stroke="#ffe17c" strokeWidth="1.5" />
+                      <circle cx="14" cy="14" r="8" stroke="#ffe17c" strokeWidth="1.5" />
+                      <path d="M10.5 12.5h1.8M15.7 12.5h1.8" stroke="#ffe17c" strokeWidth="1.5" strokeLinecap="round" />
+                      <path d="M10.3 17q3.7 3 7.4 0" stroke="#ffe17c" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                    </svg>
+                  </div>
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span
+                      className="font-bold text-xs uppercase tracking-widest inline-block"
+                      style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-yellow)', width: 68, textAlign: 'right' }}
+                    >
+                      toss me
+                    </span>
+                    <span className="inline-flex items-center justify-center" style={{ width: 30 }}>
+                      <RotateCw className="w-[22px] h-[22px]" style={{ color: '#ffe17c' }} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                    {/* Rotation lives on an inner element inside a fixed,
+                        unrotated 28x28 anchor box - so the tile's optical
+                        center stays pinned to the exact same spot as the
+                        unrotated "click me" tile directly above it, instead
+                        of drifting off-column the way rotating the sized
+                        element itself would (a rotated square's bounding
+                        box grows past its own layout box). */}
+                    <span className="inline-flex items-center justify-center" style={{ width: 28, height: 28 }}>
+                      <svg
+                        width="28"
+                        height="28"
+                        viewBox="0 0 28 28"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ transform: 'rotate(-14deg)', transformOrigin: '50% 50%' }}
+                      >
+                        <rect x="1.5" y="1.5" width="25" height="25" rx="5" stroke="#ffe17c" strokeWidth="1.5" />
+                        <circle cx="14" cy="14" r="8" stroke="#ffe17c" strokeWidth="1.5" />
+                        <path d="M10.5 12.5h1.8M15.7 12.5h1.8" stroke="#ffe17c" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M10.3 17q3.7 3 7.4 0" stroke="#ffe17c" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                      </svg>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -270,6 +386,88 @@ export default function HeroSection({
   ];
   const page = browserPages[pageIndex];
 
+  // Switches pages via a brief loading state instead of an instant swap -
+  // shows BrowserPageLoader for BROWSER_PAGE_LOAD_DELAY ms, then reveals
+  // the new page. Used by the nav arrows and auto-advance alike; `reason`
+  // just picks which caption is shown.
+  const goToPage = useCallback((newIndex: number, reason: 'manual' | 'idle' = 'manual') => {
+    setPageLoadReason(reason);
+    setIsPageLoading(true);
+    if (pageLoadTimeoutRef.current) clearTimeout(pageLoadTimeoutRef.current);
+    pageLoadTimeoutRef.current = setTimeout(() => {
+      setPageIndex(newIndex);
+      setIsPageLoading(false);
+    }, BROWSER_PAGE_LOAD_DELAY);
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (pageLoadTimeoutRef.current) clearTimeout(pageLoadTimeoutRef.current);
+    };
+  }, []);
+
+  // Auto-advance the mockup to the next page after 15s of no interaction.
+  // "Interaction" is the whole mockup, not just the nav arrows - dragging a
+  // gallery tile around is exactly the kind of interaction this shouldn't
+  // interrupt. While the pointer is anywhere over the mockup the timer is
+  // paused outright (not just reset), same as the "REAL" word's hover
+  // behavior; leaving restarts a fresh 15s.
+  //
+  // This is tracked via a capture-phase `pointermove`/`pointerdown` listener
+  // on window, checked against the mockup's own getBoundingClientRect(),
+  // rather than React's onMouseEnter/onMouseLeave on the wrapper - GravityGallery
+  // wires Matter.js's own Mouse.create() directly onto its container for
+  // drag physics, which attaches native listeners that stop the event from
+  // ever reaching an ancestor's React-synthetic handlers. A capture-phase
+  // window listener sees every pointer event first, before anything
+  // downstream (including Matter.js's own handlers) can swallow it.
+  const autoAdvanceRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const isMockupHoveredRef = useRef(false);
+  const mockupRef = useRef<HTMLDivElement>(null);
+  const resetAutoAdvance = useCallback(() => {
+    if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current);
+    autoAdvanceRef.current = setInterval(() => {
+      goToPage((pageIndexRef.current + 1) % browserPages.length, 'idle');
+    }, 15000);
+  }, [browserPages.length, goToPage]);
+  const pauseAutoAdvance = useCallback(() => {
+    if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current);
+  }, []);
+  useEffect(() => {
+    resetAutoAdvance();
+    return () => {
+      if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current);
+    };
+  }, [resetAutoAdvance]);
+  useEffect(() => {
+    // Listens for both Pointer and legacy Mouse events - belt-and-suspenders
+    // for any context that only fires one family (some embedded webviews,
+    // automated test drivers, etc.), not just the primary mechanism.
+    const handlePointerActivity = (e: MouseEvent | PointerEvent) => {
+      const el = mockupRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const inside =
+        e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+      if (inside) {
+        isMockupHoveredRef.current = true;
+        pauseAutoAdvance();
+      } else if (isMockupHoveredRef.current) {
+        isMockupHoveredRef.current = false;
+        resetAutoAdvance();
+      }
+    };
+    window.addEventListener('pointermove', handlePointerActivity, true);
+    window.addEventListener('pointerdown', handlePointerActivity, true);
+    window.addEventListener('mousemove', handlePointerActivity, true);
+    window.addEventListener('mousedown', handlePointerActivity, true);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerActivity, true);
+      window.removeEventListener('pointerdown', handlePointerActivity, true);
+      window.removeEventListener('mousemove', handlePointerActivity, true);
+      window.removeEventListener('mousedown', handlePointerActivity, true);
+    };
+  }, [pauseAutoAdvance, resetAutoAdvance]);
+
   return (
     <section className="relative border-b-2 border-black overflow-hidden" style={{ backgroundColor: 'var(--ds-yellow)' }}>
       <ReactiveGrid
@@ -284,12 +482,18 @@ export default function HeroSection({
         style={{ position: 'absolute', inset: 0 }}
       />
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-20 sm:py-28 grid lg:grid-cols-2 lg:grid-rows-[auto_1fr_auto] gap-x-14 items-center lg:items-stretch">
-        <span
-          className="lg:row-start-1 lg:col-start-1 inline-flex items-center justify-self-center lg:justify-self-start px-4 py-1.5 bg-white border-2 border-black text-xs font-bold mb-6"
-          style={{ borderRadius: '0.75rem' }}
-        >
-          BACKEND / PLATFORM ENGINEER
-        </span>
+        {jobTitles.some((t) => t.trim()) && (
+          <span
+            className="lg:row-start-1 lg:col-start-1 inline-flex items-center gap-2 justify-self-center lg:justify-self-start px-4 py-1.5 bg-white border-2 border-black shadow-[3px_3px_0px_0px_#000] text-xs font-bold mb-6"
+            style={{ borderRadius: '0.75rem' }}
+          >
+            <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+            </span>
+            <JobTitleCycler titles={jobTitles.filter((t) => t.trim())} />
+          </span>
+        )}
 
         {/* Heading + description share this row with the mockup - the
             mockup's height (see lg:h-full below) stretches to match
@@ -312,7 +516,7 @@ export default function HeroSection({
             <br />
             <span
               className="inline-block align-middle"
-              style={{ width: 'fit-content', height: '1em', marginLeft: -32, overflow: 'visible' }}
+              style={{ width: 'fit-content', height: '1em', marginLeft: -32, overflow: 'visible', position: 'relative' }}
             >
               <CrystalGlow
                 text="REAL"
@@ -322,7 +526,36 @@ export default function HeroSection({
                 textColor="#ffffff"
                 shadowColor="#000000"
                 glareColor="rgba(255,255,255,0.85)"
+                autoBlink
+                autoBlinkInterval={15000}
               />
+              {/* Discoverability hint - autoBlink above is a nice-to-have for
+                  browsers where it renders correctly, but hovering is the one
+                  interaction guaranteed to work everywhere, so it's called out
+                  directly instead of relying on a passerby noticing on their
+                  own. Hidden below sm: the heading is centered and tight on
+                  mobile, no good spot for an inline aside there. Pinned to
+                  the word's top-right corner via absolute positioning rather
+                  than flowing inline. An asterisk prefix instead of an arrow -
+                  the curved arrow never read as pointing at the word cleanly. */}
+              <span
+                className="hidden sm:flex items-center gap-1.5"
+                style={{ position: 'absolute', top: 0, left: '100%', marginLeft: -24 }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="font-extrabold"
+                  style={{ fontFamily: 'var(--ds-font-display)', color: 'rgba(0,0,0,0.7)', fontSize: '1rem', lineHeight: 1 }}
+                >
+                  *
+                </span>
+                <span
+                  className="font-bold text-xs uppercase tracking-widest whitespace-nowrap"
+                  style={{ fontFamily: 'var(--ds-font-display)', color: 'rgba(0,0,0,0.7)' }}
+                >
+                  hover me, i blink
+                </span>
+              </span>
             </span>
             <br />
             SYSTEMS.
@@ -351,7 +584,11 @@ export default function HeroSection({
             navigates anywhere. Pinned to row 2 (see lg:grid-rows above) so
             its lg:h-full only stretches to match the heading+description
             block beside it, not the badge or button too. */}
-        <div className="mt-14 lg:mt-0 lg:col-start-2 lg:row-start-2 bg-white border-2 border-black shadow-[12px_12px_0px_0px_#000] lg:h-full lg:flex lg:flex-col" style={{ borderRadius: '0.75rem' }}>
+        <div
+          ref={mockupRef}
+          className="mt-14 lg:mt-0 lg:col-start-2 lg:row-start-2 bg-white border-2 border-black shadow-[12px_12px_0px_0px_#000] lg:h-full lg:flex lg:flex-col"
+          style={{ borderRadius: '0.75rem' }}
+        >
           <div className="bg-black lg:shrink-0" style={{ borderRadius: '0.6rem 0.6rem 0 0' }}>
             <div className="h-9 flex items-center gap-1.5 px-3">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ff5f57' }} />
@@ -361,7 +598,10 @@ export default function HeroSection({
             <div className="flex items-center gap-1.5 px-3 pb-2.5">
               <button
                 type="button"
-                onClick={() => setPageIndex((i) => (i - 1 + browserPages.length) % browserPages.length)}
+                onClick={() => {
+                  goToPage((pageIndex - 1 + browserPages.length) % browserPages.length);
+                  resetAutoAdvance();
+                }}
                 aria-label="Previous page"
                 data-cursor-label="Prev"
                 className="w-6 h-6 shrink-0 flex items-center justify-center text-white/60 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
@@ -370,7 +610,10 @@ export default function HeroSection({
               </button>
               <button
                 type="button"
-                onClick={() => setPageIndex((i) => (i + 1) % browserPages.length)}
+                onClick={() => {
+                  goToPage((pageIndex + 1) % browserPages.length);
+                  resetAutoAdvance();
+                }}
                 aria-label="Next page"
                 data-cursor-label="Next"
                 className="w-6 h-6 shrink-0 flex items-center justify-center text-white/60 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
@@ -387,7 +630,7 @@ export default function HeroSection({
             </div>
           </div>
           <div style={{ height: BROWSER_CONTENT_HEIGHT }} className="overflow-hidden lg:!h-auto lg:flex-1">
-            {page.content}
+            {isPageLoading ? <BrowserPageLoader reason={pageLoadReason} /> : page.content}
           </div>
         </div>
       </div>

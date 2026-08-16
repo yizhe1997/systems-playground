@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
@@ -118,12 +119,23 @@ func main() {
 		bio, _ := GetConfig(c.Context(), "bio", "Chin Yi Zhe — Backend / Platform Engineer. Builds and operates real self-hosted infrastructure, with AI as a working collaborator rather than a novelty.")
 		heroDescription, _ := GetConfig(c.Context(), "heroDescription", "Self-hosted infrastructure, actually running — with AI as a working collaborator, not a gimmick.")
 
+		// Unlike the other fields, an empty jobTitles is a valid, deliberate
+		// state (hide the badge entirely) - so this only falls back to the
+		// default on the very first load (key never set) or corrupt stored
+		// JSON, not on a legitimately empty "[]" saved by clearing the list.
+		jobTitlesRaw, _ := GetConfig(c.Context(), "jobTitles", `["BACKEND / PLATFORM ENGINEER"]`)
+		var jobTitles []string
+		if err := json.Unmarshal([]byte(jobTitlesRaw), &jobTitles); err != nil {
+			jobTitles = []string{"BACKEND / PLATFORM ENGINEER"}
+		}
+
 		return c.JSON(fiber.Map{
 			"resumeUrl":       resumeUrl,
 			"linkedinUrl":     linkedinUrl,
 			"githubUrl":       githubUrl,
 			"bio":             bio,
 			"heroDescription": heroDescription,
+			"jobTitles":       jobTitles,
 		})
 	})
 
@@ -131,11 +143,12 @@ func main() {
 
 	// Update Configuration Settings
 	type ConfigRequest struct {
-		ResumeUrl       string `json:"resumeUrl"`
-		LinkedinUrl     string `json:"linkedinUrl"`
-		GithubUrl       string `json:"githubUrl"`
-		Bio             string `json:"bio"`
-		HeroDescription string `json:"heroDescription"`
+		ResumeUrl       string   `json:"resumeUrl"`
+		LinkedinUrl     string   `json:"linkedinUrl"`
+		GithubUrl       string   `json:"githubUrl"`
+		Bio             string   `json:"bio"`
+		HeroDescription string   `json:"heroDescription"`
+		JobTitles       []string `json:"jobTitles"`
 	}
 
 	app.Post("/admin/config", func(c *fiber.Ctx) error {
@@ -156,6 +169,9 @@ func main() {
 		SetConfig(ctx, "githubUrl", req.GithubUrl)
 		SetConfig(ctx, "bio", req.Bio)
 		SetConfig(ctx, "heroDescription", req.HeroDescription)
+		if jobTitlesJSON, err := json.Marshal(req.JobTitles); err == nil {
+			SetConfig(ctx, "jobTitles", string(jobTitlesJSON))
+		}
 
 		recordAudit(ctx, actorFromRequest(c), "config.update", "config", "", "")
 
