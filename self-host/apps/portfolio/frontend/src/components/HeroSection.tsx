@@ -4,6 +4,7 @@ import { FileDown, ChevronLeft, ChevronRight, Lock, RotateCw } from 'lucide-reac
 import ReactiveGrid from '@/components/originkit/reactivegrid';
 import CrystalGlow from '@/components/originkit/crystal-glow';
 import GravityGallery from '@/components/originkit/gravitygallery';
+import FallingText from '@/components/originkit/falling-text';
 
 const isConfigured = (url: string) => !!url && url !== '#';
 
@@ -139,8 +140,12 @@ const ANALYTICS_STATS: { label: string; value: string; delta: string; trend: 'up
 // markup - Math.random() here would be a hydration mismatch.
 const ANALYTICS_BAR_HEIGHTS = [35, 50, 40, 65, 55, 70, 60, 80, 45, 90, 75, 60, 85, 100];
 
-// Cycles through the configurable job-title list on a timer. A single title
-// just renders statically (no point animating something that never changes).
+// Cycles through the configurable job-title list on a timer, using
+// OriginKit's Falling Text (wired in verbatim, see originkit/falling-text.tsx)
+// for the transition - its own effect re-fires the drop-in animation
+// whenever the `text` prop changes, so swapping titles on an interval is
+// all this wrapper needs to do. A single title just renders statically (no
+// point animating something that never changes).
 function JobTitleCycler({ titles }: { titles: string[] }) {
   const [index, setIndex] = useState(0);
 
@@ -152,7 +157,26 @@ function JobTitleCycler({ titles }: { titles: string[] }) {
     return () => clearInterval(id);
   }, [titles.length]);
 
-  return <span>{titles[index % titles.length]}</span>;
+  return (
+    <FallingText
+      text={titles[index % titles.length]}
+      tag="span"
+      split="words"
+      color="#000000"
+      font={{
+        fontFamily: 'var(--ds-font-display)',
+        fontWeight: 700,
+        fontSize: 12,
+        lineHeight: 1.2,
+        letterSpacing: '0.03em',
+        textAlign: 'left',
+      }}
+      startY={-14}
+      startOpacity={0}
+      stagger={0.03}
+      transition={{ type: 'spring', stiffness: 500, damping: 26, mass: 0.6 }}
+    />
+  );
 }
 
 // Shared between the live homepage and the admin Settings preview dialog -
@@ -161,15 +185,20 @@ function JobTitleCycler({ titles }: { titles: string[] }) {
 // Settings can edit.
 const DEFAULT_JOB_TITLES = ['BACKEND / PLATFORM ENGINEER'];
 
+type CreditItem = { text: string; url: string };
+type CreditRow = { id: string; label: string; items: CreditItem[] };
+
 export default function HeroSection({
   description,
   jobTitles = DEFAULT_JOB_TITLES,
+  credits = [],
   githubUrl,
   linkedinUrl,
   onRequestResume,
 }: {
   description: string;
   jobTitles?: string[];
+  credits?: CreditRow[];
   githubUrl: string;
   linkedinUrl: string;
   onRequestResume: () => void;
@@ -383,6 +412,48 @@ export default function HeroSection({
         </div>
       ),
     },
+    // Only rotated into the mockup when there's something to show - an
+    // empty credits page would just be a blank scroll area, worse than not
+    // offering the page at all.
+    ...(credits.length > 0
+      ? [
+          {
+            path: 'credits',
+            content: (
+              <div className="h-full overflow-y-auto p-4 flex flex-col gap-4" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
+                <p
+                  className="shrink-0 text-[10px] font-bold uppercase tracking-widest opacity-70"
+                  style={{ color: 'var(--ds-yellow)', fontFamily: 'var(--ds-font-display)' }}
+                >
+                  Credits
+                </p>
+                {credits.map((row) => (
+                  <div key={row.id} className="pb-4 border-b border-white/10 last:border-b-0 last:pb-0">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-white/40 mb-1.5">{row.label}</p>
+                    <div className="flex flex-col gap-1">
+                      {row.items.map((item, idx) =>
+                        item.url ? (
+                          <a
+                            key={idx}
+                            href={formatUrl(item.url)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-bold text-white underline underline-offset-2 decoration-white/30 hover:decoration-[var(--ds-yellow)] hover:text-[var(--ds-yellow)] transition-colors w-fit"
+                          >
+                            {item.text}
+                          </a>
+                        ) : (
+                          <span key={idx} className="text-xs font-bold text-white/80">{item.text}</span>
+                        )
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
   const page = browserPages[pageIndex];
 

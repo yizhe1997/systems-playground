@@ -1,6 +1,6 @@
 # Terms & Conditions
 
-**Last updated:** July 31, 2026
+**Last updated:** August 17, 2026
 
 Short version: this is a personal portfolio site. Look around, and if you want my resume, use
 the request form. Don't misuse the site. Nothing here is a guarantee of anything.
@@ -22,7 +22,16 @@ automatically; if it lapses before you use it, contact me and I can issue a new 
 Please submit accurate information in the form. Spam or clearly bad-faith submissions may be
 ignored or blocked.
 
-## 3. Intellectual property
+## 3. The "Interested in working together?" feature
+
+Submitting this form doesn't guarantee a reply, though I read every one. Unlike the resume
+request feature, there's no AI-assisted step and no automatic email sent back to you — I review
+submissions manually and reach out directly, at my discretion, if it's a fit.
+
+Please submit accurate information here too. Spam or clearly bad-faith submissions may be
+ignored or blocked.
+
+## 4. Intellectual property
 
 The content on this site — including my resume, project write-ups, and site design — is mine
 unless otherwise noted. You're welcome to read it and share a link to it. Please don't
@@ -32,42 +41,43 @@ first.
 Project names, logos, or trademarks belonging to others that are mentioned on this site
 (e.g. companies I've worked with or technologies I've used) belong to their respective owners.
 
-## 4. No warranty
+## 5. No warranty
 
 This site is provided **"as is"** with no warranties of any kind, express or implied. I make a
 reasonable effort to keep it accurate and running, but as a self-hosted personal project, it
 may occasionally be unavailable, contain errors, or behave unexpectedly. I'm not liable for any
 damages arising from your use of, or inability to use, this site.
 
-## 5. AI-assisted processing
+## 6. AI-assisted processing
 
 As described in the [Privacy Policy](/privacy), resume requests are processed in part by an AI
 model as an assistive step before I review them. That processing does not constitute a decision
-by itself — I make the final call on every request.
+by itself — I make the final call on every request. The "Interested in working together?" form
+is never processed by an AI model.
 
-## 6. External links
+## 7. External links
 
 This site may link to external sites (e.g. GitHub, project demos, documentation). I don't
 control those sites and I'm not responsible for their content or practices.
 
-## 7. Limitation of liability
+## 8. Limitation of liability
 
 To the maximum extent permitted by applicable law, I am not liable for any indirect,
 incidental, or consequential damages arising from your use of this site or reliance on any
 content on it.
 
-## 8. Governing law
+## 9. Governing law
 
 This section intentionally doesn't name a specific governing jurisdiction — it's a personal
 project, not a company with a legal team, and I'm not asserting a particular country or state's
 laws apply here.
 
-## 9. Changes to these terms
+## 10. Changes to these terms
 
 I may update these terms from time to time as the site evolves. The "Last updated" date above
 will reflect the most recent change.
 
-## 10. Contact
+## 11. Contact
 
 Questions about these terms?
 

@@ -12,6 +12,7 @@ import {
   GraduationCap,
   BookMarked,
   Inbox,
+  Handshake,
   LogOut,
   ExternalLink,
 } from 'lucide-react';
@@ -29,7 +30,7 @@ import {
 
 export type AdminSection =
   | 'homepage' | 'about' | 'projects' | 'blog' | 'stack' | 'experience' | 'education' | 'credits'
-  | 'resume';
+  | 'resume' | 'leads';
 
 type NavItem = { key: AdminSection; label: string; icon: ReactNode };
 
@@ -46,6 +47,7 @@ const contentItems: NavItem[] = [
 
 const opsItems: NavItem[] = [
   { key: 'resume', label: 'Resume Requests', icon: <Inbox /> },
+  { key: 'leads', label: 'Leads', icon: <Handshake /> },
 ];
 
 export const sectionLabels: Record<AdminSection, string> = Object.fromEntries(

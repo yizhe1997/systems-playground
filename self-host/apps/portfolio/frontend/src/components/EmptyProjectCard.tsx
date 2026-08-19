@@ -27,12 +27,11 @@ export default function EmptyProjectCard() {
   return (
     <div
       onMouseEnter={() => setFaceIndex(Math.floor(Math.random() * FACES.length))}
-      className="flex flex-col items-center justify-center gap-2.5 border-black bg-[#fafafa] text-center cursor-pointer transition-[transform,box-shadow] duration-150 hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
+      className="flex flex-col items-center justify-center gap-2.5 border-black bg-[#fafafa] text-center cursor-pointer shadow-[var(--ds-shadow-md)] transition-[transform,box-shadow] duration-150 hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
       style={{
         borderWidth: '2px',
         borderStyle: 'dashed solid solid dashed',
         borderRadius: '0 0.75rem 0.75rem 0.75rem',
-        boxShadow: 'var(--ds-shadow-md)',
         padding: '20px',
         minHeight: '186px',
       }}

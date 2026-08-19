@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** August 11, 2026
+**Last updated:** August 17, 2026
 
 This page explains what information this website collects, why, and what happens to it. It's
 written in plain language because this is a personal portfolio site, not a company — there's no
@@ -13,8 +13,10 @@ infrastructure I self-host. It is not operated by a company or organization.
 
 ## What information I collect
 
-The only place this site asks you to identify yourself is the **"Request resume" form**. When
-you submit that form, I collect:
+There are two places this site asks you to identify yourself: the **"Request resume" form**, and
+the **"Interested in working together?" form** near the bottom of the homepage.
+
+When you submit the resume request form, I collect:
 
 - **Name** — so I know who's asking and can address you by name in a reply.
 - **Email address** — so I can send you the resume link if your request is approved.
@@ -22,8 +24,18 @@ you submit that form, I collect:
 - **Reason** *(optional free-text field)* — anything you choose to tell me about why you want the
   resume (e.g. "hiring for a backend role").
 
+When you submit the "Interested in working together?" form, I collect:
+
+- **Email address** *(required)* — so I can reply to you.
+- **Message** *(required free-text field)* — what you want to tell me (a role, a project idea, or
+  just saying hi). Required so submissions actually have enough context for me to act on.
+- **Name** *(optional)* — so I know who's writing, if you'd like to share it.
+
+Unlike the resume form, submitting this one doesn't trigger any automatic email back to you — it
+adds your message to a list I check and reply to manually.
+
 I don't use cookies, analytics trackers, or any similar tracking technology anywhere on this
-site, and nothing outside that form asks you to identify yourself.
+site, and nothing outside those two forms asks you to identify yourself.
 
 That said, two things happen automatically as part of running any website — worth naming even
 though neither one identifies you:
@@ -54,16 +66,24 @@ Specifically, your submitted information is used to:
 I don't use this data for marketing, don't add you to a mailing list, and don't use it for
 anything unrelated to your resume request.
 
+The "Interested in working together?" form serves the same kind of purpose, just simpler:
+**so I can read what you sent and reply to you directly.** There's no approve/decline step and,
+unlike the resume form, no AI processing involved (see the next section) — your submission just
+lands in a list I check manually and respond to by email myself.
+
 ## Automated triage with an AI model
+
+**This section applies only to the resume request form.** The "Interested in working together?"
+form is never processed by an AI model — it goes straight into a list only I read.
 
 > **A human (me) makes the actual approve/decline decision.** The AI does not autonomously
 > approve, decline, or send anything — it only helps me review faster.
 
-Before I manually review each request, it's processed by an AI model (currently **Claude Haiku,
-via the Anthropic API**) to help me summarize and flag submissions — for example, surfacing a
-short summary or flagging spam-like submissions — so I can review requests faster.
+Before I manually review each resume request, it's processed by an AI model (currently
+**Claude Haiku, via the Anthropic API**) to help me summarize and flag submissions — for example,
+surfacing a short summary or flagging spam-like submissions — so I can review requests faster.
 
-This means the contents of your submission (name, email, company, and reason) are sent to
+This means the contents of your resume request (name, email, company, and reason) are sent to
 Anthropic's API as part of that automated step. A few relevant points about that:
 
 - Anthropic states that it does **not** use data submitted through its commercial API to train
@@ -73,17 +93,21 @@ Anthropic's API as part of that automated step. A few relevant points about that
   [Commercial Terms](https://www.anthropic.com/legal/commercial-terms) for their current,
   authoritative retention and usage terms, since those may change over time and this page won't
   always be updated the same day they do.
-- This is currently the **only** third party that sees your submitted data as part of processing
-  your request (see "Sharing" below).
+- This is currently the **only** third party that sees data submitted through the resume request
+  form, and it's never sent anything from the "Interested in working together?" form (see
+  "Sharing" below).
 
 ## Sharing — who else sees this data
 
 I don't sell your data. I don't share it with advertisers, data brokers, or anyone else for
 marketing purposes. The only place your submitted information goes, besides my own review, is:
 
-- **Anthropic** (the AI triage step described above).
-- **My email provider**, if your request is approved — sending you the resume link requires
-  sending an email, which necessarily passes through whatever SMTP/email service I use.
+- **Anthropic** (the AI triage step described above) — resume requests only, never the
+  "Interested in working together?" form.
+- **My email provider**, if your resume request is approved — sending you the resume link
+  requires sending an email, which necessarily passes through whatever SMTP/email service I use.
+  A "working together" submission doesn't trigger an outbound email at all — I reply manually,
+  if and when I do.
 - **Service providers that keep the site running** — e.g. the hosting infrastructure and
   database (SQLite) that store the submission while it's pending review. These are
   infrastructure I run myself, not third parties I hand data to; see the technical note below.
@@ -93,15 +117,23 @@ profiles or sell it in any form.
 
 ## How long I keep your data
 
-> **Your name and email are permanently erased 30 days after you submit a request** —
-> automatically, regardless of whether it was approved, declined, or never resolved. This isn't
-> a plan; it's already running on every submission.
+> **Your identifying data is permanently erased 30 days after you submit either form** —
+> automatically, regardless of status (approved, declined, contacted, or never resolved). This
+> isn't a plan; it's already running on every submission.
 
+For a **resume request**, that means your name and email are cleared 30 days after submission.
 What's kept afterward is limited to non-identifying information — the company name, your stated
 reason, the request's status, and the AI legitimacy verdict — so I can still see aggregate trends
 (how many requests come in, from which companies, for what roles, how many convert) without
-retaining anyone's personal contact information. If you'd like your data erased sooner than 30
-days, email me at **yzportal123@gmail.com** and I'll remove it manually.
+retaining anyone's personal contact information.
+
+For a **"working together" submission**, the same 30-day clock clears your name, email, *and*
+message — there's no non-identifying remainder kept for that form, since the message itself is
+free text that could contain identifying details. Only the row's status (new / contacted /
+archived) and submission date survive.
+
+If you'd like your data erased sooner than 30 days, email me at **yzportal123@gmail.com** and
+I'll remove it manually.
 
 ## Your rights
 

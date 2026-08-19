@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import ProjectsManager from "@/components/admin/ProjectsManager"
 import BlogManager from "@/components/admin/BlogManager"
 import ResumeRequests from "@/components/admin/ResumeRequests"
+import LeadsManager from "@/components/admin/LeadsManager"
 import StackManager from "@/components/admin/StackManager"
 import ExperienceManager from "@/components/admin/ExperienceManager"
 import EducationManager from "@/components/admin/EducationManager"
@@ -64,6 +65,11 @@ export default function AdminDashboard() {
   const [bio, setBio] = useState<string>('');
   const [heroDescription, setHeroDescription] = useState<string>('');
   const [jobTitles, setJobTitles] = useState<string[]>([]);
+  // Public credits data, fetched once for the Homepage hero preview below -
+  // the credits list itself is managed on its own tab (CreditsManager); this
+  // is read-only here, just so the preview shows the mockup's credits page
+  // exactly as it renders live instead of always previewing it empty.
+  const [previewCredits, setPreviewCredits] = useState<{ id: string; label: string; items: { text: string; url: string }[] }[]>([]);
   const [configBaseline, setConfigBaseline] = useState<{
     resumeUrl: string; linkedinUrl: string; githubUrl: string; bio: string; heroDescription: string; jobTitles: string[];
   }>({ resumeUrl: '', linkedinUrl: '', githubUrl: '', bio: '', heroDescription: '', jobTitles: [] });
@@ -134,6 +140,10 @@ export default function AdminDashboard() {
     // model rather than fitting it.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchConfig();
+    fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085') + '/api/credits')
+      .then((r) => r.json())
+      .then((data) => setPreviewCredits(data || []))
+      .catch(() => {});
   }, []);
 
   // Homepage and About each get their own dirty flag (and their own Save
@@ -633,6 +643,19 @@ export default function AdminDashboard() {
                 <ResumeRequests isAdmin={isAdmin} activeResumePath={resumeUrl} />
               </div>
             )}
+
+            {section === 'leads' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-extrabold mb-2">Leads</h2>
+                  <p className="text-sm text-[var(--ds-charcoal)]/70">
+                    Submissions from the &quot;Interested in working together?&quot; form on the homepage.
+                  </p>
+                </div>
+
+                <LeadsManager isAdmin={isAdmin} />
+              </div>
+            )}
           </main>
         </SidebarInset>
       </SidebarProvider>
@@ -684,7 +707,7 @@ export default function AdminDashboard() {
           </DialogHeader>
           {previewField === 'hero' && (
             <div className="border-2 border-black overflow-hidden -mx-4 sm:mx-0" style={{ borderRadius: '0.5rem' }}>
-              <HeroSection description={heroDescription} jobTitles={jobTitles} githubUrl={githubUrl} linkedinUrl={linkedinUrl} onRequestResume={() => {}} />
+              <HeroSection description={heroDescription} jobTitles={jobTitles} credits={previewCredits} githubUrl={githubUrl} linkedinUrl={linkedinUrl} onRequestResume={() => {}} />
             </div>
           )}
           {previewField === 'bio' && (

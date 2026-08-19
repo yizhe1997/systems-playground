@@ -33,6 +33,23 @@ CREATE TABLE IF NOT EXISTS resume_requests (
 CREATE INDEX IF NOT EXISTS idx_resume_requests_created_at ON resume_requests(created_at);
 `
 
+// leadsSchema backs the "Interested in working together?" contact form -
+// deliberately much thinner than resume_requests: no triage, no approve/
+// reject workflow, just an inbound message queue the operator works through
+// manually (see leads.go). status is a plain operator-facing tracker
+// ('new' / 'contacted' / 'archived'), not a gate on anything automated.
+const leadsSchema = `
+CREATE TABLE IF NOT EXISTS leads (
+	id TEXT PRIMARY KEY,
+	name TEXT NOT NULL DEFAULT '',
+	email TEXT NOT NULL,
+	message TEXT NOT NULL DEFAULT '',
+	status TEXT NOT NULL DEFAULT 'new',
+	created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at);
+`
+
 // auditLogSchema is a single, centralized log of admin actions across every
 // resource (resume requests, config, CMS content, resume files) - added
 // instead of created_by/updated_by columns on every individual table, since
@@ -112,6 +129,9 @@ func initDB() {
 		log.Fatalf("❌ Failed to migrate SQLite schema: %v", err)
 	}
 	if _, err := conn.ExecContext(ctx, auditLogSchema); err != nil {
+		log.Fatalf("❌ Failed to migrate SQLite schema: %v", err)
+	}
+	if _, err := conn.ExecContext(ctx, leadsSchema); err != nil {
 		log.Fatalf("❌ Failed to migrate SQLite schema: %v", err)
 	}
 	for _, stmt := range resumeRequestsColumnMigrations {
