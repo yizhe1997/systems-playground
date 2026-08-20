@@ -115,19 +115,17 @@ func main() {
 		resumeUrl, _ := GetConfig(c.Context(), "resumeUrl", "#")
 		linkedinUrl, _ := GetConfig(c.Context(), "linkedinUrl", "#")
 		githubUrl, _ := GetConfig(c.Context(), "githubUrl", "#")
-		// Defaults match each field's original hardcoded copy, so an operator
-		// who never touches these sees no change on the site.
-		bio, _ := GetConfig(c.Context(), "bio", "Chin Yi Zhe — Backend / Platform Engineer. Builds and operates real self-hosted infrastructure, with AI as a working collaborator rather than a novelty.")
-		heroDescription, _ := GetConfig(c.Context(), "heroDescription", "Self-hosted infrastructure, actually running — with AI as a working collaborator, not a gimmick.")
+		bio, _ := GetConfig(c.Context(), "bio", "")
+		heroDescription, _ := GetConfig(c.Context(), "heroDescription", "")
 
 		// Unlike the other fields, an empty jobTitles is a valid, deliberate
 		// state (hide the badge entirely) - so this only falls back to the
 		// default on the very first load (key never set) or corrupt stored
 		// JSON, not on a legitimately empty "[]" saved by clearing the list.
-		jobTitlesRaw, _ := GetConfig(c.Context(), "jobTitles", `["BACKEND / PLATFORM ENGINEER"]`)
+		jobTitlesRaw, _ := GetConfig(c.Context(), "jobTitles", `[]`)
 		var jobTitles []string
 		if err := json.Unmarshal([]byte(jobTitlesRaw), &jobTitles); err != nil {
-			jobTitles = []string{"BACKEND / PLATFORM ENGINEER"}
+			jobTitles = []string{}
 		}
 
 		return c.JSON(fiber.Map{

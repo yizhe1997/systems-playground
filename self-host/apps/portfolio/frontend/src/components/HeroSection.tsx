@@ -1,5 +1,8 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { FileDown, ChevronLeft, ChevronRight, Lock, RotateCw, ArrowUp } from 'lucide-react';
 import ReactiveGrid from '@/components/originkit/reactivegrid';
 import CrystalGlow from '@/components/originkit/crystal-glow';
@@ -202,15 +205,20 @@ type ChatMessage = { text: string; sender: 'me' | 'them'; timestamp: string };
 // reachable through props alone. This scoped attribute-selector CSS is the
 // least invasive way to add one without forking the vendored file: it
 // targets the bubbles' own (fairly distinctive) inline border-radius value
-// rather than touching the component. Fragile only in the sense that it'd
-// silently stop matching if the vendored source's border-radius values ever
-// changed - worth a second look if this component is ever re-pulled from
-// OriginKit.
+// rather than touching the component. The component sets a 4-value
+// border-radius ("20px 20px 4px 20px" sent / "20px 20px 20px 4px"
+// received), but the browser re-serializes the sent side's inline style
+// attribute down to the 3-value shorthand "20px 20px 4px" (the 4th value
+// equals the 2nd, so it's omittable) - matching on the full 4-value string
+// silently missed the sent bubble entirely. "20px 20px 4px" alone is a
+// substring of both serialized forms, so it catches both. Fragile only in
+// the sense that it'd silently stop matching if the vendored source's
+// border-radius values ever changed - worth a second look if this
+// component is ever re-pulled from OriginKit.
 function CreditsChatOutlineStyle() {
   return (
     <style>{`
-      .credits-chat-panel [style*="20px 20px 4px 20px"],
-      .credits-chat-panel [style*="20px 20px 20px 4px"] {
+      .credits-chat-panel [style*="20px 20px 4px"] {
         box-shadow: 0 0 0 1.5px var(--ds-charcoal), 0 1px 2px rgba(0,0,0,0.05) !important;
       }
     `}</style>
@@ -223,9 +231,10 @@ function CreditsChatOutlineStyle() {
 // or page refresh both reset it for free. Keyed by activeCreditsIdx at the
 // call site so switching groups remounts this whole component, clearing the
 // draft/sentDrafts state along with it.
-function CreditsChatPanel({ baseMessages }: { baseMessages: ChatMessage[] }) {
+function CreditsChatPanel({ baseMessages, baseUrls }: { baseMessages: ChatMessage[]; baseUrls: (string | undefined)[] }) {
   const [draft, setDraft] = useState('');
   const [sentDrafts, setSentDrafts] = useState<string[]>([]);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const messages: ChatMessage[] = [
     ...baseMessages,
@@ -235,6 +244,54 @@ function CreditsChatPanel({ baseMessages }: { baseMessages: ChatMessage[] }) {
       timestamp: formatChatTimestamp(baseMessages.length + i),
     })),
   ];
+  // Visitor-typed messages never carry a link - only baseMessages (the
+  // group label + its items) can.
+  const urls: (string | undefined)[] = [...baseUrls, ...sentDrafts.map(() => undefined)];
+
+  // LiveChat (originkit/live-chat.tsx) has no url/href concept at all - its
+  // Message type is just {text, sender, timestamp}, and each bubble renders
+  // as a plain <div>, not a link. Rather than fork the vendored component,
+  // this wires click behavior onto its rendered output from the outside:
+  // one .msg-item per message, always in the same order as `messages`, so
+  // zipping them against `urls` by index is reliable. Runs after every
+  // render (no dependency array) since messages/urls are fresh arrays each
+  // time anyway and this is cheap for a handful of bubbles.
+  useEffect(() => {
+    const items = listRef.current?.querySelectorAll<HTMLElement>('.msg-item');
+    if (!items) return;
+    items.forEach((el, i) => {
+      const url = urls[i];
+      const bubble = el.lastElementChild as HTMLElement | null;
+      if (url) {
+        el.style.cursor = 'pointer';
+        el.setAttribute('role', 'link');
+        // The custom cursor (originkit/usercursor.tsx) looks for
+        // `[data-cursor-label]` specifically - role="link" alone doesn't
+        // register with it (its own detection selector only checks
+        // role="button", not role="link") - so this is required, not just
+        // decorative, for the "Open" pill to show on hover.
+        el.setAttribute('data-cursor-label', 'Open');
+        el.tabIndex = 0;
+        el.onclick = () => window.open(url, '_blank', 'noopener,noreferrer');
+        el.onkeydown = (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
+        };
+        if (bubble) bubble.style.textDecoration = 'underline';
+      } else {
+        el.style.cursor = '';
+        el.removeAttribute('role');
+        el.removeAttribute('data-cursor-label');
+        el.removeAttribute('tabindex');
+        el.onclick = null;
+        el.onkeydown = null;
+        if (bubble) bubble.style.textDecoration = '';
+      }
+    });
+  });
+
   // Live, not decorative: only shown while the visitor actually has unsent
   // text in the compose box below, and always on "me" (right) side, since
   // it's previewing the visitor's own outgoing message rather than
@@ -251,7 +308,7 @@ function CreditsChatPanel({ baseMessages }: { baseMessages: ChatMessage[] }) {
 
   return (
     <div className="credits-chat-panel h-full flex flex-col" style={{ backgroundColor: '#ffffff' }}>
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0" ref={listRef}>
         <LiveChat
           messages={messages}
           font={CREDITS_CHAT_FONT}
@@ -414,6 +471,13 @@ export default function HeroSection({
         sender: idx % 2 === 0 ? 'them' : 'me',
         timestamp: formatChatTimestamp(idx),
       }))
+    : [];
+  // Parallel to activeCreditsMessages (same length, same order: label first,
+  // then each item) - LiveChat's own Message type has no url/href field at
+  // all, so this rides alongside it instead and gets wired onto the
+  // rendered bubbles imperatively (see CreditsChatPanel).
+  const activeCreditsUrls: (string | undefined)[] = activeCreditsRow
+    ? [undefined, ...activeCreditsRow.items.map((item) => (item.url ? formatUrl(item.url) : undefined))]
     : [];
 
   // Pages the fake browser mockup below cycles through via its header's
@@ -664,7 +728,7 @@ export default function HeroSection({
                       separate heading element above it. */}
                   <div className="absolute" style={{ top: 38, bottom: 32, left: 150, right: 0 }}>
                     {activeCreditsMessages.length > 0 && (
-                      <CreditsChatPanel key={activeCreditsIdx} baseMessages={activeCreditsMessages} />
+                      <CreditsChatPanel key={activeCreditsIdx} baseMessages={activeCreditsMessages} baseUrls={activeCreditsUrls} />
                     )}
                   </div>
                 </div>
@@ -850,9 +914,34 @@ export default function HeroSection({
             SYSTEMS.
           </h1>
 
-          <p className="text-lg font-medium max-w-md mx-auto lg:mx-0 mb-8">
-            {description}
-          </p>
+          {/* Plain string, not JSX - description is an admin-editable CMS
+              field (see app/admin's Homepage tab), so any link in it (e.g.
+              "...[head over to about](/about)") has to come from Markdown
+              in the text itself rather than a hardcoded element here. */}
+          <div className="text-lg font-medium max-w-md mx-auto lg:mx-0 mb-8">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                p: ({ children }) => <p className="mb-0">{children}</p>,
+                a: ({ href, children }) => {
+                  const isExternal = /^https?:\/\//.test(href || '');
+                  return (
+                    <Link
+                      href={href || '#'}
+                      data-cursor-label="Open"
+                      target={isExternal ? '_blank' : undefined}
+                      rel={isExternal ? 'noopener noreferrer' : undefined}
+                      className="font-bold hover:text-[var(--ds-charcoal)]/70 transition-colors"
+                    >
+                      {children}
+                    </Link>
+                  );
+                },
+              }}
+            >
+              {description}
+            </ReactMarkdown>
+          </div>
         </div>
 
         <div className="lg:row-start-3 lg:col-start-1 flex flex-wrap gap-4 justify-center lg:justify-start">

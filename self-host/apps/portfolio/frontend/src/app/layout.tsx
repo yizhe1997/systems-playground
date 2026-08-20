@@ -24,8 +24,8 @@ const geistMono = Geist_Mono({
 // next/font.
 
 export const metadata: Metadata = {
-  title: "SYSTEMS_PLAYGROUND // YZ",
-  description: "Interactive Systems Playground & Portfolio",
+  title: "YZ Portfolio",
+  description: "Interactive Portfolio",
   icons: {
     icon: "/favicon.svg",
   },

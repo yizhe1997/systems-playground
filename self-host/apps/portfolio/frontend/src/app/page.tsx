@@ -31,11 +31,6 @@ type Post = {
 type CreditItem = { text: string; url: string };
 type CreditRow = { id: string; label: string; items: CreditItem[] };
 
-const DEFAULT_HERO_DESCRIPTION =
-  'Self-hosted infrastructure, actually running — with AI as a working collaborator, not a gimmick.';
-
-const DEFAULT_JOB_TITLES = ['BACKEND / PLATFORM ENGINEER'];
-
 // User-supplied train glyph (train-svgrepo-com), used verbatim - the source
 // file's outer path is a viewBox-bounding square combined with a few
 // microscopic decorative sub-paths near y~23, but it inherits fill="none"
@@ -391,8 +386,8 @@ export default function Home() {
 
   const [linkedinUrl, setLinkedinUrl] = useState<string>('#');
   const [githubUrl, setGithubUrl] = useState<string>('#');
-  const [heroDescription, setHeroDescription] = useState<string>(DEFAULT_HERO_DESCRIPTION);
-  const [jobTitles, setJobTitles] = useState<string[]>(DEFAULT_JOB_TITLES);
+  const [heroDescription, setHeroDescription] = useState<string>('');
+  const [jobTitles, setJobTitles] = useState<string[]>([]);
 
   // "Interested in working together?" form - replaces the old inline
   // Credits band (credits now live as their own page in the fake browser

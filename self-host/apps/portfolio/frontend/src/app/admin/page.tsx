@@ -463,7 +463,6 @@ export default function AdminDashboard() {
                           <input
                             value={title}
                             onChange={(e) => updateJobTitle(i, e.target.value)}
-                            placeholder="Backend / Platform Engineer"
                             disabled={!isAdmin}
                             className={`${dsInput} disabled:opacity-50 disabled:cursor-not-allowed`}
                           />
@@ -529,7 +528,6 @@ export default function AdminDashboard() {
                       value={heroDescription}
                       onChange={(e) => setHeroDescription(e.target.value)}
                       rows={2}
-                      placeholder="Self-hosted infrastructure, actually running — with AI as a working collaborator, not a gimmick."
                       disabled={!isAdmin}
                       className={`${dsInput} disabled:opacity-50 disabled:cursor-not-allowed`}
                     />
@@ -585,7 +583,6 @@ export default function AdminDashboard() {
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       rows={3}
-                      placeholder="Chin Yi Zhe — Backend / Platform Engineer. Builds and operates real self-hosted infrastructure, with AI as a working collaborator rather than a novelty."
                       disabled={!isAdmin}
                       className={`${dsInput} disabled:opacity-50 disabled:cursor-not-allowed`}
                     />

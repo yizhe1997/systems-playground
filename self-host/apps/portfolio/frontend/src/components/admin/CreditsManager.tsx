@@ -21,30 +21,51 @@ const formatUrl = (url: string) => {
   return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
 };
 
+// Matches the live Credits page's Live Chat panel (HeroSection.tsx,
+// CreditsChatPanel) - the row's own label is the first ("them") message,
+// then its items alternate received/sent by position, same mapping the
+// homepage mockup uses. Kept as a lightweight static re-implementation
+// here rather than reusing the OriginKit LiveChat component directly -
+// this is just validating a row's content looks right, not reproducing
+// the mockup's browser chrome or its compose-bar/animation behavior.
 function CreditRowPreview({ row }: { row: CreditRow }) {
+  const messages = [row.label || 'Label', ...row.items.map((item) => item.text || 'Untitled item')];
   return (
-    <div className="p-8" style={{ backgroundColor: 'var(--ds-charcoal)', borderRadius: '0.75rem' }}>
-      <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[160px_1fr] gap-x-6 gap-y-1 items-start">
-        <span className="text-right text-white/40 text-sm font-medium pt-0.5">{row.label || 'Label'}</span>
-        <div className="flex flex-col gap-1">
-          {row.items.length === 0 && <span className="text-white/40 text-sm italic">No items yet</span>}
-          {row.items.map((item, idx) =>
-            item.url ? (
-              <a
-                key={idx}
-                href={formatUrl(item.url)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white underline underline-offset-2 decoration-white/30 hover:decoration-[var(--ds-yellow)] hover:text-[var(--ds-yellow)] transition-colors text-sm w-fit"
-              >
-                {item.text || 'Untitled item'}
+    <div
+      className="p-4 flex flex-col gap-2"
+      style={{ backgroundColor: '#ffffff', border: '2px solid var(--ds-charcoal)', borderRadius: '0.75rem' }}
+    >
+      {row.items.length === 0 && !row.label && (
+        <span className="text-[var(--ds-charcoal)]/40 text-sm italic">Nothing to preview yet</span>
+      )}
+      {messages.map((text, idx) => {
+        const isMe = idx % 2 === 1;
+        const item = idx > 0 ? row.items[idx - 1] : null;
+        const bubble = (
+          <span
+            className="inline-block px-3 py-2 text-sm max-w-[75%]"
+            style={{
+              backgroundColor: isMe ? '#007AFF' : '#ffffff',
+              color: isMe ? '#ffffff' : 'var(--ds-charcoal)',
+              border: isMe ? 'none' : '1.5px solid var(--ds-charcoal)',
+              borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+            }}
+          >
+            {text}
+          </span>
+        );
+        return (
+          <div key={idx} className="flex" style={{ justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
+            {item?.url ? (
+              <a href={formatUrl(item.url)} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                {bubble}
               </a>
             ) : (
-              <span key={idx} className="text-white/70 text-sm">{item.text || 'Untitled item'}</span>
-            )
-          )}
-        </div>
-      </div>
+              bubble
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -309,7 +330,7 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
           <DialogHeader>
             <DialogTitle className="text-xl text-black font-extrabold">Row preview</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
-              Unsaved changes — the Credits section sits on a dark background on the homepage, shown here for context.
+              Unsaved changes — on the homepage this renders as a chat thread, the row&apos;s label as the first message and each item alternating sent/received after it.
               {previewIndex !== null && rows[previewIndex]?.status !== 'published' && (
                 <span className="block mt-2 font-bold text-black">This row is a Draft and won&apos;t appear on the live site until Published.</span>
               )}

@@ -57,7 +57,7 @@ export default function SiteFooter() {
               </span>
             </div>
             <p className="text-sm text-[var(--ds-sage)]">
-              A recruiter-facing portfolio, self-hosted and built end to end by one engineer.
+              Made for recruiters. Overbuilt for fun.
             </p>
           </div>
 

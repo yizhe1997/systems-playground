@@ -6,9 +6,6 @@ import AboutPageBody, {
   type Education,
 } from '@/components/AboutPageBody';
 
-const DEFAULT_BIO =
-  'Chin Yi Zhe — Backend / Platform Engineer. Builds and operates real self-hosted infrastructure, with AI as a working collaborator rather than a novelty.';
-
 const backendUrl = () => process.env.INTERNAL_BACKEND_URL || 'http://localhost:8085';
 
 async function fetchJson<T>(path: string, fallback: T): Promise<T> {
@@ -28,7 +25,7 @@ export default async function AboutPage() {
     fetchJson<Education[]>('/api/education', []),
     fetchJson<{ bio?: string }>('/api/config', {}),
   ]);
-  const bio = config.bio || DEFAULT_BIO;
+  const bio = config.bio || '';
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
