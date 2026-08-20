@@ -224,8 +224,8 @@ func TestRunLeadRetentionSweep_ClockStartsAtCreation(t *testing.T) {
 	recent := now.AddDate(0, 0, -1).UnixMilli()
 
 	insertTestLead(t, Lead{
-		ID: "old-archived", Name: "Old", Email: "old@example.com", Message: "a project idea",
-		Status: "archived", CreatedAt: old,
+		ID: "old-contacted", Name: "Old", Email: "old@example.com", Message: "a project idea",
+		Status: "contacted", CreatedAt: old,
 	})
 	insertTestLead(t, Lead{
 		ID: "old-new", Name: "Old2", Email: "old2@example.com", Message: "hiring for a role",
@@ -238,15 +238,15 @@ func TestRunLeadRetentionSweep_ClockStartsAtCreation(t *testing.T) {
 
 	runLeadRetentionSweep(context.Background())
 
-	oldArchived, _ := findLead(context.Background(), "old-archived")
-	if oldArchived == nil {
-		t.Fatal("expected old archived lead row to survive anonymization (not be deleted), got nil")
+	oldContacted, _ := findLead(context.Background(), "old-contacted")
+	if oldContacted == nil {
+		t.Fatal("expected old contacted lead row to survive anonymization (not be deleted), got nil")
 	}
-	if oldArchived.Name != "" || oldArchived.Email != "" || oldArchived.Message != "" {
-		t.Errorf("expected old archived lead to be fully anonymized regardless of status, still has PII: %+v", oldArchived)
+	if oldContacted.Name != "" || oldContacted.Email != "" || oldContacted.Message != "" {
+		t.Errorf("expected old contacted lead to be fully anonymized regardless of status, still has PII: %+v", oldContacted)
 	}
-	if oldArchived.Status != "archived" {
-		t.Errorf("expected status to survive anonymization, got: %+v", oldArchived)
+	if oldContacted.Status != "contacted" {
+		t.Errorf("expected status to survive anonymization, got: %+v", oldContacted)
 	}
 
 	oldNew, _ := findLead(context.Background(), "old-new")
@@ -266,7 +266,7 @@ func TestRunLeadRetentionSweep_ClockStartsAtCreation(t *testing.T) {
 	// this is the idempotency the `email != ''` WHERE clause is supposed to
 	// guarantee, same as runRetentionSweep in resume.go.
 	runLeadRetentionSweep(context.Background())
-	if again, _ := findLead(context.Background(), "old-archived"); again == nil || again.Status != "archived" {
+	if again, _ := findLead(context.Background(), "old-contacted"); again == nil || again.Status != "contacted" {
 		t.Errorf("expected re-running the sweep to be a no-op on already-anonymized rows, got: %+v", again)
 	}
 }

@@ -129,8 +129,8 @@ retaining anyone's personal contact information.
 
 For a **"working together" submission**, the same 30-day clock clears your name, email, *and*
 message — there's no non-identifying remainder kept for that form, since the message itself is
-free text that could contain identifying details. Only the row's status (new / contacted /
-archived) and submission date survive.
+free text that could contain identifying details. Only the row's status (new / contacted) and
+submission date survive.
 
 If you'd like your data erased sooner than 30 days, email me at **yzportal123@gmail.com** and
 I'll remove it manually.

@@ -21,7 +21,7 @@ type Lead = {
   name: string;
   email: string;
   message: string;
-  status: string; // new, contacted, archived
+  status: string; // new, contacted
   created_at: number;
 };
 
@@ -39,7 +39,6 @@ const menuContentClass =
 const statusStyle: Record<string, { bg: string; label: string }> = {
   new: { bg: 'var(--ds-yellow)', label: 'New' },
   contacted: { bg: 'var(--ds-sage)', label: 'Contacted' },
-  archived: { bg: '#e5e5e5', label: 'Archived' },
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -133,7 +132,6 @@ export default function LeadsManager({ isAdmin }: { isAdmin: boolean }) {
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="new">New</SelectItem>
             <SelectItem value="contacted">Contacted</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
           </SelectContent>
         </Select>
         <span className="text-xs font-bold text-[var(--ds-charcoal)]/70 ml-auto">
@@ -207,7 +205,6 @@ export default function LeadsManager({ isAdmin }: { isAdmin: boolean }) {
                               <DropdownMenuSeparator />
                               {lead.status !== 'new' && <DropdownMenuItem onClick={() => setStatus(lead.id, 'new')}>Mark as new</DropdownMenuItem>}
                               {lead.status !== 'contacted' && <DropdownMenuItem onClick={() => setStatus(lead.id, 'contacted')}>Mark as contacted</DropdownMenuItem>}
-                              {lead.status !== 'archived' && <DropdownMenuItem onClick={() => setStatus(lead.id, 'archived')}>Archive</DropdownMenuItem>}
                             </>
                           )}
                           {isAdmin && !isAnonymized && (

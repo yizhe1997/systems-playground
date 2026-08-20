@@ -1,10 +1,11 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FileDown, ChevronLeft, ChevronRight, Lock, RotateCw } from 'lucide-react';
+import { FileDown, ChevronLeft, ChevronRight, Lock, RotateCw, ArrowUp } from 'lucide-react';
 import ReactiveGrid from '@/components/originkit/reactivegrid';
 import CrystalGlow from '@/components/originkit/crystal-glow';
 import GravityGallery from '@/components/originkit/gravitygallery';
 import FallingText from '@/components/originkit/falling-text';
+import LiveChat from '@/components/originkit/live-chat';
 
 const isConfigured = (url: string) => !!url && url !== '#';
 
@@ -88,7 +89,7 @@ const HEADING_STYLE = {
 const GALLERY_TILE_SIZE = 80;
 const BROWSER_CONTENT_HEIGHT = 320;
 // How long the loading state shows before the new page appears.
-const BROWSER_PAGE_LOAD_DELAY = 1100;
+const BROWSER_PAGE_LOAD_DELAY = 100;
 
 // Deliberate loading-spinner transition for the fake-browser mockup's page
 // switches, in place of an instant swap or crossfade - a plain two-path
@@ -140,6 +141,163 @@ const ANALYTICS_STATS: { label: string; value: string; delta: string; trend: 'up
 // markup - Math.random() here would be a hydration mismatch.
 const ANALYTICS_BAR_HEIGHTS = [35, 50, 40, 65, 55, 70, 60, 80, 45, 90, 75, 60, 85, 100];
 
+// Stable references for FallingText's object props - its own effect (in the
+// vendored originkit/falling-text.tsx, not editable) re-fires the drop-in
+// animation whenever `runAppear`/`resetToHidden` change identity, and those
+// are useCallbacks that depend on `font`/`transition` directly (not a
+// stringified/deep comparison). Passing fresh object literals inline would
+// give them a new reference on every JobTitleCycler re-render - and this
+// component sits under HeroSection, which re-renders constantly from the
+// mockup's own timers (page rotation, auto-advance, credits state, etc.) -
+// so the animation was replaying on unrelated re-renders even when the word
+// itself hadn't changed. Hoisting these to module scope keeps them
+// referentially stable across renders; the effect then only re-fires when
+// `text` itself actually changes, exactly as intended.
+const JOB_TITLE_FONT = {
+  fontFamily: 'var(--ds-font-display)',
+  fontWeight: 700,
+  fontSize: 12,
+  lineHeight: 1.2,
+  letterSpacing: '0.03em',
+  textAlign: 'left' as const,
+};
+// "Instant" per the operator's request - no eased/spring interpolation, each
+// word just appears immediately (still staggered word-to-word via `stagger`
+// below, which is a separate delay-only concept from this transition).
+const JOB_TITLE_TRANSITION = { type: 'tween' as const, duration: 0 };
+
+// Bubble text font for LiveChat (originkit/live-chat.tsx) on the Credits
+// mockup page. No `transition` override needed here, unlike JOB_TITLE_
+// TRANSITION above - LiveChat's own default parameter value is already a
+// module-level constant inside that file, so omitting the prop keeps it
+// referentially stable across renders without us hoisting anything.
+const CREDITS_CHAT_FONT: React.CSSProperties = {
+  fontFamily: 'var(--ds-font-body)',
+  fontWeight: 600,
+  fontSize: 13,
+  lineHeight: '1.35em',
+  textAlign: 'left',
+};
+
+// Fabricated but deterministic (not wall-clock) timestamps for the Credits
+// chat - 9:41 is the classic iPhone marketing-screenshot time, incrementing
+// a minute per message so consecutive bubbles never show the same time.
+// Deterministic means server and client render the same string, unlike
+// Date.now()/Math.random(), which would be a hydration mismatch.
+const CHAT_START_MINUTES = 9 * 60 + 41;
+const formatChatTimestamp = (idx: number) => {
+  const total = CHAT_START_MINUTES + idx;
+  const hour24 = Math.floor(total / 60) % 24;
+  const minute = total % 60;
+  const hour12 = ((hour24 + 11) % 12) + 1;
+  const ampm = hour24 < 12 ? 'AM' : 'PM';
+  return `${hour12}:${String(minute).padStart(2, '0')} ${ampm}`;
+};
+
+type ChatMessage = { text: string; sender: 'me' | 'them'; timestamp: string };
+
+// LiveChat (originkit/live-chat.tsx) has no `border` prop on its message
+// bubbles - with both bubble colors now on the white/light end (received is
+// literally white, same as the panel behind it), a plain outline isn't
+// reachable through props alone. This scoped attribute-selector CSS is the
+// least invasive way to add one without forking the vendored file: it
+// targets the bubbles' own (fairly distinctive) inline border-radius value
+// rather than touching the component. Fragile only in the sense that it'd
+// silently stop matching if the vendored source's border-radius values ever
+// changed - worth a second look if this component is ever re-pulled from
+// OriginKit.
+function CreditsChatOutlineStyle() {
+  return (
+    <style>{`
+      .credits-chat-panel [style*="20px 20px 4px 20px"],
+      .credits-chat-panel [style*="20px 20px 20px 4px"] {
+        box-shadow: 0 0 0 1.5px var(--ds-charcoal), 0 1px 2px rgba(0,0,0,0.05) !important;
+      }
+    `}</style>
+  );
+}
+
+// Wraps LiveChat with the Credits page's own compose bar - typed messages
+// append to the sent side only (this is a decorative mockup, not a real
+// inbox) and never leave this component: no persistence, so a group switch
+// or page refresh both reset it for free. Keyed by activeCreditsIdx at the
+// call site so switching groups remounts this whole component, clearing the
+// draft/sentDrafts state along with it.
+function CreditsChatPanel({ baseMessages }: { baseMessages: ChatMessage[] }) {
+  const [draft, setDraft] = useState('');
+  const [sentDrafts, setSentDrafts] = useState<string[]>([]);
+
+  const messages: ChatMessage[] = [
+    ...baseMessages,
+    ...sentDrafts.map((text, i) => ({
+      text,
+      sender: 'me' as const,
+      timestamp: formatChatTimestamp(baseMessages.length + i),
+    })),
+  ];
+  // Live, not decorative: only shown while the visitor actually has unsent
+  // text in the compose box below, and always on "me" (right) side, since
+  // it's previewing the visitor's own outgoing message rather than
+  // simulating someone else replying.
+  const isDraftTyping = draft.trim().length > 0;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+    setSentDrafts((prev) => [...prev, text]);
+    setDraft('');
+  };
+
+  return (
+    <div className="credits-chat-panel h-full flex flex-col" style={{ backgroundColor: '#ffffff' }}>
+      <div className="flex-1 min-h-0">
+        <LiveChat
+          messages={messages}
+          font={CREDITS_CHAT_FONT}
+          receivedBubbleColor="#ffffff"
+          receivedTextColor="var(--ds-charcoal)"
+          showTimestamps
+          showTyping={isDraftTyping}
+          typingSender="me"
+          // LiveChat's own reveal effect keys off messages.length and
+          // replays the ENTRE list's stagger-in animation on every change,
+          // not just the newly-added item - with animate left on, sending a
+          // message would flicker/replay the whole thread every time. This
+          // is the only lever available to stop that without touching the
+          // vendored component: turning animation off entirely.
+          animate={false}
+          style={{ backgroundColor: '#ffffff' }}
+        />
+      </div>
+      <form
+        onSubmit={handleSubmit}
+        className="shrink-0 flex items-center gap-2 px-3 py-1.5"
+        style={{ backgroundColor: 'var(--ds-charcoal)' }}
+      >
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Type a message"
+          aria-label="Add a message"
+          className="flex-1 min-w-0 border-2 border-black focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow"
+          style={{ fontSize: 12, padding: '5px 10px', borderRadius: 999, fontFamily: 'var(--ds-font-body)', backgroundColor: '#ffffff', color: 'var(--ds-charcoal)' }}
+        />
+        <button
+          type="submit"
+          aria-label="Send"
+          className="shrink-0 flex items-center justify-center border-2 border-black transition-transform duration-150 hover:translate-x-0.5 hover:translate-y-0.5"
+          style={{ width: 26, height: 26, borderRadius: '50%', backgroundColor: 'var(--ds-yellow)' }}
+        >
+          <ArrowUp className="w-3.5 h-3.5" style={{ color: 'var(--ds-charcoal)' }} aria-hidden="true" />
+        </button>
+      </form>
+      <CreditsChatOutlineStyle />
+    </div>
+  );
+}
+
 // Cycles through the configurable job-title list on a timer, using
 // OriginKit's Falling Text (wired in verbatim, see originkit/falling-text.tsx)
 // for the transition - its own effect re-fires the drop-in animation
@@ -153,7 +311,7 @@ function JobTitleCycler({ titles }: { titles: string[] }) {
     if (titles.length <= 1) return;
     const id = setInterval(() => {
       setIndex((i) => (i + 1) % titles.length);
-    }, 3000);
+    }, 6000);
     return () => clearInterval(id);
   }, [titles.length]);
 
@@ -163,18 +321,11 @@ function JobTitleCycler({ titles }: { titles: string[] }) {
       tag="span"
       split="words"
       color="#000000"
-      font={{
-        fontFamily: 'var(--ds-font-display)',
-        fontWeight: 700,
-        fontSize: 12,
-        lineHeight: 1.2,
-        letterSpacing: '0.03em',
-        textAlign: 'left',
-      }}
+      font={JOB_TITLE_FONT}
       startY={-14}
       startOpacity={0}
       stagger={0.03}
-      transition={{ type: 'spring', stiffness: 500, damping: 26, mass: 0.6 }}
+      transition={JOB_TITLE_TRANSITION}
     />
   );
 }
@@ -219,6 +370,11 @@ export default function HeroSection({
   const [pageLoadReason, setPageLoadReason] = useState<'manual' | 'idle'>('manual');
   const pageLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  // Which credits group the sidebar has selected on the Credits mockup page
+  // (see browserPages below) - sidebar-as-grouping layout, so this is the
+  // one piece of state that page's content actually needs.
+  const [creditsGroupIdx, setCreditsGroupIdx] = useState(0);
+
   // Fewer decorative face tiles on very narrow screens - a safety margin on
   // top of GravityGallery's own wall-resize fix, so the pile has less
   // chance of needing to stack taller than the mockup's fixed mobile height
@@ -244,6 +400,21 @@ export default function HeroSection({
       : []),
     ...(narrowGallery ? GALLERY_FACE_IMAGES.slice(0, 3) : GALLERY_FACE_IMAGES),
   ];
+
+  // Clamped so a CMS edit that shrinks the credits list can't leave the
+  // sidebar pointed past the end of the array.
+  const activeCreditsIdx = credits.length ? Math.min(creditsGroupIdx, credits.length - 1) : 0;
+  const activeCreditsRow = credits[activeCreditsIdx];
+  // The group's own label comes in as the first ("them") message, then the
+  // items alternate received/sent by position - simplest possible mapping
+  // of "list of cards" onto "a chat", no per-item sender data to track.
+  const activeCreditsMessages: ChatMessage[] = activeCreditsRow
+    ? [activeCreditsRow.label, ...activeCreditsRow.items.map((item) => item.text)].map((text, idx) => ({
+        text,
+        sender: idx % 2 === 0 ? 'them' : 'me',
+        timestamp: formatChatTimestamp(idx),
+      }))
+    : [];
 
   // Pages the fake browser mockup below cycles through via its header's
   // arrow buttons - add more entries here and the nav just works, no other
@@ -352,8 +523,11 @@ export default function HeroSection({
               className="shrink-0 flex items-center justify-between px-4"
               style={{ height: 32, borderTop: '3px solid #000', backgroundColor: 'var(--ds-sage)' }}
             >
-              <span className="font-bold text-[10px] tracking-wide opacity-60" style={{ fontFamily: 'var(--ds-font-display)' }}>&copy; SOCIALS</span>
-              <span className="font-extrabold text-[10px] tracking-wide" style={{ fontFamily: 'var(--ds-font-display)' }}>SCROLL &darr;</span>
+              <span className="font-bold text-[10px] tracking-wide opacity-60" style={{ fontFamily: 'var(--ds-font-display)' }}>SOCIALS.APP</span>
+              <span className="flex items-center gap-1.5 font-extrabold text-[10px] tracking-wide">
+                <span className="inline-block rounded-full" style={{ width: 6, height: 6, backgroundColor: '#22c55e' }} aria-hidden="true" />
+                <span style={{ fontFamily: 'var(--ds-font-display)' }}>ONLINE</span>
+              </span>
             </div>
           </div>
           <GravityGallery images={galleryImages} count={galleryImages.length} size={GALLERY_TILE_SIZE} shape="square" />
@@ -419,37 +593,81 @@ export default function HeroSection({
       ? [
           {
             path: 'credits',
+            // Sidebar IS the grouping - clicking a group swaps the chat to
+            // that group's messages. Header/footer bands run the full page
+            // width (same chrome pattern as the Socials page); the sidebar
+            // is a separate full-height layer stacked above them (zIndex)
+            // so it reads as sitting in front where their left edges
+            // overlap, not tucked into the space between them.
             content: (
-              <div className="h-full overflow-y-auto p-4 flex flex-col gap-4" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
-                <p
-                  className="shrink-0 text-[10px] font-bold uppercase tracking-widest opacity-70"
-                  style={{ color: 'var(--ds-yellow)', fontFamily: 'var(--ds-font-display)' }}
-                >
-                  Credits
-                </p>
-                {credits.map((row) => (
-                  <div key={row.id} className="pb-4 border-b border-white/10 last:border-b-0 last:pb-0">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-white/40 mb-1.5">{row.label}</p>
-                    <div className="flex flex-col gap-1">
-                      {row.items.map((item, idx) =>
-                        item.url ? (
-                          <a
-                            key={idx}
-                            href={formatUrl(item.url)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs font-bold text-white underline underline-offset-2 decoration-white/30 hover:decoration-[var(--ds-yellow)] hover:text-[var(--ds-yellow)] transition-colors w-fit"
-                          >
-                            {item.text}
-                          </a>
-                        ) : (
-                          <span key={idx} className="text-xs font-bold text-white/80">{item.text}</span>
-                        )
-                      )}
-                    </div>
+                <div className="h-full relative" style={{ backgroundColor: 'var(--ds-sage)' }}>
+                  <div
+                    className="absolute top-0 left-0 right-0 flex items-center justify-between px-4"
+                    style={{ height: 38, borderBottom: '2px solid var(--ds-charcoal)', backgroundColor: 'var(--ds-sage)' }}
+                  >
+                    <span className="font-extrabold text-sm tracking-wide" style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-charcoal)' }}>
+                      CREDITS.
+                    </span>
+                    <span className="font-bold text-[10px] tracking-widest opacity-65" style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-charcoal)' }}>
+                      {credits.reduce((n, r) => n + r.items.length, 0)} ENTRIES
+                    </span>
                   </div>
-                ))}
-              </div>
+
+                  <div
+                    className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4"
+                    style={{ height: 32, borderTop: '2px solid var(--ds-charcoal)', backgroundColor: 'var(--ds-sage)' }}
+                  >
+                    <span className="font-bold text-[10px] tracking-wide opacity-60" style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-charcoal)' }}>
+                      CREDITS.APP
+                    </span>
+                    <span className="flex items-center gap-1.5 font-extrabold text-[10px] tracking-wide" style={{ color: 'var(--ds-charcoal)' }}>
+                      <span className="inline-block rounded-full" style={{ width: 6, height: 6, backgroundColor: '#22c55e' }} aria-hidden="true" />
+                      <span style={{ fontFamily: 'var(--ds-font-display)' }}>ONLINE</span>
+                    </span>
+                  </div>
+
+                  <div
+                    className="absolute top-0 left-0 bottom-0 flex flex-col gap-0.5 overflow-y-auto"
+                    style={{ width: 150, zIndex: 10, backgroundColor: 'var(--ds-charcoal)', borderRight: '2px solid rgba(255,255,255,0.15)', padding: '14px 0' }}
+                  >
+                    <p
+                      className="px-3 pb-2 text-xs font-extrabold"
+                      style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-yellow)' }}
+                    >
+                      Credits
+                    </p>
+                    {credits.map((row, idx) => {
+                      const active = idx === activeCreditsIdx;
+                      return (
+                        <button
+                          key={row.id}
+                          type="button"
+                          onClick={() => setCreditsGroupIdx(idx)}
+                          className="flex items-center justify-between gap-1 px-3 py-1.5 text-left font-bold text-[10px] transition-colors"
+                          style={{
+                            fontFamily: 'var(--ds-font-display)',
+                            borderLeft: active ? '3px solid var(--ds-yellow)' : '3px solid transparent',
+                            backgroundColor: active ? 'rgba(255,225,124,0.12)' : 'transparent',
+                            color: active ? 'var(--ds-yellow)' : 'rgba(255,255,255,0.5)',
+                          }}
+                        >
+                          <span className="truncate">{row.label}</span>
+                          <span style={{ color: active ? 'var(--ds-yellow)' : 'rgba(255,255,255,0.3)' }}>{row.items.length}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Bounded by the header/footer bands and the sidebar on
+                      all four sides - the group's own label is folded in as
+                      the chat's first ("them") message, so there's no
+                      separate heading element above it. */}
+                  <div className="absolute" style={{ top: 38, bottom: 32, left: 150, right: 0 }}>
+                    {activeCreditsMessages.length > 0 && (
+                      <CreditsChatPanel key={activeCreditsIdx} baseMessages={activeCreditsMessages} />
+                    )}
+                  </div>
+                </div>
             ),
           },
         ]

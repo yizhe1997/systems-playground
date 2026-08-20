@@ -41,7 +41,7 @@ type Lead struct {
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 	Message   string `json:"message"`
-	Status    string `json:"status"` // new, contacted, archived
+	Status    string `json:"status"` // new, contacted
 	CreatedAt int64  `json:"created_at"`
 }
 
@@ -120,9 +120,9 @@ func RegisterLeadRoutes(app *fiber.App) {
 		return c.JSON(leads)
 	})
 
-	// Update the operator-facing status tracker (new/contacted/archived) -
-	// this doesn't gate anything automated, it's purely so the admin table
-	// can distinguish "haven't looked at this yet" from "already emailed them".
+	// Update the operator-facing status tracker (new/contacted) - this
+	// doesn't gate anything automated, it's purely so the admin table can
+	// distinguish "haven't looked at this yet" from "already emailed them".
 	admin.Post("/:id/status", func(c *fiber.Ctx) error {
 		ctx := c.Context()
 		id := c.Params("id")
@@ -134,8 +134,8 @@ func RegisterLeadRoutes(app *fiber.App) {
 		if err := c.BodyParser(&payload); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 		}
-		if payload.Status != "new" && payload.Status != "contacted" && payload.Status != "archived" {
-			return c.Status(400).JSON(fiber.Map{"error": "Status must be 'new', 'contacted', or 'archived'"})
+		if payload.Status != "new" && payload.Status != "contacted" {
+			return c.Status(400).JSON(fiber.Map{"error": "Status must be 'new' or 'contacted'"})
 		}
 
 		lead, err := findLead(ctx, id)
@@ -188,7 +188,7 @@ func RegisterLeadRoutes(app *fiber.App) {
 
 // startLeadRetentionSweep mirrors startRetentionSweep in resume.go - an
 // immediate sweep, then daily. Same 30-day window from CreatedAt regardless
-// of status: an ignored or archived lead is anonymized on the same clock as
+// of status: a lead still sitting as new is anonymized on the same clock as
 // one that was already contacted.
 func startLeadRetentionSweep() {
 	go func() {

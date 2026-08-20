@@ -37,7 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_resume_requests_created_at ON resume_requests(cre
 // deliberately much thinner than resume_requests: no triage, no approve/
 // reject workflow, just an inbound message queue the operator works through
 // manually (see leads.go). status is a plain operator-facing tracker
-// ('new' / 'contacted' / 'archived'), not a gate on anything automated.
+// ('new' / 'contacted'), not a gate on anything automated.
 const leadsSchema = `
 CREATE TABLE IF NOT EXISTS leads (
 	id TEXT PRIMARY KEY,
