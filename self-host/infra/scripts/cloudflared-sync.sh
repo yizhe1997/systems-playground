@@ -52,9 +52,23 @@ sync_once() {
   local begin_line end_line
   begin_line=$(grep -nF "$BEGIN_MARKER" "$CONFIG_FILE" | head -1 | cut -d: -f1 || true)
   end_line=$(grep -nF "$END_MARKER" "$CONFIG_FILE" | head -1 | cut -d: -f1 || true)
-  if [ -z "$begin_line" ] || [ -z "$end_line" ]; then
-    log "config.yml has no managed block markers yet - skipping this cycle. Re-run bootstrap.sh to add them (hosts bootstrapped before this script existed won't have them), or add the two marker comment lines by hand right before the catch-all 'service: http_status:404' entry."
+
+  if [ -z "$begin_line" ]; then
+    log "config.yml has no BEGIN marker yet - skipping this cycle. Re-run bootstrap.sh to add it (hosts bootstrapped before this script existed won't have it), or add the two marker comment lines by hand right before the catch-all 'service: http_status:404' entry."
     return
+  fi
+
+  # The END marker (and the catch-all rule after it) has gone missing at least twice on this
+  # host with no clear cause - cloudflared then refuses to start at all ("the last ingress rule
+  # must match all URLs"), a silent full outage since this loop just skipped forever without ever
+  # fixing or even flagging it. Self-heal by re-appending both rather than staying down until
+  # someone happens to notice and hand-edit the file again.
+  local self_healed=false
+  if [ -z "$end_line" ]; then
+    log "  [!] config.yml is missing its END marker and catch-all rule - self-healing by appending them now. cloudflared cannot start without this; investigate what's removing them if this keeps recurring."
+    printf '  %s\n  - service: http_status:404\n' "$END_MARKER" >>"$CONFIG_FILE"
+    end_line=$(grep -nF "$END_MARKER" "$CONFIG_FILE" | head -1 | cut -d: -f1 || true)
+    self_healed=true
   fi
 
   local new_block current_block
@@ -63,7 +77,10 @@ sync_once() {
   done)
   current_block=$(sed -n "$((begin_line + 1)),$((end_line - 1))p" "$CONFIG_FILE")
 
-  if [ "$current_block" = "$new_block" ]; then
+  # Even if the labelled-services block itself is unchanged, a self-heal just now means
+  # cloudflared was very likely down (invalid config, refused to start) and still needs a
+  # restart to pick up the fix - don't rely on systemd's own crash-restart backoff for that.
+  if [ "$current_block" = "$new_block" ] && [ "$self_healed" = false ]; then
     return
   fi
 
