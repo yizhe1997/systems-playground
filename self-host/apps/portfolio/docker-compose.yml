@@ -10,6 +10,10 @@ services:
     environment:
       - REDIS_URL=redis:6379
       - SQLITE_PATH=/data/portfolio.db
+      # Tempo lives in the separate observability Compose project, reached via its
+      # host-published OTLP port rather than a shared Docker network - see
+      # self-host/infra/observability/docker-compose.yml's tempo service comment.
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4317
       # These read directly from the invoking process's environment (which `infisical run`
       # populates) via compose interpolation — no backend/.env file needed or written anymore.
       - ADMIN_API_KEY=${ADMIN_API_KEY}
@@ -21,6 +25,8 @@ services:
       - FILEBROWSER_PUBLIC_URL=${FILEBROWSER_PUBLIC_URL}
       - FILEBROWSER_ADMIN_USERNAME=${FILEBROWSER_ADMIN_USERNAME}
       - FILEBROWSER_ADMIN_PASSWORD=${FILEBROWSER_ADMIN_PASSWORD}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - backend_data:/data
     depends_on:
@@ -31,6 +37,12 @@ services:
     environment:
       # Local Node server proxies to Go Backend on the internal Docker network
       - INTERNAL_BACKEND_URL=http://backend:8080
+      # @vercel/otel defaults to OTLP/HTTP (port 4318), unlike the Go backend which uses
+      # OTLP/gRPC (port 4317) explicitly - see the tempo service comment in
+      # self-host/infra/observability/docker-compose.yml.
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - backend
 

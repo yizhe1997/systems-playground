@@ -40,6 +40,33 @@ services:
       - prometheus_data:/prometheus
     ports:
       - "9090:9090"
+    # Needed to scrape the portfolio-backend job in prometheus.yml, which lives in a separate
+    # Compose project reachable only via a host-published port - see the tempo service comment
+    # below for why this repo uses host.docker.internal rather than a shared Docker network.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+  # Distributed tracing backend (Phase 2 - see README). Runs in monolithic/single-binary mode,
+  # matching Loki's approach here - no separate ingester/querier/compactor split, appropriate at
+  # this traffic scale. Receives traces over OTLP gRPC from the portfolio backend/frontend, which
+  # reach it via the host-published 4317 port rather than a shared Docker network - this repo has
+  # never used shared/external Docker networks for cross-project traffic (every other cross-project
+  # connection, e.g. Redis, Grafana, goes through a host-published port too), so this follows that
+  # existing precedent instead of introducing new plumbing.
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: observability-tempo
+    command: -config.file=/etc/tempo/tempo.yaml
+    volumes:
+      - ./tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "4317:4317" # OTLP gRPC receiver - used by the Go backend (go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc)
+      - "4318:4318" # OTLP HTTP receiver - used by the Next.js frontend (@vercel/otel defaults to OTLP/HTTP, not gRPC, when OTEL_EXPORTER_OTLP_PROTOCOL is unset)
+      - "3200:3200" # Tempo query API, used by Grafana's Tempo datasource
     restart: unless-stopped
     labels:
       - com.centurylinklabs.watchtower.enable=true
@@ -111,4 +138,5 @@ services:
 volumes:
   loki_data:
   prometheus_data:
+  tempo_data:
   grafana_data:

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -10,8 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // slogHTTPMiddleware replaces fiber's default plain-text request logger with
@@ -45,6 +48,12 @@ func slogHTTPMiddleware() fiber.Handler {
 			"latency_ms", time.Since(start).Milliseconds(),
 			"ip", ip,
 		}
+		// otelfiber stores the span on c.UserContext(), not c.Context() - this is what lets
+		// Grafana's Tempo->Loki trace correlation (see the observability datasources.yml
+		// tracesToLogsV2 config) actually find the matching log line for a given trace.
+		if span := trace.SpanFromContext(c.UserContext()); span.SpanContext().IsValid() {
+			attrs = append(attrs, "trace_id", span.SpanContext().TraceID().String())
+		}
 		if err != nil {
 			attrs = append(attrs, "error", err.Error())
 		}
@@ -72,6 +81,12 @@ func corsAllowedOrigins() string {
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
+	// app.Listen blocks and this process has no graceful-shutdown signal handling (matching the
+	// rest of this file's minimalism), so this defer never actually fires - in-flight spans are
+	// simply dropped on container stop, which is fine at this traffic scale.
+	shutdownTracing := initTracing()
+	defer shutdownTracing(context.Background())
+
 	app := fiber.New(fiber.Config{
 		AppName: "Systems Playground API",
 		// cloudflared connects to this app over localhost (see
@@ -90,7 +105,11 @@ func main() {
 	})
 
 	// Middleware
+	// otelfiber goes first so the span it starts is available to everything after it
+	// (slogHTTPMiddleware's trace_id field, and any handler reading c.UserContext()).
+	app.Use(otelfiber.Middleware())
 	app.Use(slogHTTPMiddleware())
+	app.Use(metricsMiddleware())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: corsAllowedOrigins(),
 		AllowHeaders: "Origin, Content-Type, Accept, X-Admin-Token",
@@ -104,6 +123,7 @@ func main() {
 	RegisterResumeRoutes(app)
 	RegisterFilebrowserRoutes(app)
 	RegisterLeadRoutes(app)
+	RegisterMetricsRoute(app)
 
 	// --- PUBLIC API ENDPOINTS ---
 
@@ -112,17 +132,17 @@ func main() {
 	})
 
 	app.Get("/api/config", func(c *fiber.Ctx) error {
-		resumeUrl, _ := GetConfig(c.Context(), "resumeUrl", "#")
-		linkedinUrl, _ := GetConfig(c.Context(), "linkedinUrl", "#")
-		githubUrl, _ := GetConfig(c.Context(), "githubUrl", "#")
-		bio, _ := GetConfig(c.Context(), "bio", "")
-		heroDescription, _ := GetConfig(c.Context(), "heroDescription", "")
+		resumeUrl, _ := GetConfig(c.UserContext(), "resumeUrl", "#")
+		linkedinUrl, _ := GetConfig(c.UserContext(), "linkedinUrl", "#")
+		githubUrl, _ := GetConfig(c.UserContext(), "githubUrl", "#")
+		bio, _ := GetConfig(c.UserContext(), "bio", "")
+		heroDescription, _ := GetConfig(c.UserContext(), "heroDescription", "")
 
 		// Unlike the other fields, an empty jobTitles is a valid, deliberate
 		// state (hide the badge entirely) - so this only falls back to the
 		// default on the very first load (key never set) or corrupt stored
 		// JSON, not on a legitimately empty "[]" saved by clearing the list.
-		jobTitlesRaw, _ := GetConfig(c.Context(), "jobTitles", `[]`)
+		jobTitlesRaw, _ := GetConfig(c.UserContext(), "jobTitles", `[]`)
 		var jobTitles []string
 		if err := json.Unmarshal([]byte(jobTitlesRaw), &jobTitles); err != nil {
 			jobTitles = []string{}
@@ -162,7 +182,7 @@ func main() {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 		}
 
-		ctx := c.Context()
+		ctx := c.UserContext()
 		SetConfig(ctx, "resumeUrl", req.ResumeUrl)
 		SetConfig(ctx, "linkedinUrl", req.LinkedinUrl)
 		SetConfig(ctx, "githubUrl", req.GithubUrl)

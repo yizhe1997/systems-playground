@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"go.opentelemetry.io/otel"
 )
+
+var triageTracer = otel.Tracer("triage")
 
 const triageModel = anthropic.ModelClaudeHaiku4_5_20251001
 
@@ -49,7 +52,9 @@ func runTriage(reqID string) {
 		log.Printf("⚠️ Triage: failed to mark %s processing: %v", reqID, err)
 	}
 
-	result, err := callTriage(ctx, req)
+	spanCtx, span := triageTracer.Start(ctx, "triage.callModel")
+	result, err := callTriage(spanCtx, req)
+	span.End()
 	if err != nil {
 		log.Printf("❌ Triage failed for %s: %v", reqID, err)
 		markTriageFailed(ctx, reqID, err.Error())

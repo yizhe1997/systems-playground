@@ -6,7 +6,10 @@ import (
 	"os"
 
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel"
 )
+
+var redisTracer = otel.Tracer("redis")
 
 var redisClient *redis.Client
 
@@ -32,6 +35,9 @@ func initRedis() {
 // GetConfig fetches a configuration value from Redis.
 // If it doesn't exist, it returns the provided default value.
 func GetConfig(ctx context.Context, key string, defaultValue string) (string, error) {
+	ctx, span := redisTracer.Start(ctx, "redis.GetConfig")
+	defer span.End()
+
 	if redisClient == nil {
 		return defaultValue, nil
 	}
@@ -47,6 +53,9 @@ func GetConfig(ctx context.Context, key string, defaultValue string) (string, er
 
 // SetConfig saves a configuration value to Redis permanently.
 func SetConfig(ctx context.Context, key string, value string) error {
+	ctx, span := redisTracer.Start(ctx, "redis.SetConfig")
+	defer span.End()
+
 	if redisClient == nil {
 		return nil
 	}
