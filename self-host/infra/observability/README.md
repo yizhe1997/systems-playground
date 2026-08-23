@@ -15,7 +15,7 @@ Seven services. Loki/Prometheus/cAdvisor/node-exporter/Grafana are all on this p
 | **Prometheus** | Scrapes and stores metrics from cAdvisor + node-exporter + the portfolio backend's `/metrics` | `9090` |
 | **cAdvisor** | Per-container resource metrics (CPU/memory/network/disk) for every container on the host | `8082` (has its own basic web UI) — not `8080`, its own default: this host's Cloudflare Tunnel already routes an unrelated project to `localhost:8080` |
 | **node-exporter** | Host-level metrics (CPU/memory/disk/network of the host itself, not just containers). Runs with `pid: host` — a standard, documented requirement for this exporter to read accurate host process/network state, not a custom elevated-privilege choice for this repo | not exposed (Prometheus-scrape only) |
-| **Tempo** | Distributed tracing backend, single-binary mode, local filesystem storage, 14-day retention. Receives OTLP traces from the portfolio backend/frontend | `4317` (OTLP gRPC), `3200` (query API, used by Grafana's Tempo datasource) |
+| **Tempo** | Distributed tracing backend, single-binary mode, local filesystem storage, 14-day retention. Receives OTLP traces from the portfolio backend/frontend | `4317` (OTLP gRPC), `4318` (OTLP HTTP) - query API (3200) is internal-only, reached by Grafana over this project's Docker network, not published to the host |
 | **Grafana** | Dashboards — pre-provisioned with the Prometheus + Loki + Tempo datasources (Tempo wired for trace-to-logs/metrics correlation) | `3030` — not `3000`, its own default: that's also the most common Next.js/React dev-server port, and would collide with running the portfolio frontend locally |
 
 ## One-time manual setup

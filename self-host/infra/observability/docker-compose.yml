@@ -66,7 +66,11 @@ services:
     ports:
       - "4317:4317" # OTLP gRPC receiver - used by the Go backend (go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc)
       - "4318:4318" # OTLP HTTP receiver - used by the Next.js frontend (@vercel/otel defaults to OTLP/HTTP, not gRPC, when OTEL_EXPORTER_OTLP_PROTOCOL is unset)
-      - "3200:3200" # Tempo query API, used by Grafana's Tempo datasource
+    # No host-published port for Tempo's query API (3200) - Grafana reaches it over this compose
+    # project's own internal Docker network (see datasources.yml's `url: http://tempo:3200`,
+    # resolved via service-name DNS within this project), so a host binding was never load-bearing.
+    # Deliberately not published: 3200 collided with an unidentified pre-existing process on the
+    # host (root-owned, not a Docker container) - not worth chasing since nothing needs it exposed.
     restart: unless-stopped
     labels:
       - com.centurylinklabs.watchtower.enable=true
