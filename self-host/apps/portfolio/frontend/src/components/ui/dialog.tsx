@@ -31,7 +31,14 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        // No backdrop-blur here deliberately - `backdrop-filter` forces the browser to
+        // recompute the blur of everything behind it on every repaint underneath (any typing
+        // caret blink, hover state, scroll, or animation inside the dialog), which is exactly
+        // what was causing general interaction lag - scrolling, clicking, typing - for the
+        // entire time any dialog was open, not just cursor movement. Bumped opacity from /10 to
+        // /30 to keep the same "background is dimmed/inactive" read without the blur doing part
+        // of that visual work.
+        "fixed inset-0 isolate z-50 bg-black/30 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
