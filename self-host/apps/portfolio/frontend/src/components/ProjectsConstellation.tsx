@@ -355,15 +355,7 @@ const ProjectsConstellation = forwardRef<ProjectsConstellationHandle, { projects
                   onPointerMove={handlePointerMove}
                   onPointerUp={(e) => handlePointerUp(n, e)}
                 >
-                  <circle
-                    cx={0}
-                    cy={0}
-                    r={n.r}
-                    fill="var(--ds-yellow)"
-                    stroke="var(--ds-black)"
-                    strokeWidth={2}
-                    strokeDasharray={hasLive ? undefined : '4 3'}
-                  />
+                  <circle cx={0} cy={0} r={n.r} fill="var(--ds-yellow)" stroke="var(--ds-black)" strokeWidth={2} />
                   <text
                     x={0}
                     y={n.r + 14}

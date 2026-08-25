@@ -117,31 +117,30 @@ export default function ProjectRow({ project, index = 0 }: { project: Project; i
         )}
       </div>
 
-      {(project.description || project.tech_stack.length > 0) && (
-        <div className="p-3.5 space-y-2.5 flex-1 flex flex-col" style={{ borderRadius: '0.6rem', backgroundColor: variant.tint }}>
-          {project.description && (
-            <div
-              className="text-[13px] leading-snug text-[var(--ds-charcoal)] overflow-hidden"
-              style={{
-                maxHeight: '5.6em',
-                maskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)',
-              }}
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={descriptionComponents}>
-                {softenBulletMarkers(project.description)}
-              </ReactMarkdown>
-            </div>
-          )}
-          {project.tech_stack.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-auto">
-              {project.tech_stack.map((tech) => (
-                <span key={tech} className="text-[11px] font-bold px-2.5 py-1 bg-black text-white" style={{ borderRadius: '0.35rem' }}>
-                  {tech}
-                </span>
-              ))}
-            </div>
-          )}
+      {project.description && (
+        // Scrollable, not faded - a mask hides overflow content with no way to actually read it,
+        // which is fine for "a little too long" but breaks down for a genuinely long description.
+        // overflow-y:auto keeps the card's height capped and consistent across the grid while
+        // still making every word reachable.
+        <div className="p-3.5" style={{ borderRadius: '0.6rem', backgroundColor: variant.tint }}>
+          <div
+            className="text-[13px] leading-snug text-[var(--ds-charcoal)] overflow-y-auto"
+            style={{ maxHeight: '5.6em', scrollbarWidth: 'thin' }}
+          >
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={descriptionComponents}>
+              {softenBulletMarkers(project.description)}
+            </ReactMarkdown>
+          </div>
+        </div>
+      )}
+
+      {project.tech_stack.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-auto">
+          {project.tech_stack.map((tech) => (
+            <span key={tech} className="text-[11px] font-bold px-2.5 py-1 bg-black text-white" style={{ borderRadius: '0.35rem' }}>
+              {tech}
+            </span>
+          ))}
         </div>
       )}
     </CardTag>

@@ -38,15 +38,18 @@ export default function ProjectsPage() {
     [projects]
   );
 
-  // Graph always gets the full unfiltered list - the whole point of that view is showing every
-  // relationship at once, so silently omitting nodes because a grid filter happens to be active
-  // (with nothing in the graph UI explaining why) would defeat the point of building it.
+  // Tags are shared between grid and graph (the tag filter control shows in both), but search is
+  // grid-only UI - the graph would be silently filtered by a search term with no visible input
+  // explaining why if it also picked up `search`, so it only reacts to tags.
+  const tagFilteredProjects = useMemo(
+    () => (activeTags.size === 0 ? projects : projects.filter((p) => p.tech_stack.some((t) => activeTags.has(t)))),
+    [projects, activeTags]
+  );
+
   const filteredProjects = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return projects
-      .filter((p) => activeTags.size === 0 || p.tech_stack.some((t) => activeTags.has(t)))
-      .filter((p) => !q || (p.title || '').toLowerCase().includes(q));
-  }, [projects, activeTags, search]);
+    return tagFilteredProjects.filter((p) => !q || (p.title || '').toLowerCase().includes(q));
+  }, [tagFilteredProjects, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE));
   const pagedProjects = useMemo(
@@ -110,21 +113,24 @@ export default function ProjectsPage() {
             <div className="flex items-center flex-wrap gap-3 mb-8">
               <ViewToggle value={viewMode} onChange={setViewMode} />
 
+              {/* Tags apply to both views now - graph nodes react to the same active tags as the
+                  grid. Search stays grid-only: there's no visible search input in graph mode, so
+                  silently filtering the graph by it too would be a hidden filter with no
+                  explanation on screen. */}
+              <ProjectTagFilter tags={allTags} activeTags={activeTags} onToggle={handleTagToggle} />
+
               {viewMode === 'grid' ? (
-                <>
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ds-charcoal)]/40" aria-hidden="true" />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search by title…"
-                      aria-label="Search projects by title"
-                      className="pl-8 pr-3 py-2 w-56 bg-white border-2 border-black text-sm font-bold placeholder:font-normal placeholder:text-[var(--ds-charcoal)]/40 focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow"
-                      style={{ borderRadius: '0.5rem' }}
-                    />
-                  </div>
-                  <ProjectTagFilter tags={allTags} activeTags={activeTags} onToggle={handleTagToggle} />
-                </>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ds-charcoal)]/40" aria-hidden="true" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search by title…"
+                    aria-label="Search projects by title"
+                    className="pl-8 pr-3 py-2 w-56 bg-white border-2 border-black text-sm font-bold placeholder:font-normal placeholder:text-[var(--ds-charcoal)]/40 focus:outline-none focus:shadow-[3px_3px_0px_0px_#000] transition-shadow"
+                    style={{ borderRadius: '0.5rem' }}
+                  />
+                </div>
               ) : (
                 <button
                   type="button"
@@ -260,7 +266,7 @@ export default function ProjectsPage() {
                 )}
               </>
             ) : (
-              <ProjectsConstellation ref={graphRef} projects={projects} />
+              <ProjectsConstellation ref={graphRef} projects={tagFilteredProjects} />
             )}
           </>
         )}
