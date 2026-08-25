@@ -113,6 +113,12 @@ func main() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: corsAllowedOrigins(),
 		AllowHeaders: "Origin, Content-Type, Accept, X-Admin-Token",
+		// /mcp is public and unauthenticated by design and needs its own permissive CORS
+		// policy (see RegisterMCPRoutes in mcp.go) - this global middleware answers OPTIONS
+		// preflight requests itself before route-specific middleware ever runs, so without
+		// this skip it would silently block cross-origin MCP clients regardless of the
+		// route-scoped override.
+		Next: func(c *fiber.Ctx) bool { return c.Path() == "/mcp" },
 	}))
 
 	// Initialize external systems
@@ -124,6 +130,7 @@ func main() {
 	RegisterFilebrowserRoutes(app)
 	RegisterLeadRoutes(app)
 	RegisterMetricsRoute(app)
+	RegisterMCPRoutes(app)
 
 	// --- PUBLIC API ENDPOINTS ---
 

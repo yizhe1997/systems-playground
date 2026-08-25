@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -175,16 +176,26 @@ func filterPublished[T any](items []T, getStatus func(T) string) []T {
 	return out
 }
 
+// getPublishedList fetches a JSON array stored at the given Redis key,
+// unmarshals it into []T, and strips drafts via filterPublished - the
+// single place that defines "what a visitor is allowed to see" for CMS
+// content, called by both the /api/* REST handlers below and the MCP tool
+// handlers in mcp.go, so there's exactly one code path, not two that could
+// drift out of sync.
+func getPublishedList[T any](ctx context.Context, key string, getStatus func(T) string) []T {
+	val, err := redisClient.Get(ctx, key).Result()
+	if err != nil {
+		return []T{}
+	}
+	var items []T
+	json.Unmarshal([]byte(val), &items)
+	return filterPublished(items, getStatus)
+}
+
 func RegisterCMSRoutes(app *fiber.App) {
 	// Public GET routes - published items only
 	app.Get("/api/projects", func(c *fiber.Ctx) error {
-		val, err := redisClient.Get(c.Context(), "cms:projects").Result()
-		if err != nil {
-			return c.JSON([]Project{})
-		}
-		var projects []Project
-		json.Unmarshal([]byte(val), &projects)
-		return c.JSON(filterPublished(projects, func(p Project) string { return p.Status }))
+		return c.JSON(getPublishedList(c.Context(), "cms:projects", func(p Project) string { return p.Status }))
 	})
 
 	app.Get("/api/posts", func(c *fiber.Ctx) error {
@@ -266,23 +277,11 @@ func RegisterCMSRoutes(app *fiber.App) {
 	})
 
 	app.Get("/api/stack", func(c *fiber.Ctx) error {
-		val, err := redisClient.Get(c.Context(), "cms:stack").Result()
-		if err != nil {
-			return c.JSON([]StackCategory{})
-		}
-		var categories []StackCategory
-		json.Unmarshal([]byte(val), &categories)
-		return c.JSON(filterPublished(categories, func(cat StackCategory) string { return cat.Status }))
+		return c.JSON(getPublishedList(c.Context(), "cms:stack", func(cat StackCategory) string { return cat.Status }))
 	})
 
 	app.Get("/api/experience", func(c *fiber.Ctx) error {
-		val, err := redisClient.Get(c.Context(), "cms:experience").Result()
-		if err != nil {
-			return c.JSON([]Experience{})
-		}
-		var experience []Experience
-		json.Unmarshal([]byte(val), &experience)
-		return c.JSON(filterPublished(experience, func(e Experience) string { return e.Status }))
+		return c.JSON(getPublishedList(c.Context(), "cms:experience", func(e Experience) string { return e.Status }))
 	})
 
 	app.Get("/api/education", func(c *fiber.Ctx) error {

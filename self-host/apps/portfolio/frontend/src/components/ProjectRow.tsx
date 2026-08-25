@@ -14,7 +14,7 @@ export type Project = {
   icon: string;
 };
 
-const formatUrl = (url: string) => {
+export const formatUrl = (url: string) => {
   if (!url || url === '#') return '#';
   return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
 };
@@ -36,7 +36,7 @@ const stripMarkdown = (text: string) =>
 // project can land on a different color depending on which list it's
 // rendered in. Charcoal needs white text and a yellow (not black) live-icon
 // for visibility; sage and yellow stay on charcoal-on-light with a black icon.
-const VARIANTS = [
+export const VARIANTS = [
   { bg: 'var(--ds-sage)', text: 'var(--ds-charcoal)', tint: 'color-mix(in srgb, var(--ds-sage) 55%, white)', liveIcon: 'var(--ds-charcoal)' },
   { bg: 'var(--ds-yellow)', text: 'var(--ds-charcoal)', tint: 'color-mix(in srgb, var(--ds-yellow) 45%, white)', liveIcon: 'var(--ds-charcoal)' },
   { bg: 'var(--ds-charcoal)', text: '#ffffff', tint: 'color-mix(in srgb, var(--ds-charcoal) 25%, white)', liveIcon: 'var(--ds-yellow)' },

@@ -32,7 +32,7 @@ if git diff --cached --name-only | grep -q "^self-host/apps/portfolio/backend/";
   echo "🔨 Backend changes detected. Running Go build check..."
   cd self-host/apps/portfolio/backend
 
-  if ! MSYS_NO_PATHCONV=1 docker run --rm -v "$PWD":/app -w /app golang:1.24-alpine sh -c "go build -o /dev/null ."; then
+  if ! MSYS_NO_PATHCONV=1 docker run --rm -v "$PWD":/app -w /app golang:1.25-alpine sh -c "go build -o /dev/null ."; then
     echo "❌ Backend build failed. Commit rejected."
     exit 1
   fi

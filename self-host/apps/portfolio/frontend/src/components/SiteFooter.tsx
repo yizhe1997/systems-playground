@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Sparkles } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '@/components/icons/social';
 import { fetchJson } from '@/lib/fetch-json';
+import { useMcpConnect } from '@/components/McpConnectModal';
 
 const exploreLinks = [
   { href: '/projects', label: 'Projects' },
@@ -26,6 +28,7 @@ const formatUrl = (url: string) => {
 export default function SiteFooter() {
   const [githubUrl, setGithubUrl] = useState<string>('#');
   const [linkedinUrl, setLinkedinUrl] = useState<string>('#');
+  const { open: openMcpConnect } = useMcpConnect();
 
   useEffect(() => {
     fetchJson<{ githubUrl?: string; linkedinUrl?: string }>('/api/config')
@@ -56,9 +59,18 @@ export default function SiteFooter() {
                 Portfolio
               </span>
             </div>
-            <p className="text-sm text-[var(--ds-sage)]">
+            <p className="text-sm text-[var(--ds-sage)] mb-4">
               Made for recruiters. Overbuilt for fun.
             </p>
+            <button
+              type="button"
+              onClick={openMcpConnect}
+              data-cursor-label="Open"
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-white/70 hover:text-white hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+              Talk to this portfolio
+            </button>
           </div>
 
           <div>
