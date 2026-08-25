@@ -1,83 +1,73 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import {
+  forceSimulation,
+  forceManyBody,
+  forceLink,
+  forceCenter,
+  forceCollide,
+  type Simulation,
+  type SimulationNodeDatum,
+  type SimulationLinkDatum,
+} from 'd3-force';
 import type { Project } from '@/components/ProjectRow';
-import { VARIANTS, formatUrl } from '@/components/ProjectRow';
+import { formatUrl } from '@/components/ProjectRow';
 
-type SimNode = {
+type SimNode = SimulationNodeDatum & {
   id: string;
   kind: 'project' | 'tag';
   label: string;
   project?: Project;
-  variantIndex?: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
   r: number;
 };
 
-type SimEdge = { source: string; target: string };
+type SimEdge = SimulationLinkDatum<SimNode>;
 
 const W = 800;
 const H = 560;
 const CX = W / 2;
 const CY = H / 2;
-const STEPS = 260;
+const ZOOM_MIN = 0.4;
+const ZOOM_MAX = 3;
 
-// Hand-rolled force layout - no d3-force in this dependency tree, and none of
-// matter-js/gsap/framer-motion/animejs (already deps) offer a multi-body
-// force-simulation API. Runs a fixed number of steps then freezes rather
-// than animating continuously - this is a decorative/exploratory secondary
-// view, not a live physics toy, so nothing benefits from motion after the
-// layout has visibly settled.
-function runSimulation(nodes: SimNode[], edges: SimEdge[]) {
-  const byId = new Map(nodes.map((n) => [n.id, n]));
-  for (let step = 0; step < STEPS; step++) {
-    for (const n1 of nodes) {
-      let fx = 0;
-      let fy = 0;
-      for (const n2 of nodes) {
-        if (n1 === n2) continue;
-        const dx = n1.x - n2.x;
-        const dy = n1.y - n2.y;
-        const d = Math.max(20, Math.sqrt(dx * dx + dy * dy));
-        const force = 900 / (d * d);
-        fx += (dx / d) * force;
-        fy += (dy / d) * force;
-      }
-      fx += (CX - n1.x) * 0.006;
-      fy += (CY - n1.y) * 0.006;
-      n1.vx = (n1.vx + fx) * 0.7;
-      n1.vy = (n1.vy + fy) * 0.7;
-    }
-    for (const e of edges) {
-      const na = byId.get(e.source);
-      const nb = byId.get(e.target);
-      if (!na || !nb) continue;
-      const dx = nb.x - na.x;
-      const dy = nb.y - na.y;
-      const d = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-      const f = (d - 90) * 0.03;
-      const ux = dx / d;
-      const uy = dy / d;
-      na.vx += ux * f;
-      na.vy += uy * f;
-      nb.vx -= ux * f;
-      nb.vy -= uy * f;
-    }
-    for (const n of nodes) {
-      n.x += n.vx;
-      n.y += n.vy;
-      n.x = Math.max(n.r + 40, Math.min(W - n.r - 40, n.x));
-      n.y = Math.max(n.r + 16, Math.min(H - n.r - 16, n.y));
-    }
-  }
+function toSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
+  const pt = svg.createSVGPoint();
+  pt.x = clientX;
+  pt.y = clientY;
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { x: clientX, y: clientY };
+  const local = pt.matrixTransform(ctm.inverse());
+  return { x: local.x, y: local.y };
 }
 
-export default function ProjectsConstellation({ projects }: { projects: Project[] }) {
+export type ProjectsConstellationHandle = { resetView: () => void };
+
+const ProjectsConstellation = forwardRef<ProjectsConstellationHandle, { projects: Project[] }>(function ProjectsConstellation(
+  { projects },
+  ref
+) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const viewportRef = useRef<SVGGElement>(null);
   const highlightedRef = useRef<string | null>(null);
+  const simRef = useRef<Simulation<SimNode, SimEdge> | null>(null);
+  const dragRef = useRef<{ id: string; moved: boolean } | null>(null);
+  // Pan/zoom lives outside React state - like onTick's DOM writes, this can fire on every wheel
+  // tick or pointermove and would be far too chatty to route through re-renders.
+  const viewRef = useRef({ x: 0, y: 0, k: 1 });
+  const panRef = useRef<{ startClientX: number; startClientY: number; startX: number; startY: number } | null>(null);
+
+  const applyViewTransform = () => {
+    const { x, y, k } = viewRef.current;
+    viewportRef.current?.setAttribute('transform', `translate(${x},${y}) scale(${k})`);
+  };
+
+  const resetView = () => {
+    viewRef.current = { x: 0, y: 0, k: 1 };
+    applyViewTransform();
+  };
+
+  useImperativeHandle(ref, () => ({ resetView }));
 
   const { nodes, edges } = useMemo(() => {
     const tagNames = Array.from(new Set(projects.flatMap((p) => p.tech_stack))).sort();
@@ -89,11 +79,8 @@ export default function ProjectsConstellation({ projects }: { projects: Project[
         kind: 'project',
         label: p.title || 'Untitled project',
         project: p,
-        variantIndex: i % VARIANTS.length,
         x: CX + Math.cos(a) * 180,
         y: CY + Math.sin(a) * 130,
-        vx: 0,
-        vy: 0,
         r: 26,
       };
     });
@@ -106,8 +93,6 @@ export default function ProjectsConstellation({ projects }: { projects: Project[
         label: t,
         x: CX + Math.cos(a) * 80,
         y: CY + Math.sin(a) * 60,
-        vx: 0,
-        vy: 0,
         r: 15,
       };
     });
@@ -120,17 +105,88 @@ export default function ProjectsConstellation({ projects }: { projects: Project[
       }
     }
 
-    runSimulation(allNodes, allEdges);
-
     return { nodes: allNodes, edges: allEdges };
   }, [projects]);
 
   const nodesById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
+  // Real, continuous force simulation (d3-force) instead of a one-shot layout - runs hot on
+  // mount/whenever the project list changes (visibly relaxing into place), then naturally cools
+  // via alpha decay to idle within a couple of seconds. No perpetual requestAnimationFrame loop
+  // burning CPU once settled - "reheats" only when a drag starts (see handlePointerDown).
   useEffect(() => {
+    const sim = forceSimulation<SimNode>(nodes)
+      .force('charge', forceManyBody().strength(-220))
+      .force(
+        'link',
+        forceLink<SimNode, SimEdge>(edges)
+          .id((d) => d.id)
+          .distance(90)
+      )
+      .force('center', forceCenter(CX, CY))
+      .force(
+        'collide',
+        forceCollide<SimNode>((d) => d.r + 4)
+      )
+      .on('tick', onTick);
+
+    simRef.current = sim;
     applyHighlight(svgRef.current, edges, null);
     highlightedRef.current = null;
+
+    return () => {
+      sim.stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges]);
+
+  // Wheel-to-zoom, centered on the cursor - a native, non-passive listener rather than React's
+  // onWheel, since React delegates wheel listeners at the root as passive for scroll performance,
+  // which would silently make e.preventDefault() here a no-op and let the page scroll underneath.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const pt = toSvgPoint(svg, e.clientX, e.clientY);
+      const { x, y, k } = viewRef.current;
+      const factor = Math.exp(-e.deltaY * 0.001);
+      const nextK = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, k * factor));
+      if (nextK === k) return;
+      viewRef.current = {
+        k: nextK,
+        x: pt.x - (nextK / k) * (pt.x - x),
+        y: pt.y - (nextK / k) * (pt.y - y),
+      };
+      applyViewTransform();
+    };
+    svg.addEventListener('wheel', handleWheel, { passive: false });
+    return () => svg.removeEventListener('wheel', handleWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function onTick() {
+    const svg = svgRef.current;
+    if (!svg) return;
+    for (const n of nodes) {
+      const el = svg.querySelector<SVGGElement>(`g[data-node-id="${cssEscape(n.id)}"]`);
+      if (el && n.x != null && n.y != null) el.setAttribute('transform', `translate(${n.x},${n.y})`);
+    }
+    for (const e of edges) {
+      const source = nodesById.get(edgeNodeId(e.source));
+      const target = nodesById.get(edgeNodeId(e.target));
+      if (!source || !target) continue;
+      const el = svg.querySelector<SVGLineElement>(
+        `line[data-edge-a="${cssEscape(source.id)}"][data-edge-b="${cssEscape(target.id)}"]`
+      );
+      if (el && source.x != null && source.y != null && target.x != null && target.y != null) {
+        el.setAttribute('x1', String(source.x));
+        el.setAttribute('y1', String(source.y));
+        el.setAttribute('x2', String(target.x));
+        el.setAttribute('y2', String(target.y));
+      }
+    }
+  }
 
   const handleTagClick = (tagId: string) => {
     const next = highlightedRef.current === tagId ? null : tagId;
@@ -143,10 +199,80 @@ export default function ProjectsConstellation({ projects }: { projects: Project[
     window.open(formatUrl(project.live_url), '_blank', 'noopener,noreferrer');
   };
 
+  const handlePointerDown = (n: SimNode, e: React.PointerEvent<SVGGElement>) => {
+    e.stopPropagation(); // don't let this bubble into the background pan handler on the <svg>
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { id: n.id, moved: false };
+    simRef.current?.alphaTarget(0.3).restart();
+    n.fx = n.x;
+    n.fy = n.y;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<SVGGElement>) => {
+    e.stopPropagation();
+    const drag = dragRef.current;
+    const svg = svgRef.current;
+    if (!drag || !svg) return;
+    const n = nodesById.get(drag.id);
+    if (!n) return;
+    // toSvgPoint gives a point in the <svg>'s own (unzoomed/unpanned) viewBox space - invert the
+    // viewport <g>'s current pan/zoom to land back in the simulation's coordinate space, which is
+    // what fx/fy are pinned in regardless of how the view is currently scrolled/zoomed.
+    const pt = toSvgPoint(svg, e.clientX, e.clientY);
+    const { x, y, k } = viewRef.current;
+    n.fx = (pt.x - x) / k;
+    n.fy = (pt.y - y) / k;
+    drag.moved = true;
+  };
+
+  const handlePointerUp = (n: SimNode, e: React.PointerEvent<SVGGElement>) => {
+    e.stopPropagation();
+    const drag = dragRef.current;
+    dragRef.current = null;
+    n.fx = null;
+    n.fy = null;
+    simRef.current?.alphaTarget(0);
+    if (drag && !drag.moved) {
+      if (n.kind === 'tag') handleTagClick(n.id);
+      else if (n.project) handleProjectClick(n.project);
+    }
+  };
+
+  const handleBackgroundPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if ((e.target as Element).closest('[data-node-id]')) return;
+    const svg = svgRef.current;
+    if (!svg) return;
+    svg.setPointerCapture(e.pointerId);
+    const pt = toSvgPoint(svg, e.clientX, e.clientY);
+    panRef.current = {
+      startClientX: pt.x,
+      startClientY: pt.y,
+      startX: viewRef.current.x,
+      startY: viewRef.current.y,
+    };
+  };
+
+  const handleBackgroundPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    const pan = panRef.current;
+    const svg = svgRef.current;
+    if (!pan || !svg) return;
+    const pt = toSvgPoint(svg, e.clientX, e.clientY);
+    viewRef.current = {
+      ...viewRef.current,
+      x: pan.startX + (pt.x - pan.startClientX),
+      y: pan.startY + (pt.y - pan.startClientY),
+    };
+    applyViewTransform();
+  };
+
+  const handleBackgroundPointerUp = () => {
+    panRef.current = null;
+  };
+
   if (projects.length === 0) {
     return (
-      <div className="border-2 border-black p-12 text-center" style={{ borderRadius: '0.75rem' }}>
-        <p className="font-extrabold" style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-charcoal)' }}>
+      <div className="border-2 border-black p-12 text-center bg-[var(--ds-charcoal)]" style={{ borderRadius: '0.75rem' }}>
+        <p className="font-extrabold text-white" style={{ fontFamily: 'var(--ds-font-display)' }}>
           Nothing here yet
         </p>
       </div>
@@ -155,90 +281,129 @@ export default function ProjectsConstellation({ projects }: { projects: Project[
 
   return (
     <div>
-      <div className="w-full overflow-x-auto border-2 border-black bg-white" style={{ borderRadius: '0.75rem' }}>
-        <svg ref={svgRef} width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
-          {edges.map((e, i) => {
-            const na = nodesById.get(e.source);
-            const nb = nodesById.get(e.target);
-            if (!na || !nb) return null;
-            return (
-              <line
-                key={i}
-                data-edge-a={e.source}
-                data-edge-b={e.target}
-                x1={na.x}
-                y1={na.y}
-                x2={nb.x}
-                y2={nb.y}
-                stroke="var(--ds-black)"
-                strokeWidth={1.5}
-                style={{ opacity: 0.25, transition: 'opacity 150ms' }}
-              />
-            );
-          })}
-          {nodes.map((n) => {
-            if (n.kind === 'tag') {
+      <div className="relative w-full border-2 border-black bg-[var(--ds-charcoal)]" style={{ borderRadius: '0.75rem' }}>
+        <svg
+          ref={svgRef}
+          width="100%"
+          height={H}
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ display: 'block', touchAction: 'none', cursor: 'grab', borderRadius: '0.75rem' }}
+          onPointerDown={handleBackgroundPointerDown}
+          onPointerMove={handleBackgroundPointerMove}
+          onPointerUp={handleBackgroundPointerUp}
+        >
+          <g ref={viewportRef}>
+            {edges.map((e, i) => {
+              // e.source/e.target start as plain id strings and only get resolved into real
+              // SimNode object references once forceLink initializes inside the effect below - on
+              // this very first render (before that effect has run) they're still strings, so
+              // resolve via nodesById rather than assuming the object shape either way.
+              const source = nodesById.get(edgeNodeId(e.source));
+              const target = nodesById.get(edgeNodeId(e.target));
+              if (!source || !target) return null;
+              return (
+                <line
+                  key={i}
+                  data-edge-a={source.id}
+                  data-edge-b={target.id}
+                  x1={source.x}
+                  y1={source.y}
+                  x2={target.x}
+                  y2={target.y}
+                  stroke="#ffffff"
+                  strokeWidth={1.5}
+                  style={{ opacity: 0.2, transition: 'opacity 150ms' }}
+                />
+              );
+            })}
+            {nodes.map((n) => {
+              if (n.kind === 'tag') {
+                return (
+                  <g
+                    key={n.id}
+                    data-node-id={n.id}
+                    transform={`translate(${n.x},${n.y})`}
+                    style={{ cursor: 'pointer', transition: 'opacity 150ms', touchAction: 'none' }}
+                    onPointerDown={(e) => handlePointerDown(n, e)}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={(e) => handlePointerUp(n, e)}
+                  >
+                    <circle cx={0} cy={0} r={n.r} fill="var(--ds-sage)" stroke="var(--ds-black)" strokeWidth={2} />
+                    <text
+                      x={0}
+                      y={n.r + 14}
+                      textAnchor="middle"
+                      fontSize={10}
+                      fontWeight={700}
+                      fill="#ffffff"
+                      style={{ fontFamily: 'var(--ds-font-body)', pointerEvents: 'none' }}
+                    >
+                      {n.label.length > 10 ? `${n.label.slice(0, 9)}…` : n.label}
+                    </text>
+                  </g>
+                );
+              }
+
+              const hasLive = Boolean(n.project?.live_url);
               return (
                 <g
                   key={n.id}
                   data-node-id={n.id}
-                  style={{ cursor: 'pointer', transition: 'opacity 150ms' }}
-                  onClick={() => handleTagClick(n.id)}
+                  transform={`translate(${n.x},${n.y})`}
+                  style={{ cursor: hasLive ? 'pointer' : 'default', transition: 'opacity 150ms', touchAction: 'none' }}
+                  onPointerDown={(e) => handlePointerDown(n, e)}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={(e) => handlePointerUp(n, e)}
                 >
-                  <circle cx={n.x} cy={n.y} r={n.r} fill="var(--ds-black)" stroke="var(--ds-black)" strokeWidth={2} />
+                  <circle
+                    cx={0}
+                    cy={0}
+                    r={n.r}
+                    fill="var(--ds-yellow)"
+                    stroke="var(--ds-black)"
+                    strokeWidth={2}
+                    strokeDasharray={hasLive ? undefined : '4 3'}
+                  />
                   <text
-                    x={n.x}
-                    y={n.y}
+                    x={0}
+                    y={n.r + 14}
                     textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize={10}
-                    fontWeight={700}
+                    fontSize={11}
+                    fontWeight={800}
                     fill="#ffffff"
-                    style={{ fontFamily: 'var(--ds-font-body)', pointerEvents: 'none' }}
+                    style={{ fontFamily: 'var(--ds-font-display)', pointerEvents: 'none' }}
                   >
-                    {n.label.length > 10 ? `${n.label.slice(0, 9)}…` : n.label}
+                    {n.label.length > 16 ? `${n.label.slice(0, 15)}…` : n.label}
                   </text>
                 </g>
               );
-            }
-
-            const variant = VARIANTS[n.variantIndex ?? 0];
-            const hasLive = Boolean(n.project?.live_url);
-            return (
-              <g
-                key={n.id}
-                data-node-id={n.id}
-                style={{ cursor: hasLive ? 'pointer' : 'default', transition: 'opacity 150ms' }}
-                onClick={() => n.project && handleProjectClick(n.project)}
-              >
-                <circle
-                  cx={n.x}
-                  cy={n.y}
-                  r={n.r}
-                  fill={variant.bg}
-                  stroke="var(--ds-black)"
-                  strokeWidth={2}
-                  strokeDasharray={hasLive ? undefined : '4 3'}
-                />
-                <text
-                  x={n.x}
-                  y={n.y + n.r + 14}
-                  textAnchor="middle"
-                  fontSize={11}
-                  fontWeight={800}
-                  fill="var(--ds-charcoal)"
-                  style={{ fontFamily: 'var(--ds-font-display)', pointerEvents: 'none' }}
-                >
-                  {n.label.length > 16 ? `${n.label.slice(0, 15)}…` : n.label}
-                </text>
-              </g>
-            );
-          })}
+            })}
+          </g>
         </svg>
       </div>
-      <p className="sm:hidden text-xs text-[var(--ds-charcoal)]/55 mt-2">Scroll to explore &rarr;</p>
+      <ul className="list-disc list-outside pl-4 text-xs text-[var(--ds-charcoal)]/55 mt-2 space-y-0.5">
+        <li>Scroll to zoom</li>
+        <li>Drag to pan</li>
+        <li>Drag a node to move it</li>
+      </ul>
     </div>
   );
+});
+
+export default ProjectsConstellation;
+
+// Node ids are user-controlled tag text / project ids - escape before interpolating into a CSS
+// attribute selector so a tag containing a quote or backslash can't break the selector.
+function cssEscape(id: string) {
+  return id.replace(/["\\]/g, '\\$&');
+}
+
+// d3-force's forceLink mutates edge.source/edge.target in place from plain id strings into real
+// SimNode object references once it initializes - safe to read either shape at any point. The
+// numeric-index case in SimulationLinkDatum's type is a d3-force generality this component never
+// actually produces (edges here are always built with string ids), included only to satisfy it.
+function edgeNodeId(x: string | number | SimNode): string {
+  return typeof x === 'object' ? x.id : String(x);
 }
 
 function applyHighlight(svg: SVGSVGElement | null, edges: SimEdge[], highlighted: string | null) {
@@ -248,8 +413,10 @@ function applyHighlight(svg: SVGSVGElement | null, edges: SimEdge[], highlighted
   if (highlighted) {
     connected.add(highlighted);
     for (const e of edges) {
-      if (e.source === highlighted) connected.add(e.target);
-      if (e.target === highlighted) connected.add(e.source);
+      const sourceId = edgeNodeId(e.source);
+      const targetId = edgeNodeId(e.target);
+      if (sourceId === highlighted) connected.add(targetId);
+      if (targetId === highlighted) connected.add(sourceId);
     }
   }
 

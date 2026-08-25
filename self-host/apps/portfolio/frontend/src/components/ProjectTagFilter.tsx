@@ -1,5 +1,21 @@
 'use client';
 
+import { Tags, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+
+const menuContentClass =
+  'border-2 border-black rounded-[0.5rem] shadow-[4px_4px_0px_0px_#000] bg-white text-[var(--ds-charcoal)] p-1 min-w-[12rem]';
+
+// A dropdown checkbox multiselect - matches the admin "Columns" picker in
+// ResumeRequests.tsx - rather than a flat row of toggle pills, which reads
+// as a single-pick control even though it's always allowed multiple tags.
 export default function ProjectTagFilter({
   tags,
   activeTags,
@@ -12,31 +28,41 @@ export default function ProjectTagFilter({
   if (tags.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 mb-8" role="group" aria-label="Filter projects by tag">
-      {tags.map((tag) => {
-        const active = activeTags.has(tag);
-        return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
           <button
-            key={tag}
-            onClick={() => onToggle(tag)}
-            aria-pressed={active}
-            className={`text-[11px] font-bold px-2.5 py-1.5 border-2 border-black transition-colors ${
-              active ? 'bg-black text-white' : 'bg-white text-black hover:bg-black/5'
-            }`}
-            style={{ borderRadius: '0.35rem' }}
+            type="button"
+            className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-black bg-white font-bold text-sm hover:bg-black/5 transition-colors"
+            style={{ borderRadius: '0.5rem' }}
           >
-            {tag}
+            <Tags className="w-3.5 h-3.5" aria-hidden="true" />
+            Tags
+            {activeTags.size > 0 && (
+              <span
+                className="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 text-[10px] bg-black text-white"
+                style={{ borderRadius: '999px' }}
+              >
+                {activeTags.size}
+              </span>
+            )}
+            <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
-        );
-      })}
-      {activeTags.size > 0 && (
-        <button
-          onClick={() => onToggle(null)}
-          className="text-[11px] font-bold px-2.5 py-1.5 text-[var(--ds-charcoal)]/60 hover:text-[var(--ds-charcoal)] underline"
-        >
-          Clear filters
-        </button>
-      )}
-    </div>
+        }
+      />
+      <DropdownMenuContent align="start" className={menuContentClass}>
+        {tags.map((tag) => (
+          <DropdownMenuCheckboxItem key={tag} checked={activeTags.has(tag)} onCheckedChange={() => onToggle(tag)}>
+            {tag}
+          </DropdownMenuCheckboxItem>
+        ))}
+        {activeTags.size > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onToggle(null)}>Clear tag filters</DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

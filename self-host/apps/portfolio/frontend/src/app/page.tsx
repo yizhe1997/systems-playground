@@ -503,7 +503,10 @@ export default function Home() {
               style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
             >
               <a href="#projects" className="hover:opacity-70 transition-opacity">FEATURED PROJECTS</a>
-              <sup className="text-sm font-mono font-medium text-[var(--ds-charcoal)]/50" style={{ top: '-0.6em' }}>
+              {/* self-start instead of following the heading's items-baseline - a plain sup sits
+                  almost on the baseline, barely elevated; this pulls it to the top of the line so
+                  it actually reads as a count badge at the top-right of the word. */}
+              <sup className="self-start text-sm font-mono font-medium text-[var(--ds-charcoal)]/50">
                 ({projects.length})
               </sup>
               <CopySectionLinkButton sectionId="projects" label="Projects" />
@@ -540,14 +543,14 @@ export default function Home() {
               style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
             >
               <a href="#blog" className="hover:opacity-70 transition-opacity">BLOG</a>
-              <sup className="text-sm font-mono font-medium text-white/50" style={{ top: '-0.6em' }}>
+              <sup className="self-start text-sm font-mono font-medium text-white/50">
                 ({posts.length})
               </sup>
               <CopySectionLinkButton sectionId="blog" label="Blog" />
             </h2>
             <Link href="/blog" data-cursor-label="Browse" className="group inline-flex items-center gap-1.5 font-bold shrink-0 text-[var(--ds-yellow)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
               <span className="relative">
-                Browse all posts
+                Browse all blog
                 <span className="absolute left-0 -bottom-0.5 h-0.5 w-full bg-[var(--ds-yellow)] origin-left scale-x-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
               </span>
               <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" aria-hidden="true" />
