@@ -50,7 +50,7 @@ export default function BlogIndex() {
             letterSpacing: '-0.02em',
           }}
         >
-          Blog
+          BLOG
         </h1>
 
         {loading ? (

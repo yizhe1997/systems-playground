@@ -62,7 +62,7 @@ export default function AboutPageBody({
           letterSpacing: '-0.02em',
         }}
       >
-        About
+        ABOUT
       </h1>
 
       <p className="text-lg font-medium max-w-2xl mb-16">{bio}</p>
