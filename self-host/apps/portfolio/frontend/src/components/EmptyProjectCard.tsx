@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { CARD_HEIGHT } from '@/components/ProjectRow';
 
 // Six expressions, ported verbatim from the Claude Design "Featured
 // Projects" empty-state template - randomizeFace on hover picks one at
@@ -33,7 +34,7 @@ export default function EmptyProjectCard() {
         borderStyle: 'dashed solid solid dashed',
         borderRadius: '0 0.75rem 0.75rem 0.75rem',
         padding: '20px',
-        minHeight: '186px',
+        height: CARD_HEIGHT,
       }}
     >
       <svg

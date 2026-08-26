@@ -52,14 +52,25 @@ export default function ProjectTagFilter({
       />
       <DropdownMenuContent align="start" className={menuContentClass}>
         {tags.map((tag) => (
-          <DropdownMenuCheckboxItem key={tag} checked={activeTags.has(tag)} onCheckedChange={() => onToggle(tag)}>
+          <DropdownMenuCheckboxItem
+            key={tag}
+            checked={activeTags.has(tag)}
+            onCheckedChange={() => onToggle(tag)}
+            // The primitive's own focus/hover state defaults to shadcn's --accent token, a teal
+            // that has nothing to do with this site's black-on-white DS - same fix as the ring
+            // color elsewhere in this file's siblings (ViewToggle, the select in
+            // McpConnectModal).
+            className="focus:bg-black/5 focus:text-[var(--ds-charcoal)]"
+          >
             {tag}
           </DropdownMenuCheckboxItem>
         ))}
         {activeTags.size > 0 && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onToggle(null)}>Clear tag filters</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onToggle(null)} className="focus:bg-black/5 focus:text-[var(--ds-charcoal)]">
+              Clear tag filters
+            </DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>

@@ -62,15 +62,19 @@ export const VARIANTS = [
   { bg: 'var(--ds-charcoal)', text: '#ffffff', tint: 'color-mix(in srgb, var(--ds-charcoal) 25%, white)', liveIcon: 'var(--ds-yellow)' },
 ] as const;
 
+// Every card - real or empty (see EmptyProjectCard, which matches this exact height) - is a fixed
+// CARD_HEIGHT regardless of content, so the grid never reflows as pages/filters change what's in
+// it. Description + tags share one scrollable box for that same reason: keeping tags as a
+// separate flex item let a long tag list or the description's own scrollbar appearing change the
+// card's total height, which is exactly what a fixed height is supposed to prevent.
+export const CARD_HEIGHT = 240;
+
 // Grid card, not a collapsible row - the whole card is one pressable unit
 // that links straight to the project's live_url (external, no detail page
 // exists for individual projects). Cards with no live_url render as a
 // plain non-interactive card - nothing to link to. Icon/title/date/link all
 // share one compact header row so the description below gets the vertical
-// space markdown (multi-line lists, etc.) actually needs - a soft
-// mask-fade caps it at a consistent height across the grid instead of a
-// hard line-clamp, which doesn't clamp cleanly across block elements like
-// <ul><li>.
+// space markdown (multi-line lists, etc.) actually needs.
 export default function ProjectRow({ project, index = 0 }: { project: Project; index?: number }) {
   const dateRange = formatDateRange(project.start_date, project.end_date);
   const variant = VARIANTS[index % VARIANTS.length];
@@ -91,9 +95,9 @@ export default function ProjectRow({ project, index = 0 }: { project: Project; i
     <CardTag
       {...cardProps}
       className={`relative flex flex-col gap-3.5 border-2 border-black overflow-hidden p-5 shadow-[var(--ds-shadow-md)] transition-[transform,box-shadow] duration-150 ${hasLive ? 'hover:translate-x-1 hover:translate-y-1 hover:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black' : ''}`}
-      style={{ borderRadius: '0 0.75rem 0.75rem 0.75rem', backgroundColor: variant.bg }}
+      style={{ borderRadius: '0 0.75rem 0.75rem 0.75rem', backgroundColor: variant.bg, height: CARD_HEIGHT }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 shrink-0">
         <div
           className="w-8 h-8 shrink-0 flex items-center justify-center border-2 border-black bg-white"
           style={{ borderRadius: '0.5rem' }}
@@ -117,30 +121,30 @@ export default function ProjectRow({ project, index = 0 }: { project: Project; i
         )}
       </div>
 
-      {project.description && (
-        // Scrollable, not faded - a mask hides overflow content with no way to actually read it,
-        // which is fine for "a little too long" but breaks down for a genuinely long description.
-        // overflow-y:auto keeps the card's height capped and consistent across the grid while
-        // still making every word reachable.
-        <div className="p-3.5" style={{ borderRadius: '0.6rem', backgroundColor: variant.tint }}>
-          <div
-            className="text-[13px] leading-snug text-[var(--ds-charcoal)] overflow-y-auto"
-            style={{ maxHeight: '5.6em', scrollbarWidth: 'thin' }}
-          >
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={descriptionComponents}>
-              {softenBulletMarkers(project.description)}
-            </ReactMarkdown>
-          </div>
-        </div>
-      )}
-
-      {project.tech_stack.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-auto">
-          {project.tech_stack.map((tech) => (
-            <span key={tech} className="text-[11px] font-bold px-2.5 py-1 bg-black text-white" style={{ borderRadius: '0.35rem' }}>
-              {tech}
-            </span>
-          ))}
+      {(project.description || project.tech_stack.length > 0) && (
+        // flex-1 fills whatever room the fixed-height card has left after the header;
+        // overflow-y:auto (not a fade) makes this one box - description AND tags together - the
+        // single scrollable region, so neither can change the card's own height.
+        <div
+          className="flex-1 min-h-0 overflow-y-auto p-3.5"
+          style={{ borderRadius: '0.6rem', backgroundColor: variant.tint, scrollbarWidth: 'thin' }}
+        >
+          {project.description && (
+            <div className="text-[13px] leading-snug text-[var(--ds-charcoal)]">
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={descriptionComponents}>
+                {softenBulletMarkers(project.description)}
+              </ReactMarkdown>
+            </div>
+          )}
+          {project.tech_stack.length > 0 && (
+            <div className={`flex flex-wrap gap-1.5 ${project.description ? 'mt-2.5' : ''}`}>
+              {project.tech_stack.map((tech) => (
+                <span key={tech} className="text-[11px] font-bold px-2.5 py-1 bg-black text-white" style={{ borderRadius: '0.35rem' }}>
+                  {tech}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </CardTag>
