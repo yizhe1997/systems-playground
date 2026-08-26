@@ -1,28 +1,14 @@
 'use client';
 
 import { createContext, useContext, useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, ExternalLink, Terminal } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import SimpleIcon from '@/components/SimpleIcon';
 import { copyText } from '@/lib/copy-text';
 
 const MCP_URL = 'https://portfolio-api.38569123.xyz/mcp';
-// A unique server key, not a generic "portfolio" - a visitor pasting this
-// might already have their own entry named "portfolio" from somewhere else,
-// and a generic key would silently clobber it.
 const MCP_SERVER_KEY = 'portfolio-chin-yi-zhe';
-const ADD_COMMAND = `claude mcp add --transport http ${MCP_SERVER_KEY} ${MCP_URL}`;
-const REMOVE_COMMAND = `claude mcp remove ${MCP_SERVER_KEY}`;
-// The shape Claude Desktop, Cursor, and Windsurf all converged on for a remote Streamable HTTP
-// server - VS Code's MCP extension is the one holdout (`servers` + explicit `"type": "http"`
-// instead of `mcpServers` + a bare `url`), called out separately in the description below rather
-// than silently shipping a config that won't actually work there.
-const JSON_CONFIG = `{
-  "mcpServers": {
-    "${MCP_SERVER_KEY}": {
-      "url": "${MCP_URL}"
-    }
-  }
-}`;
 
 // Mirrors the tool set actually registered in backend/mcp.go's buildMCPServer() - keep this in
 // sync with that file if a tool is added, renamed, or removed there.
@@ -36,6 +22,31 @@ const TOOLS: { name: string; description: string }[] = [
   { name: 'search_by_tag', description: "Projects and work-experience positions that used a given tech tag, e.g. 'Redis'." },
 ];
 
+// Verbatim, sourced from each client's own current docs rather than guessed - a wrong command is
+// worse than no command. Only clients popular enough that most visitors will recognize one; the
+// inline "Model Context Protocol" link in the description covers everything else.
+const CODEX_TOML = `[mcp_servers.${MCP_SERVER_KEY}]\nurl = "${MCP_URL}"`;
+const CURSOR_JSON = `{\n  "mcpServers": {\n    "${MCP_SERVER_KEY}": {\n      "url": "${MCP_URL}"\n    }\n  }\n}`;
+const CLAUDE_CODE_ADD = `claude mcp add --transport http ${MCP_SERVER_KEY} ${MCP_URL}`;
+const CLAUDE_CODE_REMOVE = `claude mcp remove ${MCP_SERVER_KEY}`;
+
+type ClientKey = 'claude-code' | 'claude' | 'codex' | 'cursor';
+
+// simple-icons ships a real "claude" and "cursor" mark but no OpenAI/Codex one in the installed
+// version - iconSlug left undefined falls back to a generic terminal glyph rather than a wrong or
+// missing icon.
+const CLIENTS: { key: ClientKey; label: string; iconSlug?: string }[] = [
+  { key: 'claude-code', label: 'Claude Code', iconSlug: 'claude' },
+  { key: 'claude', label: 'Claude (Desktop / claude.ai)', iconSlug: 'claude' },
+  { key: 'codex', label: 'Codex', iconSlug: undefined },
+  { key: 'cursor', label: 'Cursor', iconSlug: 'cursor' },
+];
+
+function ClientIcon({ slug }: { slug?: string }) {
+  if (slug) return <SimpleIcon slug={slug} className="w-4 h-4 shrink-0" />;
+  return <Terminal className="w-4 h-4 shrink-0" aria-hidden="true" />;
+}
+
 const McpConnectModalContext = createContext<{ open: () => void } | null>(null);
 
 export function useMcpConnect() {
@@ -44,15 +55,19 @@ export function useMcpConnect() {
   return ctx;
 }
 
-function CopyLine({ label, value }: { label: string; value: string }) {
+function useCopy() {
   const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
+  const copy = async (value: string) => {
     if (await copyText(value)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
+  return { copied, copy };
+}
+
+function CopyLine({ label, value }: { label: string; value: string }) {
+  const { copied, copy } = useCopy();
 
   return (
     <div className="space-y-1.5">
@@ -63,7 +78,7 @@ function CopyLine({ label, value }: { label: string; value: string }) {
         </pre>
         <button
           type="button"
-          onClick={handleCopy}
+          onClick={() => copy(value)}
           aria-label={`Copy ${label}`}
           className="absolute top-2.5 right-2.5 w-7 h-7 flex items-center justify-center text-white/80 hover:text-white transition-colors"
         >
@@ -74,8 +89,132 @@ function CopyLine({ label, value }: { label: string; value: string }) {
   );
 }
 
+function DocsLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-cursor-label="Open"
+      className="inline-flex items-center gap-1 text-xs font-bold text-[var(--ds-charcoal)]/60 hover:text-black transition-colors"
+    >
+      {children}
+      <ExternalLink className="w-3 h-3" aria-hidden="true" />
+    </a>
+  );
+}
+
+// Everything a visitor would need to hand to their own AI assistant and say "set this up for me" -
+// assembled from the same TOOLS/config constants the dialog itself renders, so the two can't drift
+// apart from each other.
+function buildMarkdown(): string {
+  const toolRows = TOOLS.map((t) => `| \`${t.name}\` | ${t.description} |`).join('\n');
+  return `# Talk to this portfolio
+
+Instead of clicking through every page, point an AI assistant at this portfolio and just ask it - "what's their experience with Kubernetes?" or "list every project that used Go." Useful if you're a recruiter or engineer running your own AI tooling and want a faster way to check fit than reading, or a developer curious what an MCP server this small actually looks like.
+
+It talks over the [Model Context Protocol](https://modelcontextprotocol.io)'s Streamable HTTP transport. Everything below is public, read-only data - no account or API key needed.
+
+## What it can answer
+
+| Tool | Description |
+| --- | --- |
+${toolRows}
+
+## Server URL
+
+\`\`\`
+${MCP_URL}
+\`\`\`
+
+## Claude Code
+
+\`\`\`
+${CLAUDE_CODE_ADD}
+\`\`\`
+
+Remove it when done: \`${CLAUDE_CODE_REMOVE}\`
+
+## Claude (Desktop / claude.ai)
+
+Go to **Customize → Connectors** (claude.ai/customize/connectors) and add the Server URL above as a custom connector.
+
+## Codex CLI
+
+Add to \`~/.codex/config.toml\`:
+
+\`\`\`toml
+${CODEX_TOML}
+\`\`\`
+
+## Cursor
+
+Add to \`.cursor/mcp.json\` (project) or \`~/.cursor/mcp.json\` (global):
+
+\`\`\`json
+${CURSOR_JSON}
+\`\`\`
+`;
+}
+
+function CopyMarkdownButton() {
+  const { copied, copy } = useCopy();
+
+  return (
+    <button
+      type="button"
+      onClick={() => copy(buildMarkdown())}
+      aria-label="Copy this dialog as Markdown"
+      data-cursor-label={copied ? 'Copied' : 'Copy as Markdown'}
+      title="Copy as Markdown"
+      className="inline-flex items-center justify-center w-7 h-7 shrink-0 self-center text-[var(--ds-charcoal)]/50 hover:text-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black rounded-md"
+    >
+      {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+    </button>
+  );
+}
+
+function ClientSetup({ client }: { client: ClientKey }) {
+  if (client === 'claude-code') {
+    return (
+      <div className="space-y-2">
+        <CopyLine label="Add" value={CLAUDE_CODE_ADD} />
+        <CopyLine label="Done exploring? Remove it" value={CLAUDE_CODE_REMOVE} />
+        <DocsLink href="https://code.claude.com/docs/en/mcp-quickstart">Claude Code MCP docs</DocsLink>
+      </div>
+    );
+  }
+  if (client === 'claude') {
+    return (
+      <div className="space-y-2">
+        <p className="text-[var(--ds-charcoal)]/80">
+          Claude Desktop and claude.ai add remote servers through a settings page, not a config file. Go to{' '}
+          <strong>Customize → Connectors</strong>, add a custom connector, and paste the Server URL above.
+        </p>
+        <DocsLink href="https://claude.ai/customize/connectors">Open Connectors settings</DocsLink>
+      </div>
+    );
+  }
+  if (client === 'codex') {
+    return (
+      <div className="space-y-2">
+        <CopyLine label="Add to ~/.codex/config.toml" value={CODEX_TOML} />
+        <DocsLink href="https://developers.openai.com/codex/mcp">Codex MCP docs</DocsLink>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      <CopyLine label="Add to .cursor/mcp.json" value={CURSOR_JSON} />
+      <DocsLink href="https://cursor.com/docs/context/mcp">Cursor MCP docs</DocsLink>
+    </div>
+  );
+}
+
 export function McpConnectProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<ClientKey>('claude-code');
+  const client = CLIENTS.find((c) => c.key === selectedClient)!;
 
   return (
     <McpConnectModalContext.Provider value={{ open: () => setOpen(true) }}>
@@ -87,8 +226,12 @@ export function McpConnectProvider({ children }: { children: React.ReactNode }) 
           style={{ fontFamily: 'var(--ds-font-body)', borderRadius: '0.75rem', boxShadow: '8px 8px 0px 0px #000' }}
         >
           <DialogHeader>
-            <DialogTitle className="text-2xl text-black" style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800 }}>
+            {/* Copy-as-markdown sits right next to the title it belongs to, not pinned to the far
+                edge of the dialog - same "action lives beside what it acts on" placement as
+                CopySectionLinkButton on the homepage headings. */}
+            <DialogTitle className="inline-flex items-center gap-2 text-2xl text-black" style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800 }}>
               Talk to this portfolio
+              <CopyMarkdownButton />
             </DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70 mt-2 text-sm space-y-2">
               <span className="block">
@@ -99,23 +242,22 @@ export function McpConnectProvider({ children }: { children: React.ReactNode }) 
                 actually looks like.
               </span>
               <span className="block">
-                It talks over the Model Context Protocol&apos;s Streamable HTTP transport, which any MCP client can
-                speak - not just Claude Code. Everything below is public, read-only data, no account or API key
-                needed.
+                It talks over the{' '}
+                <a
+                  href="https://modelcontextprotocol.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-black transition-colors"
+                >
+                  Model Context Protocol
+                </a>
+                &apos;s Streamable HTTP transport. Everything below is public, read-only data - no account or API
+                key needed.
               </span>
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-2 text-sm">
-            <CopyLine label="Server URL" value={MCP_URL} />
-            <CopyLine label="Claude Code" value={ADD_COMMAND} />
-            <CopyLine label="Claude Desktop / Cursor / Windsurf (config JSON)" value={JSON_CONFIG} />
-            <p className="text-xs text-[var(--ds-charcoal)]/60 -mt-2">
-              VS Code&apos;s MCP extension wants this under a top-level <code className="bg-black/5 px-1 py-0.5 rounded">&quot;servers&quot;</code> key
-              with an explicit <code className="bg-black/5 px-1 py-0.5 rounded">&quot;type&quot;: &quot;http&quot;</code> instead - anything else that
-              speaks MCP over HTTP just needs the Server URL above.
-            </p>
-
             <div className="space-y-1.5">
               <div className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">What it can answer</div>
               <div className="border-2 border-black overflow-hidden" style={{ borderRadius: '0.5rem' }}>
@@ -132,7 +274,35 @@ export function McpConnectProvider({ children }: { children: React.ReactNode }) 
               </div>
             </div>
 
-            <CopyLine label="Done exploring? Remove it (Claude Code)" value={REMOVE_COMMAND} />
+            <CopyLine label="Server URL" value={MCP_URL} />
+
+            <div className="space-y-2">
+              <div className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">Add it to your client</div>
+              <Select value={selectedClient} onValueChange={(v) => setSelectedClient(v as ClientKey)}>
+                {/* Same fix as elsewhere in this DS: the primitive's own height/focus-ring classes
+                    default to shadcn's blue theme token and lose the specificity fight against a
+                    plain override, so height and focus colors are pinned explicitly. */}
+                <SelectTrigger
+                  className="w-full border-2 border-black rounded-[0.5rem] bg-white font-bold text-sm px-3 justify-between focus-visible:border-black focus-visible:ring-black/30"
+                  style={{ height: 40 }}
+                >
+                  <span className="flex items-center gap-2">
+                    <ClientIcon slug={client.iconSlug} />
+                    {client.label}
+                  </span>
+                </SelectTrigger>
+                <SelectContent className="border-2 border-black rounded-[0.5rem] shadow-[4px_4px_0px_0px_#000] bg-white text-[var(--ds-charcoal)] p-1">
+                  {CLIENTS.map((c) => (
+                    <SelectItem key={c.key} value={c.key}>
+                      <ClientIcon slug={c.iconSlug} />
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <ClientSetup client={selectedClient} />
+            </div>
           </div>
         </DialogContent>
       </Dialog>
