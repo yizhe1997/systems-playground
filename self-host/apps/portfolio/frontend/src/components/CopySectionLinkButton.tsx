@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Link2, Check } from 'lucide-react';
 import { copyText } from '@/lib/copy-text';
+import { playBlip } from '@/lib/blip-sound';
 
 // Sits inside a heading that has `group/heading` on it - invisible until
 // that heading is hovered/focused-within, then copies a deep link to this
@@ -18,6 +19,7 @@ export default function CopySectionLinkButton({ sectionId, label }: { sectionId?
   const handleCopy = async () => {
     const url = sectionId ? `${window.location.origin}${window.location.pathname}#${sectionId}` : window.location.href;
     if (await copyText(url)) {
+      playBlip();
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

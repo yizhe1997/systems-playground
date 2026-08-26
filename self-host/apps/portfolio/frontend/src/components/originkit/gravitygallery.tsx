@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 // @ts-ignore — matter-js may not ship bundled type declarations
 import Matter from "matter-js"
+import { playTileNote } from "@/lib/tile-note-sound"
 
 // Shown when the user hasn't added their own images.
 const DEFAULT_IMAGES = [
@@ -278,6 +279,7 @@ export default function Physics(props: any) {
                     >
                         <Tile
                             {...tileProps}
+                            onClick={() => playTileNote(i)}
                             className="block w-full h-full no-underline border border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none transition-transform duration-150 hover:translate-x-1 hover:translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                             style={{
                                 borderRadius: shape === "circle" ? "50%" : 12,
