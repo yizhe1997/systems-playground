@@ -3,12 +3,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { FileDown, ChevronLeft, ChevronRight, Lock, RotateCw, ArrowUp } from 'lucide-react';
+import { FileDown, ChevronLeft, ChevronRight, Lock, RotateCw, ArrowUp, Sparkles, CircleCheck } from 'lucide-react';
 import ReactiveGrid from '@/components/originkit/reactivegrid';
 import CrystalGlow from '@/components/originkit/crystal-glow';
 import GravityGallery from '@/components/originkit/gravitygallery';
 import FallingText from '@/components/originkit/falling-text';
 import LiveChat from '@/components/originkit/live-chat';
+import { useMcpConnect } from '@/components/McpConnectModal';
 
 const isConfigured = (url: string) => !!url && url !== '#';
 
@@ -411,6 +412,7 @@ export default function HeroSection({
   linkedinUrl: string;
   onRequestResume: () => void;
 }) {
+  const { open: openMcpConnect } = useMcpConnect();
   const [pageIndex, setPageIndex] = useState(0);
   // Mirrors pageIndex for reads from setInterval callbacks (auto-advance
   // below) - safer than reading via a setState updater function purely as
@@ -944,16 +946,48 @@ export default function HeroSection({
           </div>
         </div>
 
-        <div className="lg:row-start-3 lg:col-start-1 flex flex-wrap gap-4 justify-center lg:justify-start">
-          <button
-            onClick={onRequestResume}
-            data-cursor-label="Request"
-            className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
-            style={{ borderRadius: '0.75rem' }}
-          >
-            <FileDown className="w-4 h-4" aria-hidden="true" />
-            Request resume
-          </button>
+        <div className="lg:row-start-3 lg:col-start-1 flex flex-col gap-5 items-center lg:items-start">
+          <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+            <button
+              onClick={onRequestResume}
+              data-cursor-label="Request"
+              className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+              style={{ borderRadius: '0.75rem' }}
+            >
+              <FileDown className="w-4 h-4" aria-hidden="true" />
+              Request resume
+            </button>
+
+            {/* Same shadow-drop/translate hover mechanics as Request resume (not the radial-reveal
+                button used elsewhere for this same action) - paired CTAs in one row read as a set
+                when they share the exact same press effect, just inverted fill/text. */}
+            <button
+              onClick={openMcpConnect}
+              data-cursor-label="Open"
+              className="inline-flex items-center gap-2 px-6 py-3.5 bg-black text-white font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+              style={{ borderRadius: '0.75rem' }}
+            >
+              <Sparkles className="w-4 h-4" aria-hidden="true" />
+              Talk to this portfolio
+            </button>
+          </div>
+
+          {/* Trust-signal row, same pattern as the badge/checklist under a SaaS hero's CTAs -
+              "free" and "no credit card" are both true here (nothing on this site costs money or
+              asks for payment info), just repurposed for a portfolio instead of a product. A real
+              dot character reads as barely-there at 12px, so the separator is a drawn circle
+              instead of relying on font rendering of "&middot;" at this size. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-[var(--ds-charcoal)]/80">
+            <span className="inline-flex items-center gap-1.5">
+              <CircleCheck className="w-3.5 h-3.5" aria-hidden="true" />
+              Free of charge
+            </span>
+            <span className="w-1 h-1 rounded-full bg-current shrink-0" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1.5">
+              <CircleCheck className="w-3.5 h-3.5" aria-hidden="true" />
+              No credit card required
+            </span>
+          </div>
         </div>
 
         {/* Browser mockup - real stack info, not fabricated charts/revenue.
