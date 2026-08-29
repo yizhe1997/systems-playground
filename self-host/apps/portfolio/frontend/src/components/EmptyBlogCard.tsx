@@ -20,7 +20,7 @@ export default function EmptyBlogCard() {
           <path d="M9 7h7M9 11h7" strokeLinecap="round" />
         </svg>
       </div>
-      <div className="p-5">
+      <div className="p-5" style={{ minHeight: '84px' }}>
         <h3 className="font-extrabold text-base mb-1" style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-charcoal)' }}>
           Nothing published yet
         </h3>

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,12 +66,11 @@ type Post struct {
 	// Featured controls homepage visibility directly on the item - see
 	// Project.Featured.
 	Featured bool `json:"featured"`
-	// RatingSum/RatingCount accumulate reader-submitted 1-5 star votes via
-	// the public POST /api/posts/:id/rate route below - the star rating
-	// shown on the card is their average, never something the admin sets
-	// directly. Both are zero (no stars shown) until a reader has voted.
-	RatingSum   int `json:"rating_sum"`
-	RatingCount int `json:"rating_count"`
+	// LoveCount/ViewCount accumulate from the public POST /api/posts/:id/love
+	// and /view routes below - no scale, no average, just a plain tally.
+	// Neither is something the admin sets directly.
+	LoveCount int `json:"love_count"`
+	ViewCount int `json:"view_count"`
 	// Status is "draft" or "published". Draft items are excluded from every
 	// public /api/* GET route (see filterPublished below) but still
 	// returned in full to the authenticated /admin/cms/* GET routes, so the
@@ -192,6 +192,59 @@ func getPublishedList[T any](ctx context.Context, key string, getStatus func(T) 
 	return filterPublished(items, getStatus)
 }
 
+// Post love/view counts live in their own atomic Redis integer keys, not as fields persisted
+// inside the cms:posts JSON blob - that blob is a single value the admin panel overwrites
+// wholesale on every save (see admin.Post("/posts", ...) below), so incrementing a count by
+// read-modify-writing the whole array would race against a concurrent admin edit (or another
+// reader's own vote) and could silently lose updates under concurrent requests. INCR/DECR/SetNX
+// on a dedicated key are genuinely atomic regardless of how many requests land at once, which a
+// "GET the array, mutate one field, SET the array back" round trip never is. Post.LoveCount/
+// ViewCount stay as the response JSON shape; attachLiveCounts is what actually fills them in,
+// called right before every place that returns posts to a client.
+func postLoveCountKey(id string) string { return "cms:post-loves:" + id }
+func postViewCountKey(id string) string { return "cms:post-views:" + id }
+
+// postLoveStateKey is per (IP, post) - its mere existence means "this IP currently has this post
+// loved". No TTL: unlike the view dedup below (which only needs to survive a refresh-spam
+// window), a love is meant to stay toggled until the reader explicitly un-loves it, mirroring the
+// frontend's own localStorage lock which is likewise permanent until they clear it.
+func postLoveStateKey(ip, id string) string {
+	return fmt.Sprintf("cms:post-love-state:%x", sha256.Sum256([]byte(ip+":"+id)))
+}
+
+func postViewDedupKey(ip, id string) string {
+	return fmt.Sprintf("cms:post-view:%x", sha256.Sum256([]byte(ip+":"+id)))
+}
+
+// attachLiveCounts overlays the current atomic counter values onto each post's LoveCount/
+// ViewCount right before serialization - a single batched MGET rather than one round trip per
+// post per field.
+func attachLiveCounts(ctx context.Context, posts []Post) {
+	if len(posts) == 0 {
+		return
+	}
+	keys := make([]string, 0, len(posts)*2)
+	for _, p := range posts {
+		keys = append(keys, postLoveCountKey(p.ID), postViewCountKey(p.ID))
+	}
+	vals, err := redisClient.MGet(ctx, keys...).Result()
+	if err != nil {
+		return
+	}
+	for i := range posts {
+		if s, ok := vals[i*2].(string); ok {
+			if n, err := strconv.Atoi(s); err == nil {
+				posts[i].LoveCount = n
+			}
+		}
+		if s, ok := vals[i*2+1].(string); ok {
+			if n, err := strconv.Atoi(s); err == nil {
+				posts[i].ViewCount = n
+			}
+		}
+	}
+}
+
 func RegisterCMSRoutes(app *fiber.App) {
 	// Public GET routes - published items only
 	app.Get("/api/projects", func(c *fiber.Ctx) error {
@@ -205,65 +258,113 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var posts []Post
 		json.Unmarshal([]byte(val), &posts)
-		return c.JSON(filterPublished(posts, func(p Post) string { return p.Status }))
+		published := filterPublished(posts, func(p Post) string { return p.Status })
+		attachLiveCounts(c.Context(), published)
+		return c.JSON(published)
 	})
 
-	// Public, unauthenticated - any reader can cast one star rating per
-	// post. Unlike every other CMS write in this file, this doesn't go
-	// through the admin array-overwrite endpoint: it's a targeted
-	// increment against whichever single post matches :id, so a reader
-	// voting can never clobber concurrent admin edits to other posts (or
-	// vice versa). Duplicate votes from the same reader aren't tracked
-	// server-side - the frontend gates repeat submissions via localStorage,
-	// which is enough friction for a personal-site comment box, not a
-	// suffrage system.
-	app.Post("/api/posts/:id/rate", func(c *fiber.Ctx) error {
-		var body struct {
-			Rating int `json:"rating"`
-		}
-		if err := c.BodyParser(&body); err != nil || body.Rating < 1 || body.Rating > 5 {
-			return c.Status(400).JSON(fiber.Map{"error": "rating must be an integer 1-5"})
-		}
-		id := c.Params("id")
-		val, err := redisClient.Get(c.Context(), "cms:posts").Result()
+	// postExists is a cheap existence check shared by love/unlove/view below - reads the
+	// current array just to confirm :id is real, without touching it (the actual counts live in
+	// their own atomic keys - see attachLiveCounts above).
+	postExists := func(ctx context.Context, id string) bool {
+		val, err := redisClient.Get(ctx, "cms:posts").Result()
 		if err != nil {
-			return c.Status(404).JSON(fiber.Map{"error": "post not found"})
+			return false
 		}
 		var posts []Post
 		json.Unmarshal([]byte(val), &posts)
-		idx := -1
-		for i := range posts {
-			if posts[i].ID == id {
-				idx = i
-				break
+		for _, p := range posts {
+			if p.ID == id {
+				return true
 			}
 		}
-		if idx == -1 {
+		return false
+	}
+
+	// Public, unauthenticated - a reader can love/unlove a post (a toggle, not a 1-5 scale) and
+	// its view count ticks up on each fresh visit. None of these touch the cms:posts array - see
+	// the atomic-counter comment on attachLiveCounts above for why.
+	app.Post("/api/posts/:id/love", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		if !postExists(c.Context(), id) {
 			return c.Status(404).JSON(fiber.Map{"error": "post not found"})
 		}
 
-		// One vote per IP per post per day - a SetNX'd Redis key, checked
-		// after the post-exists check so a bogus id doesn't burn someone's
-		// vote slot. This is a cheap backstop behind the frontend's
-		// localStorage lock (see blog/[id]/page.tsx), not a hardened
-		// anti-fraud system: a VPN, a different network, or just waiting
-		// out the TTL gets around it. That's an accepted trade-off - a
-		// rating widget on a personal site doesn't move the needle enough
-		// for anyone to bother, so the cheap version is the right version.
-		dedupKey := fmt.Sprintf("cms:post-rate:%x", sha256.Sum256([]byte(c.IP()+":"+id)))
-		firstVote, err := redisClient.SetNX(c.Context(), dedupKey, "1", 24*time.Hour).Result()
+		// No TTL - this key's existence IS "this IP currently has this post loved", toggled off
+		// by DELETE below rather than expiring on its own. SetNX is the atomic gate: under
+		// concurrent requests from the same IP, only one can ever win it, so the paired Incr
+		// beneath it only ever runs once per successful love, regardless of how many requests
+		// land at the same instant.
+		stateKey := postLoveStateKey(c.IP(), id)
+		firstLove, err := redisClient.SetNX(c.Context(), stateKey, "1", 0).Result()
 		if err != nil {
-			return c.Status(500).JSON(fiber.Map{"error": "failed to record vote"})
+			return c.Status(500).JSON(fiber.Map{"error": "failed to record love"})
 		}
-		if !firstVote {
-			return c.Status(429).JSON(fiber.Map{"error": "already rated this post recently"})
+		if !firstLove {
+			return c.Status(429).JSON(fiber.Map{"error": "already loved this post"})
 		}
 
-		posts[idx].RatingSum += body.Rating
-		posts[idx].RatingCount++
-		data, _ := json.Marshal(posts)
-		redisClient.Set(c.Context(), "cms:posts", data, 0)
-		return c.JSON(fiber.Map{"rating_sum": posts[idx].RatingSum, "rating_count": posts[idx].RatingCount})
+		count, err := redisClient.Incr(c.Context(), postLoveCountKey(id)).Result()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "failed to record love"})
+		}
+		return c.JSON(fiber.Map{"love_count": count, "loved": true})
+	})
+
+	// The un-love counterpart - only succeeds if this IP actually has the post loved right now
+	// (Del returns 0 removed keys otherwise), and Decr is exactly as atomic as the Incr above.
+	app.Delete("/api/posts/:id/love", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		if !postExists(c.Context(), id) {
+			return c.Status(404).JSON(fiber.Map{"error": "post not found"})
+		}
+
+		stateKey := postLoveStateKey(c.IP(), id)
+		removed, err := redisClient.Del(c.Context(), stateKey).Result()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "failed to record unlove"})
+		}
+		if removed == 0 {
+			return c.Status(400).JSON(fiber.Map{"error": "not loved yet"})
+		}
+
+		count, err := redisClient.Decr(c.Context(), postLoveCountKey(id)).Result()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "failed to record unlove"})
+		}
+		// Decr can't itself know the floor is 0 - only pre-existing data (loved before this
+		// counter architecture shipped) could ever push it negative, but clamp defensively.
+		if count < 0 {
+			redisClient.Set(c.Context(), postLoveCountKey(id), 0, 0)
+			count = 0
+		}
+		return c.JSON(fiber.Map{"love_count": count, "loved": false})
+	})
+
+	// View counts dedup on a much shorter window than loves (30 minutes, not permanent) - a love
+	// is a deliberate one-time-until-toggled reaction, but a genuine return visit an hour later is
+	// a real second view, not spam. It only guards against a tight refresh loop inflating the count.
+	app.Post("/api/posts/:id/view", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		if !postExists(c.Context(), id) {
+			return c.Status(404).JSON(fiber.Map{"error": "post not found"})
+		}
+
+		dedupKey := postViewDedupKey(c.IP(), id)
+		firstView, err := redisClient.SetNX(c.Context(), dedupKey, "1", 30*time.Minute).Result()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "failed to record view"})
+		}
+		if !firstView {
+			count, _ := redisClient.Get(c.Context(), postViewCountKey(id)).Int()
+			return c.JSON(fiber.Map{"view_count": count})
+		}
+
+		count, err := redisClient.Incr(c.Context(), postViewCountKey(id)).Result()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "failed to record view"})
+		}
+		return c.JSON(fiber.Map{"view_count": count})
 	})
 
 	app.Get("/api/credits", func(c *fiber.Ctx) error {
@@ -316,6 +417,7 @@ func RegisterCMSRoutes(app *fiber.App) {
 		}
 		var posts []Post
 		json.Unmarshal([]byte(val), &posts)
+		attachLiveCounts(c.Context(), posts)
 		return c.JSON(posts)
 	})
 

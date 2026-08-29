@@ -349,6 +349,7 @@ const ProjectsConstellation = forwardRef<ProjectsConstellationHandle, { projects
                 <g
                   key={n.id}
                   data-node-id={n.id}
+                  data-cursor-label={hasLive ? 'Visit' : undefined}
                   transform={`translate(${n.x},${n.y})`}
                   style={{ cursor: hasLive ? 'pointer' : 'default', transition: 'opacity 150ms', touchAction: 'none' }}
                   onPointerDown={(e) => handlePointerDown(n, e)}

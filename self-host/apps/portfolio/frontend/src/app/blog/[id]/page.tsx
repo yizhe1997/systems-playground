@@ -1,13 +1,10 @@
 'use client';
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, Check, Copy, FileText, Link as LinkIcon } from 'lucide-react';
-import SiteHeader from '@/components/SiteHeader';
-import SiteFooter from '@/components/SiteFooter';
+import { ArrowLeft, ChevronLeft, ChevronRight, Check, Copy, FileText, Link as LinkIcon, MoreHorizontal, Heart, Eye, X, Sun, Moon } from 'lucide-react';
 import MDXContent from '@/components/mdx/MDXContent';
 import { fetchJson } from '@/lib/fetch-json';
 import { formatPublishedDate } from '@/lib/format-date';
-import { StarRating, StarRatingInput } from '@/components/StarRating';
 import { copyText } from '@/lib/copy-text';
 
 type Post = {
@@ -18,8 +15,8 @@ type Post = {
   content: string;
   cover_image_url: string;
   published_date: string;
-  rating_sum: number;
-  rating_count: number;
+  love_count: number;
+  view_count: number;
 };
 
 // Newest first by published_date; posts without a date keep their admin
@@ -42,45 +39,95 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   const [nextPost, setNextPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [copiedPage, setCopiedPage] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [myRating, setMyRating] = useState<number | null>(null);
-  const [submittingRating, setSubmittingRating] = useState(false);
-  const [rateBlocked, setRateBlocked] = useState(false);
+  const [loved, setLoved] = useState(false);
+  const [loving, setLoving] = useState(false);
+  const [loveBlocked, setLoveBlocked] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+  // The actions dropdown closes itself the instant copyLink/copyPage is clicked, so a "Copied!"
+  // label swapped in inside the (now-unmounted) dropdown item would never actually be seen - this
+  // toast is the real, visible confirmation instead.
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Shows the post's raw Markdown source inline, in place of the rendered article, instead of
+  // opening a separate /raw tab - closed via the X button, and reset whenever the post changes
+  // (prev/next) so it doesn't awkwardly persist into a different article.
+  const [viewingRaw, setViewingRaw] = useState(false);
+  // Dark by default (per request), remembered across visits the same way the love state is -
+  // read lazily so SSR/first-paint and a returning reader's actual preference don't fight each
+  // other. Only the reading card (title/meta/content) themes - the nav row and dropdown chrome
+  // stay as-is, same as how a lot of reading apps keep their toolbar neutral and only flip the
+  // page itself.
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const saved = localStorage.getItem('blogpad-dark-mode');
+    return saved === null ? true : saved === '1';
+  });
 
-  // A reader's own vote is remembered per-post in localStorage so the
-  // picker locks into "you already rated this" on repeat visits without a
-  // round-trip. The backend also enforces one vote per IP per post per day
-  // (see the /rate route) as a cheap backstop for a cleared localStorage or
-  // a different browser on the same network - that's the 429 branch below.
+  const toggleDarkMode = () => {
+    setDarkMode((v) => {
+      const next = !v;
+      localStorage.setItem('blogpad-dark-mode', next ? '1' : '0');
+      return next;
+    });
+  };
+
+  // A reader's own love is remembered per-post in localStorage so the button locks into
+  // "you already loved this" on repeat visits without a round-trip. The backend also enforces one
+  // love per IP per post per day (see the /love route) as a cheap backstop for a cleared
+  // localStorage or a different browser on the same network - that's the 429 branch below.
   useEffect(() => {
-    const stored = localStorage.getItem(`blog-rating-${id}`);
-    setMyRating(stored ? Number(stored) : null);
+    setLoved(!!localStorage.getItem(`blog-love-${id}`));
+    setViewingRaw(false);
   }, [id]);
 
-  const rate = async (n: number) => {
-    if (myRating || submittingRating) return;
-    setSubmittingRating(true);
+  useEffect(() => () => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+  }, []);
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToastMessage(null), 1800);
+  };
+
+  useEffect(() => {
+    if (!actionsOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) setActionsOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [actionsOpen]);
+
+  // Toggles both ways - POST to love, DELETE to unlove - rather than a one-shot "vote once"
+  // action. The backend's own concurrency-safety (atomic Incr/Decr on a dedicated Redis key, a
+  // SetNX'd per-IP state key as the toggle gate) is what actually makes this safe under
+  // concurrent requests; this is just the client half.
+  const toggleLove = async () => {
+    if (loving) return;
+    setLoving(true);
     try {
       const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
-      const res = await fetch(`${url}/api/posts/${id}/rate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating: n }),
-      });
+      const res = await fetch(`${url}/api/posts/${id}/love`, { method: loved ? 'DELETE' : 'POST' });
       if (res.ok) {
-        const data: { rating_sum: number; rating_count: number } = await res.json();
-        setPost((p) => (p ? { ...p, rating_sum: data.rating_sum, rating_count: data.rating_count } : p));
-        localStorage.setItem(`blog-rating-${id}`, String(n));
-        setMyRating(n);
+        const data: { love_count: number; loved: boolean } = await res.json();
+        setPost((p) => (p ? { ...p, love_count: data.love_count } : p));
+        if (data.loved) {
+          localStorage.setItem(`blog-love-${id}`, '1');
+        } else {
+          localStorage.removeItem(`blog-love-${id}`);
+        }
+        setLoved(data.loved);
+        setLoveBlocked(false);
       } else if (res.status === 429) {
-        setRateBlocked(true);
+        setLoveBlocked(true);
       }
     } catch {
-      // Silently drop - a failed vote isn't worth an error banner on an
-      // otherwise-successfully-loaded post page.
+      // Silently drop - a failed love/unlove isn't worth an error banner on an otherwise-
+      // successfully loaded post page.
     } finally {
-      setSubmittingRating(false);
+      setLoving(false);
     }
   };
 
@@ -104,6 +151,16 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         const idx = sorted.findIndex((p) => p.id === id);
         setPrevPost(idx > 0 ? sorted[idx - 1] : null);
         setNextPost(idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null);
+
+        // Fire-and-forget, not blocking content load - the 30min per-IP dedup on the backend
+        // means a tight refresh loop doesn't inflate this, but a genuine return visit later does.
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
+        fetch(`${apiUrl}/api/posts/${id}/view`, { method: 'POST' })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data: { view_count: number } | null) => {
+            if (data) setPost((p) => (p ? { ...p, view_count: data.view_count } : p));
+          })
+          .catch(() => {});
 
         let rawMarkdown = '';
         if (target.source_type === 'external_url') {
@@ -129,32 +186,163 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   const copyPage = async () => {
     if (await copyText(content)) {
-      setCopiedPage(true);
-      setTimeout(() => setCopiedPage(false), 2000);
+      showToast('Page copied to clipboard');
     }
   };
 
   const copyLink = async () => {
     if (await copyText(window.location.href)) {
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
+      showToast('Link copied to clipboard');
     }
   };
 
-  const toolbarButtonClass =
-    'inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 border-2 border-black bg-white hover:bg-[var(--ds-yellow)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black';
+  const pagerBtnClass = darkMode
+    ? 'p-2 border-2 border-white/30 text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white'
+    : 'p-2 border-2 border-black hover:bg-[var(--ds-yellow)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black';
+  const pagerBtnDisabledClass = darkMode
+    ? 'p-2 border-2 border-white/10 text-white/20 cursor-not-allowed'
+    : 'p-2 border-2 border-black/20 text-black/20 cursor-not-allowed';
+  const actionItemClass = darkMode
+    ? 'w-full flex items-center gap-1.5 text-left px-2 py-1.5 rounded-md text-sm text-white hover:bg-white/10 transition-colors'
+    : 'w-full flex items-center gap-1.5 text-left px-2 py-1.5 rounded-md text-sm hover:bg-[var(--ds-yellow)] transition-colors';
+  const dropdownClass = darkMode
+    ? 'absolute right-0 top-full mt-1 z-10 border-2 border-white/30 rounded-[0.5rem] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] bg-[var(--ds-charcoal)] p-1'
+    : 'absolute right-0 top-full mt-1 z-10 border-2 border-black rounded-[0.5rem] shadow-[4px_4px_0px_0px_#000] bg-white text-[var(--ds-charcoal)] p-1';
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
-      <SiteHeader />
-      <main className="flex-1 max-w-3xl mx-auto px-6 py-20 w-full">
-        <Link href="/blog" className="inline-flex items-center gap-1.5 text-sm font-bold mb-10 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-black">
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          All posts
-        </Link>
+    // Bleeds edge-to-edge to fill the device screen's own px-5/pt-4/pb-6 padding when dark, the
+    // same -mx-5/-mt-4/-mb-6 trick blog/page.tsx already uses for its own full-bleed panel -
+    // otherwise dark mode was just a dark CARD floating in a lingering white margin, not an
+    // actually dark screen. Only the status/address bar chrome above (owned by BlogIpadFrame)
+    // stays as-is; this is the whole scrollable surface underneath it. The replacement padding
+    // (px-5/pt-4/pb-6) deliberately matches the canceled-out margins exactly, unlike blog/page.tsx's
+    // own px-6/py-8 - this page's content must sit at the SAME position in both modes, or toggling
+    // dark mode visibly shifts the article underneath the reader instead of just repainting it.
+    <div
+      className={darkMode ? 'relative z-0 -mx-5 -mt-4 -mb-6 px-5 pt-4 pb-6' : ''}
+      style={darkMode ? { backgroundColor: 'var(--ds-charcoal)' } : undefined}
+    >
+    <div className="max-w-3xl mx-auto">
+        {/* Blog link, an actions dropdown (copy page / view as markdown / copy link), and a
+            compact prev/next pair - all in one row. The actions dropdown sits directly to the
+            left of the "<" (prev) button, replacing what used to be its own separate toolbar row
+            below the title. Prev/next use plain chevrons ("<"/">") rather than full arrows. Both
+            only appear once the post list has loaded; each control disables itself (rather than
+            disappearing) when there's nothing to act on yet or nothing in that direction. */}
+        <div className="relative flex items-center justify-between mb-10">
+          <Link
+            href="/blog"
+            className={`inline-flex items-center gap-1.5 text-sm font-bold hover:underline focus:outline-none focus-visible:ring-2 ${darkMode ? 'text-white focus-visible:ring-white' : 'focus-visible:ring-black'}`}
+          >
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            Blog
+          </Link>
+          {!loading && !error && (
+            <div className="flex items-center gap-2">
+              <div className="relative" ref={actionsMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setActionsOpen((o) => !o)}
+                  aria-label="Post actions"
+                  data-cursor-label="Actions"
+                  className={pagerBtnClass}
+                  style={{ borderRadius: '0.5rem' }}
+                >
+                  <MoreHorizontal className="w-4 h-4" aria-hidden="true" />
+                </button>
+                {actionsOpen && (
+                  <div className={dropdownClass} style={{ minWidth: '11rem' }} role="menu">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        copyLink();
+                        setActionsOpen(false);
+                      }}
+                      className={actionItemClass}
+                    >
+                      <LinkIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                      Copy link
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        copyPage();
+                        setActionsOpen(false);
+                      }}
+                      className={actionItemClass}
+                    >
+                      <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                      Copy page
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setViewingRaw(true);
+                        setActionsOpen(false);
+                      }}
+                      className={actionItemClass}
+                    >
+                      <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                      View as Markdown
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={toggleDarkMode}
+                aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                data-cursor-label={darkMode ? 'Light mode' : 'Dark mode'}
+                className={pagerBtnClass}
+                style={{ borderRadius: '0.5rem' }}
+              >
+                {darkMode ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
+              </button>
+              {prevPost ? (
+                <Link href={`/blog/${prevPost.id}`} aria-label={`Previous post: ${prevPost.title}`} data-cursor-label="Prev" className={pagerBtnClass} style={{ borderRadius: '0.5rem' }}>
+                  <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+                </Link>
+              ) : (
+                <span aria-hidden="true" className={pagerBtnDisabledClass} style={{ borderRadius: '0.5rem' }}>
+                  <ChevronLeft className="w-4 h-4" />
+                </span>
+              )}
+              {nextPost ? (
+                <Link href={`/blog/${nextPost.id}`} aria-label={`Next post: ${nextPost.title}`} data-cursor-label="Next" className={pagerBtnClass} style={{ borderRadius: '0.5rem' }}>
+                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                </Link>
+              ) : (
+                <span aria-hidden="true" className={pagerBtnDisabledClass} style={{ borderRadius: '0.5rem' }}>
+                  <ChevronRight className="w-4 h-4" />
+                </span>
+              )}
+            </div>
+          )}
+          {/* Centered across the whole row (not tucked under the actions button) and anchored
+              here rather than position:fixed on the viewport specifically so it stays inside the
+              device's own screen when framed by BlogIpadFrame - fixed-position elements only get
+              confined to a transformed ancestor when one actually has an inline transform at that
+              moment, which cardRef doesn't until the device has been flipped at least once, so a
+              viewport-fixed toast could render outside the screen's rounded/clipped bounds
+              entirely. */}
+          {toastMessage && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="absolute left-1/2 -translate-x-1/2 top-full mt-1 z-20 flex items-center gap-1.5 px-3 py-2 border-2 border-black bg-[var(--ds-yellow)] text-[var(--ds-charcoal)] font-bold text-xs shadow-[4px_4px_0px_0px_#000] whitespace-nowrap"
+              style={{ borderRadius: '0.5rem' }}
+            >
+              <Check className="w-3.5 h-3.5" aria-hidden="true" />
+              {toastMessage}
+            </div>
+          )}
+        </div>
 
         {loading ? (
-          <p role="status" aria-live="polite" className="text-sm font-bold text-[var(--ds-charcoal)]/70">Loading post&hellip;</p>
+          <p role="status" aria-live="polite" className={`text-sm font-bold ${darkMode ? 'text-white/70' : 'text-[var(--ds-charcoal)]/70'}`}>Loading post&hellip;</p>
         ) : error ? (
           <div
             role="alert"
@@ -165,101 +353,70 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
             <p className="text-sm mt-1">{error}</p>
           </div>
         ) : (
-          <article>
-            <div className="mb-6 pb-8 border-b-2 border-black">
+          <article className={darkMode ? 'text-white' : ''}>
+            <div className={`mb-6 pb-8 border-b-2 ${darkMode ? 'border-white/15' : 'border-black'}`}>
               <h1
-                className="text-3xl lg:text-4xl mb-4 leading-tight text-black"
+                className={`text-3xl lg:text-4xl mb-4 leading-tight ${darkMode ? 'text-white' : 'text-black'}`}
                 style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
               >
                 {post?.title}
               </h1>
-              {post?.published_date && (
-                <p className="text-sm font-mono text-[var(--ds-charcoal)]/60">
-                  Published on {formatPublishedDate(post.published_date)}
+              <div className="flex items-center justify-between gap-3">
+                <p className={`text-sm font-mono ${darkMode ? 'text-white/60' : 'text-[var(--ds-charcoal)]/60'}`}>
+                  {post?.published_date && `Published on ${formatPublishedDate(post.published_date)}`}
                 </p>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 mb-10">
-              <button type="button" onClick={copyPage} className={toolbarButtonClass}>
-                {copiedPage ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
-                {copiedPage ? 'Copied!' : 'Copy page'}
-              </button>
-              <a href={`/blog/${id}/raw`} target="_blank" rel="noopener noreferrer" className={toolbarButtonClass}>
-                <FileText className="w-3.5 h-3.5" aria-hidden="true" />
-                View as Markdown
-              </a>
-              <button type="button" onClick={copyLink} className={toolbarButtonClass}>
-                {copiedLink ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <LinkIcon className="w-3.5 h-3.5" aria-hidden="true" />}
-                {copiedLink ? 'Copied!' : 'Copy link'}
-              </button>
-            </div>
-
-            <MDXContent
-              source={content}
-              proseClassName="prose prose-headings:font-extrabold prose-a:text-black prose-a:underline prose-pre:bg-[var(--ds-charcoal)] prose-pre:text-white prose-pre:border-2 prose-pre:border-black max-w-none"
-            />
-
-            <div className="mt-16 pt-8 border-t-2 border-black">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70 mb-3">Rate this post</h2>
-              <div className="flex items-center gap-3">
-                <StarRatingInput value={myRating ?? 0} onChange={rate} disabled={myRating !== null || rateBlocked || submittingRating} />
-                <p className="text-sm text-[var(--ds-charcoal)]/70">
-                  {myRating
-                    ? `Thanks — you rated this ${myRating} star${myRating === 1 ? '' : 's'}.`
-                    : rateBlocked
-                      ? "Looks like you've already rated this post recently."
-                      : submittingRating
-                        ? 'Submitting…'
-                        : 'Click a star to rate this post.'}
-                </p>
-              </div>
-              {post && post.rating_count > 0 && (
-                <div className="mt-2 flex items-center gap-2">
-                  <StarRating average={post.rating_sum / post.rating_count} count={post.rating_count} size={14} showCount />
-                  <span className="text-xs font-mono text-[var(--ds-charcoal)]/50">overall</span>
+                <div className={`flex items-center gap-3 text-sm shrink-0 ${darkMode ? 'text-white/60' : 'text-[var(--ds-charcoal)]/60'}`}>
+                  <span className="inline-flex items-center gap-1">
+                    <Eye className="w-4 h-4" aria-hidden="true" />
+                    {post?.view_count ?? 0}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={toggleLove}
+                    disabled={loving}
+                    aria-label={loved ? 'Unlove this post' : 'Love this post'}
+                    aria-pressed={loved}
+                    data-cursor-label={loved ? 'Unlove' : 'Love'}
+                    title={loveBlocked ? "Looks like you've already loved this recently" : undefined}
+                    className={`inline-flex items-center gap-1 transition-colors disabled:cursor-not-allowed ${darkMode ? 'hover:text-white' : 'hover:text-black'}`}
+                  >
+                    <Heart className="w-4 h-4" aria-hidden="true" fill={loved ? 'currentColor' : 'none'} />
+                    {post?.love_count ?? 0}
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
 
-            {(prevPost || nextPost) && (
-              <nav aria-label="More posts" className="flex items-stretch gap-4 mt-16 pt-8 border-t-2 border-black">
-                {prevPost ? (
-                  <Link
-                    href={`/blog/${prevPost.id}`}
-                    className="group flex-1 flex items-center gap-2 p-4 border-2 border-black hover:bg-[var(--ds-yellow)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                    style={{ borderRadius: '0.75rem' }}
+            {viewingRaw ? (
+              <div className={`border-2 bg-black/40 ${darkMode ? 'border-white/20' : 'border-black'}`} style={{ borderRadius: '0.75rem' }}>
+                <div className="flex items-center justify-between px-4 py-2.5 border-b-2 border-white/10">
+                  <span className="text-xs font-mono uppercase tracking-wider text-white/60">Raw Markdown</span>
+                  <button
+                    type="button"
+                    onClick={() => setViewingRaw(false)}
+                    aria-label="Close raw Markdown view"
+                    data-cursor-label="Close"
+                    className="p-1 border-2 border-white/30 hover:border-white text-white/70 hover:text-white transition-colors"
+                    style={{ borderRadius: '0.4rem' }}
                   >
-                    <ArrowLeft className="w-4 h-4 shrink-0" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-[var(--ds-charcoal)]/60 mb-0.5">Previous</p>
-                      <p className="text-sm font-bold truncate group-hover:underline">{prevPost.title}</p>
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="flex-1" />
-                )}
-                {nextPost ? (
-                  <Link
-                    href={`/blog/${nextPost.id}`}
-                    className="group flex-1 flex items-center justify-end gap-2 p-4 border-2 border-black text-right hover:bg-[var(--ds-yellow)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                    style={{ borderRadius: '0.75rem' }}
-                  >
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-[var(--ds-charcoal)]/60 mb-0.5">Next</p>
-                      <p className="text-sm font-bold truncate group-hover:underline">{nextPost.title}</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />
-                  </Link>
-                ) : (
-                  <div className="flex-1" />
-                )}
-              </nav>
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+                <pre className="text-xs text-white p-4 whitespace-pre-wrap overflow-x-auto max-h-[60vh] overflow-y-auto">{content}</pre>
+              </div>
+            ) : (
+              <MDXContent
+                source={content}
+                proseClassName={
+                  darkMode
+                    ? 'prose prose-invert prose-headings:font-extrabold prose-a:text-white prose-a:underline prose-pre:bg-black prose-pre:text-white prose-pre:border-2 prose-pre:border-white/20 max-w-none'
+                    : 'prose prose-headings:font-extrabold prose-a:text-black prose-a:underline prose-pre:bg-[var(--ds-charcoal)] prose-pre:text-white prose-pre:border-2 prose-pre:border-black max-w-none'
+                }
+              />
             )}
           </article>
         )}
-      </main>
-      <SiteFooter />
+    </div>
     </div>
   );
 }

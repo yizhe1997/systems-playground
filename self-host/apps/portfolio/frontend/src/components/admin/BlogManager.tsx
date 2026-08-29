@@ -30,11 +30,12 @@ type Post = {
   cover_image_url: string;
   published_date: string;
   featured: boolean;
-  // rating_sum/rating_count accumulate from real reader votes on the post
-  // page (POST /api/posts/:id/rate) - deliberately not an admin-editable
-  // field here. It round-trips through Save Blog untouched, same as id.
-  rating_sum: number;
-  rating_count: number;
+  // love_count/view_count accumulate from real reader activity on the post
+  // page (POST /api/posts/:id/love and /view) - deliberately not
+  // admin-editable fields here. They round-trip through Save Blog
+  // untouched, same as id.
+  love_count: number;
+  view_count: number;
   status: string;
 };
 
@@ -197,7 +198,7 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
       {
         id: Math.random().toString(36).substring(2, 8),
         title: '', source_type: 'native', content_target: '', content: '',
-        cover_image_url: '', published_date: '', featured: false, rating_sum: 0, rating_count: 0, status: 'draft',
+        cover_image_url: '', published_date: '', featured: false, love_count: 0, view_count: 0, status: 'draft',
       },
       ...posts,
     ]);
@@ -415,9 +416,9 @@ export default function BlogManager({ isAdmin, onDirtyChange }: { isAdmin: boole
               </div>
 
               <p className="text-xs font-mono text-[var(--ds-charcoal)]/60">
-                {p.rating_count > 0
-                  ? `Rated ${(p.rating_sum / p.rating_count).toFixed(1)}/5 from ${p.rating_count} reader${p.rating_count === 1 ? '' : 's'} — accumulated from votes on the post page, not editable here.`
-                  : 'Not yet rated by any readers.'}
+                {p.love_count > 0 || p.view_count > 0
+                  ? `${p.love_count} love${p.love_count === 1 ? '' : 's'}, ${p.view_count} view${p.view_count === 1 ? '' : 's'} — accumulated from the post page, not editable here.`
+                  : 'No loves or views yet.'}
               </p>
             </div>
           ))}

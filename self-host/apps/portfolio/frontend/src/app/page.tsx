@@ -14,6 +14,7 @@ import EmptyBlogCard from '@/components/EmptyBlogCard';
 import CopySectionLinkButton from '@/components/CopySectionLinkButton';
 import { useResumeRequest } from '@/components/ResumeRequestModal';
 import { fetchJson } from '@/lib/fetch-json';
+import { estimateReadingMinutes } from '@/lib/reading-time';
 import ParticleImage from '@/components/originkit/svgparticles';
 
 type Project = ProjectRowType & { featured: boolean };
@@ -21,11 +22,13 @@ type Project = ProjectRowType & { featured: boolean };
 type Post = {
   id: string;
   title: string;
+  source_type: string;
+  content: string;
   cover_image_url: string;
   published_date: string;
   featured: boolean;
-  rating_sum: number;
-  rating_count: number;
+  love_count: number;
+  view_count: number;
 };
 
 type CreditItem = { text: string; url: string };
@@ -478,7 +481,13 @@ export default function Home() {
   }, []);
 
   const filteredProjects = projects.filter(p => p.featured).slice(0, 3);
-  const filteredPosts = posts.filter(p => p.featured).slice(0, 4);
+  // Same reading_minutes calculation as /blog's own listing (BlogCard is a shared component, so
+  // both listings should carry the same meta row) - only computable for "native" posts, whose
+  // body is already in this same response; an "external_url" post's body lives at a separate URL.
+  const filteredPosts = posts
+    .filter((p) => p.featured)
+    .slice(0, 4)
+    .map((p) => ({ ...p, reading_minutes: p.source_type === 'native' ? estimateReadingMinutes(p.content) : undefined }));
 
   return (
     <div className="min-h-screen text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
