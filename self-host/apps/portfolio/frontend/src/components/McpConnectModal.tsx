@@ -47,7 +47,11 @@ function ClientIcon({ slug }: { slug?: string }) {
   return <Terminal className="w-4 h-4 shrink-0" aria-hidden="true" />;
 }
 
-const McpConnectModalContext = createContext<{ open: () => void } | null>(null);
+// `open` takes an optional container element - passed by callers rendered inside a device frame
+// (e.g. ProjectsCrtFrame) so the dialog confines itself to that frame's own screen instead of
+// covering the whole page. Omitted (or null), it behaves exactly as before - centered over the
+// full viewport.
+const McpConnectModalContext = createContext<{ open: (container?: HTMLElement | null) => void } | null>(null);
 
 export function useMcpConnect() {
   const ctx = useContext(McpConnectModalContext);
@@ -213,15 +217,25 @@ function ClientSetup({ client }: { client: ClientKey }) {
 
 export function McpConnectProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [scopedContainer, setScopedContainer] = useState<HTMLElement | null>(null);
   const [selectedClient, setSelectedClient] = useState<ClientKey>('claude-code');
   const client = CLIENTS.find((c) => c.key === selectedClient)!;
 
   return (
-    <McpConnectModalContext.Provider value={{ open: () => setOpen(true) }}>
+    <McpConnectModalContext.Provider
+      value={{
+        open: (container) => {
+          setScopedContainer(container ?? null);
+          setOpen(true);
+        },
+      }}
+    >
       {children}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
+          container={scopedContainer ?? undefined}
+          scoped={!!scopedContainer}
           className="sm:max-w-lg bg-white border-2 border-black text-[var(--ds-charcoal)] ring-0"
           style={{ fontFamily: 'var(--ds-font-body)', borderRadius: '0.75rem', boxShadow: '8px 8px 0px 0px #000' }}
         >

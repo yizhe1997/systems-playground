@@ -11,15 +11,51 @@ import ViewToggle, { type ViewMode } from '@/components/ViewToggle';
 import ProjectsConstellation, { type ProjectsConstellationHandle } from '@/components/ProjectsConstellation';
 import CopySectionLinkButton from '@/components/CopySectionLinkButton';
 import RadialRevealButton from '@/components/originkit/radial-reveal-button';
+import ProjectsCrtFrame, { useCrtScreenContainer } from '@/components/ProjectsCrtFrame';
 import { useMcpConnect } from '@/components/McpConnectModal';
+import { useIsLargeScreen } from '@/hooks/use-large-screen';
 import { fetchJson } from '@/lib/fetch-json';
 
 const PAGE_SIZE = 6;
 
+// A real component (not a value computed in ProjectsPage) because useCrtScreenContainer() only
+// sees ProjectsCrtFrame's context when called from an actual descendant of its Provider - and
+// ProjectsPage itself is the ANCESTOR that renders <ProjectsCrtFrame>, not a descendant of it, so
+// calling the hook there would always read the default (null). This button's own JSX ends up
+// nested inside ProjectsCrtFrame's children (when isLargeScreen) or rendered directly with no CRT
+// ancestor at all (when not) - either way, calling the hook from a component instance actually
+// positioned there gives the right answer: the screen container when framed, null otherwise.
+function TalkToPortfolioButton() {
+  const { open: openMcpConnect } = useMcpConnect();
+  const crtScreenContainer = useCrtScreenContainer();
+
+  return (
+    <RadialRevealButton
+      label="Talk to this portfolio"
+      onClick={() => openMcpConnect(crtScreenContainer ?? undefined)}
+      data-cursor-label="Open"
+      style={{ marginLeft: 'auto' }}
+      font={{ fontFamily: 'var(--ds-font-body)', fontWeight: 700, fontSize: 14, lineHeight: '1.2em', letterSpacing: '0em', textAlign: 'left' }}
+      padding="10px 14px"
+      rounded={40}
+      colors={{
+        fill: 'var(--ds-yellow)',
+        textColor: 'var(--ds-charcoal)',
+        hoverFill: 'var(--ds-charcoal)',
+        hoverTextColor: 'var(--ds-yellow)',
+      }}
+      border={{ borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--ds-black)' }}
+      addIcon
+      icon={{ type: 'node', node: <Sparkles className="w-3.5 h-3.5" />, color: 'var(--ds-charcoal)', hoverColor: 'var(--ds-yellow)', side: 'left' }}
+      gap={6}
+    />
+  );
+}
+
 export default function ProjectsPage() {
+  const isLargeScreen = useIsLargeScreen();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const { open: openMcpConnect } = useMcpConnect();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
@@ -77,10 +113,10 @@ export default function ProjectsPage() {
     });
   };
 
-  return (
-    <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
-      <SiteHeader />
-      <main className="flex-1 max-w-6xl mx-auto px-6 py-20 w-full">
+  // Shared between the plain layout and the device-framed one below - the device only wraps
+  // large viewports (see useIsLargeScreen), but the actual page content is identical either way.
+  const pageContent = (
+    <>
         <h1
           className="group/heading mb-8 inline-flex items-baseline gap-1.5 text-black"
           style={{
@@ -164,26 +200,10 @@ export default function ProjectsPage() {
                   border only reads against a light fill, so this flips to the DS's yellow-fill/
                   charcoal-text combo (used elsewhere for the yellow VARIANTS card) instead of a
                   black fill - and reveals to the inverse (charcoal fill/yellow text) on hover,
-                  rather than needing a shadow to give it edge definition. */}
-              <RadialRevealButton
-                label="Talk to this portfolio"
-                onClick={openMcpConnect}
-                data-cursor-label="Open"
-                style={{ marginLeft: 'auto' }}
-                font={{ fontFamily: 'var(--ds-font-body)', fontWeight: 700, fontSize: 14, lineHeight: '1.2em', letterSpacing: '0em', textAlign: 'left' }}
-                padding="10px 14px"
-                rounded={40}
-                colors={{
-                  fill: 'var(--ds-yellow)',
-                  textColor: 'var(--ds-charcoal)',
-                  hoverFill: 'var(--ds-charcoal)',
-                  hoverTextColor: 'var(--ds-yellow)',
-                }}
-                border={{ borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--ds-black)' }}
-                addIcon
-                icon={{ type: 'node', node: <Sparkles className="w-3.5 h-3.5" />, color: 'var(--ds-charcoal)', hoverColor: 'var(--ds-yellow)', side: 'left' }}
-                gap={6}
-              />
+                  rather than needing a shadow to give it edge definition. Pulled into its own
+                  component (see TalkToPortfolioButton above) so it can read the CRT screen
+                  container from context and confine the dialog to it. */}
+              <TalkToPortfolioButton />
             </div>
 
             {viewMode === 'grid' ? (
@@ -258,7 +278,24 @@ export default function ProjectsPage() {
             )}
           </>
         )}
-      </main>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
+      <SiteHeader />
+      {isLargeScreen ? (
+        // No bottom padding - the stand/tower's feet sit flush against where SiteFooter starts,
+        // on purpose, so the device reads as resting on solid ground rather than dangling in the
+        // middle of the sage panel with visible space underneath it.
+        <main className="flex-1 w-full" style={{ backgroundColor: 'var(--ds-sage)', paddingTop: '2rem' }}>
+          <ProjectsCrtFrame>
+            <div className="max-w-6xl mx-auto">{pageContent}</div>
+          </ProjectsCrtFrame>
+        </main>
+      ) : (
+        <main className="flex-1 max-w-6xl mx-auto px-6 py-20 w-full">{pageContent}</main>
+      )}
       <SiteFooter />
     </div>
   );

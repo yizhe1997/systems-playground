@@ -25,8 +25,9 @@ function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
 
 function DialogOverlay({
   className,
+  scoped,
   ...props
-}: DialogPrimitive.Backdrop.Props) {
+}: DialogPrimitive.Backdrop.Props & { scoped?: boolean }) {
   return (
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
@@ -38,7 +39,12 @@ function DialogOverlay({
         // entire time any dialog was open, not just cursor movement. Bumped opacity from /10 to
         // /30 to keep the same "background is dimmed/inactive" read without the blur doing part
         // of that visual work.
-        "fixed inset-0 isolate z-50 bg-black/30 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "inset-0 isolate z-50 bg-black/30 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        // `scoped` swaps fixed (relative to the viewport) for absolute (relative to whatever
+        // positioned container this got portaled into, e.g. a device screen) - combined with
+        // DialogContent's `container` prop, this is what actually confines the dialog to that
+        // container instead of covering the whole page.
+        scoped ? "absolute" : "fixed",
         className
       )}
       {...props}
@@ -50,17 +56,25 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  container,
+  scoped = false,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  container?: DialogPrimitive.Portal.Props["container"]
+  // See DialogOverlay's own comment - true when `container` points somewhere other than the
+  // default document.body, so the dialog reads as "inside that container" rather than floating
+  // over the whole viewport.
+  scoped?: boolean
 }) {
   return (
-    <DialogPortal>
-      <DialogOverlay />
+    <DialogPortal container={container}>
+      <DialogOverlay scoped={scoped} />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          scoped ? "absolute" : "fixed",
           className
         )}
         {...props}

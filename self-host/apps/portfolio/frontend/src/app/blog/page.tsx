@@ -8,6 +8,7 @@ import CopySectionLinkButton from '@/components/CopySectionLinkButton';
 import FoilDrift from '@/components/originkit/foil-drift';
 import { fetchJson } from '@/lib/fetch-json';
 import { estimateReadingMinutes } from '@/lib/reading-time';
+import { useIsLargeScreen } from '@/hooks/use-large-screen';
 
 type Post = {
   id: string;
@@ -34,6 +35,11 @@ const menuContentClass =
   'border-2 border-black rounded-[0.5rem] shadow-[4px_4px_0px_0px_#000] bg-white text-[var(--ds-charcoal)] p-1';
 
 export default function BlogIndex() {
+  // Which negative margins correctly cancel the parent's padding depends on which parent is
+  // actually wrapping this page right now (see the panel div below) - BlogLayout gives large
+  // screens the device screen's own px-5/pt-4/pb-6, but small screens skip the device entirely
+  // and sit directly in <main>'s own px-6/pt-[5rem]/pb-20, a different set of values.
+  const isLargeScreen = useIsLargeScreen();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -109,12 +115,17 @@ export default function BlogIndex() {
 
   // SiteHeader/SiteFooter and the iPad frame now live in blog/layout.tsx, shared with
   // /blog/[id] - this page only ever renders its own content. The negative margins below cancel
-  // out the device screen's own px-5/pt-4/pb-6 padding (BlogIpadFrame) so this panel - and the
-  // Foil Drift shimmer behind it - bleeds edge-to-edge as the actual screen background, rather
-  // than sitting as an inset card floating inside a white margin. Only the status/address bar
-  // "chrome" above stays white; this is the whole page surface underneath it.
+  // out whichever parent is actually wrapping this page right now, so this panel - and the Foil
+  // Drift shimmer behind it - bleeds edge-to-edge as the real background instead of sitting as an
+  // inset card floating inside a leftover margin. On large screens that's the device screen's own
+  // px-5/pt-4/pb-6 (BlogIpadFrame); on small screens there's no device at all, so it's <main>'s
+  // own px-6/pt-[5rem]/pb-20 instead - using the large-screen values there left a white gap at the
+  // top and bottom exactly the size of the mismatch (64px top, 56px bottom). Only the status/
+  // address bar "chrome" above stays white (large screens only); this is the whole page surface
+  // underneath it either way.
+  const bleedClass = isLargeScreen ? '-mx-5 -mt-4 -mb-6' : '-mx-6 -mt-20 -mb-20';
   return (
-    <div className="relative z-0 -mx-5 -mt-4 -mb-6 px-6 py-8" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
+    <div className={`relative z-0 ${bleedClass} px-6 py-8`} style={{ backgroundColor: 'var(--ds-charcoal)' }}>
         {/* Foil Drift (Originkit) as the actual screen background - not tucked behind gaps. It's
             pure specular (flakes are invisible except where they catch the light), so it needs
             real tonal contrast to read at all; charcoal (a site DS token, not the component's own
