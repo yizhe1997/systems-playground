@@ -33,9 +33,9 @@ export default function SiteHeader() {
           <span className="inline-block align-middle" style={{ height: '1.375rem' }}>
             <Typewriter
               texts={['Portfolio', 'Showcase', 'Corner']}
-              color="#000000"
-              typedColor="#000000"
-              cursorColor="#000000"
+              color="var(--ds-charcoal)"
+              typedColor="var(--ds-charcoal)"
+              cursorColor="var(--ds-charcoal)"
               cursorChar="_"
               // Slower than the component's own default (0.07s/char type,
               // 1.5s hold) - the default cycled through words too quickly
@@ -53,7 +53,7 @@ export default function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="hidden sm:flex items-center gap-8 font-bold text-sm justify-self-center">
+        <nav className="hidden sm:flex items-center gap-8 font-bold text-sm justify-self-center" style={{ color: 'var(--ds-charcoal)' }}>
           {navLinks.map((link) => (
             // py-3 -my-3 expands the tap target to WCAG 2.2's 24px AA floor
             // (closer to the 44px mobile guideline) without changing the
@@ -73,17 +73,17 @@ export default function SiteHeader() {
         <div className="sm:hidden justify-self-end">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <button aria-label="Open navigation" data-cursor-label="Menu" className="p-2.5 -mr-2.5 text-black">
+              <button aria-label="Open navigation" data-cursor-label="Menu" className="p-2.5 -mr-2.5" style={{ color: 'var(--ds-charcoal)' }}>
                 <Menu className="w-6 h-6" />
               </button>
             </SheetTrigger>
             <SheetContent
               side="right"
               className="bg-white border-l-2 border-black w-[260px] p-6 flex flex-col gap-6"
-              style={{ boxShadow: 'none' }}
+              style={{ boxShadow: 'none', color: 'var(--ds-charcoal)' }}
             >
               <SheetHeader>
-                <SheetTitle className="text-left text-sm font-bold">Navigate</SheetTitle>
+                <SheetTitle className="text-left text-sm font-bold" style={{ color: 'var(--ds-charcoal)' }}>Navigate</SheetTitle>
               </SheetHeader>
               <nav className="flex flex-col font-bold text-sm">
                 {navLinks.map((link) => (

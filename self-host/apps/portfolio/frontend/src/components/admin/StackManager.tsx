@@ -19,18 +19,24 @@ const fieldClass =
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
+// Matches the SIDES section's own per-category styling in AboutPageBody.tsx (pill chips, sage
+// fill, uppercase label) - a hand-copied mockup drifts the moment either side changes, so keep
+// this in sync with that file whenever its chip/label styling changes.
 function StackCardPreview({ category }: { category: StackCategory }) {
   return (
-    <div className="border-2 border-black shadow-[4px_4px_0px_0px_#000] bg-white p-6 max-w-sm" style={{ borderRadius: '0.75rem' }}>
-      <h3 className="text-xs font-bold uppercase tracking-wider mb-4 text-[var(--ds-charcoal)]/70">
+    <div className="border-[4px] border-black rounded-[18px] bg-white p-6 max-w-sm">
+      <div
+        className="font-extrabold text-[13px] tracking-wide uppercase mb-2.5"
+        style={{ fontFamily: 'var(--ds-font-display)', opacity: 0.55 }}
+      >
         {category.name || 'Untitled category'}
-      </h3>
+      </div>
       <div className="flex flex-wrap gap-2">
         {category.skills.map((skill, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 border-2 border-black"
-            style={{ borderRadius: '0.375rem' }}
+            className="inline-flex items-center gap-1.5 border-[2.5px] border-black rounded-full px-3.5 py-1.5 font-extrabold text-[13px]"
+            style={{ backgroundColor: 'var(--ds-sage)' }}
           >
             <SimpleIcon slug={skill.icon} className="w-3.5 h-3.5" />
             {skill.name || 'Untitled skill'}

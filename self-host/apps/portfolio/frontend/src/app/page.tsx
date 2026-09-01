@@ -754,7 +754,17 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="absolute flex" style={{ left: 0, right: 0, top: '21%', bottom: '17%' }}>
+              {/* z-index: 1 - the destination particle photo below (DestinationParticles) is a
+                  later, also position:absolute sibling with no z-index of its own, so without
+                  this the two resolve stacking by DOM order alone and the particle canvas ends up
+                  ON TOP for hit-testing - invisible in practice since the particles render sparse
+                  enough to still show the text through them, but it silently ate every hover/click
+                  meant for anything in this column (confirmed via elementFromPoint - the "Let's
+                  talk" copy-link button was completely unreachable). Raising just this content
+                  layer's stacking - not touching the particle div's own pointer-events - keeps its
+                  self-dispatched ambient hover animation intact everywhere it doesn't overlap real
+                  interactive content. */}
+              <div className="absolute flex" style={{ left: 0, right: 0, top: '21%', bottom: '17%', zIndex: 1 }}>
                 {/* Stub - left panel, exactly 600/900 = 66.667%, split into
                     the text column and a landmark-illustration column
                     ("at the right hand side of the dark area", per the
@@ -762,12 +772,14 @@ export default function Home() {
                 <div className="flex" style={{ width: '66.6667%' }}>
                   <div className="flex flex-col justify-center gap-2.5" style={{ flex: '1 1 auto', minWidth: 0, maxWidth: '50%', padding: '0 2% 0 6%' }}>
                     <h2
+                      className="group/heading inline-flex items-baseline gap-1"
                       style={{
                         fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: 'clamp(1.65rem, 4.2cqw, 3rem)',
                         lineHeight: 0.95, letterSpacing: '-0.01em', color: 'var(--ds-yellow)', margin: 0, textTransform: 'uppercase',
                       }}
                     >
                       Let&apos;s talk
+                      <CopySectionLinkButton sectionId="work-together" label="Let's talk" />
                     </h2>
                     <RouteMotionLine durationMs={WORK_TOGETHER_ROTATION_MS} />
                     <span
@@ -885,8 +897,12 @@ export default function Home() {
               </div>
             </div>
             <div className="p-6" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
-              <h2 style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: '1.75rem', lineHeight: 0.95, letterSpacing: '-0.01em', color: 'var(--ds-yellow)', marginTop: 0, marginBottom: 12, textTransform: 'uppercase' }}>
+              <h2
+                className="group/heading inline-flex items-baseline gap-1"
+                style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: '1.75rem', lineHeight: 0.95, letterSpacing: '-0.01em', color: 'var(--ds-yellow)', marginTop: 0, marginBottom: 12, textTransform: 'uppercase' }}
+              >
                 Let&apos;s talk
+                <CopySectionLinkButton sectionId="work-together" label="Let's talk" />
               </h2>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(255,225,124,0.65)', textTransform: 'uppercase', display: 'block', marginBottom: 10 }}>
                 Direct line &middot; no transfers

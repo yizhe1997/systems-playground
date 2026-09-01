@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, Eye } from 'lucide-react';
+import { Trash2, Eye, Utensils } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -43,41 +43,47 @@ const emptyPosition = (): Position => ({
   title: '', employment_type: 'Full-time', start_date: '', end_date: '', bullets: [], tech_tags: [],
 });
 
+// Matches THE MAIN COURSE section's own per-company styling in AboutPageBody.tsx (charcoal fill,
+// yellow text, a small Utensils icon per position, pill tech tags) - a hand-copied mockup drifts
+// the moment either side changes, so keep this in sync with that file whenever its styling changes.
 function ExperienceCardPreview({ company }: { company: Company }) {
   return (
-    <div className="border-2 border-black shadow-[4px_4px_0px_0px_#000] bg-white p-6 sm:p-8" style={{ borderRadius: '0.75rem' }}>
+    <div className="border-[4px] border-black rounded-[18px] p-6 sm:p-8" style={{ backgroundColor: 'var(--ds-charcoal)', color: 'var(--ds-yellow)' }}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-5">
-        <h3 className="text-xl font-extrabold" style={{ fontFamily: 'var(--ds-font-display)' }}>
+        <h3 style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: 20 }}>
           {company.company || 'Untitled company'}
         </h3>
         {company.location && (
-          <span className="text-sm text-[var(--ds-charcoal)]/70">
+          <span className="text-[13px] font-bold" style={{ opacity: 0.6 }}>
             {company.location}
             {company.location_type && ` (${company.location_type})`}
           </span>
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {company.positions.map((pos, pi) => (
-          <div key={pos.id} className={pi > 0 ? 'pt-6 border-t-2 border-black/10' : ''}>
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-1">
-              <h4 className="font-bold">
-                {pos.title || 'Untitled position'}
-                {pos.employment_type && (
-                  <span className="font-medium text-[var(--ds-charcoal)]/60"> &middot; {pos.employment_type}</span>
-                )}
-              </h4>
-              <span className="text-xs font-mono text-[var(--ds-charcoal)]/60 whitespace-nowrap">
-                {formatDateRange(pos.start_date, pos.end_date)}
-                {formatDuration(pos.start_date, pos.end_date) && (
-                  <> &middot; {formatDuration(pos.start_date, pos.end_date)}</>
-                )}
-              </span>
+          <div key={pos.id} className={pi > 0 ? 'pt-4' : ''} style={pi > 0 ? { borderTop: '2px dashed rgba(255,225,124,0.35)' } : undefined}>
+            <div className="flex items-baseline gap-2.5 flex-wrap">
+              <Utensils size={15} color="var(--ds-yellow)" strokeWidth={2} style={{ opacity: 0.7, flexShrink: 0 }} aria-hidden="true" />
+              <div className="flex-1 flex items-baseline justify-between gap-4 flex-wrap">
+                <span className="font-extrabold text-base">
+                  {pos.title || 'Untitled position'}
+                  {pos.employment_type && (
+                    <span className="font-medium" style={{ opacity: 0.6 }}> &middot; {pos.employment_type}</span>
+                  )}
+                </span>
+                <span className="text-xs font-bold whitespace-nowrap" style={{ opacity: 0.6 }}>
+                  {formatDateRange(pos.start_date, pos.end_date)}
+                  {formatDuration(pos.start_date, pos.end_date) && (
+                    <> &middot; {formatDuration(pos.start_date, pos.end_date)}</>
+                  )}
+                </span>
+              </div>
             </div>
 
             {pos.bullets.filter(Boolean).length > 0 && (
-              <ul className="mt-3 space-y-1.5 text-sm text-[var(--ds-charcoal)]/80 list-disc list-inside">
+              <ul className="mt-2 pl-[33px] text-sm leading-relaxed list-disc" style={{ opacity: 0.8 }}>
                 {pos.bullets.filter(Boolean).map((b, i) => (
                   <li key={i}>{b}</li>
                 ))}
@@ -85,12 +91,11 @@ function ExperienceCardPreview({ company }: { company: Company }) {
             )}
 
             {pos.tech_tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 mt-2.5 pl-[33px]">
                 {pos.tech_tags.map((tag) => (
                   <span
                     key={tag}
-                    className="text-xs font-bold px-2.5 py-1 border-2 border-black"
-                    style={{ borderRadius: '0.375rem' }}
+                    className="border-[1.5px] border-[rgba(255,225,124,0.6)] rounded-full px-2.5 py-0.5 font-bold text-[11px] tracking-wide"
                   >
                     {tag}
                   </span>

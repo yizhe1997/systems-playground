@@ -27,30 +27,29 @@ type Education = {
 const fieldClass =
   'border-2 border-black rounded-[0.375rem] focus-visible:ring-0 focus-visible:shadow-[2px_2px_0px_0px_#000] transition-shadow h-9';
 
+// Matches CULINARY SCHOOL's own per-entry styling in AboutPageBody.tsx (sage fill, plain bulleted
+// highlights instead of pill tags) - a hand-copied mockup drifts the moment either side changes,
+// so keep this in sync with that file whenever its styling changes.
 function EducationCardPreview({ education }: { education: Education }) {
   return (
-    <div className="border-2 border-black shadow-[4px_4px_0px_0px_#000] bg-white p-6 max-w-sm" style={{ borderRadius: '0.75rem' }}>
+    <div className="border-[4px] border-black rounded-[18px] p-6 max-w-sm" style={{ backgroundColor: 'var(--ds-sage)' }}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3 className="font-extrabold" style={{ fontFamily: 'var(--ds-font-display)' }}>
+        <h3 style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: 19 }}>
           {education.school || 'Untitled school'}
         </h3>
-        <span className="text-xs font-mono text-[var(--ds-charcoal)]/60 whitespace-nowrap">
+        <span className="text-[13px] font-bold whitespace-nowrap" style={{ opacity: 0.65 }}>
           {formatDateRange(education.start_date, education.end_date)}
         </span>
       </div>
       {(education.degree || education.field_of_study) && (
-        <p className="text-sm text-[var(--ds-charcoal)]/80 mt-1">
-          {[education.degree, education.field_of_study].filter(Boolean).join(' — ')}
-        </p>
+        <div className="text-sm font-bold mt-0.5" style={{ opacity: 0.75 }}>
+          {[education.degree, education.field_of_study].filter(Boolean).join(', ')}
+        </div>
       )}
       {education.highlights.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {education.highlights.map((h) => (
-            <span key={h} className="text-xs font-bold px-2.5 py-1 border-2 border-black" style={{ borderRadius: '0.375rem' }}>
-              {h}
-            </span>
-          ))}
-        </div>
+        <ul className="mt-2.5 pl-[18px] text-sm leading-relaxed list-disc" style={{ opacity: 0.8 }}>
+          {education.highlights.map((h, i) => <li key={i}>{h}</li>)}
+        </ul>
       )}
     </div>
   );
