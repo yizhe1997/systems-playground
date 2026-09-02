@@ -419,6 +419,21 @@ export default function Home() {
   // expected, not a bug.
   const [ticketId] = useState(() => generateTicketId());
 
+  // Lets a link elsewhere on the site (e.g. the privacy policy's data-erasure
+  // sentence) pre-fill the Message field via ?message=... - read once on
+  // mount, then strip the param so it doesn't linger in the address bar or
+  // get seeded again on a later refresh/navigation.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefill = params.get('message');
+    if (prefill) {
+      setLeadForm((f) => ({ ...f, message: prefill }));
+      params.delete('message');
+      const query = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+    }
+  }, []);
+
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLeadSubmitting(true);

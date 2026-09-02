@@ -31,7 +31,7 @@ export default async function TermsPage() {
           Terms &amp; Conditions
         </h1>
 
-        <LegalDocument raw={raw} contactEmail="yzportal123@gmail.com" />
+        <LegalDocument raw={raw} />
       </main>
       <SiteFooter />
     </div>

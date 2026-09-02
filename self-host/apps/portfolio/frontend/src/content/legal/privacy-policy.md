@@ -132,7 +132,7 @@ message — there's no non-identifying remainder kept for that form, since the m
 free text that could contain identifying details. Only the row's status (new / contacted) and
 submission date survive.
 
-If you'd like your data erased sooner than 30 days, email me at **yzportal123@gmail.com** and
+If you'd like your data erased sooner than 30 days, [message me](/?message=Please%20remove%20my%20data%20as%20soon%20as%20possible.#work-together) and
 I'll remove it manually.
 
 ## Your rights
@@ -148,7 +148,7 @@ request to:
 - Correct inaccurate data, or
 - Delete your data,
 
-if you email me at **yzportal123@gmail.com**.
+if you [message me](/#work-together).
 
 ## Data security
 

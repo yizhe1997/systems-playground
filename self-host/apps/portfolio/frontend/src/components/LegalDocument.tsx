@@ -1,9 +1,9 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Mail } from 'lucide-react';
+import { Hand } from 'lucide-react';
 import { slugify } from '@/lib/utils';
 
-export default function LegalDocument({ raw, contactEmail }: { raw: string; contactEmail?: string }) {
+export default function LegalDocument({ raw }: { raw: string }) {
   const body = raw.replace(/^\s*#[^\n]*\n+/, '').trim();
 
   const sections = Array.from(body.matchAll(/^## (.+)$/gm)).map((m) => ({
@@ -65,16 +65,17 @@ export default function LegalDocument({ raw, contactEmail }: { raw: string; cont
           {body}
         </ReactMarkdown>
 
-        {contactEmail && (
-          <a
-            href={`mailto:${contactEmail}`}
-            className="not-prose inline-flex items-center gap-2 px-6 py-3.5 mt-8 bg-black text-white font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
-            style={{ borderRadius: '0.75rem' }}
-          >
-            <Mail className="w-4 h-4" aria-hidden="true" />
-            Email {contactEmail}
-          </a>
-        )}
+        {/* Points at the homepage's Let's Talk section instead of a mailto: link - no email
+            address is exposed anywhere on the site, keeping it as close to anonymous as
+            reasonably possible. */}
+        <a
+          href="/#work-together"
+          className="not-prose inline-flex items-center gap-2 px-6 py-3.5 mt-8 bg-black text-white font-bold border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+          style={{ borderRadius: '0.75rem' }}
+        >
+          <Hand className="w-4 h-4" aria-hidden="true" />
+          Message me
+        </a>
       </div>
     </>
   );
