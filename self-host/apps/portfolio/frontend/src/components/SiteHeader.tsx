@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Wand2, CircleCheck, Lock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ClickEffects from '@/components/originkit/clickeffects';
 import Typewriter from '@/components/originkit/typewriter';
 
@@ -13,8 +14,47 @@ const navLinks = [
   { href: '/about', label: 'About' },
 ];
 
+// The one real entry today, plus a couple of placeholders so the dialog reads as "more are
+// coming", not as a single-item list that happens to be dressed up as a picker. "Push Button" is
+// this design's own name, pulled from DESIGN.md/layout.tsx's own comment ("Neo-Brutalist 'Push
+// Button' direction") rather than invented fresh here.
+const DESIGNS: { name: string; description: string; active?: boolean }[] = [
+  { name: 'Push Button', description: 'The neo-brutalist look you’re on right now — thick borders, hard shadows, bold color blocks.', active: true },
+  { name: '???', description: 'Coming soon.' },
+  { name: '???', description: 'Coming soon.' },
+];
+
+function DesignOption({ name, description, active }: { name: string; description: string; active?: boolean }) {
+  return (
+    <div
+      className="flex items-center gap-3 border-2 border-black p-3.5"
+      style={{ borderRadius: '0.6rem', backgroundColor: active ? 'var(--ds-yellow)' : '#fff', opacity: active ? 1 : 0.6 }}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="font-extrabold text-sm" style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-charcoal)' }}>
+          {name}
+        </div>
+        <div className="text-xs mt-0.5" style={{ color: 'var(--ds-charcoal)', opacity: 0.7 }}>
+          {description}
+        </div>
+      </div>
+      {active ? (
+        <CircleCheck className="w-5 h-5 shrink-0" style={{ color: 'var(--ds-charcoal)' }} aria-hidden="true" />
+      ) : (
+        <Lock className="w-4 h-4 shrink-0" style={{ color: 'var(--ds-charcoal)', opacity: 0.5 }} aria-hidden="true" />
+      )}
+    </div>
+  );
+}
+
+// Same visual language as HeroSection's "Talk to this portfolio" button, scaled down to fit a
+// h-20 header bar instead of the hero's own larger spacing.
+const shiftRealityButtonClass =
+  'inline-flex items-center gap-2 px-4 py-2 bg-black text-white font-bold text-sm border-2 border-black shadow-[3px_5px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2';
+
 export default function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [designDialogOpen, setDesignDialogOpen] = useState(false);
 
   // Escape-to-close - the previous Sheet-based menu got this for free from Radix; hand-rolling
   // the dropdown means picking it back up explicitly.
@@ -81,7 +121,23 @@ export default function SiteHeader() {
           ))}
         </nav>
 
-        <div className="sm:hidden relative justify-self-end">
+        <div className="justify-self-end flex items-center">
+          {/* Desktop only - this grid cell is otherwise empty at sm+ (the hamburger below is
+              mobile-only), so the button lives here instead of needing a 4th grid column. */}
+          <div className="hidden sm:block">
+            <button
+              type="button"
+              onClick={() => setDesignDialogOpen(true)}
+              data-cursor-label="Open"
+              className={shiftRealityButtonClass}
+              style={{ borderRadius: '0.75rem' }}
+            >
+              <Wand2 className="w-4 h-4" aria-hidden="true" />
+              Shift Reality
+            </button>
+          </div>
+
+        <div className="sm:hidden relative">
           <button
             type="button"
             onClick={() => setMobileMenuOpen((o) => !o)}
@@ -129,14 +185,49 @@ export default function SiteHeader() {
                         {link.label}
                       </Link>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setDesignDialogOpen(true);
+                      }}
+                      data-cursor-label="Open"
+                      className="flex items-center gap-2 border-t-2 border-black/10 px-5 py-3 text-left hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-inset"
+                    >
+                      <Wand2 className="w-4 h-4" aria-hidden="true" />
+                      Shift Reality
+                    </button>
                   </nav>
                 </motion.div>
               </>
             )}
           </AnimatePresence>
         </div>
+        </div>
       </div>
     </header>
+
+    <Dialog open={designDialogOpen} onOpenChange={setDesignDialogOpen}>
+      <DialogContent
+        className="sm:max-w-md bg-white border-2 border-black text-[var(--ds-charcoal)] ring-0"
+        style={{ fontFamily: 'var(--ds-font-body)', borderRadius: '0.75rem', boxShadow: '8px 8px 0px 0px #000' }}
+      >
+        <DialogHeader>
+          <DialogTitle className="text-2xl text-black" style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800 }}>
+            Shift Reality
+          </DialogTitle>
+          <DialogDescription className="text-[var(--ds-charcoal)]/70 mt-2 text-sm">
+            This portfolio is built to support more than one look. Pick a reality to render it in.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-2.5 mt-2">
+          {DESIGNS.map((d, i) => (
+            <DesignOption key={i} name={d.name} description={d.description} active={d.active} />
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
