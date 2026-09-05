@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { animate } from 'animejs';
+import { motion } from 'framer-motion';
 import { Lock, RotateCw, SignalHigh, Wifi, BatteryFull, Volume2, VolumeX } from 'lucide-react';
 import { playFlipSound } from '@/lib/flip-sound';
 import { playShutterSound } from '@/lib/camera-shutter-sound';
 import { playSpeakerChime } from '@/lib/speaker-chime-sound';
 import BrailleScreensaver from '@/components/BrailleScreensaver';
+import { FALL_IN_INITIAL, FALL_IN_ANIMATE, FALL_IN_SPRING } from '@/lib/motion';
 
 // Landscape - the long edge runs horizontal, the short edge vertical (home button lives on the
 // short right edge now, front camera on the short left edge - both rotated 90deg from where
@@ -222,9 +224,14 @@ export default function BlogIpadFrame({ children }: { children: React.ReactNode 
   const arrowBtnClass = 'shrink-0 flex items-center justify-center text-[var(--ds-charcoal)] hover:opacity-50 transition-opacity';
 
   return (
-    <div
+    // Falls from above and settles with a couple of bounces on load - the whole iPad assembly
+    // (case + flip arrows), not the page around it.
+    <motion.div
       className="mx-auto justify-items-center items-center"
       style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gridTemplateRows: 'auto 1fr auto', gap: '1rem', width: 'fit-content' }}
+      initial={FALL_IN_INITIAL}
+      animate={FALL_IN_ANIMATE}
+      transition={FALL_IN_SPRING}
     >
       <button
         type="button"
@@ -545,6 +552,6 @@ export default function BlogIpadFrame({ children }: { children: React.ReactNode 
       >
         <CaseArrow direction="down" />
       </button>
-    </div>
+    </motion.div>
   );
 }

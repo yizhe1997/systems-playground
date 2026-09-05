@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { motion } from 'framer-motion';
 import { Hand, ShoppingCart, UtensilsCrossed } from 'lucide-react';
 import { slugify } from '@/lib/utils';
 import { playBlip } from '@/lib/blip-sound';
 import CopySectionLinkButton from '@/components/CopySectionLinkButton';
+import { FALL_IN_INITIAL, FALL_IN_ANIMATE, FALL_IN_SPRING } from '@/lib/motion';
 
 // Hoisted to module scope so these keep the same identity across renders. Defined inline inside
 // the component (as they were originally), react-markdown remounts fresh DOM for every heading
@@ -179,7 +181,15 @@ export default function LegalDocument({ raw }: { raw: string }) {
 
   return (
     <div>
-      <div className="relative mx-auto" style={{ maxWidth: 1080 }}>
+      {/* Falls from above and settles with a couple of bounces on load - the whole kiosk assembly
+          (cabinet + stand), not the page around it. */}
+      <motion.div
+        className="relative mx-auto"
+        style={{ maxWidth: 1080 }}
+        initial={FALL_IN_INITIAL}
+        animate={FALL_IN_ANIMATE}
+        transition={FALL_IN_SPRING}
+      >
         {/* sensor cap */}
         <div
           className="relative z-[2] mx-auto flex items-center justify-center border-[2.5px] border-black border-b-0"
@@ -438,7 +448,7 @@ export default function LegalDocument({ raw }: { raw: string }) {
           <div className="border-x-[3px] border-black" style={{ width: 30, height: 110, backgroundColor: 'var(--ds-charcoal)' }} />
         </div>
         <div className="mx-auto border-[3px] border-black" style={{ width: 320, height: 28, backgroundColor: 'var(--ds-charcoal)', borderRadius: 14, marginTop: -2 }} />
-      </div>
+      </motion.div>
     </div>
   );
 }

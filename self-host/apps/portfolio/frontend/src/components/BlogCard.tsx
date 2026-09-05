@@ -87,13 +87,18 @@ function BlogCardFace({ post }: { post: BlogCardPost }) {
         </div>
       )}
 
-      {/* flex-1 (not just minHeight) is what makes this absorb the extra height CSS Grid's
-          align-items:stretch hands the card when a sibling in the same row has a taller title -
-          the outer Link/div is now flex flex-col too (see cardBaseClass), so this block actually
-          grows to fill the stretched card instead of only knowing its own local content height.
-          justify-between then pins the meta row to that real bottom edge, not just the bottom of
-          a two-line title's natural box. */}
-      <div className="p-5 flex-1 flex flex-col justify-between gap-1.5" style={{ minHeight: '84px' }}>
+      {/* A real (not min-) height, sized for the worst case (a full 2-line title): line-clamp-2
+          caps the title there regardless of actual length, so this never needs to grow past it.
+          Real and empty cards (see EmptyBlogCard) share this exact value - a minHeight let a
+          2-line real title render taller than a 1-line one, and taller still than the empty
+          placeholder's fixed short text, so a row's height changed depending on which cards
+          happened to land in it - most visibly right when /api/posts resolves and empty
+          placeholders get swapped for real cards. No flex-1 here (unlike the old minHeight
+          version) - flex-1's flex-basis:0% would win over the explicit height below, since a flex
+          item's main-axis size in a column comes from flex-basis/grow, not the height property.
+          justify-between still pins the meta row to the bottom regardless of whether the title
+          took 1 or 2 lines. */}
+      <div className="p-5 flex flex-col justify-between gap-1.5" style={{ height: BLOG_CARD_CONTENT_HEIGHT }}>
         <h3 className="text-lg font-extrabold leading-snug line-clamp-2">{post.title || 'Untitled post'}</h3>
         <div className="flex items-center justify-between text-xs font-medium text-[var(--ds-charcoal)]/50">
           <span>{!!post.reading_minutes && `${post.reading_minutes} min read`}</span>
@@ -112,6 +117,11 @@ function BlogCardFace({ post }: { post: BlogCardPost }) {
     </>
   );
 }
+
+// Shared by BlogCardFace's content block and EmptyBlogCard's own, so a row of real posts and a
+// row of empty placeholders always compute to the exact same card height (see the comment at the
+// content div below for why a minHeight wasn't enough).
+export const BLOG_CARD_CONTENT_HEIGHT = 110;
 
 // flex flex-col + h-full: CSS Grid's default align-items:stretch already makes every card in a
 // row match the tallest sibling's outer height, but without these the card's own children have

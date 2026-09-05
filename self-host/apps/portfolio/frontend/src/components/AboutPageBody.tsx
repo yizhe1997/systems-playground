@@ -1,7 +1,9 @@
+import { motion } from 'framer-motion';
 import { Star, Soup, UtensilsCrossed, Utensils, Salad, ChefHat, Wine, Grape, Coffee, Volume2, Hand } from 'lucide-react';
 import SimpleIcon from '@/components/SimpleIcon';
 import { formatDateRange, formatDuration } from '@/lib/date-range';
 import { useResumeRequest } from '@/components/ResumeRequestModal';
+import { SLIDE_DOWN_INITIAL, SLIDE_DOWN_ANIMATE, SLIDE_DOWN_TRANSITION } from '@/lib/motion';
 
 export type StackSkill = { name: string; icon: string };
 export type StackCategory = { id: string; name: string; skills: StackSkill[] };
@@ -127,9 +129,14 @@ export default function AboutPageBody({
   const { open: openResumeRequest } = useResumeRequest();
 
   return (
-    <div
+    // Slides down from above into place on load - no bounce (a menu doesn't drop and settle
+    // like a physical device would, it just arrives).
+    <motion.div
       className="relative border-[6px] border-black rounded-[28px] overflow-hidden"
       style={{ background: 'linear-gradient(to bottom, #ffffff 50%, var(--ds-yellow) 50%)', color: 'var(--ds-charcoal)' }}
+      initial={SLIDE_DOWN_INITIAL}
+      animate={SLIDE_DOWN_ANIMATE}
+      transition={SLIDE_DOWN_TRANSITION}
     >
       {/* Awning - a scalloped canopy band in the site's own three colors, flat-topped and
           round-bottomed tabs tiled edge-to-edge, standing in for a literal Italian flag. */}
@@ -422,6 +429,6 @@ export default function AboutPageBody({
           </>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { BLOG_CARD_CONTENT_HEIGHT } from '@/components/BlogCard';
+
 // One slot in the homepage Blog grid when there's nothing published yet -
 // same solid border, yellow hard shadow, and press-hover as a populated
 // BlogCard (unlike EmptyProjectCard's dashed border - that's this
@@ -7,8 +9,14 @@
 // Claude Design template).
 export default function EmptyBlogCard() {
   return (
+    // flex flex-col h-full + the content block's flex-1/fixed height below mirror BlogCard's own
+    // cardBaseClass/content-div mechanics exactly - without these, this card didn't participate in
+    // the grid row's align-items:stretch the same way a real BlogCard does, and its content area
+    // used a smaller minHeight rather than the same fixed BLOG_CARD_CONTENT_HEIGHT, so a row of
+    // real posts and a row of empty placeholders could naturally compute to different heights -
+    // most visibly right when /api/posts resolves and placeholders get swapped for real cards.
     <div
-      className="relative border-2 border-black bg-white shadow-[8px_8px_0px_0px_var(--ds-yellow)] hover:shadow-none transition-[transform,box-shadow] duration-150 hover:translate-x-1 hover:translate-y-1"
+      className="relative flex flex-col h-full border-2 border-black bg-white shadow-[8px_8px_0px_0px_var(--ds-yellow)] hover:shadow-none transition-[transform,box-shadow] duration-150 hover:translate-x-1 hover:translate-y-1"
       style={{ borderRadius: '0 0.75rem 0.75rem 0.75rem' }}
     >
       <div
@@ -20,8 +28,8 @@ export default function EmptyBlogCard() {
           <path d="M9 7h7M9 11h7" strokeLinecap="round" />
         </svg>
       </div>
-      <div className="p-5" style={{ minHeight: '84px' }}>
-        <h3 className="font-extrabold text-base mb-1" style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-charcoal)' }}>
+      <div className="p-5 flex flex-col justify-between gap-1.5" style={{ height: BLOG_CARD_CONTENT_HEIGHT }}>
+        <h3 className="font-extrabold text-base" style={{ fontFamily: 'var(--ds-font-display)', color: 'var(--ds-charcoal)' }}>
           Nothing published yet
         </h3>
         <p className="text-sm" style={{ color: 'var(--ds-charcoal)', opacity: 0.55 }}>

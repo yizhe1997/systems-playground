@@ -16,6 +16,7 @@ import { useResumeRequest } from '@/components/ResumeRequestModal';
 import { fetchJson } from '@/lib/fetch-json';
 import { estimateReadingMinutes } from '@/lib/reading-time';
 import ParticleImage from '@/components/originkit/svgparticles';
+import { TICKET_INITIAL, TICKET_ANIMATE, TICKET_TRANSITION, POP_CONTAINER, POP_ITEM } from '@/lib/motion';
 
 type Project = ProjectRowType & { featured: boolean };
 
@@ -391,6 +392,13 @@ export default function Home() {
   const [githubUrl, setGithubUrl] = useState<string>('#');
   const [heroDescription, setHeroDescription] = useState<string>('');
   const [jobTitles, setJobTitles] = useState<string[]>([]);
+  // Distinguishes "config hasn't loaded yet" from "config loaded and jobTitles is genuinely
+  // empty" - both look like an empty array otherwise. Without this, HeroSection's own sensible
+  // fallback badge (its `jobTitles = DEFAULT_JOB_TITLES` default parameter) never gets a chance
+  // to apply, since page.tsx always passes an explicit (initially empty) array rather than
+  // `undefined` - so the badge's whole grid row popped into existence only once /api/config
+  // resolved, shoving the boarding pass and everything below the hero down at that moment.
+  const [configLoaded, setConfigLoaded] = useState(false);
 
   // "Interested in working together?" form - replaces the old inline
   // Credits band (credits now live as their own page in the fake browser
@@ -487,8 +495,11 @@ export default function Home() {
         if (creditsRes.status === 'fulfilled') {
           setCredits(creditsRes.value || []);
         }
+
+        setConfigLoaded(true);
       } catch (err) {
         console.error('Other data fetch failed:', err);
+        setConfigLoaded(true);
       }
     };
 
@@ -509,16 +520,19 @@ export default function Home() {
       <SiteHeader />
 
       <main>
+      {/* HeroSection handles its own entrance choreography internally (left column in from the
+          left, mockup in from the right) - no wrapper needed here. */}
       <HeroSection
-        description={heroDescription}
-        jobTitles={jobTitles}
+        description={heroDescription || undefined}
+        jobTitles={configLoaded ? jobTitles : undefined}
         credits={credits}
         githubUrl={githubUrl}
         linkedinUrl={linkedinUrl}
         onRequestResume={openResumeRequest}
       />
 
-      {/* Featured Projects - Bento Feature Grid */}
+      {/* Featured Projects - Bento Feature Grid. The heading/intro render immediately (part of
+          the static "background"); only the cards below get an entrance treatment. */}
       <section id="projects" className="bg-white">
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="flex items-baseline justify-between gap-6 flex-wrap mb-2">
@@ -547,18 +561,28 @@ export default function Home() {
             Take a look around — here&apos;s what I&apos;ve been building.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            variants={POP_CONTAINER}
+            initial="hidden"
+            animate="visible"
+          >
             {filteredProjects.map((project, i) => (
-              <ProjectRow key={project.id} project={project} index={i} />
+              <motion.div key={project.id} variants={POP_ITEM}>
+                <ProjectRow project={project} index={i} />
+              </motion.div>
             ))}
             {Array.from({ length: Math.max(0, 3 - filteredProjects.length) }).map((_, i) => (
-              <EmptyProjectCard key={`empty-${i}`} />
+              <motion.div key={`empty-${i}`} variants={POP_ITEM}>
+                <EmptyProjectCard />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Blog - dark charcoal section for contrast */}
+      {/* Blog - dark charcoal section for contrast. Heading/intro render immediately; only the
+          cards pop in. */}
       <section id="blog" className="border-y-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="flex items-baseline justify-between gap-6 flex-wrap mb-2">
@@ -584,14 +608,23 @@ export default function Home() {
             Nothing to do? Wanna read some blogs?
           </p>
 
-          <div className="grid sm:grid-cols-2 gap-6">
+          <motion.div
+            className="grid sm:grid-cols-2 gap-6"
+            variants={POP_CONTAINER}
+            initial="hidden"
+            animate="visible"
+          >
             {filteredPosts.map((post) => (
-              <BlogCard key={post.id} post={post} />
+              <motion.div key={post.id} variants={POP_ITEM}>
+                <BlogCard post={post} />
+              </motion.div>
             ))}
             {Array.from({ length: Math.max(0, 4 - filteredPosts.length) }).map((_, i) => (
-              <EmptyBlogCard key={`empty-${i}`} />
+              <motion.div key={`empty-${i}`} variants={POP_ITEM}>
+                <EmptyBlogCard />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -611,7 +644,14 @@ export default function Home() {
           small, so narrow screens fall back to a simpler stacked card with
           a plain dashed rule instead of the notched SVG outline. */}
       <section id="work-together" className="border-y-2 border-black" style={{ backgroundColor: 'var(--ds-sage)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-16">
+        {/* Boarding pass slides in from the left on load - mount-triggered, not scroll-triggered
+            (see TICKET_TRANSITION). */}
+        <motion.div
+          className="max-w-6xl mx-auto px-6 py-16"
+          initial={TICKET_INITIAL}
+          animate={TICKET_ANIMATE}
+          transition={TICKET_TRANSITION}
+        >
           {/* Desktop: exact ticket-stub geometry from the design file. Full
               width of the shared max-w-6xl container, same as Featured
               Projects/Blog above - no separate cap. The 900x300 canvas the
@@ -1045,7 +1085,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       </main>

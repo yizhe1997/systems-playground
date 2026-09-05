@@ -3,9 +3,11 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { animate } from 'animejs';
+import { motion } from 'framer-motion';
 import { Lock, Power, Sun, Plus, Minus } from 'lucide-react';
 import { playShutterSound } from '@/lib/camera-shutter-sound';
 import BrailleScreensaver from '@/components/BrailleScreensaver';
+import { FALL_IN_INITIAL, FALL_IN_ANIMATE, FALL_IN_SPRING } from '@/lib/motion';
 
 // Exposes the device's own screen DOM node to descendants - so something rendered inside
 // {children} (like the "Talk to this portfolio" dialog on /projects) can portal itself into the
@@ -102,7 +104,15 @@ export default function ProjectsCrtFrame({ children }: { children: React.ReactNo
 
   return (
     <CrtScreenContext.Provider value={screenEl}>
-    <div className="mx-auto flex flex-col items-center" style={{ width: 'fit-content' }}>
+    {/* Falls from above and settles with a couple of bounces on load - the whole monitor+cable+
+        tower composition, not the page around it. */}
+    <motion.div
+      className="mx-auto flex flex-col items-center"
+      style={{ width: 'fit-content' }}
+      initial={FALL_IN_INITIAL}
+      animate={FALL_IN_ANIMATE}
+      transition={FALL_IN_SPRING}
+    >
       {/* No flex `gap` between monitor/cable/tower - the cable's own box spans the full visual
           gap and its path is drawn edge-to-edge within it, so it actually touches both
           neighbors. A flex gap here left empty space on both sides of the cable's box that the
@@ -393,7 +403,7 @@ export default function ProjectsCrtFrame({ children }: { children: React.ReactNo
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
     </CrtScreenContext.Provider>
   );
 }
