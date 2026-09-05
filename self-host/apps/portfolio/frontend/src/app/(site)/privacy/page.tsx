@@ -1,7 +1,5 @@
 import { readFile } from 'fs/promises';
 import path from 'path';
-import SiteHeader from '@/components/SiteHeader';
-import SiteFooter from '@/components/SiteFooter';
 import LegalDocument from '@/components/LegalDocument';
 
 export const metadata = {
@@ -15,12 +13,8 @@ export default async function PrivacyPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
-      <SiteHeader />
       <main className="flex-1 w-full px-6 pt-20" style={{ backgroundColor: 'var(--ds-sage)' }}>
         <LegalDocument raw={raw} />
       </main>
-      <SiteFooter />
-    </div>
   );
 }

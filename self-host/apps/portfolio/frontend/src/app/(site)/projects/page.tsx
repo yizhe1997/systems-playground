@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, RotateCcw, Sparkles } from 'lucide-react';
-import SiteHeader from '@/components/SiteHeader';
-import SiteFooter from '@/components/SiteFooter';
 import ProjectRow, { type Project } from '@/components/ProjectRow';
 import EmptyProjectCard from '@/components/EmptyProjectCard';
 import ProjectTagFilter from '@/components/ProjectTagFilter';
@@ -282,9 +280,7 @@ export default function ProjectsPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
-      <SiteHeader />
-      {isLargeScreen ? (
+      isLargeScreen ? (
         // No bottom padding - the stand/tower's feet sit flush against where SiteFooter starts,
         // on purpose, so the device reads as resting on solid ground rather than dangling in the
         // middle of the sage panel with visible space underneath it.
@@ -294,9 +290,9 @@ export default function ProjectsPage() {
           </ProjectsCrtFrame>
         </main>
       ) : (
-        <main className="flex-1 max-w-6xl mx-auto px-6 py-20 w-full">{pageContent}</main>
-      )}
-      <SiteFooter />
-    </div>
+        <main className="flex-1 w-full bg-white">
+          <div className="max-w-6xl mx-auto px-6 py-20 w-full">{pageContent}</div>
+        </main>
+      )
   );
 }

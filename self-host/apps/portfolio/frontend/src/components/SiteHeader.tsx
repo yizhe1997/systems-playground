@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Menu } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Menu, X } from 'lucide-react';
 import ClickEffects from '@/components/originkit/clickeffects';
 import Typewriter from '@/components/originkit/typewriter';
 
@@ -15,6 +15,17 @@ const navLinks = [
 
 export default function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Escape-to-close - the previous Sheet-based menu got this for free from Radix; hand-rolling
+  // the dropdown means picking it back up explicitly.
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileMenuOpen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [mobileMenuOpen]);
 
   return (
     <>
@@ -70,36 +81,59 @@ export default function SiteHeader() {
           ))}
         </nav>
 
-        <div className="sm:hidden justify-self-end">
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <button aria-label="Open navigation" data-cursor-label="Menu" className="p-2.5 -mr-2.5" style={{ color: 'var(--ds-charcoal)' }}>
-                <Menu className="w-6 h-6" />
-              </button>
-            </SheetTrigger>
-            <SheetContent
-              side="right"
-              className="bg-white border-l-2 border-black w-[260px] p-6 flex flex-col gap-6"
-              style={{ boxShadow: 'none', color: 'var(--ds-charcoal)' }}
-            >
-              <SheetHeader>
-                <SheetTitle className="text-left text-sm font-bold" style={{ color: 'var(--ds-charcoal)' }}>Navigate</SheetTitle>
-              </SheetHeader>
-              <nav className="flex flex-col font-bold text-sm">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    data-cursor-label="Open"
-                    className="block py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
+        <div className="sm:hidden relative justify-self-end">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((o) => !o)}
+            aria-label={mobileMenuOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={mobileMenuOpen}
+            data-cursor-label={mobileMenuOpen ? 'Close' : 'Menu'}
+            className="p-2.5 -mr-2.5"
+            style={{ color: 'var(--ds-charcoal)' }}
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+
+          {/* A compact dropdown anchored to the trigger, not a full-height side panel - the old
+              Sheet-based menu (h-full, only 3 short links) read as a mostly-empty panel. The dark
+              backdrop stays (click it to dismiss), it just no longer implies a big sliding drawer. */}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <>
+                <motion.div
+                  className="fixed inset-0 z-40 bg-black/50"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-hidden="true"
+                />
+                <motion.div
+                  className="absolute right-0 top-full mt-2 z-50 bg-white border-2 border-black shadow-[4px_4px_0px_0px_#000] overflow-hidden"
+                  style={{ borderRadius: '0.75rem', minWidth: 180, color: 'var(--ds-charcoal)' }}
+                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <nav className="flex flex-col font-bold text-sm py-2">
+                    {navLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        data-cursor-label="Open"
+                        className="block px-5 py-3 hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-inset"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </nav>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </header>

@@ -1,14 +1,11 @@
-import SiteHeader from '@/components/SiteHeader';
-import SiteFooter from '@/components/SiteFooter';
 import ResumeStatusTracker from '@/components/ResumeStatusTracker';
 
 export default async function ResumeStatusPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
-      <SiteHeader />
-      <main className="flex-1 max-w-4xl mx-auto px-6 py-20 w-full">
+      <main className="flex-1 w-full bg-white">
+      <div className="max-w-4xl mx-auto px-6 py-20 w-full">
         <h1
           className="mb-6 text-black"
           style={{
@@ -44,8 +41,7 @@ export default async function ResumeStatusPage({ params }: { params: Promise<{ i
             dropped.
           </p>
         </div>
+      </div>
       </main>
-      <SiteFooter />
-    </div>
   );
 }

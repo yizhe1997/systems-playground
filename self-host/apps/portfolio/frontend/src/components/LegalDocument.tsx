@@ -9,6 +9,7 @@ import { slugify } from '@/lib/utils';
 import { playBlip } from '@/lib/blip-sound';
 import CopySectionLinkButton from '@/components/CopySectionLinkButton';
 import { FALL_IN_INITIAL, FALL_IN_ANIMATE, FALL_IN_SPRING } from '@/lib/motion';
+import { useIsLargeScreen } from '@/hooks/use-large-screen';
 
 // Hoisted to module scope so these keep the same identity across renders. Defined inline inside
 // the component (as they were originally), react-markdown remounts fresh DOM for every heading
@@ -20,9 +21,12 @@ import { FALL_IN_INITIAL, FALL_IN_ANIMATE, FALL_IN_SPRING } from '@/lib/motion';
 // "last heading whose top is above the line" loop never broke - always landing on the last
 // section regardless of actual scroll position, which is exactly the "gets stuck" symptom).
 function MarkdownH2({ children, ...props }: React.ComponentPropsWithoutRef<'h2'>) {
+  const text = String(children);
+  const slug = slugify(text);
   return (
-    <h2 {...props} id={slugify(String(children))} className="scroll-mt-2 border-b-2 border-black/15 pb-2">
-      {children}
+    <h2 {...props} id={slug} className="group/heading scroll-mt-2 border-b-2 border-black/15 pb-2 flex items-baseline gap-1.5">
+      <span>{children}</span>
+      <CopySectionLinkButton sectionId={slug} label={text} />
     </h2>
   );
 }
@@ -64,15 +68,17 @@ const RECEIPT_HEIGHT = 192;
 // in x, or it floats past empty space next to the receipt instead of touching the body.
 const TERMINAL_BODY_TOP = RECEIPT_HEIGHT - 20;
 
-// A fast-food self-order kiosk that IS the reading surface: the left panel is a table of
-// contents, the right panel is the full document, scrolling inside the kiosk screen - a scroll
-// listener on the right panel highlights whichever section's heading is current in the left
-// panel (a "scrollspy"). A side-mounted payment terminal has a working keypad (types into its
-// own display, backspace/reset - it doesn't drive anything) and prints a "MESSAGE ME" receipt
-// as a real contact link on wide screens; narrow screens get a plain button instead, since the
-// terminal illustration doesn't reflow.
+type Section = { text: string; slug: string };
+type ParsedDoc = { title: string; updated: string; sections: Section[]; mainBody: string; footerNote: string };
+
+// A fast-food self-order kiosk that IS the reading surface at desktop widths, falling back to a
+// plain page with a dropdown table of contents below lg (1024px) - see MobileLegalDocument. Two
+// entirely separate components (not one component branching mid-render) because the kiosk owns
+// several of its own hooks (scrollspy, keypad state) that can't be called conditionally; this
+// mirrors how ProjectsCrtFrame/BlogIpadFrame are separate components picked by the same
+// useIsLargeScreen hook rather than one component branching internally.
 export default function LegalDocument({ raw }: { raw: string }) {
-  const { title, updated, sections, mainBody, footerNote } = useMemo(() => {
+  const parsed = useMemo<ParsedDoc>(() => {
     const titleMatch = raw.match(/^\s*#\s+(.+)\n+/);
     const afterTitle = raw.replace(/^\s*#[^\n]*\n+/, '').trim();
     const updatedMatch = afterTitle.match(/\*\*Last updated:\*\*\s*(.+)/);
@@ -100,6 +106,20 @@ export default function LegalDocument({ raw }: { raw: string }) {
     };
   }, [raw]);
 
+  const isLargeScreen = useIsLargeScreen();
+  return isLargeScreen ? <KioskLegalDocument {...parsed} /> : <MobileLegalDocument {...parsed} />;
+}
+
+// The left panel is a table of contents, the right panel is the full document, scrolling inside
+// the kiosk screen - a scroll listener on the right panel highlights whichever section's heading
+// is current in the left panel (a "scrollspy"). A side-mounted payment terminal has a working
+// keypad (types into its own display, backspace/reset - it doesn't drive anything) and prints a
+// "MESSAGE ME" receipt - hidden below min-[1480px] (measured empirically, not guessed: the kiosk
+// cabinet centers at up to 1080px wide within the page's own padding, and the terminal sits
+// outside it needing another ~200px - getBoundingClientRect showed real overflow (the terminal's
+// right edge past the viewport, forcing a horizontal scrollbar) up to ~1460px, and a clean fit
+// with room to spare from 1470px on).
+function KioskLegalDocument({ title, updated, sections, mainBody, footerNote }: ParsedDoc) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [activeSlug, setActiveSlug] = useState<string>(sections[0]?.slug ?? '');
   const [pinDisplay, setPinDisplay] = useState('');
@@ -250,21 +270,23 @@ export default function LegalDocument({ raw }: { raw: string }) {
                     {sections.map((s, i) => {
                       const active = s.slug === activeSlug;
                       return (
-                        <li key={s.slug}>
+                        <li
+                          key={s.slug}
+                          className="group/heading flex items-center gap-1 rounded-lg"
+                          style={{ backgroundColor: active ? 'rgba(255,225,124,0.55)' : 'transparent' }}
+                        >
                           <button
                             type="button"
                             onClick={() => scrollToSection(s.slug)}
-                            className="flex w-full items-baseline gap-2.5 rounded-lg py-2 text-left text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                            style={{
-                              color: 'var(--ds-charcoal)',
-                              backgroundColor: active ? 'rgba(255,225,124,0.55)' : 'transparent',
-                            }}
+                            className="flex flex-1 min-w-0 items-baseline gap-2.5 rounded-lg py-2 text-left text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                            style={{ color: 'var(--ds-charcoal)' }}
                           >
                             <span className="shrink-0 font-mono text-xs" style={{ color: active ? 'var(--ds-charcoal)' : 'rgba(23,30,25,0.5)' }}>
                               {String(i + 1).padStart(2, '0')}
                             </span>
-                            <span className="flex-1">{s.text}</span>
+                            <span className="flex-1 truncate">{s.text}</span>
                           </button>
+                          <CopySectionLinkButton sectionId={s.slug} label={s.text} />
                         </li>
                       );
                     })}
@@ -307,14 +329,15 @@ export default function LegalDocument({ raw }: { raw: string }) {
             </div>
           </div>
 
-          {/* side-mounted payment terminal - decorative, desktop only.
+          {/* side-mounted payment terminal - decorative, min-[1360px] only (see this component's
+              own top comment for why).
               left:100% resolves against the cabinet's padding box, 3px inside its visible
               border, so the offset below is TERMINAL_GAP + 3 to compensate; the bracket then
               spans exactly TERMINAL_GAP, reaching the casing on one end and the terminal's own
               (unshifted) left edge on the other - no dead space on either side. Its "top" is
               anchored inside TERMINAL_BODY_TOP so it actually meets the terminal body, not the
               receipt sitting in front of it. */}
-          <div className="absolute z-10 hidden md:block" style={{ top: '30%', left: `calc(100% + ${TERMINAL_GAP + 3}px)` }}>
+          <div className="absolute z-10 hidden min-[1480px]:block" style={{ top: '30%', left: `calc(100% + ${TERMINAL_GAP + 3}px)` }}>
             <div
               className="absolute border-[2.5px] border-black"
               style={{ top: TERMINAL_BODY_TOP + 55, left: -TERMINAL_GAP, width: TERMINAL_GAP, height: 12, backgroundColor: 'var(--ds-charcoal)' }}
@@ -449,6 +472,53 @@ export default function LegalDocument({ raw }: { raw: string }) {
         </div>
         <div className="mx-auto border-[3px] border-black" style={{ width: 320, height: 28, backgroundColor: 'var(--ds-charcoal)', borderRadius: 14, marginTop: -2 }} />
       </motion.div>
+    </div>
+  );
+}
+
+// Below lg (1024px) - no kiosk chrome and no table of contents UI at all (matching how /projects
+// and /blog drop their own device frame at the same breakpoint). Just the document, since a
+// dropdown TOC on top of an already-short mobile viewport read as more chrome than the content
+// warranted - each section's own heading carries its own copy-link button (see MarkdownH2) as
+// the way to grab a link to it, same as desktop.
+function MobileLegalDocument({ title, updated, mainBody, footerNote }: ParsedDoc) {
+  return (
+    <div className="mx-auto" style={{ maxWidth: 720 }}>
+      <div className="group/heading flex items-baseline gap-1">
+        <h1
+          className="font-extrabold leading-tight"
+          style={{ fontFamily: 'var(--ds-font-display)', fontSize: 'clamp(1.9rem, 8vw, 2.4rem)', color: 'var(--ds-charcoal)' }}
+        >
+          {title}
+        </h1>
+        <CopySectionLinkButton label={title} />
+      </div>
+      {updated && (
+        <p className="mt-2 text-xs" style={{ color: 'rgba(23,30,25,0.6)' }}>
+          Last updated: {updated}
+        </p>
+      )}
+
+      <div className="prose prose-headings:font-extrabold prose-a:text-black prose-a:underline max-w-none mt-8">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+          {mainBody}
+        </ReactMarkdown>
+
+        <a
+          href="/#work-together"
+          className="not-prose mt-3 inline-flex items-center gap-2 border-2 border-black bg-black px-6 py-3.5 text-sm font-bold text-white shadow-[4px_4px_0px_0px_#000] transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+          style={{ borderRadius: '0.75rem' }}
+        >
+          <Hand className="h-4 w-4" aria-hidden="true" />
+          Message me
+        </a>
+
+        {footerNote && (
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+            {footerNote}
+          </ReactMarkdown>
+        )}
+      </div>
     </div>
   );
 }

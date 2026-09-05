@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Loader2 } from 'lucide-react';
-import SiteHeader from '@/components/SiteHeader';
-import SiteFooter from '@/components/SiteFooter';
 import HeroSection from '@/components/HeroSection';
 import ProjectRow, { type Project as ProjectRowType } from '@/components/ProjectRow';
 import EmptyProjectCard from '@/components/EmptyProjectCard';
@@ -14,6 +12,7 @@ import EmptyBlogCard from '@/components/EmptyBlogCard';
 import CopySectionLinkButton from '@/components/CopySectionLinkButton';
 import { useResumeRequest } from '@/components/ResumeRequestModal';
 import { fetchJson } from '@/lib/fetch-json';
+import { getSiteConfig } from '@/lib/site-config';
 import { estimateReadingMinutes } from '@/lib/reading-time';
 import ParticleImage from '@/components/originkit/svgparticles';
 import { TICKET_INITIAL, TICKET_ANIMATE, TICKET_TRANSITION, POP_CONTAINER, POP_ITEM } from '@/lib/motion';
@@ -471,7 +470,7 @@ export default function Home() {
     const loadOtherData = async () => {
       try {
         const [configRes, projectsRes, postsRes, creditsRes] = await Promise.allSettled([
-          fetchJson<{ resumeUrl?: string; linkedinUrl?: string; githubUrl?: string; heroDescription?: string; jobTitles?: string[] }>('/api/config'),
+          getSiteConfig(),
           fetchJson<Project[]>('/api/projects'),
           fetchJson<Post[]>('/api/posts'),
           fetchJson<CreditRow[]>('/api/credits'),
@@ -516,10 +515,7 @@ export default function Home() {
     .map((p) => ({ ...p, reading_minutes: p.source_type === 'native' ? estimateReadingMinutes(p.content) : undefined }));
 
   return (
-    <div className="min-h-screen text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
-      <SiteHeader />
-
-      <main>
+      <main className="flex-1">
       {/* HeroSection handles its own entrance choreography internally (left column in from the
           left, mockup in from the right) - no wrapper needed here. */}
       <HeroSection
@@ -1089,8 +1085,5 @@ export default function Home() {
       </section>
 
       </main>
-
-      <SiteFooter />
-    </div>
   );
 }

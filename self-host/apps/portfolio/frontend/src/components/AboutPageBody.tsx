@@ -60,6 +60,19 @@ function Kicker({ children, dark }: { children: React.ReactNode; dark?: boolean 
   );
 }
 
+// Shared "nothing here yet" placeholder for a section whose backing data is empty - same tone as
+// EmptyProjectCard/EmptyBlogCard elsewhere on the site, phrased for the diner theme. Sections used
+// to just vanish entirely when empty (an `if (data.length > 0)` guard around the whole card), which
+// read as broken/unfinished rather than "not filled in yet".
+function EmptyMenuItem({ label }: { label: string }) {
+  return (
+    <div className="py-2 text-center" style={{ opacity: 0.55 }}>
+      <div className="font-extrabold text-sm">{label}</div>
+      <div className="text-xs font-bold mt-0.5">Check back soon</div>
+    </div>
+  );
+}
+
 function Stamp({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div
@@ -206,9 +219,10 @@ export default function AboutPageBody({
           </div>
         </div>
 
-        {/* THE MAIN COURSE (experience) */}
-        {experience.length > 0 && (
-          <div className="relative mt-8 border-[4px] border-black rounded-[18px] px-6 sm:px-8 py-7 sm:py-8" style={{ backgroundColor: 'var(--ds-charcoal)', color: 'var(--ds-yellow)' }}>
+        {/* THE MAIN COURSE (experience) - always rendered now, not just when experience.length >
+            0 (see EmptyMenuItem's own comment) - an unfilled section reads as "not filled in yet",
+            not as broken chrome. */}
+        <div className="relative mt-8 border-[4px] border-black rounded-[18px] px-6 sm:px-8 py-7 sm:py-8" style={{ backgroundColor: 'var(--ds-charcoal)', color: 'var(--ds-yellow)' }}>
             <div
               className="absolute -top-4 left-7 border-[3px] border-black rounded-full px-4.5 py-1.5 font-extrabold text-xs tracking-wide"
               style={{ fontFamily: 'var(--ds-font-display)', backgroundColor: 'var(--ds-yellow)', color: 'var(--ds-charcoal)' }}
@@ -220,6 +234,9 @@ export default function AboutPageBody({
             </div>
             <Kicker dark>Where I&apos;ve worked, and what I did there</Kicker>
 
+            {experience.length === 0 ? (
+              <EmptyMenuItem label="Nothing on the menu yet" />
+            ) : (
             <div className="flex flex-col mt-5">
               {experience.map((entry, i) => (
                 <div
@@ -261,15 +278,15 @@ export default function AboutPageBody({
                 </div>
               ))}
             </div>
+            )}
           </div>
-        )}
 
         {/* Row 2: SIDES takes the full-height left column (position 1); CULINARY SCHOOL
             (position 2) and CHECK (position 3) stack in the right column - a tall left card
-            beside two stacked right cards, per reference layout. Falls back to the old full-width
-            stack when there's no stack data to fill a left column with. */}
-        {stack.length > 0 ? (
-          <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-8 mt-8 items-stretch">
+            beside two stacked right cards, per reference layout. Always this 2-column shape now
+            (no more falling back to a 1-column stack when stack is empty - SIDES just shows its
+            own EmptyMenuItem instead, same as the other sections). */}
+        <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-8 mt-8 items-stretch">
             {/* Check Please's checker band, moved out to be a sibling of this whole row (not
                 nested in the right column) so its default full-width inset reaches the card's
                 actual outer edges, same as the ribbon's band. SIDES needs z-[1] below so it still
@@ -283,6 +300,9 @@ export default function AboutPageBody({
               <Stamp className="right-6">Extra</Stamp>
               <SectionHeading icon={<Salad size={22} color="var(--ds-charcoal)" strokeWidth={2} aria-hidden="true" />} title="SIDES" />
               <Kicker>The stack, grouped by kind</Kicker>
+              {stack.length === 0 ? (
+                <EmptyMenuItem label="Nothing on the menu yet" />
+              ) : (
               <div className="flex flex-col gap-5 mt-5">
                 {stack.map((category) => (
                   <div key={category.id}>
@@ -303,14 +323,17 @@ export default function AboutPageBody({
                   </div>
                 ))}
               </div>
+              )}
             </div>
 
             {/* Right column: CULINARY SCHOOL (position 2) above CHECK (position 3) */}
             <div className="flex flex-col gap-8">
-              {education.length > 0 && (
-                <div className="relative z-[1] border-[4px] border-black rounded-[18px] px-7 py-6" style={{ backgroundColor: 'var(--ds-sage)' }}>
+              <div className="relative z-[1] border-[4px] border-black rounded-[18px] px-7 py-6" style={{ backgroundColor: 'var(--ds-sage)' }}>
                   <SectionHeading icon={<ChefHat size={22} color="var(--ds-charcoal)" strokeWidth={2} aria-hidden="true" />} title="CULINARY SCHOOL" />
                   <Kicker>Education</Kicker>
+                  {education.length === 0 ? (
+                    <EmptyMenuItem label="Nothing on the menu yet" />
+                  ) : (
                   <div className="flex flex-col gap-5 mt-4">
                     {education.map((entry) => (
                       <div key={entry.id}>
@@ -331,8 +354,8 @@ export default function AboutPageBody({
                       </div>
                     ))}
                   </div>
+                  )}
                 </div>
-              )}
 
               {/* "Chef's Picks" and "Dessert" from the original mock are deliberately left out:
                   neither has any admin-managed content backing it yet, unlike every section
@@ -369,65 +392,6 @@ export default function AboutPageBody({
               </div>
             </div>
           </div>
-        ) : (
-          <>
-            {education.length > 0 && (
-              <div className="relative z-[1] mt-8 border-[4px] border-black rounded-[18px] px-7 py-6" style={{ backgroundColor: 'var(--ds-sage)' }}>
-                <SectionHeading icon={<ChefHat size={22} color="var(--ds-charcoal)" strokeWidth={2} aria-hidden="true" />} title="CULINARY SCHOOL" />
-                <Kicker>Education</Kicker>
-                <div className="flex flex-col gap-5 mt-4">
-                  {education.map((entry) => (
-                    <div key={entry.id}>
-                      <div className="flex items-baseline justify-between gap-5 flex-wrap">
-                        <span style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: 19 }}>{entry.school}</span>
-                        <span className="text-[13px] font-bold whitespace-nowrap" style={{ opacity: 0.65 }}>
-                          {formatDateRange(entry.start_date, entry.end_date)}
-                        </span>
-                      </div>
-                      <div className="text-sm font-bold mt-0.5" style={{ opacity: 0.75 }}>
-                        {[entry.degree, entry.field_of_study].filter(Boolean).join(', ')}
-                      </div>
-                      {entry.highlights.length > 0 && (
-                        <ul className="mt-2.5 pl-[18px] text-sm leading-relaxed list-disc" style={{ opacity: 0.8 }}>
-                          {entry.highlights.map((h, hi) => <li key={hi}>{h}</li>)}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="relative flex items-center justify-center mt-16 sm:mt-[70px] mb-2.5">
-              <CheckerBand className="h-[130px] sm:h-[170px]" style={{ top: -90 }} colorA="var(--ds-charcoal)" colorB="var(--ds-yellow)" />
-              <div className="relative">
-                <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full overflow-visible" aria-hidden="true">
-                  <polygon points={RECEIPT_POINTS} fill="var(--ds-yellow)" stroke="var(--ds-charcoal)" strokeWidth={4} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                </svg>
-                <div className="relative px-8 sm:px-11 py-6 text-center">
-                  <div style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '0.04em' }}>CHECK, PLEASE!</div>
-                  <div className="text-xs font-bold mt-1" style={{ opacity: 0.65 }}>Wrap it up — get in touch or grab the résumé</div>
-                  <div className="flex gap-4 mt-3.5 justify-center">
-                    <button
-                      type="button"
-                      onClick={openResumeRequest}
-                      className="rounded-lg px-5 py-3 font-extrabold text-[13px]"
-                      style={{ backgroundColor: 'var(--ds-charcoal)', color: 'var(--ds-yellow)' }}
-                    >
-                      GET MY RÉSUMÉ
-                    </button>
-                    <a
-                      href="/#work-together"
-                      className="inline-flex items-center gap-1.5 rounded-lg px-5 py-3 font-extrabold text-[13px] border-[2.5px] border-black"
-                    >
-                      <Hand size={14} strokeWidth={2.25} aria-hidden="true" />
-                      SAY HI
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
       </div>
     </motion.div>
   );

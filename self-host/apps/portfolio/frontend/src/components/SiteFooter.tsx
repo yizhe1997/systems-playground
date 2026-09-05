@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '@/components/icons/social';
-import { fetchJson } from '@/lib/fetch-json';
+import { getSiteConfig } from '@/lib/site-config';
 import { useMcpConnect } from '@/components/McpConnectModal';
 import { POP_HIDDEN, POP_VISIBLE } from '@/lib/motion';
 
@@ -33,7 +33,7 @@ export default function SiteFooter() {
   const { open: openMcpConnect } = useMcpConnect();
 
   useEffect(() => {
-    fetchJson<{ githubUrl?: string; linkedinUrl?: string }>('/api/config')
+    getSiteConfig()
       .then((data) => {
         if (data?.githubUrl) setGithubUrl(data.githubUrl);
         if (data?.linkedinUrl) setLinkedinUrl(data.linkedinUrl);
