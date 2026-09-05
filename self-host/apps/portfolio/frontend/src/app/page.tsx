@@ -846,7 +846,7 @@ export default function Home() {
                       Direct line &middot; no transfers
                     </span>
                     <p style={{ fontSize: 'clamp(10px, 1.15cqw, 14px)', color: 'rgba(255,255,255,0.65)', margin: 0, maxWidth: 340 }}>
-                      Interested in working together? Leave your email &mdash; I&apos;ll get back to you directly.
+                      Whether it&apos;s about working together or something else entirely, leave your email and I&apos;ll get back to you directly.
                     </p>
                   </div>
                 </div>
@@ -963,7 +963,7 @@ export default function Home() {
                 Direct line &middot; no transfers
               </span>
               <p className="text-sm" style={{ color: 'rgba(255,255,255,0.65)', margin: 0 }}>
-                Interested in working together? Leave your email &mdash; I&apos;ll get back to you directly.
+                Whether it&apos;s about working together or something else entirely, leave your email and I&apos;ll get back to you directly.
               </p>
             </div>
             <div className="p-6 bg-white flex flex-col gap-2" style={{ borderTop: '2px dashed var(--ds-charcoal)' }}>
