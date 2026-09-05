@@ -2,6 +2,8 @@
 
 **Last updated:** August 17, 2026
 
+## Introduction
+
 This page explains what information this website collects, why, and what happens to it. It's
 written in plain language because this is a personal portfolio site, not a company — there's no
 legal or compliance department behind it, just me.

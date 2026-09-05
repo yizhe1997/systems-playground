@@ -15,22 +15,9 @@ export default async function TermsPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
+    <div className="min-h-screen flex flex-col text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
       <SiteHeader />
-      <main className="flex-1 max-w-4xl mx-auto px-6 py-20 w-full">
-        <h1
-          className="mb-12 text-black"
-          style={{
-            fontFamily: 'var(--ds-font-display)',
-            fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
-            fontWeight: 800,
-            lineHeight: 0.95,
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Terms &amp; Conditions
-        </h1>
-
+      <main className="flex-1 w-full px-6 pt-20" style={{ backgroundColor: 'var(--ds-sage)' }}>
         <LegalDocument raw={raw} />
       </main>
       <SiteFooter />
