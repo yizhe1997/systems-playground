@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"database/sql"
@@ -17,6 +18,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/google/uuid"
+	"github.com/valyala/fasthttp"
 )
 
 // resumeRequestLimiter caps submissions per IP. This endpoint isn't just
@@ -155,7 +157,46 @@ func saveResumeRequest(ctx context.Context, req *ResumeRequest) error {
 	if n == 0 {
 		return fmt.Errorf("resume request %s not found", req.ID)
 	}
+
+	// Publishing from the one place every mutation already funnels through
+	// (rather than a manual publishResumeStatus(req) call at every call
+	// site: runTriage's transitions, admin approve/reject/retriage/redact)
+	// means a future save path can't forget to push - it publishes by
+	// construction. Redact only touches name/email, neither of which are
+	// in the payload, so its publish is a harmless no-op update to any
+	// open stream, not a special case worth branching around.
+	publishResumeStatus(req)
+
 	return nil
+}
+
+// buildStatusPayload is the one place the public status shape is defined -
+// shared by the plain GET, the SSE stream's initial snapshot, and every
+// push through it, so the three can't drift out of sync with each other.
+// Deliberately excludes Name/Email/Company/Reason - see the GET handler's
+// own comment on why the public queue page never echoes submitted PII back.
+func buildStatusPayload(req *ResumeRequest) fiber.Map {
+	return fiber.Map{
+		"id":                  req.ID,
+		"status":              req.Status,
+		"created_at":          req.CreatedAt,
+		"triage_status":       req.TriageStatus,
+		"ai_model":            req.AIModel,
+		"legitimacy":          req.Legitimacy,
+		"legitimacy_reason":   req.LegitimacyReason,
+		"role_fit_summary":    req.RoleFitSummary,
+		"triage_completed_at": req.TriageCompletedAt,
+		"decided_at":          req.DecidedAt,
+	}
+}
+
+func publishResumeStatus(req *ResumeRequest) {
+	payload, err := json.Marshal(buildStatusPayload(req))
+	if err != nil {
+		log.Printf("⚠️ Failed to encode status push for %s: %v", req.ID, err)
+		return
+	}
+	resumeStatusHub.publish(req.ID, string(payload))
 }
 
 func RegisterResumeRoutes(app *fiber.App) {
@@ -202,9 +243,14 @@ func RegisterResumeRoutes(app *fiber.App) {
 		return c.Status(201).JSON(fiber.Map{"status": "success", "id": req.ID})
 	})
 
-	// Public: poll triage status for the requester's own submission.
+	// Public: check triage status for the requester's own submission.
 	// Deliberately omits name/email/company/reason — the queue page only
-	// needs to render workflow state, not echo submitted PII back.
+	// needs to render workflow state, not echo submitted PII back. Kept
+	// around (not replaced by the stream below) as a plain existence/state
+	// check - the frontend calls this once before opening the SSE stream
+	// (EventSource has no clean way to distinguish "404" from "network
+	// hiccup" on its own), and it's the simplest thing for any other
+	// non-browser consumer that just wants a snapshot.
 	app.Get("/api/resume/status/:id", resumeStatusLimiter, func(c *fiber.Ctx) error {
 		req, err := findResumeRequest(c.Context(), c.Params("id"))
 		if err != nil {
@@ -213,18 +259,77 @@ func RegisterResumeRoutes(app *fiber.App) {
 		if req == nil {
 			return c.Status(404).JSON(fiber.Map{"error": "Request not found"})
 		}
-		return c.JSON(fiber.Map{
-			"id":                  req.ID,
-			"status":              req.Status,
-			"created_at":          req.CreatedAt,
-			"triage_status":       req.TriageStatus,
-			"ai_model":            req.AIModel,
-			"legitimacy":          req.Legitimacy,
-			"legitimacy_reason":   req.LegitimacyReason,
-			"role_fit_summary":    req.RoleFitSummary,
-			"triage_completed_at": req.TriageCompletedAt,
-			"decided_at":          req.DecidedAt,
-		})
+		return c.JSON(buildStatusPayload(req))
+	})
+
+	// Public: live-push status updates for the requester's own submission.
+	// Replaces what used to be client-side polling - the frontend opens one
+	// long-lived connection instead of re-fetching on a timer; every save
+	// to this row (runTriage's transitions, an admin approve/reject/
+	// retriage) publishes to resumeStatusHub, which streams straight
+	// through here. Same rate limiter as the plain-fetch endpoint above,
+	// guarding against reconnect-storms rather than the connection itself.
+	app.Get("/api/resume/status/:id/stream", resumeStatusLimiter, func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		req, err := findResumeRequest(c.Context(), id)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to read request"})
+		}
+		if req == nil {
+			return c.Status(404).JSON(fiber.Map{"error": "Request not found"})
+		}
+
+		c.Set("Content-Type", "text/event-stream")
+		c.Set("Cache-Control", "no-cache")
+		c.Set("Connection", "keep-alive")
+
+		initial, err := json.Marshal(buildStatusPayload(req))
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to encode status"})
+		}
+
+		ch := resumeStatusHub.subscribe(id)
+
+		c.Context().SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
+			defer resumeStatusHub.unsubscribe(id, ch)
+
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", initial); err != nil || w.Flush() != nil {
+				return
+			}
+
+			// A heartbeat comment (blank "data" would surface as an empty
+			// message to onmessage - a comment line starting with ":" is
+			// invisible to EventSource by spec) keeps the connection from
+			// looking idle to any intermediary, well under Cloudflare's
+			// ~100s idle timeout. The hard cap bounds a goroutine + open
+			// connection to one browser tab's realistic max lifetime -
+			// EventSource reconnects on its own if this fires while the
+			// tab is still open, so nothing is lost, just re-established.
+			heartbeat := time.NewTicker(25 * time.Second)
+			defer heartbeat.Stop()
+			hardCap := time.NewTimer(35 * time.Minute)
+			defer hardCap.Stop()
+
+			for {
+				select {
+				case payload, ok := <-ch:
+					if !ok {
+						return
+					}
+					if _, err := fmt.Fprintf(w, "data: %s\n\n", payload); err != nil || w.Flush() != nil {
+						return
+					}
+				case <-heartbeat.C:
+					if _, err := fmt.Fprint(w, ": ping\n\n"); err != nil || w.Flush() != nil {
+						return
+					}
+				case <-hardCap.C:
+					return
+				}
+			}
+		}))
+
+		return nil
 	})
 
 	// Protected Admin Routes

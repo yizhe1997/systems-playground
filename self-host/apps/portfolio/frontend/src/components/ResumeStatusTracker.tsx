@@ -35,53 +35,63 @@ type StatusResponse = {
   decided_at: number;
 };
 
-const POLL_INTERVAL_MS = 2000;
-
 // Same 3-color language as the rest of this page's redesign: sage is the
 // resting/default state, yellow is "actively happening right now", red is
 // "failed or declined". No 4th color.
 const RED = '#dc2626';
 
-function useStatusPolling(id: string) {
+// Live push instead of polling - the data flow here is genuinely one-way
+// (backend state -> viewer), so a long-lived SSE connection to
+// GET /api/resume/status/:id/stream replaces what used to be a setTimeout
+// loop re-fetching every 2s. The backend publishes a fresh snapshot on
+// every save to this row (see backend/resume.go's saveResumeRequest), so
+// updates arrive the moment they happen instead of up to 2s late.
+function useStatusStream(id: string) {
   const [data, setData] = useState<StatusResponse | null>(null);
   const [error, setError] = useState<'not-found' | 'network' | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    let es: EventSource | null = null;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
 
-    const poll = async () => {
+    (async () => {
+      // EventSource's error event can't tell "id doesn't exist" apart from
+      // a transient network hiccup, and would otherwise retry a genuinely
+      // missing id forever - one plain fetch up front settles that before
+      // opening the long-lived stream.
       try {
-        const res = await fetch(`${apiUrl}/api/resume/status/${id}`, { cache: 'no-store' });
+        const check = await fetch(`${apiUrl}/api/resume/status/${id}`, { cache: 'no-store' });
         if (cancelled) return;
-        if (res.status === 404) {
+        if (check.status === 404) {
           setError('not-found');
           return;
         }
-        if (!res.ok) {
+        if (!check.ok) {
           setError('network');
           return;
         }
-        const json: StatusResponse = await res.json();
-        setError(null);
-        setData(json);
-
-        // The AI triage step is the part worth polling fast for - once it
-        // settles (complete or failed), human review happens on its own
-        // time, so there's nothing left worth hammering the API for.
-        if (json.triage_status === 'queued' || json.triage_status === 'processing') {
-          timeoutRef.current = setTimeout(poll, POLL_INTERVAL_MS);
-        }
       } catch {
         if (!cancelled) setError('network');
+        return;
       }
-    };
+      if (cancelled) return;
 
-    poll();
+      es = new EventSource(`${apiUrl}/api/resume/status/${id}/stream`);
+      es.onmessage = (evt) => {
+        setError(null);
+        setData(JSON.parse(evt.data));
+      };
+      // The browser retries this connection on its own after an error -
+      // just surface a transient banner rather than treating it as final.
+      es.onerror = () => {
+        if (!cancelled) setError('network');
+      };
+    })();
+
     return () => {
       cancelled = true;
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      es?.close();
     };
   }, [id]);
 
@@ -137,7 +147,7 @@ const legitimacyStyles: Record<string, { label: string; icon: typeof CircleCheck
 type ViewMode = 'pipeline' | 'terminal';
 
 export default function ResumeStatusTracker({ id }: { id: string }) {
-  const { data, error } = useStatusPolling(id);
+  const { data, error } = useStatusStream(id);
   const [view, setView] = useState<ViewMode>('pipeline');
 
   const triageStatus = data?.triage_status ?? 'queued';
