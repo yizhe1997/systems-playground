@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -84,6 +85,13 @@ var resumeRequestsColumnMigrations = []string{
 	"ALTER TABLE resume_requests ADD COLUMN salary_range TEXT NOT NULL DEFAULT ''",
 	"ALTER TABLE resume_requests ADD COLUMN job_posting_url TEXT NOT NULL DEFAULT ''",
 	"ALTER TABLE resume_requests ADD COLUMN updated_by TEXT NOT NULL DEFAULT ''",
+	// Power the status page's elapsed-time displays (AI triage duration, human
+	// review duration) - 0 means "hasn't happened yet", checked by the frontend
+	// before treating it as a real timestamp. Triage's own start time isn't
+	// tracked separately: runTriage() fires synchronously right after insert,
+	// so created_at is close enough to double as triage's start.
+	"ALTER TABLE resume_requests ADD COLUMN triage_completed_at INTEGER NOT NULL DEFAULT 0",
+	"ALTER TABLE resume_requests ADD COLUMN decided_at INTEGER NOT NULL DEFAULT 0",
 }
 
 // resumeRequestsColumnDrops removes columns the app no longer uses. This
@@ -143,6 +151,20 @@ func initDB() {
 		if _, err := conn.ExecContext(ctx, stmt); err != nil && !strings.Contains(err.Error(), "no such column") {
 			log.Fatalf("❌ Failed to apply SQLite column drop %q: %v", stmt, err)
 		}
+	}
+
+	// One-time backfill, not an ongoing migration: runRetentionSweep's own
+	// "status = 'expired'" fix (added alongside the triage_completed_at/
+	// decided_at columns) only applies to rows crossing the 30-day cutoff
+	// from here on - its idempotency check is `email != ''`, so any row that
+	// was already anonymized by an OLDER version of that sweep (PII cleared,
+	// but still stuck on status='pending' forever, since email is already
+	// blank) would never match that check again and never get fixed. This
+	// catches exactly that already-broken class once; harmless no-op after.
+	if _, err := conn.ExecContext(ctx, `
+		UPDATE resume_requests SET status = 'expired', decided_at = ?
+		WHERE status = 'pending' AND email = '' AND decided_at = 0`, time.Now().UnixMilli()); err != nil {
+		log.Fatalf("❌ Failed to backfill expired status on already-anonymized resume_requests: %v", err)
 	}
 
 	db = conn

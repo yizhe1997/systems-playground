@@ -114,6 +114,13 @@ const statusStyle: Record<string, { bg: string; label: string }> = {
   approved: { bg: 'var(--ds-sage)', label: 'Approved' },
   'approving...': { bg: 'var(--ds-sage)', label: 'Approving…' },
   rejected: { bg: '#f5a3a3', label: 'Rejected' },
+  // Still-pending requests past the 30-day retention cutoff - PII is
+  // already anonymized and the approve action is blocked (no email left to
+  // send to), so this reads as "timed out", not "someone said no". Light
+  // grey rather than a dark fill - StatusBadge doesn't set a custom text
+  // color the way TriageBadge/legitimacyStyle do, so a dark bg here would
+  // pair with the badge's default dark text and be unreadable.
+  expired: { bg: '#d4d4d4', label: 'Expired' },
 };
 
 const legitimacyStyle: Record<string, { bg: string; label: string; text: string }> = {
@@ -420,6 +427,7 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="expired">Expired</SelectItem>
           </SelectContent>
         </Select>
         <Select value={legitimacyFilter} onValueChange={(v) => v && setLegitimacyFilter(v)}>

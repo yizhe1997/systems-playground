@@ -34,13 +34,30 @@ var resumeRequestLimiter = limiter.New(limiter.Config{
 	},
 })
 
+// resumeStatusLimiter caps status lookups per IP. The id itself is a random
+// UUIDv4 (122 bits) so this isn't a realistic brute-force defense - it's
+// defense-in-depth against unthrottled ID-guessing/enumeration, since the
+// unauthenticated status endpoint had no rate limit at all before this.
+// 30/minute comfortably covers the real traffic pattern (ResumeStatusTracker
+// polls every 2s while triage is in flight, then stops) with room for a
+// requester refreshing the page a few times.
+var resumeStatusLimiter = limiter.New(limiter.Config{
+	Max:        30,
+	Expiration: 1 * time.Minute,
+	LimitReached: func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+			"error": "Too many requests. Please try again shortly.",
+		})
+	},
+})
+
 type ResumeRequest struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 	Company   string `json:"company"` // labeled "Hiring company" on the public form - the company with the open role
 	Reason    string `json:"reason"`
-	Status    string `json:"status"` // pending, approved, rejected
+	Status    string `json:"status"` // pending, approved, rejected, expired (still-pending past the 30-day retention cutoff - see runRetentionSweep)
 	CreatedAt int64  `json:"created_at"`
 
 	// Optional context, collected in the public form's "Advanced" section -
@@ -63,6 +80,14 @@ type ResumeRequest struct {
 	TriageError      string `json:"triage_error,omitempty"`
 	TriageAttempts   int    `json:"triage_attempts,omitempty"`
 
+	// TriageCompletedAt/DecidedAt power the status page's elapsed-time
+	// displays - 0 means "hasn't happened yet" (checked with > 0, not
+	// omitempty, since the frontend needs to tell "not yet" apart from a
+	// dropped field). Triage duration is measured from CreatedAt, not a
+	// separate started-at column - see the db.go migration comment for why.
+	TriageCompletedAt int64 `json:"triage_completed_at"`
+	DecidedAt         int64 `json:"decided_at"`
+
 	// UpdatedBy is the admin email that performed the last approve/reject/
 	// retriage action, from the X-Admin-User header the frontend proxy sets
 	// (see audit.go's actorFromRequest) - blank until the first admin action.
@@ -71,14 +96,16 @@ type ResumeRequest struct {
 
 const resumeRequestColumns = `id, name, email, company, reason, status, created_at,
 	triage_status, ai_model, legitimacy, legitimacy_reason, role_fit_summary,
-	triage_error, triage_attempts, hiring_agency, work_type, industry, salary_range, job_posting_url, updated_by`
+	triage_error, triage_attempts, hiring_agency, work_type, industry, salary_range, job_posting_url,
+	triage_completed_at, decided_at, updated_by`
 
 func scanResumeRequest(row interface{ Scan(...any) error }) (*ResumeRequest, error) {
 	var r ResumeRequest
 	err := row.Scan(&r.ID, &r.Name, &r.Email, &r.Company, &r.Reason, &r.Status, &r.CreatedAt,
 		&r.TriageStatus, &r.AIModel, &r.Legitimacy, &r.LegitimacyReason, &r.RoleFitSummary,
 		&r.TriageError, &r.TriageAttempts, &r.HiringAgency, &r.WorkType,
-		&r.Industry, &r.SalaryRange, &r.JobPostingURL, &r.UpdatedBy)
+		&r.Industry, &r.SalaryRange, &r.JobPostingURL,
+		&r.TriageCompletedAt, &r.DecidedAt, &r.UpdatedBy)
 	if err != nil {
 		return nil, err
 	}
@@ -108,12 +135,14 @@ func saveResumeRequest(ctx context.Context, req *ResumeRequest) error {
 			triage_status = ?, ai_model = ?, legitimacy = ?, legitimacy_reason = ?,
 			role_fit_summary = ?, triage_error = ?, triage_attempts = ?,
 			hiring_agency = ?, work_type = ?, industry = ?, salary_range = ?, job_posting_url = ?,
+			triage_completed_at = ?, decided_at = ?,
 			updated_by = ?
 		WHERE id = ?`,
 		req.Name, req.Email, req.Company, req.Reason, req.Status,
 		req.TriageStatus, req.AIModel, req.Legitimacy, req.LegitimacyReason,
 		req.RoleFitSummary, req.TriageError, req.TriageAttempts,
 		req.HiringAgency, req.WorkType, req.Industry, req.SalaryRange, req.JobPostingURL,
+		req.TriageCompletedAt, req.DecidedAt,
 		req.UpdatedBy,
 		req.ID)
 	if err != nil {
@@ -176,7 +205,7 @@ func RegisterResumeRoutes(app *fiber.App) {
 	// Public: poll triage status for the requester's own submission.
 	// Deliberately omits name/email/company/reason — the queue page only
 	// needs to render workflow state, not echo submitted PII back.
-	app.Get("/api/resume/status/:id", func(c *fiber.Ctx) error {
+	app.Get("/api/resume/status/:id", resumeStatusLimiter, func(c *fiber.Ctx) error {
 		req, err := findResumeRequest(c.Context(), c.Params("id"))
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to read request"})
@@ -185,13 +214,16 @@ func RegisterResumeRoutes(app *fiber.App) {
 			return c.Status(404).JSON(fiber.Map{"error": "Request not found"})
 		}
 		return c.JSON(fiber.Map{
-			"id":                req.ID,
-			"status":            req.Status,
-			"triage_status":     req.TriageStatus,
-			"ai_model":          req.AIModel,
-			"legitimacy":        req.Legitimacy,
-			"legitimacy_reason": req.LegitimacyReason,
-			"role_fit_summary":  req.RoleFitSummary,
+			"id":                  req.ID,
+			"status":              req.Status,
+			"created_at":          req.CreatedAt,
+			"triage_status":       req.TriageStatus,
+			"ai_model":            req.AIModel,
+			"legitimacy":          req.Legitimacy,
+			"legitimacy_reason":   req.LegitimacyReason,
+			"role_fit_summary":    req.RoleFitSummary,
+			"triage_completed_at": req.TriageCompletedAt,
+			"decided_at":          req.DecidedAt,
 		})
 	})
 
@@ -286,6 +318,8 @@ func RegisterResumeRoutes(app *fiber.App) {
 		} else {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid action. Use 'approve' or 'reject'"})
 		}
+
+		targetReq.DecidedAt = time.Now().UnixMilli()
 
 		actor := actorFromRequest(c)
 		targetReq.UpdatedBy = actor
@@ -383,15 +417,28 @@ func startRetentionSweep() {
 // required at submission time (see the POST handler), so `email != ''` is
 // exactly "not yet anonymized" and re-running this daily against
 // already-anonymized rows is a no-op.
+//
+// A request that's still "pending" when it hits this cutoff also flips to
+// "expired" (with DecidedAt stamped, so its review duration on the status
+// page stops ticking forever instead of quietly showing "in review" for a
+// request whose contact info is already gone and can no longer be approved
+// - see the "This request's contact info was anonymized..." check in the
+// approve handler above). A request that was already approved/rejected
+// keeps its real status - a genuine human decision isn't overwritten by
+// retention just because it's also past 30 days old.
 func runRetentionSweep(ctx context.Context) {
 	if db == nil {
 		return
 	}
 
+	now := time.Now().UnixMilli()
 	cutoff := time.Now().AddDate(0, 0, -30).UnixMilli()
 	res, err := db.ExecContext(ctx, `
-		UPDATE resume_requests SET name = '', email = ''
-		WHERE created_at < ? AND email != ''`, cutoff)
+		UPDATE resume_requests SET
+			name = '', email = '',
+			status = CASE WHEN status = 'pending' THEN 'expired' ELSE status END,
+			decided_at = CASE WHEN status = 'pending' AND decided_at = 0 THEN ? ELSE decided_at END
+		WHERE created_at < ? AND email != ''`, now, cutoff)
 	if err != nil {
 		log.Printf("⚠️ Retention sweep: failed to anonymize resume_requests: %v", err)
 		return
@@ -402,7 +449,7 @@ func runRetentionSweep(ctx context.Context) {
 		return
 	}
 
-	log.Printf("🧹 Retention sweep: anonymized %d resume request(s) older than 30 days", anonymized)
+	log.Printf("🧹 Retention sweep: anonymized %d resume request(s) older than 30 days (still-pending ones also marked expired)", anonymized)
 }
 
 // ---------------------------------------------

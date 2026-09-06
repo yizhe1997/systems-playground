@@ -1,11 +1,21 @@
 import ResumeStatusTracker from '@/components/ResumeStatusTracker';
+import ResumeStatusFaq from '@/components/ResumeStatusFaq';
+
+// This page is a private, unguessable-link tracker (the AI triage reasoning
+// shown here can include sensitive-ish read on the requester) - it's meant
+// to be reached only via the emailed link, never discovered. `noindex`
+// keeps it out of search results / link-preview scrapers on the off chance
+// a link is ever pasted somewhere crawlable.
+export const metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function ResumeStatusPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   return (
       <main className="flex-1 w-full bg-white">
-      <div className="max-w-4xl mx-auto px-6 py-20 w-full">
+      <div className="max-w-4xl mx-auto px-6 pt-20 pb-12 w-full">
         <h1
           className="mb-6 text-black"
           style={{
@@ -25,21 +35,8 @@ export default async function ResumeStatusPage({ params }: { params: Promise<{ i
 
         <ResumeStatusTracker id={id} />
 
-        <div className="mt-16 pt-10 border-t-2 border-black/10">
-          <h2
-            className="text-xl mb-3 text-black"
-            style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
-          >
-            Why an AI triage step at all?
-          </h2>
-          <p className="text-sm text-[var(--ds-charcoal)]/70 max-w-2xl">
-            Every resume request used to get the exact same manual review, regardless of how obviously legitimate
-            or spammy it was. Claude Haiku 4.5 now reads each request first and flags a legitimacy verdict plus a
-            short read on role fit - cheap and fast enough to run on every submission. It doesn&apos;t decide
-            anything on its own: the verdict is advisory context for the actual human decision, not a gate. If the
-            model call fails for any reason, the request still goes to manual review - nothing gets silently
-            dropped.
-          </p>
+        <div className="mt-6">
+          <ResumeStatusFaq />
         </div>
       </div>
       </main>

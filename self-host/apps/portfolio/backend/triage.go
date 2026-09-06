@@ -72,6 +72,7 @@ func runTriage(reqID string) {
 	req.LegitimacyReason = result.LegitimacyReason
 	req.RoleFitSummary = result.RoleFitSummary
 	req.TriageError = ""
+	req.TriageCompletedAt = time.Now().UnixMilli()
 	if err := saveResumeRequest(ctx, req); err != nil {
 		log.Printf("⚠️ Triage: failed to save result for %s: %v", reqID, err)
 		return
@@ -158,6 +159,7 @@ func markTriageFailed(ctx context.Context, reqID string, errMsg string) {
 	req.TriageStatus = "failed"
 	req.TriageError = errMsg
 	req.TriageAttempts++
+	req.TriageCompletedAt = time.Now().UnixMilli()
 	if err := saveResumeRequest(ctx, req); err != nil {
 		log.Printf("⚠️ Triage: failed to record failure for %s: %v", reqID, err)
 	}
