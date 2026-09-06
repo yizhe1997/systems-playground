@@ -312,36 +312,8 @@ function useConnectorLine(trackRef: React.RefObject<HTMLDivElement | null>, icon
 function PipelineTrack({ data, createdAt, triageStatus, requestStatus, triageDone, triageElapsedMs, reviewElapsedMs, decidedAt }: PipelineProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const iconRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const markerRef = useRef<SVGGElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
-  const animRef = useRef<{ pause: () => void } | null>(null);
-  const triageActive = !triageDone;
 
   const line = useConnectorLine(trackRef, iconRefs);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!triageActive || !line) {
-      animRef.current?.pause();
-      return;
-    }
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    import('animejs').then(({ animate, svg }) => {
-      if (cancelled || !markerRef.current || !pathRef.current) return;
-      animRef.current = animate(markerRef.current, {
-        ease: 'linear',
-        duration: 1600,
-        loop: true,
-        ...svg.createMotionPath(pathRef.current),
-      });
-    });
-
-    return () => {
-      cancelled = true;
-      animRef.current?.pause();
-    };
-  }, [triageActive, line]);
 
   const legit = data.legitimacy ? legitimacyStyles[data.legitimacy] : null;
 
@@ -369,8 +341,6 @@ function PipelineTrack({ data, createdAt, triageStatus, requestStatus, triageDon
             viewBox={`0 0 ${line.w} ${line.h}`}
             aria-hidden="true"
           >
-            {/* Invisible full-span reference path purely for the marker's motion-path math - the visible, individually-colored track is the 3 segments below it. */}
-            <path ref={pathRef} d={`M ${line.xs[0]} ${line.y} L ${line.xs[3]} ${line.y}`} stroke="none" fill="none" />
             {nextNodeStates.map((state, i) => (
               <line
                 key={i}
@@ -383,9 +353,6 @@ function PipelineTrack({ data, createdAt, triageStatus, requestStatus, triageDon
                 strokeWidth="3"
               />
             ))}
-            <g ref={markerRef} opacity={triageActive ? 1 : 0}>
-              <circle r="6" cx="0" cy="0" fill="var(--ds-yellow)" stroke="var(--ds-charcoal)" strokeWidth="2" />
-            </g>
           </svg>
         )}
 
