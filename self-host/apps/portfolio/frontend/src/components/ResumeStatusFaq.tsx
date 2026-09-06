@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react';
 const FAQ_ITEMS = [
   {
     q: 'Why an AI triage step at all?',
-    a: "Every resume request used to get the exact same manual review, regardless of how obviously legitimate or spammy it was. Claude Haiku 4.5 now reads each request first and flags a legitimacy verdict plus a short read on role fit - cheap and fast enough to run on every submission. It doesn't decide anything on its own: the verdict is advisory context for the actual human decision, not a gate. If the model call fails for any reason, the request still goes to manual review - nothing gets silently dropped.",
+    a: "Every resume request used to get the exact same manual review, regardless of how obviously legitimate or spammy it was. A model now reads each request first and flags a legitimacy verdict plus a short read on role fit - cheap and fast enough to run on every submission. It doesn't decide anything on its own: the verdict is advisory context for the actual human decision, not a gate. If the model call fails for any reason, the request still goes to manual review - nothing gets silently dropped.",
   },
   {
     q: 'Why is human review taking so long?',

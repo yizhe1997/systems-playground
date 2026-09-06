@@ -22,9 +22,9 @@ import (
 )
 
 // resumeRequestLimiter caps submissions per IP. This endpoint isn't just
-// spam-prone — every submission fires a real, billed Claude Haiku triage
-// call and an SMTP send, so a scripted flood has a real cost, not just an
-// annoyance. 5/hour is generous for a real applicant (nobody re-submits
+// spam-prone — every submission fires a real, billed AI triage call (see
+// triage.go) and an SMTP send, so a scripted flood has a real cost, not
+// just an annoyance. 5/hour is generous for a real applicant (nobody re-submits
 // that often) and expensive for a bot.
 var resumeRequestLimiter = limiter.New(limiter.Config{
 	Max:        5,

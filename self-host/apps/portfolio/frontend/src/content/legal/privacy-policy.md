@@ -82,19 +82,22 @@ form is never processed by an AI model — it goes straight into a list only I r
 > approve, decline, or send anything — it only helps me review faster.
 
 Before I manually review each resume request, it's processed by an AI model (currently
-**Claude Haiku, via the Anthropic API**) to help me summarize and flag submissions — for example,
-surfacing a short summary or flagging spam-like submissions — so I can review requests faster.
+**DeepSeek V4 Flash, accessed via OpenRouter**) to help me summarize and flag submissions — for
+example, surfacing a short summary or flagging spam-like submissions — so I can review requests
+faster.
 
 This means the contents of your resume request (name, email, company, and reason) are sent to
-Anthropic's API as part of that automated step. A few relevant points about that:
+OpenRouter as part of that automated step, which routes the request to whichever inference
+provider is currently serving that model. A few relevant points about that:
 
-- Anthropic states that it does **not** use data submitted through its commercial API to train
-  its models by default.
-- Anthropic retains API data only as needed to operate the service (e.g. abuse/safety
-  monitoring) — see Anthropic's own [Privacy Policy](https://privacy.claude.com) and
-  [Commercial Terms](https://www.anthropic.com/legal/commercial-terms) for their current,
-  authoritative retention and usage terms, since those may change over time and this page won't
-  always be updated the same day they do.
+- The request is sent with **Zero Data Retention enforced, and DeepSeek's own infrastructure
+  explicitly excluded from routing.** This is a deliberate configuration, not a default: DeepSeek's
+  own hosting (which OpenRouter can otherwise route this model to) stores data in China and may
+  use it for model training, so it's excluded outright rather than relied on to behave.
+- See [OpenRouter's Privacy Policy](https://openrouter.ai/privacy) and its
+  [Zero Data Retention documentation](https://openrouter.ai/docs/guides/features/zdr) for the
+  current, authoritative terms — which providers are confirmed zero-retention can change over
+  time, and this page won't always be updated the same day that does.
 - This is currently the **only** third party that sees data submitted through the resume request
   form, and it's never sent anything from the "Interested in working together?" form (see
   "Sharing" below).
@@ -104,8 +107,9 @@ Anthropic's API as part of that automated step. A few relevant points about that
 I don't sell your data. I don't share it with advertisers, data brokers, or anyone else for
 marketing purposes. The only place your submitted information goes, besides my own review, is:
 
-- **Anthropic** (the AI triage step described above) — resume requests only, never the
-  "Interested in working together?" form.
+- **OpenRouter** (the AI triage step described above, routed with Zero Data Retention enforced
+  and DeepSeek's own infrastructure excluded) — resume requests only, never the "Interested in
+  working together?" form.
 - **My email provider**, if your resume request is approved — sending you the resume link
   requires sending an email, which necessarily passes through whatever SMTP/email service I use.
   A "working together" submission doesn't trigger an outbound email at all — I reply manually,
