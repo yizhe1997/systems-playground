@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"html"
+	"html/template"
 	"log"
 	"net/http"
 	"net/smtp"
@@ -415,6 +417,14 @@ func RegisterResumeRoutes(app *fiber.App) {
 			err = sendEmailViaSMTP(targetReq.Email, targetReq.Name, links, payload.Subject, payload.Body)
 			if err != nil {
 				log.Printf("❌ Failed to send email: %v", err)
+				// A bad {{ }} in the admin's own custom body is a typo, not
+				// an SMTP/network problem - surface renderEmailTemplate's
+				// actual message instead of the generic one below, so the
+				// admin knows to go fix their template instead of retrying
+				// blindly against what looks like a delivery failure.
+				if strings.Contains(err.Error(), "invalid template syntax") {
+					return c.Status(400).JSON(fiber.Map{"error": err.Error() + " - fix the email body and try again. Link(s) were generated."})
+				}
 				return c.Status(500).JSON(fiber.Map{"error": "Failed to send email. Link(s) were generated."})
 			}
 
@@ -568,7 +578,18 @@ func fireNotificationWebhook(url string, req ResumeRequest) {
 	}
 	content += "\n\nLogin to the Control Plane to approve."
 
-	payload := map[string]any{"content": content}
+	// allowed_mentions: {"parse": []} is Discord's own documented way to
+	// disable every kind of mention (@everyone, @here, user/role pings) a
+	// message's content could trigger, regardless of what's actually in it -
+	// the right fix here, since Name/Company/Reason are untrusted third-party
+	// input and Discord interprets @everyone etc. in webhook content by
+	// default. Hand-stripping "@everyone" as text would be both fragile
+	// (several equivalent mention forms exist) and would mangle a legitimate
+	// company name that happens to contain an @ symbol.
+	payload := map[string]any{
+		"content":          content,
+		"allowed_mentions": map[string]any{"parse": []string{}},
+	}
 	jsonPayload, _ := json.Marshal(payload)
 	http.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
 }
@@ -639,26 +660,30 @@ func generateFilebrowserShareLink(resumePath string) (string, error) {
 	return fmt.Sprintf("%s/share/%s", publicDomain, hash), nil
 }
 
-// resumeLinksHTML renders one or more resume links for the {{link}} template
-// token - a single anchor for one resume (matches the original single-resume
-// email's look), or a bulleted list once there's more than one so the
-// recipient can tell them apart.
+// resumeLinksHTML renders one or more resume links for the {{.link}}
+// template value - a single anchor for one resume (matches the original
+// single-resume email's look), or a bulleted list once there's more than
+// one so the recipient can tell them apart. l.Name comes from an
+// admin-picked filename (see storedFilenameToDisplayName), not third-party
+// input, but it's escaped anyway since this fragment gets marked
+// template.HTML at the call site and so bypasses the template engine's own
+// auto-escaping.
 func resumeLinksHTML(links []ResumeLink) string {
 	if len(links) == 1 {
-		return fmt.Sprintf("<a href='%s'>%s (Expires in 24 hours)</a>", links[0].URL, links[0].Name)
+		return fmt.Sprintf("<a href='%s'>%s (Expires in 24 hours)</a>", links[0].URL, html.EscapeString(links[0].Name))
 	}
 	var sb strings.Builder
 	sb.WriteString("<ul>")
 	for _, l := range links {
-		sb.WriteString(fmt.Sprintf("<li><a href='%s'>%s (Expires in 24 hours)</a></li>", l.URL, l.Name))
+		sb.WriteString(fmt.Sprintf("<li><a href='%s'>%s (Expires in 24 hours)</a></li>", l.URL, html.EscapeString(l.Name)))
 	}
 	sb.WriteString("</ul>")
 	return sb.String()
 }
 
-// resumeLinksRaw renders the {{raw_link}} template token - plain "Name: URL"
-// per resume, newline-separated, for admins who want the bare URL(s) rather
-// than a pre-built link element.
+// resumeLinksRaw renders the {{.raw_link}} template value - plain
+// "Name: URL" per resume, newline-separated, for admins who want the bare
+// URL(s) rather than a pre-built link element.
 func resumeLinksRaw(links []ResumeLink) string {
 	parts := make([]string, len(links))
 	for i, l := range links {
@@ -666,6 +691,34 @@ func resumeLinksRaw(links []ResumeLink) string {
 	}
 	return strings.Join(parts, "\n")
 }
+
+// renderEmailTemplate parses src as an html/template and executes it
+// against data - the one place every outbound email body routes through, so
+// {{.name}} (the requester's own submitted, untrusted name) is always
+// auto-escaped by the template engine itself rather than relying on each
+// call site to remember to escape it by hand. A value that's already-safe,
+// pre-built HTML (like resumeLinksHTML's output) is passed in wrapped as
+// template.HTML so the engine renders it verbatim instead of escaping it
+// into visible tag text.
+func renderEmailTemplate(src string, data map[string]any) (string, error) {
+	tmpl, err := template.New("email").Parse(src)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// wrongRecipientDisclaimer is appended to every outbound resume-request
+// email. Nothing in the submission flow verifies the submitter actually
+// owns the email address they typed in - there's no verification-link step,
+// so this can't stop someone from putting in a stranger's address. It just
+// makes sure whoever actually receives the email, if it wasn't them who
+// asked, knows what happened and that no action is needed on their part.
+const wrongRecipientDisclaimer = `<p style="color:#888888;font-size:12px;margin-top:24px;">If you didn't request this, you can safely ignore this email — no action was taken and nothing further will be sent.</p>`
 
 func sendEmailViaSMTP(toEmail string, name string, links []ResumeLink, customSubject string, customBody string) error {
 	smtpEmail := os.Getenv("SMTP_EMAIL")
@@ -695,25 +748,38 @@ func sendEmailViaSMTP(toEmail string, name string, links []ResumeLink, customSub
 
 	mime := "MIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n"
 
-	body := customBody
-	if body == "" {
+	data := map[string]any{
+		"name":     name,
+		"link":     template.HTML(resumeLinksHTML(links)), //nolint:gosec // resumeLinksHTML escapes what it interpolates itself
+		"raw_link": resumeLinksRaw(links),
+	}
+
+	var bodySrc string
+	if customBody == "" {
 		intro := "here is the link to download my resume."
 		if len(links) > 1 {
 			intro = "here are the links to download my resume."
 		}
-		body = fmt.Sprintf("<p>Hi %s,</p><p>Thank you for your interest! As requested, %s</p><p>%s</p><p>Best regards,<br/>Chin Yi Zhe</p>", name, intro, resumeLinksHTML(links))
+		data["intro"] = intro
+		bodySrc = "<p>Hi {{.name}},</p><p>Thank you for your interest! As requested, {{.intro}}</p><p>{{.link}}</p><p>Best regards,<br/>Chin Yi Zhe</p>" + wrongRecipientDisclaimer
 	} else {
-		// Replace line breaks with HTML line breaks and inject variables
-		body = strings.ReplaceAll(body, "\n", "<br/>")
-		body = strings.ReplaceAll(body, "{{name}}", name)
-		body = strings.ReplaceAll(body, "{{link}}", resumeLinksHTML(links))
-		body = strings.ReplaceAll(body, "{{raw_link}}", resumeLinksRaw(links))
+		// The admin's own line breaks become real <br/> tags in the
+		// template's static (trusted, admin-authored) text - this happens
+		// before parsing, not to any substituted value, so it's not an
+		// escaping concern the way {{.name}} etc. are. The disclaimer is
+		// appended unconditionally after whatever the admin writes, rather
+		// than relying on them to remember to include it themselves.
+		bodySrc = strings.ReplaceAll(customBody, "\n", "<br/>") + wrongRecipientDisclaimer
+	}
+
+	body, err := renderEmailTemplate(bodySrc, data)
+	if err != nil {
+		return fmt.Errorf("email body has invalid template syntax: %w", err)
 	}
 
 	msg := []byte("From: " + from + "\r\nTo: " + toEmail + "\r\n" + subject + mime + body)
 
-	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, msg)
-	if err != nil {
+	if err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, msg); err != nil {
 		return fmt.Errorf("smtp error: %v", err)
 	}
 
@@ -739,10 +805,19 @@ func sendRequestReceivedEmail(toEmail string, name string, requestID string) {
 
 	subject := "Subject: Chin Yi Zhe - Resume request received\r\n"
 	mime := "MIME-version: 1.0;\r\nContent-Type: text/html; charset=\"UTF-8\";\r\n\r\n"
-	body := fmt.Sprintf(
-		"<p>Hi %s,</p><p>Got your resume request - it's being triaged and reviewed now.</p><p><a href='%s'>Track its status here</a></p><p>Best regards,<br/>Chin Yi Zhe</p>",
-		name, statusURL,
+
+	// .url lands inside an href attribute - html/template's context-aware
+	// escaping applies URL-attribute rules to it automatically, on top of
+	// .name's plain HTML-text escaping.
+	body, err := renderEmailTemplate(
+		`<p>Hi {{.name}},</p><p>Got your resume request - it's being triaged and reviewed now.</p><p><a href="{{.url}}">Track its status here</a></p><p>Best regards,<br/>Chin Yi Zhe</p>`+wrongRecipientDisclaimer,
+		map[string]any{"name": name, "url": statusURL},
 	)
+	if err != nil {
+		log.Printf("⚠️ Failed to render request-received email body for %s: %v", toEmail, err)
+		return
+	}
+
 	msg := []byte("From: " + smtpEmail + "\r\nTo: " + toEmail + "\r\n" + subject + mime + body)
 
 	if err := smtp.SendMail(smtpHost+":"+smtpPort, auth, smtpEmail, []string{toEmail}, msg); err != nil {

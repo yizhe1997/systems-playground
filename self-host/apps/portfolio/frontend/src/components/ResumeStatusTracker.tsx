@@ -98,16 +98,37 @@ function useStatusStream(id: string) {
   return { data, error };
 }
 
-// Ticks while a step is actually in flight - 100ms while triage runs
-// (resolves in single-digit seconds, so tenths read as live), 1s while a
-// human review sits open (minutes, tenths would just be noise). Stops once
-// both have settled so this isn't a perpetual timer on a finished page.
+// Ticks while a step is actually in flight, at 100ms regardless of which
+// step - triage and review both feed the same decimal-seconds display for
+// the first minute (see fmtDuration), so they need the same tick rate or
+// the slower one's tenths digit visibly stalls while only the whole-second
+// digit advances. The cost of a 100ms tick past the first minute (once
+// fmtDuration has already dropped to whole-second precision and a chunk of
+// those ticks re-render an unchanged string) is a few extra cheap re-renders
+// of a small text node, not something worth a more complex adaptive rate
+// for. Stops once both steps have settled so this isn't a perpetual timer
+// on a finished page.
 function useLiveTick(active: boolean, intervalMs: number) {
   const [, setTick] = useState(0);
   useEffect(() => {
     if (!active) return;
-    const id = setInterval(() => setTick((t) => t + 1), intervalMs);
-    return () => clearInterval(id);
+    const tick = () => setTick((t) => t + 1);
+    const id = setInterval(tick, intervalMs);
+    // Chrome/Firefox throttle setInterval to roughly once a minute on a
+    // backgrounded/unfocused tab (standard power-saving behavior) - without
+    // this, coming back to a tab that sat in the background shows a stale,
+    // seemingly-frozen elapsed time until the throttled timer eventually
+    // catches up. Forcing one tick the moment the tab becomes visible again
+    // fixes the "stuck" appearance without fighting the browser's own
+    // throttling.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [active, intervalMs]);
 }
 
@@ -121,7 +142,8 @@ function fmtDateTime(ms: number) {
 // (anywhere from seconds to, per the retention window, over a month) -
 // breaks down into every unit down to seconds once it's over a minute, so
 // something that sat for weeks reads as "27d 9h 12m 34s" instead of a
-// meaningless three-digit hour count.
+// meaningless three-digit hour count. Both callers tick at 100ms (see
+// useLiveTick), so the tenths digit below animates smoothly for either one.
 function fmtDuration(ms: number) {
   const totalSec = Math.max(0, ms / 1000);
   if (totalSec < 60) return totalSec.toFixed(1) + 's';
@@ -156,7 +178,7 @@ export default function ResumeStatusTracker({ id }: { id: string }) {
   const requestSettled = requestStatus !== 'pending';
 
   useLiveTick(!triageDone, 100);
-  useLiveTick(triageDone && !requestSettled, 1000);
+  useLiveTick(triageDone && !requestSettled, 100);
 
   if (error === 'not-found') {
     return (

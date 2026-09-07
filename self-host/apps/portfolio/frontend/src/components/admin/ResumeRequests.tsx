@@ -264,7 +264,7 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
 
   const openApproveDialog = (id: string, name: string) => {
     setEmailSubject('Chin Yi Zhe - Requested Resume');
-    setEmailBody(`Hi {{name}},\n\nThank you for your interest! As requested, here is the link to download my resume.\n\n{{link}}\n\nBest regards,\nChin Yi Zhe`);
+    setEmailBody(`Hi {{.name}},\n\nThank you for your interest! As requested, here is the link to download my resume.\n\n{{.link}}\n\nBest regards,\nChin Yi Zhe`);
     // Pre-check whatever's marked "Active" in Resume / CV Files - the fast
     // path stays a single click, but nothing stops picking a different one
     // (or several) before sending.
@@ -772,7 +772,7 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
             <DialogTitle className="text-xl text-black font-extrabold">Approve Request</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
               Customize the email that will be sent to <strong className="text-black">{approveDialog.name}</strong>.
-              Use <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{name}}"}</code> and <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{link}}"}</code> as template variables - <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{link}}"}</code> expands to a list if more than one resume is checked below.
+              Use <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{.name}}"}</code> and <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{.link}}"}</code> as template variables - <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{.link}}"}</code> expands to a list if more than one resume is checked below.
             </DialogDescription>
           </DialogHeader>
 
