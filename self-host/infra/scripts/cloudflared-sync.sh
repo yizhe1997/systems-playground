@@ -100,15 +100,35 @@ sync_once() {
       log "  [!] Failed to create/confirm DNS route for $hostname - check $LOGFILE"
   done
 
-  # Restart cloudflared to pick up the new config - cloudflared now runs as its own systemd user
-  # unit (self-host/infra/scripts/systemd/cloudflared.service, Restart=always), so ask systemd to
-  # restart it rather than pkill+relaunch a bare process ourselves. Using `systemctl --user` here
-  # instead of a plain `pkill`+`nohup` matters: both units run in this same user's systemd
-  # instance (no sudo needed), and going through systemd means there's exactly one supervisor in
-  # charge of the process - a manual nohup restart racing systemd's own Restart=always is exactly
-  # what produced two simultaneous tunnel connector "replicas" once before.
-  systemctl --user restart cloudflared.service
-  log "cloudflared restarted with the updated config."
+  # Restart cloudflared to pick up the new config - cloudflared runs as its own systemd user unit
+  # (self-host/infra/scripts/systemd/cloudflared.service, Restart=always), so a signal is enough:
+  # systemd notices the process exit and relaunches it itself, giving the same "exactly one
+  # supervisor in charge" guarantee a `systemctl --user restart` call was meant to provide (a
+  # manual nohup restart racing systemd's own Restart=always is what produced two simultaneous
+  # tunnel connector "replicas" once before - signalling the process and letting systemd relaunch
+  # it avoids that the same way, just without going through systemd's own CLI to do it).
+  #
+  # Deliberately NOT `systemctl --user restart cloudflared.service` (what this used to do):
+  # that talks to systemd over a D-Bus *session* bus, and WSL2 doesn't reliably create one for a
+  # lingering user session (PAM/logind session registration can silently not run - confirmed live
+  # 2026-09-08, see the Obsidian board). When that bus is missing, `systemctl --user` fails
+  # outright, and under `set -e` that crashed this whole script every time a real config change
+  # needed a restart - the exact silent-failure shape this script exists to prevent, just one
+  # layer deeper. Signalling the process directly has no D-Bus dependency at all, so it can't be
+  # broken by that class of environment gap again. Scoped via cloudflared.service's own cgroup so
+  # this can never touch some other, unrelated cloudflared process that happens to be running on
+  # the host (one is known to exist - see the Obsidian board).
+  CLOUDFLARED_CGROUP="/sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/app.slice/cloudflared.service/cgroup.procs"
+  if [ -r "$CLOUDFLARED_CGROUP" ] && [ -s "$CLOUDFLARED_CGROUP" ]; then
+    while read -r pid; do
+      kill "$pid" 2>/dev/null || true
+    done <"$CLOUDFLARED_CGROUP"
+    log "cloudflared signalled to restart (systemd will relaunch it via Restart=always)."
+  else
+    log "  [!] Could not find cloudflared.service's cgroup at $CLOUDFLARED_CGROUP - falling back to matching by process name, scoped to this user (cannot touch any other cloudflared process on the host)."
+    pkill -u "$(id -u)" -x cloudflared 2>/dev/null || \
+      log "  [!] No cloudflared process found to restart - it may already be down; systemd's Restart=always / the next sync cycle should recover it."
+  fi
 }
 
 log "cloudflared-sync starting - polling every ${SYNC_INTERVAL}s for containers labelled cloudflare.tunnel.hostname / cloudflare.tunnel.port."
