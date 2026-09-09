@@ -38,20 +38,3 @@ docker compose down        # stop the stack
 ```
 
 `docker-compose.override.yml` is auto-loaded for local dev. Production/self-hosted deploys instead merge `docker-compose.prod.yml` (pre-built images from the self-hosted registry, Watchtower auto-update labels) — see [docs/DEPLOYMENT.md](../../../docs/DEPLOYMENT.md).
-
-## Content / Copy
-
-Working draft of the site's marketing copy. This is the source of truth when updating landing page text — keep it in sync with `frontend/src/app/page.tsx`.
-
-### Hero / Bio Section
-
-**Headline:** Hi, I'm Chin Yi Zhe.
-**Sub-headline:** I build scalable, multi-tenant cloud systems.
-**Body:** I'm a Backend-focused Software Engineer with deep expertise in .NET and Golang, alongside full-stack experience with Blazor, Angular, and React. I focus on architecting resilient distributed systems, automating complex cloud deployment pipelines, and modernizing enterprise applications.
-**Calls to Action:**
-- [Download Resume]
-- [View LinkedIn]
-
-### Architecture Case Studies
-
-**TBD — explicitly not written yet.** An earlier draft of this section carried two case studies (an ATS webhook-idempotency project, an enterprise job-portal modernization) that read as fictional placeholder copy, not confirmed work history. Per [PRODUCT.md](./PRODUCT.md#evidence-on-hand), they must not be treated as real evidence or carried forward into any new work — removed here rather than left as content this file describes as "source of truth." Real case studies go here once real work history is supplied.
