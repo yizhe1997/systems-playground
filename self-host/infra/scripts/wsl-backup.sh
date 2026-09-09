@@ -87,7 +87,10 @@ for SVC in "${POSTGRES_BACKED_SERVICES[@]}"; do
   SVC_DIR="$SCRIPT_DIR/$SVC"
   if [ -f "$SVC_DIR/docker-compose.yml" ]; then
     echo "    -> Stopping $SVC"
-    (cd "$SVC_DIR" && docker compose stop) || alert "Failed to stop $SVC before backup — its volume snapshot may be inconsistent"
+    if ! (cd "$SVC_DIR" && docker compose stop); then
+      alert "Failed to stop $SVC before backup — its volume snapshot may be inconsistent"
+      FAILED=1
+    fi
   else
     echo "    -> $SVC_DIR not found, skipping (not deployed here?)"
   fi
@@ -140,7 +143,10 @@ for SVC in "${POSTGRES_BACKED_SERVICES[@]}"; do
   SVC_DIR="$SCRIPT_DIR/$SVC"
   if [ -f "$SVC_DIR/docker-compose.yml" ]; then
     echo "    -> Starting $SVC"
-    (cd "$SVC_DIR" && docker compose start) || alert "Failed to restart $SVC after backup — check it manually"
+    if ! (cd "$SVC_DIR" && docker compose start); then
+      alert "Failed to restart $SVC after backup — it is still down, check it manually"
+      FAILED=1
+    fi
   fi
 done
 

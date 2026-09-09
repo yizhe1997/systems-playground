@@ -68,19 +68,48 @@ for compose_file in "$SCRIPT_DIR"/*/docker-compose.yml; do
   [ -f "$compose_file" ] && SERVICE_DIRS+=("$(dirname "$compose_file")")
 done
 
-# --- 1. Quiesce Postgres-backed services before snapshotting their volumes ---
-# Empty today — no app currently runs its own Postgres/MySQL-style database (the portfolio's
-# redis/rabbitmq/redpanda are all fine snapshotted live; they're cache/queue-like, not a source of
-# truth). Add a service name here the day an app gains a real RDBMS of its own — see the identical
-# list in the infra layer's wsl-backup.sh for the full reasoning on why this matters.
-POSTGRES_BACKED_SERVICES=()
+# --- 1. Stop database-backed services before snapshotting their volumes ---
+# Tarring a live database file while its owning process is still writing to it is not
+# crash-consistent - files can be mid-write. The portfolio's SQLite `resume_requests` table is
+# exactly this kind of source of truth (not a cache or queue - losing an in-flight write to it
+# during a snapshot would be real data loss), so its backend service is stopped first, same as the
+# infra layer's wsl-backup.sh already does for its real Postgres-backed services (see there for the
+# full reasoning). This used to be empty, Postgres-specific scaffolding - no app ran its own
+# database yet; the portfolio's SQLite DB is the first real case, which is also why this list isn't
+# named "Postgres" anymore. Redis is handled separately below (SAVE, not a stop) since a database
+# needs a clean stop to be consistent but a cache-store snapshot doesn't.
+STOP_BEFORE_SNAPSHOT=("portfolio:backend")
 
-echo "[*] Stopping Postgres-backed services for a consistent snapshot..."
-for SVC in "${POSTGRES_BACKED_SERVICES[@]}"; do
-  SVC_DIR="$SCRIPT_DIR/$SVC"
+echo "[*] Stopping database-backed services for a consistent snapshot..."
+for ENTRY in "${STOP_BEFORE_SNAPSHOT[@]}"; do
+  SVC_DIR="$SCRIPT_DIR/${ENTRY%%:*}"
+  SVC_NAME="${ENTRY##*:}"
   if [ -f "$SVC_DIR/docker-compose.yml" ]; then
-    echo "    -> Stopping $SVC"
-    (cd "$SVC_DIR" && docker compose stop) || alert "Failed to stop $SVC before backup — its volume snapshot may be inconsistent"
+    echo "    -> Stopping $ENTRY"
+    if ! (cd "$SVC_DIR" && docker compose stop "$SVC_NAME"); then
+      alert "Failed to stop $ENTRY before backup — its volume snapshot may be inconsistent"
+      FAILED=1
+    fi
+  fi
+done
+
+# --- 1b. Flush Redis's own snapshot to disk before capturing its volume ---
+# The portfolio's Redis holds CMS config (admin-edited page content), not just disposable/derived
+# cache data - worth protecting properly, not "fine to lose." Redis only writes dump.rdb to disk on
+# its own schedule (or never, on an unclean shutdown), so tarring redis_data live can capture a
+# dump.rdb that's stale relative to what's actually in memory. `SAVE` is Redis's own blocking
+# snapshot-to-disk primitive - fast at this dataset's size, and unlike the database above, doesn't
+# need the service stopped first to produce a consistent file.
+REDIS_SNAPSHOT_SERVICES=("portfolio:redis")
+
+echo "[*] Flushing Redis snapshots to disk before backing up their volumes..."
+for ENTRY in "${REDIS_SNAPSHOT_SERVICES[@]}"; do
+  SVC_DIR="$SCRIPT_DIR/${ENTRY%%:*}"
+  SVC_NAME="${ENTRY##*:}"
+  if [ -f "$SVC_DIR/docker-compose.yml" ]; then
+    echo "    -> SAVE on $ENTRY"
+    (cd "$SVC_DIR" && docker compose exec -T "$SVC_NAME" redis-cli SAVE) || \
+      alert "Redis SAVE failed for $ENTRY before backup — its volume snapshot may be stale"
   fi
 done
 
@@ -119,13 +148,17 @@ for VOL in "${VOLS_TO_BACKUP[@]}"; do
   fi
 done
 
-# --- 3. Restart the Postgres-backed services now that their volumes are captured ---
-echo "[*] Restarting Postgres-backed services..."
-for SVC in "${POSTGRES_BACKED_SERVICES[@]}"; do
-  SVC_DIR="$SCRIPT_DIR/$SVC"
+# --- 3. Restart database-backed services now that their volumes are captured ---
+echo "[*] Restarting database-backed services..."
+for ENTRY in "${STOP_BEFORE_SNAPSHOT[@]}"; do
+  SVC_DIR="$SCRIPT_DIR/${ENTRY%%:*}"
+  SVC_NAME="${ENTRY##*:}"
   if [ -f "$SVC_DIR/docker-compose.yml" ]; then
-    echo "    -> Starting $SVC"
-    (cd "$SVC_DIR" && docker compose start) || alert "Failed to restart $SVC after backup — check it manually"
+    echo "    -> Starting $ENTRY"
+    if ! (cd "$SVC_DIR" && docker compose start "$SVC_NAME"); then
+      alert "Failed to restart $ENTRY after backup — it is still down, check it manually"
+      FAILED=1
+    fi
   fi
 done
 
