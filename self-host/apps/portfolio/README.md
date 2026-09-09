@@ -6,9 +6,9 @@ This is the flagship project of the [Systems Playground](../../../README.md) mon
 
 ## Tech Stack
 
-* **Backend:** Go 1.24, [Fiber](https://gofiber.io/) v2
+* **Backend:** Go 1.25, [Fiber](https://gofiber.io/) v2
 * **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui
-* **Data store:** Redis (CMS content, site config, resume requests)
+* **Data store:** Redis (CMS content, site config) and SQLite (resume requests — a real source of truth, not a cache, see [ADR 005](./adrs/005-sqlite-for-resume-requests.md))
 * **Auth:** NextAuth v4 (Google OAuth), BFF proxy pattern for admin routes
 * **File storage:** shared [Filebrowser](../../infra/filebrowser/) infra service (resume uploads, CMS assets)
 
@@ -54,8 +54,4 @@ Working draft of the site's marketing copy. This is the source of truth when upd
 
 ### Architecture Case Studies
 
-Short, high-impact write-ups proving deep systems knowledge.
-
-**Case Study 1: Designing Idempotent Webhooks for ATS Integration.** The problem: synchronizing candidate data from a legacy ATS (Bullhorn) into a multi-tenant portal without creating duplicate records or race conditions during high-volume bursts. The solution: a Golang ingestion handler with strict idempotency keys, distributed locking via Redis, and a retry mechanism. The impact: 100% data integrity for the Singapore market pilot, eliminating manual data entry.
-
-**Case Study 2: Modernizing an Enterprise Job Portal.** The problem: a legacy architecture that was difficult to scale and slow to onboard new developers across global teams. The solution: a phased rewrite leveraging Golang and React, orchestrated via GCP and Pulumi. The impact: drastically improved system responsiveness, reduced technical debt, and cleaner separation of concerns across 9 regional enterprise tenants.
+**TBD — explicitly not written yet.** An earlier draft of this section carried two case studies (an ATS webhook-idempotency project, an enterprise job-portal modernization) that read as fictional placeholder copy, not confirmed work history. Per [PRODUCT.md](./PRODUCT.md#evidence-on-hand), they must not be treated as real evidence or carried forward into any new work — removed here rather than left as content this file describes as "source of truth." Real case studies go here once real work history is supplied.

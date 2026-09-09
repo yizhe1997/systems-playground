@@ -30,9 +30,9 @@ systems-playground/
 
 ## Tech Stack
 
-* **Platform backend control plane:** Go 1.24 / Fiber
+* **Platform backend control plane:** Go 1.25 / Fiber
 * **Platform frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4
-* **Showcase infrastructure:** Docker, Redis, RabbitMQ, Redpanda (Kafka-compatible)
-* **Deployment:** Self-hosted on a Windows/WSL2 host via Docker Compose, GitHub Actions self-hosted runner, and Watchtower
+* **Showcase infrastructure:** Docker, Redis, SQLite
+* **Deployment:** Self-hosted on any Ubuntu 22.04+ host (bare metal, VM, cloud, or WSL2 — see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)) via Docker Compose, GitHub Actions self-hosted runner, and Watchtower
 
 Individual showcase projects may use their own stack — see each project's `README.md` under `self-host/apps/`.

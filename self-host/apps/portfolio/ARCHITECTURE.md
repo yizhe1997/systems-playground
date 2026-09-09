@@ -7,8 +7,8 @@ A CMS-style personal portfolio: projects, documentation, and resume requests, ba
 ## Components
 
 - **Frontend** (`frontend/`): Next.js 16 App Router UI — landing page, docs pages, admin UI. Acts as the BFF: server-side API routes under `src/app/api/proxy/*` verify the NextAuth session/role before forwarding privileged requests to the Go backend.
-- **Backend** (`backend/`): Go/Fiber control plane exposing `/health`, CMS routes (projects/documents/homepage), resume-request routes, and a Filebrowser proxy for resume/doc storage.
-- **Data store:** Redis — holds CMS content (projects, documents, homepage layout), site config (resume/LinkedIn/GitHub URLs), and pending resume requests.
+- **Backend** (`backend/`): Go/Fiber control plane exposing `/health`, CMS routes (projects/documents/homepage), resume-request routes (including AI legitimacy triage via DeepSeek V4 Flash over OpenRouter — see ADR 006), and a Filebrowser proxy for resume/doc storage.
+- **Data store:** Redis holds CMS content (projects, documents, homepage layout) and site config (resume/LinkedIn/GitHub URLs). SQLite holds resume requests — a real source of truth, not a cache, since 2026-07-30 (see ADR 005).
 - **External dependencies:** shared Filebrowser infra service (`self-host/infra/filebrowser/`) for resume/CMS file storage; NextAuth + Google OAuth for admin login.
 
 ## Boundaries
@@ -23,7 +23,7 @@ A CMS-style personal portfolio: projects, documentation, and resume requests, ba
 ## Operational Notes
 
 - **Runtime requirements:** Docker + Docker Compose only; no local Go/Node toolchain needed.
-- **Observability:** no centralized logging yet (open item, not currently tracked as an ADR).
+- **Observability:** centralized via the shared `self-host/infra/observability/` stack — Loki + Promtail ship every container's logs, Prometheus + cAdvisor + node-exporter scrape metrics, Tempo collects traces (backend exports via OTEL, `backend/tracing.go`), Grafana is the query/dashboard surface.
 
 ## Extraction Plan
 
@@ -35,3 +35,5 @@ Portfolio is the platform's flagship project and is not expected to be extracted
 - [ADR 002 — BFF Proxy Security](./adrs/002-bff-proxy-security.md)
 - [ADR 003 — Secure Resume Storage](./adrs/003-secure-resume-storage.md)
 - [ADR 004 — Retire Live Playground](./adrs/004-retire-live-playground.md)
+- [ADR 005 — SQLite for Resume Requests](./adrs/005-sqlite-for-resume-requests.md)
+- [ADR 006 — OpenRouter/DeepSeek for Triage](./adrs/006-openrouter-deepseek-for-triage.md)

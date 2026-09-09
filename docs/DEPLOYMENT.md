@@ -188,7 +188,15 @@ Only the **infra** layer ships a startup/shutdown script pair in this repo (`sel
 | `systems-playground-infra-backup.service` + `.timer` | oneshot + `OnCalendar=daily` timer | root | Runs `wsl-backup.sh` for the infra layer once a day. `Persistent=true` on the timer catches up a missed run once the host is back, rather than skipping that day entirely |
 | `systems-playground-apps-backup.service` + `.timer` | oneshot + `OnCalendar=daily` timer | root | Same, for the apps layer's own `wsl-backup.sh` |
 
-`cloudflared.service`/`cloudflared-sync.service` are user-level units (`~/.config/systemd/user/`), not system units — both already run as your regular host user, and a user unit lets `cloudflared-sync.sh` restart `cloudflared.service` via `systemctl --user restart` with no `sudo`/polkit rule needed. `bootstrap.sh` also runs `loginctl enable-linger <user>` once, which is what makes user units start at boot even without an interactive login session — without it, they'd only start once you actually log in.
+`cloudflared.service`/`cloudflared-sync.service` are user-level units (`~/.config/systemd/user/`), not system units — both already run as your regular host user. `cloudflared-sync.sh` restarts `cloudflared.service` by signalling its cgroup directly rather than calling `systemctl --user restart` — that command needs a D-Bus session bus, which WSL2 doesn't reliably create for a lingering user session (a real incident, not a hypothetical: it silently broke the self-heal restart path for a stretch of time before being caught and fixed 2026-09-08). `bootstrap.sh` also runs `loginctl enable-linger <user>` once (with a check that the D-Bus session bus actually came up, not just that the linger flag is set), which is what makes user units start at boot even without an interactive login session — without it, they'd only start once you actually log in.
+
+See the diagram below for the full chain from Windows waking the VM to both cloudflared units running under lingering `systemd --user`:
+
+<a href="diagrams/boot-supervision-chain.html">
+  <img src="diagrams/boot-supervision-chain.png" alt="Boot and supervision chain: Windows Task Scheduler wakes WSL2, systemd takes over, infra and apps oneshots run in order, cloudflared and cloudflared-sync start via lingering systemd --user." width="720" />
+</a>
+
+*(Open the linked HTML for the interactive version — pan/zoom, theme toggle, and search.)*
 
 Source: [`self-host/infra/scripts/systemd/`](../self-host/infra/scripts/systemd/) for the infra-layer units (`cloudflared.service`, `cloudflared-sync.service`, `systems-playground-infra.service`, `systems-playground-infra-backup.service`/`.timer`), [`self-host/apps/scripts/systemd/`](../self-host/apps/scripts/systemd/) for the apps-layer ones (`systems-playground-apps.service`, `systems-playground-apps-backup.service`/`.timer`) — mirroring the infra/apps directory split used everywhere else in this repo. `bootstrap.sh` templates `<INFRA_BASE_DIR>`/`<APP_BASE_DIR>` in each before installing — nothing to edit by hand.
 
@@ -211,7 +219,7 @@ The workflows involved, all under `.github/workflows/`:
 | `deploy-infra-n8n.yml` | `build-infra-n8n.yml` completes, or `self-host/infra/n8n/**` changes | Same pattern as `deploy-app-portfolio.yml`, for n8n |
 | `deploy-app-scripts.yml` | `Test Apps Scripts` (`test-apps-scripts.yml`) passes on `main` | Copies `wsl-startup.sh`/`wsl-shutdown.sh`/`wsl-backup.sh` to `$APP_BASE_DIR` — gated on tests passing first, unlike most other rows here |
 | `deploy-infra-scripts.yml` | `Test Infra Scripts` (`test-infra-scripts.yml`) passes on `main` | Same, to `$INFRA_BASE_DIR` — gated on tests passing first, unlike most other rows here |
-| `deploy-infra-uptime-kuma.yml`, `deploy-infra-watchtower.yml`, `deploy-infra-filebrowser.yml`, `deploy-infra-infisical.yml`, `deploy-infra-registry.yml` | Its own `self-host/infra/<service>/**` changes | Copies that service's compose file to the host and restarts it |
+| `deploy-infra-uptime-kuma.yml`, `deploy-infra-watchtower.yml`, `deploy-infra-filebrowser.yml`, `deploy-infra-infisical.yml`, `deploy-infra-registry.yml`, `deploy-infra-observability.yml` | Its own `self-host/infra/<service>/**` changes | Copies that service's compose file to the host and restarts it |
 
 Setup steps (`make bootstrap` downloads and extracts the runner binary for you — steps 1-2 and the `config.sh`/`svc.sh` commands in step 3 still require the GitHub UI and a fresh token, so stay manual):
 

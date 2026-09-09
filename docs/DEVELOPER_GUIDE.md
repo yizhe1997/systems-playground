@@ -3,7 +3,7 @@
 ## 🏗️ Architectural Decisions
 *   **Backend:** Golang (Fiber). Chosen for its concurrency model (goroutines) and small, fast Docker images.
 *   **Frontend:** Next.js (App Router) & Tailwind CSS. Next.js provides a robust React framework for our Landing Page and Admin UI, while Tailwind allows for rapid styling.
-*   **Infrastructure:** Redis backs the CMS (projects, documents, homepage layout), site config, and resume requests.
+*   **Infrastructure:** Redis backs the CMS (projects, documents, homepage layout) and site config; SQLite backs resume requests (a real source of truth, not a cache — see [ADR 005](../self-host/apps/portfolio/adrs/005-sqlite-for-resume-requests.md)).
 *   The portfolio previously also ran a live "playground" of real backend demo containers (Kafka/RabbitMQ/Redis widgets) via a Go control plane with Docker-socket access - retired in favor of a CMS-first design. See [ADR 004](../self-host/apps/portfolio/adrs/004-retire-live-playground.md).
 
 *For detailed architectural logs, see the ADRs under [`self-host/apps/portfolio/adrs/`](../self-host/apps/portfolio/adrs/) (platform-wide decisions, if any, live under [`docs/adrs/`](adrs/)).*
