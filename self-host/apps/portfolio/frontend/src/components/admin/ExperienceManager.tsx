@@ -4,12 +4,12 @@ import { Trash2, Eye, Utensils } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import MonthYearPicker from '@/components/admin/MonthYearPicker';
 import TagList from '@/components/admin/TagList';
 import StatusToggle from '@/components/admin/StatusToggle';
+import SortableList, { SortableRow, DragHandle } from '@/components/admin/SortableList';
 import { formatDateRange, formatDuration } from '@/lib/date-range';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
@@ -37,6 +37,75 @@ const fieldClass =
 
 const selectClass =
   'border-2 border-black rounded-[0.375rem] px-2 h-9 text-sm bg-white text-[var(--ds-charcoal)] focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed';
+
+// One input per bullet point instead of a single textarea split on newlines -
+// that older shape meant every keystroke round-tripped the whole array
+// through a joined string, and there was no way to tell "typed a blank line"
+// from "meant to delete this point." An explicit add/remove row per bullet
+// sidesteps both.
+function BulletList({
+  values,
+  onChange,
+  disabled,
+}: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  disabled?: boolean;
+}) {
+  const update = (i: number, v: string) => {
+    const next = [...values];
+    next[i] = v;
+    onChange(next);
+  };
+  const remove = (i: number) => onChange(values.filter((_, idx) => idx !== i));
+  const add = () => onChange([...values, '']);
+
+  return (
+    <div className="space-y-1.5">
+      {values.length > 0 && (
+        <SortableList items={values} getId={(_, i) => `bullet-${i}`} onReorder={onChange} disabled={disabled}>
+          <div className="space-y-1.5">
+            {values.map((v, i) => (
+              <SortableRow key={`bullet-${i}`} id={`bullet-${i}`} disabled={disabled} className="flex gap-2 items-center">
+                {({ attributes, listeners }) => (
+                  <>
+                    <DragHandle attributes={attributes} listeners={listeners} disabled={disabled} label={`Reorder bullet point ${i + 1}`} />
+                    <Input
+                      value={v}
+                      onChange={(e) => update(i, e.target.value)}
+                      className={fieldClass}
+                      placeholder="Design and build X."
+                      disabled={disabled}
+                      aria-label={`Bullet point ${i + 1}`}
+                    />
+                    <Button
+                      onClick={() => remove(i)}
+                      disabled={disabled}
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Remove bullet point"
+                      className="shrink-0 border-2 border-transparent hover:border-black rounded-[0.5rem] text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+              </SortableRow>
+            ))}
+          </div>
+        </SortableList>
+      )}
+      <Button
+        onClick={add}
+        disabled={disabled}
+        variant="ghost"
+        className="text-xs font-bold underline px-0 hover:bg-transparent"
+      >
+        + Add point
+      </Button>
+    </div>
+  );
+}
 
 const emptyPosition = (): Position => ({
   id: Math.random().toString(36).substring(2, 8),
@@ -156,15 +225,24 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
       return;
     }
     setLoading(true);
+    // Drop blank bullet rows (a leftover "+ Add point" click nobody filled in) before they reach
+    // the live site - the About page renders every entry in this array as its own <li>, unlike
+    // the preview dialog above which filters blanks, so an empty string here would otherwise
+    // show up as a bare bullet with no text.
+    const cleaned = companies.map((co) => ({
+      ...co,
+      positions: co.positions.map((p) => ({ ...p, bullets: p.bullets.map((b) => b.trim()).filter(Boolean) })),
+    }));
     try {
       const res = await fetch('/api/proxy/cms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'experience', payload: companies }),
+        body: JSON.stringify({ type: 'experience', payload: cleaned }),
       });
       if (res.ok) {
         toast({ title: 'Success', description: 'Saved Experience to Redis!' });
-        setBaseline(companies);
+        setCompanies(cleaned);
+        setBaseline(cleaned);
       } else {
         const body = await res.json().catch(() => null);
         toast({ title: 'Error', description: body?.error || 'Failed to save Experience.', variant: 'destructive' });
@@ -236,11 +314,15 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
           No companies yet. Click &quot;Add Company&quot; to begin.
         </div>
       ) : (
-        <div className="divide-y-2 divide-black">
-          {companies.map((co, ci) => (
-            <div key={co.id}>
+        <SortableList items={companies} getId={(co) => co.id} onReorder={setCompanies} disabled={!isAdmin}>
+          <div className="divide-y-2 divide-black">
+            {companies.map((co, ci) => (
+              <SortableRow key={co.id} id={co.id} disabled={!isAdmin} className="bg-white">
+                {({ attributes, listeners }) => (
+                  <>
               <div className="p-6 pb-4 bg-[var(--ds-sage)]/15 space-y-3">
                 <div className="flex gap-3 items-end">
+                  <DragHandle attributes={attributes} listeners={listeners} disabled={!isAdmin} label={`Reorder ${co.company || `company ${ci + 1}`}`} />
                   <div className="flex-1 space-y-1.5">
                     <Label htmlFor={`co-name-${ci}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
                       Company name<RequiredMark />
@@ -343,6 +425,7 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
                           <option>Full-time</option>
                           <option>Part-time</option>
                           <option>Contract</option>
+                          <option>Freelance</option>
                           <option>Internship</option>
                         </select>
                       </div>
@@ -376,15 +459,12 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor={`pos-bullets-${ci}-${pi}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
-                        Bullets (one per line)
+                      <Label className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
+                        Bullet points
                       </Label>
-                      <Textarea
-                        id={`pos-bullets-${ci}-${pi}`}
-                        value={pos.bullets.join('\n')}
-                        onChange={(e) => updatePosition(ci, pi, { bullets: e.target.value.split('\n') })}
-                        className="border-2 border-black rounded-[0.375rem] focus-visible:ring-0 focus-visible:shadow-[2px_2px_0px_0px_#000] transition-shadow min-h-[80px]"
-                        placeholder={'Design and build X.\nMaintain Y.'}
+                      <BulletList
+                        values={pos.bullets}
+                        onChange={(v) => updatePosition(ci, pi, { bullets: v })}
                         disabled={!isAdmin}
                       />
                     </div>
@@ -413,9 +493,12 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
                   + Add position at this company
                 </Button>
               </div>
-            </div>
-          ))}
-        </div>
+                  </>
+                )}
+              </SortableRow>
+            ))}
+          </div>
+        </SortableList>
       )}
 
       <div className="p-6 border-t-2 border-black">

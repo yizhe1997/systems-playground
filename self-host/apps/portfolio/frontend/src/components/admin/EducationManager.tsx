@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import MonthYearPicker from '@/components/admin/MonthYearPicker';
 import TagList from '@/components/admin/TagList';
 import StatusToggle from '@/components/admin/StatusToggle';
+import SortableList, { SortableRow, DragHandle } from '@/components/admin/SortableList';
 import { formatDateRange } from '@/lib/date-range';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
@@ -151,10 +152,14 @@ export default function EducationManager({ isAdmin, onDirtyChange }: { isAdmin: 
           No schools yet. Click &quot;Add School&quot; to begin.
         </div>
       ) : (
-        <div className="divide-y-2 divide-black">
-          {schools.map((s, i) => (
-            <div key={s.id} className="p-6 space-y-4">
+        <SortableList items={schools} getId={(s) => s.id} onReorder={setSchools} disabled={!isAdmin}>
+          <div className="divide-y-2 divide-black">
+            {schools.map((s, i) => (
+              <SortableRow key={s.id} id={s.id} disabled={!isAdmin} className="p-6 space-y-4 bg-white">
+                {({ attributes, listeners }) => (
+                  <>
               <div className="flex gap-3 items-end">
+                <DragHandle attributes={attributes} listeners={listeners} disabled={!isAdmin} label={`Reorder ${s.school || `school ${i + 1}`}`} />
                 <div className="flex-1 space-y-1.5">
                   <Label htmlFor={`school-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
                     School name<RequiredMark />
@@ -252,9 +257,12 @@ export default function EducationManager({ isAdmin, onDirtyChange }: { isAdmin: 
                   disabled={!isAdmin}
                 />
               </div>
-            </div>
-          ))}
-        </div>
+                  </>
+                )}
+              </SortableRow>
+            ))}
+          </div>
+        </SortableList>
       )}
 
       <div className="p-6 border-t-2 border-black">

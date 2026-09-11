@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, ChevronUp, ChevronDown, Eye } from 'lucide-react';
+import { Trash2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import IconPicker from '@/components/admin/IconPicker';
 import TagList from '@/components/admin/TagList';
 import MonthYearPicker from '@/components/admin/MonthYearPicker';
 import StatusToggle from '@/components/admin/StatusToggle';
+import SortableList, { SortableRow, DragHandle } from '@/components/admin/SortableList';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
@@ -107,14 +108,6 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
     setProjects(n);
   };
 
-  const move = (i: number, dir: -1 | 1) => {
-    const j = i + dir;
-    if (j < 0 || j >= projects.length) return;
-    const n = [...projects];
-    [n[i], n[j]] = [n[j], n[i]];
-    setProjects(n);
-  };
-
   return (
     <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_#000] overflow-hidden" style={{ borderRadius: '0.75rem' }}>
       <div className="p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b-2 border-black">
@@ -137,10 +130,14 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
           No projects yet. Click &quot;Add Project&quot; to begin.
         </div>
       ) : (
-        <div className="divide-y-2 divide-black">
-          {projects.map((p, i) => (
-            <div key={p.id} className="p-6 space-y-4">
+        <SortableList items={projects} getId={(p) => p.id} onReorder={setProjects} disabled={!isAdmin}>
+          <div className="divide-y-2 divide-black">
+            {projects.map((p, i) => (
+              <SortableRow key={p.id} id={p.id} disabled={!isAdmin} className="p-6 space-y-4 bg-white">
+                {({ attributes, listeners }) => (
+                  <>
               <div className="flex gap-3 items-end">
+                <DragHandle attributes={attributes} listeners={listeners} disabled={!isAdmin} label={`Reorder ${p.title || `project ${i + 1}`}`} />
                 <div className="flex-1 space-y-1.5">
                   <Label htmlFor={`proj-title-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
                     Project title<RequiredMark />
@@ -157,26 +154,6 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
                 </div>
                 <StatusToggle value={p.status} onChange={(v) => update(i, { status: v })} disabled={!isAdmin} />
                 <div className="flex gap-1 shrink-0">
-                  <Button
-                    onClick={() => move(i, -1)}
-                    disabled={!isAdmin || i === 0}
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Move up"
-                    className="border-2 border-transparent hover:border-black rounded-[0.5rem]"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    onClick={() => move(i, 1)}
-                    disabled={!isAdmin || i === projects.length - 1}
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Move down"
-                    className="border-2 border-transparent hover:border-black rounded-[0.5rem]"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
                   <Button
                     onClick={() => setPreviewIndex(i)}
                     variant="ghost"
@@ -290,9 +267,12 @@ export default function ProjectsManager({ isAdmin, onDirtyChange }: { isAdmin: b
                   Every project appears on <code className="bg-black/5 px-1 rounded">/projects</code> regardless. Featured additionally shows it on the homepage (max 4).
                 </p>
               </div>
-            </div>
-          ))}
-        </div>
+                  </>
+                )}
+              </SortableRow>
+            ))}
+          </div>
+        </SortableList>
       )}
 
       <div className="p-6 border-t-2 border-black">
