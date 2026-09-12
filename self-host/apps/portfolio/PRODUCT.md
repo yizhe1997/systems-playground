@@ -26,7 +26,7 @@ Self-hosted deployment on a limited-RAM host (Docker Compose). Go/Fiber backend 
 
 - CMS: projects/documents (unified type), homepage featured-content curation, admin dashboard.
 - Resume request → admin approval → emailed expiring share link.
-- **No live/runtime AI-powered features anywhere on the site** — cost constraint. A visitor-facing AI-personalization idea (e.g. AI-tailored hero copy per visitor) was explicitly considered and parked as a "someday, if it ever makes sense" idea, not in scope.
+- **No visitor-facing/personalization AI features** — cost constraint. A visitor-facing AI-personalization idea (e.g. AI-tailored hero copy per visitor) was explicitly considered and parked as a "someday, if it ever makes sense" idea, not in scope. This is distinct from the admin-side resume-request AI legitimacy triage, which is real, shipped, and bounded-volume (one billed call per submission, not per visitor) — see [ADR 006](./adrs/006-openrouter-deepseek-for-triage.md).
 - Self-hosted on a limited-RAM host — this constraint is what drove retiring the earlier live-container demo playground (see Positioning).
 - IA restructure is implemented: Home / Projects / Docs / How This Was Built / About are real routes with a shared header+footer. "Resume" and "Contact/Links" from the original v1 tab list were deliberately folded into existing surfaces rather than built as standalone pages — Resume is the gated request-modal flow (triggered from Home's hero, available site-wide via `ResumeRequestModal`'s context), and Contact/Links is the footer's Social column (GitHub/LinkedIn). Both are real and functional; there is no missing page here.
 - Undecided / not yet built: the "How This Was Built" flagship section's actual content — curated build timeline, before/after gallery, annotated prompt/diff snippets, reflective write-up (separate content-drafting task, Phase 4). The structural shell and tool-credit strip are built; the real content is not.
@@ -45,4 +45,4 @@ Name: Chin Yi Zhe, also used as "YZ" — both forms already appear consistently 
 2. Show real work, not staged demos — content anyone can immediately parse, not infrastructure depth only a technical visitor would dig into.
 3. The build process is content — how this site itself was built, including AI/agent assistance, is presented as evidence of skill, not hidden.
 4. No invented evidence — case studies, testimonials, and history must be real and confirmed; never fabricated to fill a section.
-5. No live AI-inference cost — every feature ships as static/pre-built content; no per-visitor AI calls.
+5. No per-visitor AI-inference cost — every visitor-facing feature ships as static/pre-built content; no AI call fires on a per-visitor basis. (The admin-side resume-triage AI call is bounded by submission volume, not visitor traffic — see Capabilities and Constraints above.)

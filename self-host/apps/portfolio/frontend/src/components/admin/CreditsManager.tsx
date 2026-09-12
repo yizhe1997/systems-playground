@@ -1,12 +1,13 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, ChevronUp, ChevronDown, Eye } from 'lucide-react';
+import { Trash2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import StatusToggle from '@/components/admin/StatusToggle';
+import SortableList, { SortableRow, DragHandle } from '@/components/admin/SortableList';
 
 type CreditItem = { text: string; url: string };
 type CreditRow = { id: string; label: string; items: CreditItem[]; status: string };
@@ -142,14 +143,6 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
 
   const removeRow = (i: number) => setRows(rows.filter((_, idx) => idx !== i));
 
-  const moveRow = (i: number, dir: -1 | 1) => {
-    const j = i + dir;
-    if (j < 0 || j >= rows.length) return;
-    const n = [...rows];
-    [n[i], n[j]] = [n[j], n[i]];
-    setRows(n);
-  };
-
   const updateRow = (i: number, patch: Partial<CreditRow>) => {
     const n = [...rows];
     n[i] = { ...n[i], ...patch };
@@ -165,6 +158,12 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
   const removeItem = (i: number, j: number) => {
     const n = [...rows];
     n[i] = { ...n[i], items: n[i].items.filter((_, idx) => idx !== j) };
+    setRows(n);
+  };
+
+  const reorderItems = (i: number, items: CreditItem[]) => {
+    const n = [...rows];
+    n[i] = { ...n[i], items };
     setRows(n);
   };
 
@@ -200,10 +199,14 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
           No rows yet. Click &quot;Add Row&quot; to begin (e.g. &quot;Crafted by&quot;, &quot;Inspired by&quot;).
         </div>
       ) : (
-        <div className="divide-y-2 divide-black">
-          {rows.map((row, i) => (
-            <div key={row.id} className="p-6 space-y-4">
+        <SortableList items={rows} getId={(row) => row.id} onReorder={setRows} disabled={!isAdmin}>
+          <div className="divide-y-2 divide-black">
+            {rows.map((row, i) => (
+              <SortableRow key={row.id} id={row.id} disabled={!isAdmin} className="p-6 space-y-4 bg-white">
+                {({ attributes, listeners }) => (
+                  <>
               <div className="flex gap-3 items-end">
+                <DragHandle attributes={attributes} listeners={listeners} disabled={!isAdmin} label={`Reorder ${row.label || `row ${i + 1}`}`} />
                 <div className="flex-1 space-y-1.5">
                   <Label htmlFor={`cred-label-${i}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
                     Row label<RequiredMark />
@@ -220,26 +223,6 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
                 </div>
                 <StatusToggle value={row.status} onChange={(v) => updateRow(i, { status: v })} disabled={!isAdmin} />
                 <div className="flex gap-1 shrink-0">
-                  <Button
-                    onClick={() => moveRow(i, -1)}
-                    disabled={!isAdmin || i === 0}
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Move up"
-                    className="border-2 border-transparent hover:border-black rounded-[0.5rem]"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    onClick={() => moveRow(i, 1)}
-                    disabled={!isAdmin || i === rows.length - 1}
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Move down"
-                    className="border-2 border-transparent hover:border-black rounded-[0.5rem]"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
                   <Button
                     onClick={() => setPreviewIndex(i)}
                     variant="ghost"
@@ -263,39 +246,50 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
               </div>
 
               {row.items.length > 0 && (
-                <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end pl-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/50">Text<RequiredMark /></span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/50">URL (optional)</span>
-                  <span />
-                  {row.items.map((item, j) => (
-                    <div key={j} className="contents">
-                      <Input
-                        ref={(el) => { fieldRefs.current[`item-${i}-${j}`] = el; }}
-                        value={item.text}
-                        onChange={(e) => updateItem(i, j, { text: e.target.value })}
-                        className={`text-sm ${fieldClass}`}
-                        placeholder="Vercel"
-                        disabled={!isAdmin}
-                      />
-                      <Input
-                        value={item.url}
-                        onChange={(e) => updateItem(i, j, { url: e.target.value })}
-                        className={`text-xs ${fieldClass}`}
-                        placeholder="https://vercel.com"
-                        disabled={!isAdmin}
-                      />
-                      <Button
-                        onClick={() => removeItem(i, j)}
-                        disabled={!isAdmin}
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Remove item"
-                        className="border-2 border-transparent hover:border-black rounded-[0.5rem] text-red-600 shrink-0"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                <div className="pl-4 space-y-1.5">
+                  <div className="flex gap-2 pl-7">
+                    <span className="flex-1 text-[10px] font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/50">Text<RequiredMark /></span>
+                    <span className="flex-1 text-[10px] font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/50">URL (optional)</span>
+                    <span className="w-9" />
+                  </div>
+                  <SortableList items={row.items} getId={(_, j) => `item-${i}-${j}`} onReorder={(items) => reorderItems(i, items)} disabled={!isAdmin}>
+                    <div className="space-y-2">
+                      {row.items.map((item, j) => (
+                        <SortableRow key={`item-${i}-${j}`} id={`item-${i}-${j}`} disabled={!isAdmin} className="flex gap-2 items-center">
+                          {({ attributes: itemAttrs, listeners: itemListeners }) => (
+                            <>
+                              <DragHandle attributes={itemAttrs} listeners={itemListeners} disabled={!isAdmin} label={`Reorder ${item.text || `item ${j + 1}`}`} />
+                              <Input
+                                ref={(el) => { fieldRefs.current[`item-${i}-${j}`] = el; }}
+                                value={item.text}
+                                onChange={(e) => updateItem(i, j, { text: e.target.value })}
+                                className={`flex-1 text-sm ${fieldClass}`}
+                                placeholder="Vercel"
+                                disabled={!isAdmin}
+                              />
+                              <Input
+                                value={item.url}
+                                onChange={(e) => updateItem(i, j, { url: e.target.value })}
+                                className={`flex-1 text-xs ${fieldClass}`}
+                                placeholder="https://vercel.com"
+                                disabled={!isAdmin}
+                              />
+                              <Button
+                                onClick={() => removeItem(i, j)}
+                                disabled={!isAdmin}
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Remove item"
+                                className="border-2 border-transparent hover:border-black rounded-[0.5rem] text-red-600 shrink-0"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </SortableRow>
+                      ))}
                     </div>
-                  ))}
+                  </SortableList>
                 </div>
               )}
 
@@ -307,9 +301,12 @@ export default function CreditsManager({ isAdmin, onDirtyChange }: { isAdmin: bo
               >
                 + Add item
               </Button>
-            </div>
-          ))}
-        </div>
+                  </>
+                )}
+              </SortableRow>
+            ))}
+          </div>
+        </SortableList>
       )}
 
       <div className="p-6 border-t-2 border-black">

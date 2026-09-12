@@ -5,8 +5,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"html/template"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -129,6 +131,9 @@ func TestSaveResumeRequest_UnknownID(t *testing.T) {
 // not get a fresh clock just because it was retried. Retention anonymizes
 // (clears name/email) rather than deleting the row - company, reason,
 // status, and triage/legitimacy fields must survive for aggregate analysis.
+// Also covers the "expired" status: a still-pending row must flip to
+// "expired" (with DecidedAt stamped) when it's swept, while an
+// already-decided row's real status is never overwritten.
 func TestRunRetentionSweep_ClockStartsAtCreation(t *testing.T) {
 	setupTestDB(t)
 
@@ -158,8 +163,11 @@ func TestRunRetentionSweep_ClockStartsAtCreation(t *testing.T) {
 	if oldFailed.Name != "" || oldFailed.Email != "" {
 		t.Errorf("expected old failed request to be anonymized regardless of status, still has PII: %+v", oldFailed)
 	}
-	if oldFailed.Company != "Acme" || oldFailed.Status != "pending" || oldFailed.Reason != "hiring" {
-		t.Errorf("expected non-PII fields (including reason) to survive anonymization, got: %+v", oldFailed)
+	if oldFailed.Company != "Acme" || oldFailed.Status != "expired" || oldFailed.Reason != "hiring" {
+		t.Errorf("expected a still-pending row to flip to 'expired' (with non-PII fields surviving anonymization), got: %+v", oldFailed)
+	}
+	if oldFailed.DecidedAt == 0 {
+		t.Errorf("expected DecidedAt to be stamped when a request expires, got: %+v", oldFailed)
 	}
 
 	oldApproved, _ := findResumeRequest(context.Background(), "old-approved")
@@ -171,6 +179,9 @@ func TestRunRetentionSweep_ClockStartsAtCreation(t *testing.T) {
 	}
 	if oldApproved.Reason != "hiring" {
 		t.Errorf("expected reason to survive anonymization, got: %+v", oldApproved)
+	}
+	if oldApproved.Status != "approved" {
+		t.Errorf("expected a genuine human decision to never be overwritten by the sweep, got status %q", oldApproved.Status)
 	}
 
 	recentReq, _ := findResumeRequest(context.Background(), "recent")
@@ -452,5 +463,54 @@ func TestAdminRedact_NotFound(t *testing.T) {
 	resp, _ := app.Test(req, -1)
 	if resp.StatusCode != 404 {
 		t.Fatalf("expected 404, got %d", resp.StatusCode)
+	}
+}
+
+// TestRenderEmailTemplate_EscapesUntrustedValue is the regression test for
+// the html/template migration: a requester's own submitted name (the one
+// untrusted value that reaches an outbound email) must come out
+// HTML-escaped, not interpreted as markup.
+func TestRenderEmailTemplate_EscapesUntrustedValue(t *testing.T) {
+	out, err := renderEmailTemplate("Hi {{.name}},", map[string]any{"name": "<h1>HACKED</h1>"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "Hi &lt;h1&gt;HACKED&lt;/h1&gt;," {
+		t.Errorf("expected the name to be HTML-escaped, got %q", out)
+	}
+}
+
+// TestRenderEmailTemplate_TrustedHTMLPassesThrough confirms a value
+// deliberately wrapped in template.HTML (server-built markup, e.g. from
+// resumeLinksHTML) still renders as real HTML rather than being escaped -
+// the whole point of using template.HTML for that value specifically.
+func TestRenderEmailTemplate_TrustedHTMLPassesThrough(t *testing.T) {
+	out, err := renderEmailTemplate("{{.link}}", map[string]any{"link": template.HTML("<a href='x'>y</a>")})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out != "<a href='x'>y</a>" {
+		t.Errorf("expected trusted HTML to pass through unescaped, got %q", out)
+	}
+}
+
+// TestRenderEmailTemplate_InvalidSyntaxReturnsError covers what happens when
+// an admin's custom email body has a typo'd {{ }} - it must fail loudly with
+// a parse error rather than silently sending a broken or truncated email.
+func TestRenderEmailTemplate_InvalidSyntaxReturnsError(t *testing.T) {
+	_, err := renderEmailTemplate("Hi {{.name", map[string]any{"name": "Jane"})
+	if err == nil {
+		t.Fatal("expected an error for malformed template syntax, got nil")
+	}
+}
+
+// TestResumeLinksHTML_EscapesName covers the one manually-built HTML
+// fragment that bypasses renderEmailTemplate's own auto-escaping (it gets
+// wrapped in template.HTML at the call site) - it has to escape its own
+// interpolated value instead.
+func TestResumeLinksHTML_EscapesName(t *testing.T) {
+	out := resumeLinksHTML([]ResumeLink{{Name: "<script>alert(1)</script>", URL: "https://example.com/x"}})
+	if strings.Contains(out, "<script>") {
+		t.Errorf("expected the link name to be HTML-escaped, got %q", out)
 	}
 }

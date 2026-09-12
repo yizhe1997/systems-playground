@@ -1,15 +1,15 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, Eye } from 'lucide-react';
+import { Trash2, Eye, Utensils } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import MonthYearPicker from '@/components/admin/MonthYearPicker';
 import TagList from '@/components/admin/TagList';
 import StatusToggle from '@/components/admin/StatusToggle';
+import SortableList, { SortableRow, DragHandle } from '@/components/admin/SortableList';
 import { formatDateRange, formatDuration } from '@/lib/date-range';
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
@@ -38,46 +38,121 @@ const fieldClass =
 const selectClass =
   'border-2 border-black rounded-[0.375rem] px-2 h-9 text-sm bg-white text-[var(--ds-charcoal)] focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] transition-shadow disabled:opacity-50 disabled:cursor-not-allowed';
 
+// One input per bullet point instead of a single textarea split on newlines -
+// that older shape meant every keystroke round-tripped the whole array
+// through a joined string, and there was no way to tell "typed a blank line"
+// from "meant to delete this point." An explicit add/remove row per bullet
+// sidesteps both.
+function BulletList({
+  values,
+  onChange,
+  disabled,
+}: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  disabled?: boolean;
+}) {
+  const update = (i: number, v: string) => {
+    const next = [...values];
+    next[i] = v;
+    onChange(next);
+  };
+  const remove = (i: number) => onChange(values.filter((_, idx) => idx !== i));
+  const add = () => onChange([...values, '']);
+
+  return (
+    <div className="space-y-1.5">
+      {values.length > 0 && (
+        <SortableList items={values} getId={(_, i) => `bullet-${i}`} onReorder={onChange} disabled={disabled}>
+          <div className="space-y-1.5">
+            {values.map((v, i) => (
+              <SortableRow key={`bullet-${i}`} id={`bullet-${i}`} disabled={disabled} className="flex gap-2 items-center">
+                {({ attributes, listeners }) => (
+                  <>
+                    <DragHandle attributes={attributes} listeners={listeners} disabled={disabled} label={`Reorder bullet point ${i + 1}`} />
+                    <Input
+                      value={v}
+                      onChange={(e) => update(i, e.target.value)}
+                      className={fieldClass}
+                      placeholder="Design and build X."
+                      disabled={disabled}
+                      aria-label={`Bullet point ${i + 1}`}
+                    />
+                    <Button
+                      onClick={() => remove(i)}
+                      disabled={disabled}
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Remove bullet point"
+                      className="shrink-0 border-2 border-transparent hover:border-black rounded-[0.5rem] text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+              </SortableRow>
+            ))}
+          </div>
+        </SortableList>
+      )}
+      <Button
+        onClick={add}
+        disabled={disabled}
+        variant="ghost"
+        className="text-xs font-bold underline px-0 hover:bg-transparent"
+      >
+        + Add point
+      </Button>
+    </div>
+  );
+}
+
 const emptyPosition = (): Position => ({
   id: Math.random().toString(36).substring(2, 8),
   title: '', employment_type: 'Full-time', start_date: '', end_date: '', bullets: [], tech_tags: [],
 });
 
+// Matches THE MAIN COURSE section's own per-company styling in AboutPageBody.tsx (charcoal fill,
+// yellow text, a small Utensils icon per position, pill tech tags) - a hand-copied mockup drifts
+// the moment either side changes, so keep this in sync with that file whenever its styling changes.
 function ExperienceCardPreview({ company }: { company: Company }) {
   return (
-    <div className="border-2 border-black shadow-[4px_4px_0px_0px_#000] bg-white p-6 sm:p-8" style={{ borderRadius: '0.75rem' }}>
+    <div className="border-[4px] border-black rounded-[18px] p-6 sm:p-8" style={{ backgroundColor: 'var(--ds-charcoal)', color: 'var(--ds-yellow)' }}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-5">
-        <h3 className="text-xl font-extrabold" style={{ fontFamily: 'var(--ds-font-display)' }}>
+        <h3 style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: 20 }}>
           {company.company || 'Untitled company'}
         </h3>
         {company.location && (
-          <span className="text-sm text-[var(--ds-charcoal)]/70">
+          <span className="text-[13px] font-bold" style={{ opacity: 0.6 }}>
             {company.location}
             {company.location_type && ` (${company.location_type})`}
           </span>
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {company.positions.map((pos, pi) => (
-          <div key={pos.id} className={pi > 0 ? 'pt-6 border-t-2 border-black/10' : ''}>
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-1">
-              <h4 className="font-bold">
-                {pos.title || 'Untitled position'}
-                {pos.employment_type && (
-                  <span className="font-medium text-[var(--ds-charcoal)]/60"> &middot; {pos.employment_type}</span>
-                )}
-              </h4>
-              <span className="text-xs font-mono text-[var(--ds-charcoal)]/60 whitespace-nowrap">
-                {formatDateRange(pos.start_date, pos.end_date)}
-                {formatDuration(pos.start_date, pos.end_date) && (
-                  <> &middot; {formatDuration(pos.start_date, pos.end_date)}</>
-                )}
-              </span>
+          <div key={pos.id} className={pi > 0 ? 'pt-4' : ''} style={pi > 0 ? { borderTop: '2px dashed rgba(255,225,124,0.35)' } : undefined}>
+            <div className="flex items-baseline gap-2.5 flex-wrap">
+              <Utensils size={15} color="var(--ds-yellow)" strokeWidth={2} style={{ opacity: 0.7, flexShrink: 0 }} aria-hidden="true" />
+              <div className="flex-1 flex items-baseline justify-between gap-4 flex-wrap">
+                <span className="font-extrabold text-base">
+                  {pos.title || 'Untitled position'}
+                  {pos.employment_type && (
+                    <span className="font-medium" style={{ opacity: 0.6 }}> &middot; {pos.employment_type}</span>
+                  )}
+                </span>
+                <span className="text-xs font-bold whitespace-nowrap" style={{ opacity: 0.6 }}>
+                  {formatDateRange(pos.start_date, pos.end_date)}
+                  {formatDuration(pos.start_date, pos.end_date) && (
+                    <> &middot; {formatDuration(pos.start_date, pos.end_date)}</>
+                  )}
+                </span>
+              </div>
             </div>
 
             {pos.bullets.filter(Boolean).length > 0 && (
-              <ul className="mt-3 space-y-1.5 text-sm text-[var(--ds-charcoal)]/80 list-disc list-inside">
+              <ul className="mt-2 pl-[33px] text-sm leading-relaxed list-disc" style={{ opacity: 0.8 }}>
                 {pos.bullets.filter(Boolean).map((b, i) => (
                   <li key={i}>{b}</li>
                 ))}
@@ -85,12 +160,11 @@ function ExperienceCardPreview({ company }: { company: Company }) {
             )}
 
             {pos.tech_tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 mt-2.5 pl-[33px]">
                 {pos.tech_tags.map((tag) => (
                   <span
                     key={tag}
-                    className="text-xs font-bold px-2.5 py-1 border-2 border-black"
-                    style={{ borderRadius: '0.375rem' }}
+                    className="border-[1.5px] border-[rgba(255,225,124,0.6)] rounded-full px-2.5 py-0.5 font-bold text-[11px] tracking-wide"
                   >
                     {tag}
                   </span>
@@ -151,15 +225,24 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
       return;
     }
     setLoading(true);
+    // Drop blank bullet rows (a leftover "+ Add point" click nobody filled in) before they reach
+    // the live site - the About page renders every entry in this array as its own <li>, unlike
+    // the preview dialog above which filters blanks, so an empty string here would otherwise
+    // show up as a bare bullet with no text.
+    const cleaned = companies.map((co) => ({
+      ...co,
+      positions: co.positions.map((p) => ({ ...p, bullets: p.bullets.map((b) => b.trim()).filter(Boolean) })),
+    }));
     try {
       const res = await fetch('/api/proxy/cms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'experience', payload: companies }),
+        body: JSON.stringify({ type: 'experience', payload: cleaned }),
       });
       if (res.ok) {
         toast({ title: 'Success', description: 'Saved Experience to Redis!' });
-        setBaseline(companies);
+        setCompanies(cleaned);
+        setBaseline(cleaned);
       } else {
         const body = await res.json().catch(() => null);
         toast({ title: 'Error', description: body?.error || 'Failed to save Experience.', variant: 'destructive' });
@@ -231,11 +314,15 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
           No companies yet. Click &quot;Add Company&quot; to begin.
         </div>
       ) : (
-        <div className="divide-y-2 divide-black">
-          {companies.map((co, ci) => (
-            <div key={co.id}>
+        <SortableList items={companies} getId={(co) => co.id} onReorder={setCompanies} disabled={!isAdmin}>
+          <div className="divide-y-2 divide-black">
+            {companies.map((co, ci) => (
+              <SortableRow key={co.id} id={co.id} disabled={!isAdmin} className="bg-white">
+                {({ attributes, listeners }) => (
+                  <>
               <div className="p-6 pb-4 bg-[var(--ds-sage)]/15 space-y-3">
                 <div className="flex gap-3 items-end">
+                  <DragHandle attributes={attributes} listeners={listeners} disabled={!isAdmin} label={`Reorder ${co.company || `company ${ci + 1}`}`} />
                   <div className="flex-1 space-y-1.5">
                     <Label htmlFor={`co-name-${ci}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
                       Company name<RequiredMark />
@@ -338,6 +425,7 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
                           <option>Full-time</option>
                           <option>Part-time</option>
                           <option>Contract</option>
+                          <option>Freelance</option>
                           <option>Internship</option>
                         </select>
                       </div>
@@ -371,15 +459,12 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor={`pos-bullets-${ci}-${pi}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
-                        Bullets (one per line)
+                      <Label className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
+                        Bullet points
                       </Label>
-                      <Textarea
-                        id={`pos-bullets-${ci}-${pi}`}
-                        value={pos.bullets.join('\n')}
-                        onChange={(e) => updatePosition(ci, pi, { bullets: e.target.value.split('\n') })}
-                        className="border-2 border-black rounded-[0.375rem] focus-visible:ring-0 focus-visible:shadow-[2px_2px_0px_0px_#000] transition-shadow min-h-[80px]"
-                        placeholder={'Design and build X.\nMaintain Y.'}
+                      <BulletList
+                        values={pos.bullets}
+                        onChange={(v) => updatePosition(ci, pi, { bullets: v })}
                         disabled={!isAdmin}
                       />
                     </div>
@@ -408,9 +493,12 @@ export default function ExperienceManager({ isAdmin, onDirtyChange }: { isAdmin:
                   + Add position at this company
                 </Button>
               </div>
-            </div>
-          ))}
-        </div>
+                  </>
+                )}
+              </SortableRow>
+            ))}
+          </div>
+        </SortableList>
       )}
 
       <div className="p-6 border-t-2 border-black">

@@ -114,6 +114,13 @@ const statusStyle: Record<string, { bg: string; label: string }> = {
   approved: { bg: 'var(--ds-sage)', label: 'Approved' },
   'approving...': { bg: 'var(--ds-sage)', label: 'Approving…' },
   rejected: { bg: '#f5a3a3', label: 'Rejected' },
+  // Still-pending requests past the 30-day retention cutoff - PII is
+  // already anonymized and the approve action is blocked (no email left to
+  // send to), so this reads as "timed out", not "someone said no". Light
+  // grey rather than a dark fill - StatusBadge doesn't set a custom text
+  // color the way TriageBadge/legitimacyStyle do, so a dark bg here would
+  // pair with the badge's default dark text and be unreadable.
+  expired: { bg: '#d4d4d4', label: 'Expired' },
 };
 
 const legitimacyStyle: Record<string, { bg: string; label: string; text: string }> = {
@@ -257,7 +264,7 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
 
   const openApproveDialog = (id: string, name: string) => {
     setEmailSubject('Chin Yi Zhe - Requested Resume');
-    setEmailBody(`Hi {{name}},\n\nThank you for your interest! As requested, here is the link to download my resume.\n\n{{link}}\n\nBest regards,\nChin Yi Zhe`);
+    setEmailBody(`Hi {{.name}},\n\nThank you for your interest! As requested, here is the link to download my resume.\n\n{{.link}}\n\nBest regards,\nChin Yi Zhe`);
     // Pre-check whatever's marked "Active" in Resume / CV Files - the fast
     // path stays a single click, but nothing stops picking a different one
     // (or several) before sending.
@@ -420,6 +427,7 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="expired">Expired</SelectItem>
           </SelectContent>
         </Select>
         <Select value={legitimacyFilter} onValueChange={(v) => v && setLegitimacyFilter(v)}>
@@ -764,7 +772,7 @@ export default function ResumeRequests({ isAdmin, activeResumePath }: { isAdmin:
             <DialogTitle className="text-xl text-black font-extrabold">Approve Request</DialogTitle>
             <DialogDescription className="text-[var(--ds-charcoal)]/70">
               Customize the email that will be sent to <strong className="text-black">{approveDialog.name}</strong>.
-              Use <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{name}}"}</code> and <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{link}}"}</code> as template variables - <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{link}}"}</code> expands to a list if more than one resume is checked below.
+              Use <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{.name}}"}</code> and <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{.link}}"}</code> as template variables - <code className="bg-black/5 px-1 rounded text-[var(--ds-charcoal)]">{"{{.link}}"}</code> expands to a list if more than one resume is checked below.
             </DialogDescription>
           </DialogHeader>
 

@@ -316,6 +316,29 @@ else
     ok "Lingering already enabled for $USER."
   fi
 
+  # 10c-i. Defensive check: `Linger=yes` above only means a user manager gets *started* at boot -
+  # it doesn't guarantee that manager's D-Bus *session* bus actually came up. WSL2 in particular
+  # doesn't reliably run full PAM/logind session registration for a lingering session, and when
+  # that session bus is missing, `systemctl --user` fails outright ("Failed to connect to bus")
+  # even though `loginctl show-user` still reports Linger=yes and the unit as active - confirmed
+  # live 2026-09-08 (see the Obsidian board), where it silently broke cloudflared-sync.sh's own
+  # restart-cloudflared call for an unknown stretch of time. Every `systemctl --user` call below
+  # depends on this, so check it here rather than let each one fail separately. A plain re-run of
+  # `enable-linger` does NOT fix an already-enabled-but-broken session (the flag's already set) -
+  # only a hard restart of the user manager forces it to redo session init.
+  if [ ! -S "/run/user/$(id -u)/bus" ]; then
+    log "D-Bus session bus not found for $USER - restarting the user systemd manager to fix it (this will briefly bounce any of this user's already-running services, e.g. cloudflared)..."
+    sudo systemctl restart "user@$(id -u).service"
+    sleep 2
+    if [ -S "/run/user/$(id -u)/bus" ]; then
+      ok "D-Bus session bus is now active."
+    else
+      warn "D-Bus session bus still missing after restarting user@$(id -u).service - systemctl --user commands below may fail. Investigate manually rather than re-running blind."
+    fi
+  else
+    ok "D-Bus session bus already active for $USER."
+  fi
+
   if [ ! -f "$HOME/.cloudflared/config.yml" ]; then
     log "Tunnel not configured yet (no ~/.cloudflared/config.yml) — skipping cloudflared.service for now. Re-run this script after completing steps 6-8 above."
   else

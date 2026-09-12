@@ -711,14 +711,15 @@ export default function AdminDashboard() {
             loadingAboutPreview ? (
               <p className="text-sm text-[var(--ds-charcoal)]/60">Loading Stack, Experience, and Education&hellip;</p>
             ) : (
-              <div className="border-2 border-black bg-white p-8" style={{ borderRadius: '0.5rem' }}>
-                <AboutPageBody
-                  bio={bio}
-                  stack={aboutPreviewData?.stack || []}
-                  experience={aboutPreviewData?.experience || []}
-                  education={aboutPreviewData?.education || []}
-                />
-              </div>
+              // No extra bordered wrapper here - AboutPageBody now renders its own full "menu
+              // card" chrome (border, awning, background), so wrapping it in another bordered box
+              // doubled up the border instead of framing a plain content block.
+              <AboutPageBody
+                bio={bio}
+                stack={aboutPreviewData?.stack || []}
+                experience={aboutPreviewData?.experience || []}
+                education={aboutPreviewData?.education || []}
+              />
             )
           )}
         </DialogContent>

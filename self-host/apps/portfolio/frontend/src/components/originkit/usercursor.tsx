@@ -123,8 +123,11 @@ export default function UserCursor(props: Props) {
     const [labelFlipped, setLabelFlipped] = useState(false)
 
     // Fixed spring configs (good defaults). Arrow is snappier; label trails.
+    // Lower mass + higher stiffness than before - same critically-damped feel
+    // (no overshoot/wobble), just less inertia, so the arrow reads as tracking
+    // the real pointer more tightly instead of dragging behind it.
     const arrowSpring = useMemo<SpringOptions>(
-        () => ({ stiffness: 380, damping: 32, mass: 0.6 }),
+        () => ({ stiffness: 550, damping: 34, mass: 0.35 }),
         []
     )
     const labelSpringCfg = useMemo<SpringOptions>(
@@ -260,10 +263,13 @@ export default function UserCursor(props: Props) {
             const clickableEl = target?.closest?.(
                 'a[href], button:not(:disabled), [role="button"], summary, [data-cursor-label]'
             ) as HTMLElement | null
+            // An explicit data-cursor-label="" is a deliberate "no label here" boundary - e.g. a
+            // large draggable region that has its own label, wrapping a scrollable content area
+            // that shouldn't inherit it. Distinct from no attribute at all, which still falls
+            // through to the generic clickLabel via the other selector branches (a/button/etc).
+            const explicitLabel = clickableEl?.getAttribute("data-cursor-label")
             setHoverLabel(
-                clickableEl
-                    ? clickableEl.getAttribute("data-cursor-label") || clickLabel
-                    : null
+                !clickableEl ? null : explicitLabel === "" ? null : explicitLabel || clickLabel
             )
 
             // Edge flip: only meaningful in fullScreen mode, where `x` is

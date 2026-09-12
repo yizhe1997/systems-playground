@@ -10,6 +10,7 @@ import SimpleIcon from '@/components/SimpleIcon';
 import { lookupIcon } from '@/lib/simple-icons';
 import IconPicker from '@/components/admin/IconPicker';
 import StatusToggle from '@/components/admin/StatusToggle';
+import SortableList, { SortableRow, DragHandle } from '@/components/admin/SortableList';
 
 type StackSkill = { name: string; icon: string };
 type StackCategory = { id: string; name: string; skills: StackSkill[]; status: string };
@@ -19,18 +20,24 @@ const fieldClass =
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
+// Matches the SIDES section's own per-category styling in AboutPageBody.tsx (pill chips, sage
+// fill, uppercase label) - a hand-copied mockup drifts the moment either side changes, so keep
+// this in sync with that file whenever its chip/label styling changes.
 function StackCardPreview({ category }: { category: StackCategory }) {
   return (
-    <div className="border-2 border-black shadow-[4px_4px_0px_0px_#000] bg-white p-6 max-w-sm" style={{ borderRadius: '0.75rem' }}>
-      <h3 className="text-xs font-bold uppercase tracking-wider mb-4 text-[var(--ds-charcoal)]/70">
+    <div className="border-[4px] border-black rounded-[18px] bg-white p-6 max-w-sm">
+      <div
+        className="font-extrabold text-[13px] tracking-wide uppercase mb-2.5"
+        style={{ fontFamily: 'var(--ds-font-display)', opacity: 0.55 }}
+      >
         {category.name || 'Untitled category'}
-      </h3>
+      </div>
       <div className="flex flex-wrap gap-2">
         {category.skills.map((skill, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 border-2 border-black"
-            style={{ borderRadius: '0.375rem' }}
+            className="inline-flex items-center gap-1.5 border-[2.5px] border-black rounded-full px-3.5 py-1.5 font-extrabold text-[13px]"
+            style={{ backgroundColor: 'var(--ds-sage)' }}
           >
             <SimpleIcon slug={skill.icon} className="w-3.5 h-3.5" />
             {skill.name || 'Untitled skill'}
@@ -143,6 +150,12 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
     setCategories(next);
   };
 
+  const reorderSkills = (ci: number, skills: StackSkill[]) => {
+    const next = [...categories];
+    next[ci] = { ...next[ci], skills };
+    setCategories(next);
+  };
+
   return (
     <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_#000] overflow-hidden" style={{ borderRadius: '0.75rem' }}>
       <div className="p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b-2 border-black">
@@ -167,10 +180,14 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
           No categories yet. Click &quot;Add Category&quot; to begin (e.g. &quot;Language&quot;, &quot;Frontend&quot;, &quot;Backend &amp; Database&quot;).
         </div>
       ) : (
-        <div className="divide-y-2 divide-black">
-          {categories.map((cat, ci) => (
-            <div key={cat.id} className="p-6 space-y-4">
+        <SortableList items={categories} getId={(cat) => cat.id} onReorder={setCategories} disabled={!isAdmin}>
+          <div className="divide-y-2 divide-black">
+            {categories.map((cat, ci) => (
+              <SortableRow key={cat.id} id={cat.id} disabled={!isAdmin} className="p-6 space-y-4 bg-white">
+                {({ attributes, listeners }) => (
+                  <>
               <div className="flex gap-3 items-end">
+                <DragHandle attributes={attributes} listeners={listeners} disabled={!isAdmin} label={`Reorder ${cat.name || `category ${ci + 1}`}`} />
                 <div className="flex-1 space-y-1.5">
                   <Label htmlFor={`cat-name-${ci}`} className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">
                     Category name<RequiredMark />
@@ -210,55 +227,68 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
               </div>
 
               {cat.skills.length > 0 && (
-                <div className="grid grid-cols-[2rem_1fr_10rem_2.5rem] gap-2 px-1">
+                <div className="grid grid-cols-[1.75rem_2rem_1fr_10rem_2.5rem] gap-2 px-1">
+                  <span />
                   <span />
                   <Label className="text-[10px] font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/50">Skill name<RequiredMark /></Label>
                   <Label className="text-[10px] font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/50">Icon (optional)</Label>
                   <span />
                 </div>
               )}
-              <div className="space-y-2">
-                {cat.skills.map((skill, si) => {
-                  const resolved = lookupIcon(skill.icon);
-                  return (
-                    <div key={si} className="grid grid-cols-[2rem_1fr_10rem_2.5rem] gap-2 items-center">
-                      <div className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white" style={{ borderRadius: '0.375rem' }}>
-                        {skill.icon && !resolved ? (
-                          <span className="text-[9px] text-red-600 font-bold">?</span>
-                        ) : (
-                          <SimpleIcon slug={skill.icon} className="w-4 h-4" />
-                        )}
-                      </div>
-                      <Input
-                        ref={(el) => { fieldRefs.current[`skill-${ci}-${si}`] = el; }}
-                        value={skill.name}
-                        onChange={(e) => updateSkill(ci, si, { name: e.target.value })}
-                        className={fieldClass}
-                        placeholder="TypeScript"
+              <SortableList items={cat.skills} getId={(_, si) => `skill-${ci}-${si}`} onReorder={(skills) => reorderSkills(ci, skills)} disabled={!isAdmin}>
+                <div className="space-y-2">
+                  {cat.skills.map((skill, si) => {
+                    const resolved = lookupIcon(skill.icon);
+                    return (
+                      <SortableRow
+                        key={`skill-${ci}-${si}`}
+                        id={`skill-${ci}-${si}`}
                         disabled={!isAdmin}
-                        aria-label="Skill name"
-                      />
-                      <IconPicker
-                        value={skill.icon}
-                        onChange={(v) => updateSkill(ci, si, { icon: v })}
-                        className={`font-mono text-xs ${fieldClass}`}
-                        placeholder="Search a brand..."
-                        disabled={!isAdmin}
-                      />
-                      <Button
-                        onClick={() => removeSkill(ci, si)}
-                        disabled={!isAdmin}
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Remove skill"
-                        className="shrink-0 border-2 border-transparent hover:border-black rounded-[0.5rem] text-red-600"
+                        className="grid grid-cols-[1.75rem_2rem_1fr_10rem_2.5rem] gap-2 items-center"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
+                        {({ attributes: skillAttrs, listeners: skillListeners }) => (
+                          <>
+                            <DragHandle attributes={skillAttrs} listeners={skillListeners} disabled={!isAdmin} label={`Reorder ${skill.name || `skill ${si + 1}`}`} />
+                            <div className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white" style={{ borderRadius: '0.375rem' }}>
+                              {skill.icon && !resolved ? (
+                                <span className="text-[9px] text-red-600 font-bold">?</span>
+                              ) : (
+                                <SimpleIcon slug={skill.icon} className="w-4 h-4" />
+                              )}
+                            </div>
+                            <Input
+                              ref={(el) => { fieldRefs.current[`skill-${ci}-${si}`] = el; }}
+                              value={skill.name}
+                              onChange={(e) => updateSkill(ci, si, { name: e.target.value })}
+                              className={fieldClass}
+                              placeholder="TypeScript"
+                              disabled={!isAdmin}
+                              aria-label="Skill name"
+                            />
+                            <IconPicker
+                              value={skill.icon}
+                              onChange={(v) => updateSkill(ci, si, { icon: v })}
+                              className={`font-mono text-xs ${fieldClass}`}
+                              placeholder="Search a brand..."
+                              disabled={!isAdmin}
+                            />
+                            <Button
+                              onClick={() => removeSkill(ci, si)}
+                              disabled={!isAdmin}
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Remove skill"
+                              className="shrink-0 border-2 border-transparent hover:border-black rounded-[0.5rem] text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </SortableRow>
+                    );
+                  })}
+                </div>
+              </SortableList>
 
               <Button
                 onClick={() => addSkill(ci)}
@@ -268,9 +298,12 @@ export default function StackManager({ isAdmin, onDirtyChange }: { isAdmin: bool
               >
                 + Add skill
               </Button>
-            </div>
-          ))}
-        </div>
+                  </>
+                )}
+              </SortableRow>
+            ))}
+          </div>
+        </SortableList>
       )}
 
       <div className="p-6 border-t-2 border-black">

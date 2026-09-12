@@ -3,12 +3,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { FileDown, ChevronLeft, ChevronRight, Lock, RotateCw, ArrowUp } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { FileDown, ChevronLeft, ChevronRight, Lock, RotateCw, ArrowUp, Sparkles, CircleCheck } from 'lucide-react';
 import ReactiveGrid from '@/components/originkit/reactivegrid';
 import CrystalGlow from '@/components/originkit/crystal-glow';
 import GravityGallery from '@/components/originkit/gravitygallery';
 import FallingText from '@/components/originkit/falling-text';
 import LiveChat from '@/components/originkit/live-chat';
+import { useMcpConnect } from '@/components/McpConnectModal';
+import { HERO_LEFT_INITIAL, HERO_LEFT_ANIMATE, HERO_LEFT_TRANSITION, HERO_RIGHT_INITIAL, HERO_RIGHT_ANIMATE, HERO_RIGHT_TRANSITION } from '@/lib/motion';
 
 const isConfigured = (url: string) => !!url && url !== '#';
 
@@ -392,25 +395,35 @@ function JobTitleCycler({ titles }: { titles: string[] }) {
 // changes, so this is the actual hero markup, parameterized on the fields
 // Settings can edit.
 const DEFAULT_JOB_TITLES = ['BACKEND / PLATFORM ENGINEER'];
+// Same fallback role as DEFAULT_JOB_TITLES above, for the description paragraph - both fields
+// come from an async /api/config fetch that starts out empty, and this component's own entrance
+// animation runs on mount regardless of whether that fetch has resolved yet. Without a non-empty
+// fallback, the paragraph renders at ~0 height until real data arrives, then snaps open once it
+// does - a layout shift that pushes the buttons/trust row (and everything below the hero) down
+// right around when the entrance animation is also settling, reading as part of the choreography
+// itself. Matches the copy actually configured today, so in the common case there's no visible
+// swap at all once the real value loads - just a graceful placeholder if the fetch is slow.
+const DEFAULT_HERO_DESCRIPTION = "There's more to this than a job title — the rest is one click away.";
 
 type CreditItem = { text: string; url: string };
 type CreditRow = { id: string; label: string; items: CreditItem[] };
 
 export default function HeroSection({
-  description,
+  description = DEFAULT_HERO_DESCRIPTION,
   jobTitles = DEFAULT_JOB_TITLES,
   credits = [],
   githubUrl,
   linkedinUrl,
   onRequestResume,
 }: {
-  description: string;
+  description?: string;
   jobTitles?: string[];
   credits?: CreditRow[];
   githubUrl: string;
   linkedinUrl: string;
   onRequestResume: () => void;
 }) {
+  const { open: openMcpConnect } = useMcpConnect();
   const [pageIndex, setPageIndex] = useState(0);
   // Mirrors pageIndex for reads from setInterval callbacks (auto-advance
   // below) - safer than reading via a setState updater function purely as
@@ -835,24 +848,37 @@ export default function HeroSection({
         style={{ position: 'absolute', inset: 0 }}
       />
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-20 sm:py-28 grid lg:grid-cols-2 lg:grid-rows-[auto_1fr_auto] gap-x-14 items-center lg:items-stretch">
+        {/* Left column - badge, heading+description, buttons+trust row below - are three
+            separate grid items (see their own row-start assignments), not one wrapper div, so
+            each keeps its own row placement. All three slide in from the left together as one
+            visual group on load (not scroll-triggered - this is the hero, always above the fold),
+            then the browser mockup follows in from the right (HERO_RIGHT_TRANSITION's delay). */}
         {jobTitles.some((t) => t.trim()) && (
-          <span
+          <motion.span
             className="lg:row-start-1 lg:col-start-1 inline-flex items-center gap-2 justify-self-center lg:justify-self-start px-4 py-1.5 bg-white border-2 border-black shadow-[3px_3px_0px_0px_#000] text-xs font-bold mb-6"
             style={{ borderRadius: '0.75rem' }}
+            initial={HERO_LEFT_INITIAL}
+            animate={HERO_LEFT_ANIMATE}
+            transition={HERO_LEFT_TRANSITION}
           >
             <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
               <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
             </span>
             <JobTitleCycler titles={jobTitles.filter((t) => t.trim())} />
-          </span>
+          </motion.span>
         )}
 
         {/* Heading + description share this row with the mockup - the
             mockup's height (see lg:h-full below) stretches to match
             whatever this block naturally renders at, so the badge and
             button above/below stay outside the height it's matched to. */}
-        <div className="lg:row-start-2 lg:col-start-1 text-center lg:text-left">
+        <motion.div
+          className="lg:row-start-2 lg:col-start-1 text-center lg:text-left"
+          initial={HERO_LEFT_INITIAL}
+          animate={HERO_LEFT_ANIMATE}
+          transition={HERO_LEFT_TRANSITION}
+        >
           <h1
             className="text-black mb-6"
             style={{
@@ -942,30 +968,72 @@ export default function HeroSection({
               {description}
             </ReactMarkdown>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="lg:row-start-3 lg:col-start-1 flex flex-wrap gap-4 justify-center lg:justify-start">
-          <button
-            onClick={onRequestResume}
-            data-cursor-label="Request"
-            className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
-            style={{ borderRadius: '0.75rem' }}
-          >
-            <FileDown className="w-4 h-4" aria-hidden="true" />
-            Request resume
-          </button>
-        </div>
+        <motion.div
+          className="lg:row-start-3 lg:col-start-1 flex flex-col gap-5 items-center lg:items-start"
+          initial={HERO_LEFT_INITIAL}
+          animate={HERO_LEFT_ANIMATE}
+          transition={HERO_LEFT_TRANSITION}
+        >
+          <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+            <button
+              onClick={onRequestResume}
+              data-cursor-label="Request"
+              className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-black font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+              style={{ borderRadius: '0.75rem' }}
+            >
+              <FileDown className="w-4 h-4" aria-hidden="true" />
+              Request resume
+            </button>
+
+            {/* Same shadow-drop/translate hover mechanics as Request resume (not the radial-reveal
+                button used elsewhere for this same action) - paired CTAs in one row read as a set
+                when they share the exact same press effect, just inverted fill/text. */}
+            <button
+              onClick={() => openMcpConnect()}
+              data-cursor-label="Open"
+              className="inline-flex items-center gap-2 px-6 py-3.5 bg-black text-white font-bold border-2 border-black shadow-[4px_8px_0px_0px_#000] hover:shadow-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:translate-x-1 hover:translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+              style={{ borderRadius: '0.75rem' }}
+            >
+              <Sparkles className="w-4 h-4" aria-hidden="true" />
+              Talk to this portfolio
+            </button>
+          </div>
+
+          {/* Trust-signal row, same pattern as the badge/checklist under a SaaS hero's CTAs -
+              "free" and "no credit card" are both true here (nothing on this site costs money or
+              asks for payment info), just repurposed for a portfolio instead of a product. A real
+              dot character reads as barely-there at 12px, so the separator is a drawn circle
+              instead of relying on font rendering of "&middot;" at this size. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-[var(--ds-charcoal)]/80">
+            <span className="inline-flex items-center gap-1.5">
+              <CircleCheck className="w-3.5 h-3.5" aria-hidden="true" />
+              Free of charge
+            </span>
+            <span className="w-1 h-1 rounded-full bg-current shrink-0" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1.5">
+              <CircleCheck className="w-3.5 h-3.5" aria-hidden="true" />
+              No credit card required
+            </span>
+          </div>
+        </motion.div>
 
         {/* Browser mockup - real stack info, not fabricated charts/revenue.
             Purely aesthetic chrome (traffic lights, address bar) around a
             small set of swipeable "pages"; nothing here fetches or
             navigates anywhere. Pinned to row 2 (see lg:grid-rows above) so
             its lg:h-full only stretches to match the heading+description
-            block beside it, not the badge or button too. */}
-        <div
+            block beside it, not the badge or button too. Slides in from the
+            right, following the left column in from the left (see
+            HERO_RIGHT_TRANSITION's delay). */}
+        <motion.div
           ref={mockupRef}
           className="mt-14 lg:mt-0 lg:col-start-2 lg:row-start-2 bg-white border-2 border-black shadow-[12px_12px_0px_0px_#000] lg:h-full lg:flex lg:flex-col"
           style={{ borderRadius: '0.75rem' }}
+          initial={HERO_RIGHT_INITIAL}
+          animate={HERO_RIGHT_ANIMATE}
+          transition={HERO_RIGHT_TRANSITION}
         >
           <div className="bg-black lg:shrink-0" style={{ borderRadius: '0.6rem 0.6rem 0 0' }}>
             <div className="h-9 flex items-center gap-1.5 px-3">
@@ -1010,7 +1078,7 @@ export default function HeroSection({
           <div style={{ height: BROWSER_CONTENT_HEIGHT }} className="overflow-hidden lg:!h-auto lg:flex-1">
             {isPageLoading ? <BrowserPageLoader reason={pageLoadReason} /> : page.content}
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

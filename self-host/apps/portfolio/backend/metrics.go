@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -29,13 +30,23 @@ var (
 // resume-request UUID its own label value, an unbounded-cardinality footgun for Prometheus.
 func metricsMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// Method captured (and deep-copied) before c.Next(), route captured after: c.Route()
+		// only reflects the actual matched endpoint once routing has run the chain down to it
+		// (reading it before c.Next(), inside this global middleware, returns this middleware's
+		// own "/" registration instead). c.Method() returns an unsafe string backed by fasthttp's
+		// request buffer, not a real copy - routes using adaptor.HTTPHandler (/mcp, /metrics
+		// itself) were observed to corrupt that buffer WHILE c.Next() runs (truncated labels like
+		// "GETT"/"GETIONS"), so capturing the raw string before Next() isn't enough; it has to be
+		// strings.Clone'd into independent memory that can't be mutated out from under it.
+		method := strings.Clone(c.Method())
+
 		start := time.Now()
 		err := c.Next()
 
 		route := c.Route().Path
 		status := strconv.Itoa(c.Response().StatusCode())
-		httpRequestsTotal.WithLabelValues(c.Method(), route, status).Inc()
-		httpRequestDuration.WithLabelValues(c.Method(), route).Observe(time.Since(start).Seconds())
+		httpRequestsTotal.WithLabelValues(method, route, status).Inc()
+		httpRequestDuration.WithLabelValues(method, route).Observe(time.Since(start).Seconds())
 
 		return err
 	}

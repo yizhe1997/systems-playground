@@ -17,8 +17,8 @@ self-host/
 │   └── _template/    scaffold for a new infra service (make new-infra)
 └── apps/             independently scoped showcase projects, one folder per project
     ├── portfolio/    flagship: Go control-plane backend, Next.js UI shell
-    │                 (landing/docs/showcase routes, BFF/proxy), platform demo widgets
-    │                 (Redis, RabbitMQ, Redpanda)
+    │                 (landing/docs/showcase routes, BFF/proxy), Redis (CMS/config)
+    │                 and SQLite (resume requests)
     ├── <other-slug>/ additional showcase projects, each self-contained
     └── _template/    scaffold for a new project (make new-app)
 

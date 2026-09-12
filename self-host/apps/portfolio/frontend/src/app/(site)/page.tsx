@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Loader2 } from 'lucide-react';
-import SiteHeader from '@/components/SiteHeader';
-import SiteFooter from '@/components/SiteFooter';
 import HeroSection from '@/components/HeroSection';
 import ProjectRow, { type Project as ProjectRowType } from '@/components/ProjectRow';
 import EmptyProjectCard from '@/components/EmptyProjectCard';
@@ -14,18 +12,23 @@ import EmptyBlogCard from '@/components/EmptyBlogCard';
 import CopySectionLinkButton from '@/components/CopySectionLinkButton';
 import { useResumeRequest } from '@/components/ResumeRequestModal';
 import { fetchJson } from '@/lib/fetch-json';
+import { getSiteConfig } from '@/lib/site-config';
+import { estimateReadingMinutes } from '@/lib/reading-time';
 import ParticleImage from '@/components/originkit/svgparticles';
+import { TICKET_INITIAL, TICKET_ANIMATE, TICKET_TRANSITION, POP_CONTAINER, POP_ITEM } from '@/lib/motion';
 
 type Project = ProjectRowType & { featured: boolean };
 
 type Post = {
   id: string;
   title: string;
+  source_type: string;
+  content: string;
   cover_image_url: string;
   published_date: string;
   featured: boolean;
-  rating_sum: number;
-  rating_count: number;
+  love_count: number;
+  view_count: number;
 };
 
 type CreditItem = { text: string; url: string };
@@ -388,6 +391,13 @@ export default function Home() {
   const [githubUrl, setGithubUrl] = useState<string>('#');
   const [heroDescription, setHeroDescription] = useState<string>('');
   const [jobTitles, setJobTitles] = useState<string[]>([]);
+  // Distinguishes "config hasn't loaded yet" from "config loaded and jobTitles is genuinely
+  // empty" - both look like an empty array otherwise. Without this, HeroSection's own sensible
+  // fallback badge (its `jobTitles = DEFAULT_JOB_TITLES` default parameter) never gets a chance
+  // to apply, since page.tsx always passes an explicit (initially empty) array rather than
+  // `undefined` - so the badge's whole grid row popped into existence only once /api/config
+  // resolved, shoving the boarding pass and everything below the hero down at that moment.
+  const [configLoaded, setConfigLoaded] = useState(false);
 
   // "Interested in working together?" form - replaces the old inline
   // Credits band (credits now live as their own page in the fake browser
@@ -415,6 +425,21 @@ export default function Home() {
   // displays it needs suppressHydrationWarning since that mismatch is
   // expected, not a bug.
   const [ticketId] = useState(() => generateTicketId());
+
+  // Lets a link elsewhere on the site (e.g. the privacy policy's data-erasure
+  // sentence) pre-fill the Message field via ?message=... - read once on
+  // mount, then strip the param so it doesn't linger in the address bar or
+  // get seeded again on a later refresh/navigation.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefill = params.get('message');
+    if (prefill) {
+      setLeadForm((f) => ({ ...f, message: prefill }));
+      params.delete('message');
+      const query = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+    }
+  }, []);
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -445,7 +470,7 @@ export default function Home() {
     const loadOtherData = async () => {
       try {
         const [configRes, projectsRes, postsRes, creditsRes] = await Promise.allSettled([
-          fetchJson<{ resumeUrl?: string; linkedinUrl?: string; githubUrl?: string; heroDescription?: string; jobTitles?: string[] }>('/api/config'),
+          getSiteConfig(),
           fetchJson<Project[]>('/api/projects'),
           fetchJson<Post[]>('/api/posts'),
           fetchJson<CreditRow[]>('/api/credits'),
@@ -469,8 +494,11 @@ export default function Home() {
         if (creditsRes.status === 'fulfilled') {
           setCredits(creditsRes.value || []);
         }
+
+        setConfigLoaded(true);
       } catch (err) {
         console.error('Other data fetch failed:', err);
+        setConfigLoaded(true);
       }
     };
 
@@ -478,23 +506,29 @@ export default function Home() {
   }, []);
 
   const filteredProjects = projects.filter(p => p.featured).slice(0, 3);
-  const filteredPosts = posts.filter(p => p.featured).slice(0, 4);
+  // Same reading_minutes calculation as /blog's own listing (BlogCard is a shared component, so
+  // both listings should carry the same meta row) - only computable for "native" posts, whose
+  // body is already in this same response; an "external_url" post's body lives at a separate URL.
+  const filteredPosts = posts
+    .filter((p) => p.featured)
+    .slice(0, 4)
+    .map((p) => ({ ...p, reading_minutes: p.source_type === 'native' ? estimateReadingMinutes(p.content) : undefined }));
 
   return (
-    <div className="min-h-screen text-[var(--ds-charcoal)]" style={{ fontFamily: 'var(--ds-font-body)' }}>
-      <SiteHeader />
-
-      <main>
+      <main className="flex-1">
+      {/* HeroSection handles its own entrance choreography internally (left column in from the
+          left, mockup in from the right) - no wrapper needed here. */}
       <HeroSection
-        description={heroDescription}
-        jobTitles={jobTitles}
+        description={heroDescription || undefined}
+        jobTitles={configLoaded ? jobTitles : undefined}
         credits={credits}
         githubUrl={githubUrl}
         linkedinUrl={linkedinUrl}
         onRequestResume={openResumeRequest}
       />
 
-      {/* Featured Projects - Bento Feature Grid */}
+      {/* Featured Projects - Bento Feature Grid. The heading/intro render immediately (part of
+          the static "background"); only the cards below get an entrance treatment. */}
       <section id="projects" className="bg-white">
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="flex items-baseline justify-between gap-6 flex-wrap mb-2">
@@ -503,7 +537,10 @@ export default function Home() {
               style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
             >
               <a href="#projects" className="hover:opacity-70 transition-opacity">FEATURED PROJECTS</a>
-              <sup className="text-sm font-mono font-medium text-[var(--ds-charcoal)]/50" style={{ top: '-0.6em' }}>
+              {/* self-start instead of following the heading's items-baseline - a plain sup sits
+                  almost on the baseline, barely elevated; this pulls it to the top of the line so
+                  it actually reads as a count badge at the top-right of the word. */}
+              <sup className="self-start text-sm font-mono font-medium text-[var(--ds-charcoal)]/50">
                 ({projects.length})
               </sup>
               <CopySectionLinkButton sectionId="projects" label="Projects" />
@@ -520,18 +557,28 @@ export default function Home() {
             Take a look around — here&apos;s what I&apos;ve been building.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            variants={POP_CONTAINER}
+            initial="hidden"
+            animate="visible"
+          >
             {filteredProjects.map((project, i) => (
-              <ProjectRow key={project.id} project={project} index={i} />
+              <motion.div key={project.id} variants={POP_ITEM}>
+                <ProjectRow project={project} index={i} />
+              </motion.div>
             ))}
             {Array.from({ length: Math.max(0, 3 - filteredProjects.length) }).map((_, i) => (
-              <EmptyProjectCard key={`empty-${i}`} />
+              <motion.div key={`empty-${i}`} variants={POP_ITEM}>
+                <EmptyProjectCard />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Blog - dark charcoal section for contrast */}
+      {/* Blog - dark charcoal section for contrast. Heading/intro render immediately; only the
+          cards pop in. */}
       <section id="blog" className="border-y-2 border-black" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="flex items-baseline justify-between gap-6 flex-wrap mb-2">
@@ -540,14 +587,14 @@ export default function Home() {
               style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, letterSpacing: '-0.02em' }}
             >
               <a href="#blog" className="hover:opacity-70 transition-opacity">BLOG</a>
-              <sup className="text-sm font-mono font-medium text-white/50" style={{ top: '-0.6em' }}>
+              <sup className="self-start text-sm font-mono font-medium text-white/50">
                 ({posts.length})
               </sup>
               <CopySectionLinkButton sectionId="blog" label="Blog" />
             </h2>
             <Link href="/blog" data-cursor-label="Browse" className="group inline-flex items-center gap-1.5 font-bold shrink-0 text-[var(--ds-yellow)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
               <span className="relative">
-                Browse all posts
+                Browse all blog
                 <span className="absolute left-0 -bottom-0.5 h-0.5 w-full bg-[var(--ds-yellow)] origin-left scale-x-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
               </span>
               <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" aria-hidden="true" />
@@ -557,14 +604,23 @@ export default function Home() {
             Nothing to do? Wanna read some blogs?
           </p>
 
-          <div className="grid sm:grid-cols-2 gap-6">
+          <motion.div
+            className="grid sm:grid-cols-2 gap-6"
+            variants={POP_CONTAINER}
+            initial="hidden"
+            animate="visible"
+          >
             {filteredPosts.map((post) => (
-              <BlogCard key={post.id} post={post} />
+              <motion.div key={post.id} variants={POP_ITEM}>
+                <BlogCard post={post} />
+              </motion.div>
             ))}
             {Array.from({ length: Math.max(0, 4 - filteredPosts.length) }).map((_, i) => (
-              <EmptyBlogCard key={`empty-${i}`} />
+              <motion.div key={`empty-${i}`} variants={POP_ITEM}>
+                <EmptyBlogCard />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -584,7 +640,14 @@ export default function Home() {
           small, so narrow screens fall back to a simpler stacked card with
           a plain dashed rule instead of the notched SVG outline. */}
       <section id="work-together" className="border-y-2 border-black" style={{ backgroundColor: 'var(--ds-sage)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-16">
+        {/* Boarding pass slides in from the left on load - mount-triggered, not scroll-triggered
+            (see TICKET_TRANSITION). */}
+        <motion.div
+          className="max-w-6xl mx-auto px-6 py-16"
+          initial={TICKET_INITIAL}
+          animate={TICKET_ANIMATE}
+          transition={TICKET_TRANSITION}
+        >
           {/* Desktop: exact ticket-stub geometry from the design file. Full
               width of the shared max-w-6xl container, same as Featured
               Projects/Blog above - no separate cap. The 900x300 canvas the
@@ -742,7 +805,17 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="absolute flex" style={{ left: 0, right: 0, top: '21%', bottom: '17%' }}>
+              {/* z-index: 1 - the destination particle photo below (DestinationParticles) is a
+                  later, also position:absolute sibling with no z-index of its own, so without
+                  this the two resolve stacking by DOM order alone and the particle canvas ends up
+                  ON TOP for hit-testing - invisible in practice since the particles render sparse
+                  enough to still show the text through them, but it silently ate every hover/click
+                  meant for anything in this column (confirmed via elementFromPoint - the "Let's
+                  talk" copy-link button was completely unreachable). Raising just this content
+                  layer's stacking - not touching the particle div's own pointer-events - keeps its
+                  self-dispatched ambient hover animation intact everywhere it doesn't overlap real
+                  interactive content. */}
+              <div className="absolute flex" style={{ left: 0, right: 0, top: '21%', bottom: '17%', zIndex: 1 }}>
                 {/* Stub - left panel, exactly 600/900 = 66.667%, split into
                     the text column and a landmark-illustration column
                     ("at the right hand side of the dark area", per the
@@ -750,12 +823,14 @@ export default function Home() {
                 <div className="flex" style={{ width: '66.6667%' }}>
                   <div className="flex flex-col justify-center gap-2.5" style={{ flex: '1 1 auto', minWidth: 0, maxWidth: '50%', padding: '0 2% 0 6%' }}>
                     <h2
+                      className="group/heading inline-flex items-baseline gap-1"
                       style={{
                         fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: 'clamp(1.65rem, 4.2cqw, 3rem)',
                         lineHeight: 0.95, letterSpacing: '-0.01em', color: 'var(--ds-yellow)', margin: 0, textTransform: 'uppercase',
                       }}
                     >
                       Let&apos;s talk
+                      <CopySectionLinkButton sectionId="work-together" label="Let's talk" />
                     </h2>
                     <RouteMotionLine durationMs={WORK_TOGETHER_ROTATION_MS} />
                     <span
@@ -767,7 +842,7 @@ export default function Home() {
                       Direct line &middot; no transfers
                     </span>
                     <p style={{ fontSize: 'clamp(10px, 1.15cqw, 14px)', color: 'rgba(255,255,255,0.65)', margin: 0, maxWidth: 340 }}>
-                      Interested in working together? Leave your email &mdash; I&apos;ll get back to you directly.
+                      Whether it&apos;s about working together or something else entirely, leave your email and I&apos;ll get back to you directly.
                     </p>
                   </div>
                 </div>
@@ -873,14 +948,18 @@ export default function Home() {
               </div>
             </div>
             <div className="p-6" style={{ backgroundColor: 'var(--ds-charcoal)' }}>
-              <h2 style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: '1.75rem', lineHeight: 0.95, letterSpacing: '-0.01em', color: 'var(--ds-yellow)', marginTop: 0, marginBottom: 12, textTransform: 'uppercase' }}>
+              <h2
+                className="group/heading inline-flex items-baseline gap-1"
+                style={{ fontFamily: 'var(--ds-font-display)', fontWeight: 800, fontSize: '1.75rem', lineHeight: 0.95, letterSpacing: '-0.01em', color: 'var(--ds-yellow)', marginTop: 0, marginBottom: 12, textTransform: 'uppercase' }}
+              >
                 Let&apos;s talk
+                <CopySectionLinkButton sectionId="work-together" label="Let's talk" />
               </h2>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(255,225,124,0.65)', textTransform: 'uppercase', display: 'block', marginBottom: 10 }}>
                 Direct line &middot; no transfers
               </span>
               <p className="text-sm" style={{ color: 'rgba(255,255,255,0.65)', margin: 0 }}>
-                Interested in working together? Leave your email &mdash; I&apos;ll get back to you directly.
+                Whether it&apos;s about working together or something else entirely, leave your email and I&apos;ll get back to you directly.
               </p>
             </div>
             <div className="p-6 bg-white flex flex-col gap-2" style={{ borderTop: '2px dashed var(--ds-charcoal)' }}>
@@ -1002,12 +1081,9 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       </main>
-
-      <SiteFooter />
-    </div>
   );
 }
