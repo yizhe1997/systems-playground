@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePostHog } from 'posthog-js/react';
 import {
   Send,
   Bot,
@@ -171,11 +172,26 @@ type ViewMode = 'pipeline' | 'terminal';
 export default function ResumeStatusTracker({ id }: { id: string }) {
   const { data, error } = useStatusStream(id);
   const [view, setView] = useState<ViewMode>('pipeline');
+  const posthog = usePostHog();
 
   const triageStatus = data?.triage_status ?? 'queued';
   const requestStatus = data?.status ?? 'pending';
   const triageDone = triageStatus === 'complete' || triageStatus === 'failed';
   const requestSettled = requestStatus !== 'pending';
+
+  // Fires once per id, the moment the SSE stream's first snapshot lands - not on every later
+  // push, or a triage/review status change would fire this "viewed" event again for a visitor
+  // who's just sitting on a tab they already loaded.
+  const viewedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!data || viewedRef.current === id) return;
+    viewedRef.current = id;
+    posthog.capture('resume_status_viewed', {
+      request_id: id,
+      status: data.status,
+      triage_status: data.triage_status,
+    });
+  }, [data, id, posthog]);
 
   useLiveTick(!triageDone, 100);
   useLiveTick(triageDone && !requestSettled, 100);

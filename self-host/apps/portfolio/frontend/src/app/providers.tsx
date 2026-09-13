@@ -18,7 +18,16 @@ function PostHogPageView() {
   const client = usePostHog();
 
   useEffect(() => {
-    if (!pathname || !client) return;
+    if (!client) return;
+    // Admin is a single-operator internal tool, not a visitor - kept out of product analytics
+    // entirely rather than captured and filtered later. set_config only flips an in-memory flag
+    // that autocapture's click handler re-reads on every click, so it can't persist an opt-out
+    // into a real visitor's session the way posthog.opt_out_capturing() would if they ever hit
+    // /admin/login - it self-corrects the moment pathname changes again.
+    const isAdmin = pathname?.startsWith('/admin') ?? false;
+    client.set_config({ autocapture: !isAdmin });
+    if (isAdmin || !pathname) return;
+
     const query = searchParams.toString();
     client.capture("$pageview", {
       $current_url: query ? `${window.origin}${pathname}?${query}` : `${window.origin}${pathname}`,

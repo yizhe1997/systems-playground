@@ -4,6 +4,7 @@ import { createContext, useContext, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, ChevronDown, Loader2 } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
@@ -15,7 +16,7 @@ const dsInput =
 
 const RequiredMark = () => <span className="text-red-600" aria-hidden="true"> *</span>;
 
-const ResumeRequestModalContext = createContext<{ open: () => void } | null>(null);
+const ResumeRequestModalContext = createContext<{ open: (source?: string) => void } | null>(null);
 
 export function useResumeRequest() {
   const ctx = useContext(ResumeRequestModalContext);
@@ -35,6 +36,7 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const posthog = usePostHog();
 
   const canSubmit =
     form.name.trim() !== '' &&
@@ -45,6 +47,16 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    // Categorical/boolean shape only - no name/email/company/reason text leaves the form for
+    // PostHog, just enough to see whether the advanced fields get used at all.
+    posthog.capture('resume_request_submitted', {
+      has_advanced_fields: !!(form.hiring_agency || form.work_type || form.industry || form.salary_range || form.job_posting_url),
+      work_type: form.work_type || undefined,
+      has_hiring_agency: !!form.hiring_agency,
+      has_industry: !!form.industry,
+      has_salary_range: !!form.salary_range,
+      has_job_posting_url: !!form.job_posting_url,
+    });
     try {
       const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
       const res = await fetch(`${url}/api/resume/request`, {
@@ -54,15 +66,18 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
       });
       if (res.ok) {
         const { id } = await res.json();
+        posthog.capture('resume_request_succeeded', { request_id: id });
         setModalOpen(false);
         setForm(emptyForm);
         setAdvancedOpen(false);
         router.push(`/resume/status/${id}`);
       } else {
+        posthog.capture('resume_request_failed', { reason: 'server_error' });
         toast({ title: "Couldn't send that", description: 'Try again in a moment.', variant: 'destructive' });
       }
     } catch (err) {
       console.error(err);
+      posthog.capture('resume_request_failed', { reason: 'network_error' });
       toast({ title: 'Network error', description: 'Check your connection and try again.', variant: 'destructive' });
     } finally {
       setSubmitting(false);
@@ -70,7 +85,14 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
   };
 
   return (
-    <ResumeRequestModalContext.Provider value={{ open: () => setModalOpen(true) }}>
+    <ResumeRequestModalContext.Provider
+      value={{
+        open: (source) => {
+          posthog.capture('resume_request_opened', { source: source ?? 'unknown' });
+          setModalOpen(true);
+        },
+      }}
+    >
       {children}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
@@ -111,7 +133,10 @@ export function ResumeRequestProvider({ children }: { children: React.ReactNode 
             <div>
               <button
                 type="button"
-                onClick={() => setAdvancedOpen(o => !o)}
+                onClick={() => setAdvancedOpen(o => {
+                  posthog.capture('resume_request_advanced_toggled', { expanded: !o });
+                  return !o;
+                })}
                 aria-expanded={advancedOpen}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--ds-charcoal)]/70 hover:text-black transition-colors"
               >
