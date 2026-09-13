@@ -24,6 +24,34 @@ if git diff --cached --name-only | grep -q "^self-host/apps/portfolio/frontend/"
   fi
 
   echo "✅ Frontend build successful."
+
+  # package.json/package-lock.json changes specifically need re-checking against the exact npm
+  # version the Docker image (node:20-alpine) bundles. npm's lockfile-consistency check inside
+  # `npm ci` differs across npm major versions - a lockfile that a locally-installed newer npm
+  # writes and happily accepts via `npm run build`/`npm install` above can still get rejected by
+  # node:20-alpine's older bundled npm at actual `docker build` time (this bit the feat/posthog
+  # merge: npm 11 locally produced a lockfile npm ci under npm 10.8.2 refused).
+  if git diff --cached --name-only | grep -qE "^self-host/apps/portfolio/frontend/package(-lock)?\.json$"; then
+    echo "🔨 Lockfile changed. Verifying npm ci against the Docker build's npm version..."
+    # package.json/package-lock.json are mounted read-only (npm ci never writes to either), and
+    # node_modules is an anonymous volume rather than bind-mounted to this Windows checkout - a
+    # bind-mounted node_modules here took ~1m30s even with a warm npm cache (every file write
+    # crosses the slow Windows<->container filesystem bridge); an in-VM volume drops that to ~30s.
+    if ! MSYS_NO_PATHCONV=1 docker run --rm \
+      -v "$PWD/package.json":/app/package.json:ro \
+      -v "$PWD/package-lock.json":/app/package-lock.json:ro \
+      -v /app/node_modules \
+      -v portfolio_frontend_npm_cache:/root/.npm \
+      -w /app node:20-alpine npm ci --ignore-scripts; then
+      echo "❌ npm ci failed under node:20-alpine (the Docker build's actual npm version)."
+      echo "   Regenerate the lockfile inside that image before committing, e.g.:"
+      echo "   docker run --rm -v \"\$PWD\":/app -w /app node:20-alpine npm install --package-lock-only"
+      echo "   Commit rejected."
+      exit 1
+    fi
+    echo "✅ npm ci verified under node:20-alpine."
+  fi
+
   cd - > /dev/null
 fi
 

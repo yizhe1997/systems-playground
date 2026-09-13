@@ -524,7 +524,7 @@ export default function Home() {
         credits={credits}
         githubUrl={githubUrl}
         linkedinUrl={linkedinUrl}
-        onRequestResume={openResumeRequest}
+        onRequestResume={() => openResumeRequest('hero')}
       />
 
       {/* Featured Projects - Bento Feature Grid. The heading/intro render immediately (part of

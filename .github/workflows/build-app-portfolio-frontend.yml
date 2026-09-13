@@ -71,3 +71,4 @@ jobs:
           tags: ${{ steps.registry-auth.outputs.host }}/systems-playground-frontend:latest
           build-args: |
             NEXT_PUBLIC_API_URL=https://portfolio-api.38569123.xyz
+            NEXT_PUBLIC_POSTHOG_KEY=${{ vars.POSTHOG_KEY }}

@@ -373,7 +373,7 @@ export default function AboutPageBody({
                     <div className="flex gap-4 mt-3.5 justify-center">
                       <button
                         type="button"
-                        onClick={openResumeRequest}
+                        onClick={() => openResumeRequest('about')}
                         className="rounded-lg px-5 py-3 font-extrabold text-[13px]"
                         style={{ backgroundColor: 'var(--ds-charcoal)', color: 'var(--ds-yellow)' }}
                       >
