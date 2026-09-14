@@ -30,7 +30,7 @@ function TalkToPortfolioButton() {
   return (
     <RadialRevealButton
       label="Talk to this portfolio"
-      onClick={() => openMcpConnect(crtScreenContainer ?? undefined)}
+      onClick={() => openMcpConnect(crtScreenContainer ?? undefined, 'projects')}
       data-cursor-label="Open"
       style={{ marginLeft: 'auto' }}
       font={{ fontFamily: 'var(--ds-font-body)', fontWeight: 700, fontSize: 14, lineHeight: '1.2em', letterSpacing: '0em', textAlign: 'left' }}

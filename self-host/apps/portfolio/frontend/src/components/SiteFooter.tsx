@@ -74,7 +74,7 @@ export default function SiteFooter() {
             </p>
             <button
               type="button"
-              onClick={() => openMcpConnect()}
+              onClick={() => openMcpConnect(undefined, 'footer')}
               data-cursor-label="Open"
               className="inline-flex items-center gap-1.5 text-sm font-bold text-white/70 hover:text-white hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >

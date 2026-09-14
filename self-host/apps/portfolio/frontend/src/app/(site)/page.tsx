@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Loader2 } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 import HeroSection from '@/components/HeroSection';
 import ProjectRow, { type Project as ProjectRowType } from '@/components/ProjectRow';
 import EmptyProjectCard from '@/components/EmptyProjectCard';
@@ -383,6 +384,7 @@ function RouteMotionLine({ durationMs }: { durationMs: number }) {
 
 export default function Home() {
   const { open: openResumeRequest } = useResumeRequest();
+  const posthog = usePostHog();
   const [projects, setProjects] = useState<Project[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [credits, setCredits] = useState<CreditRow[]>([]);
@@ -445,6 +447,7 @@ export default function Home() {
     e.preventDefault();
     setLeadSubmitting(true);
     setLeadError('');
+    posthog.capture('lead_form_submitted');
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085';
       const res = await fetch(`${apiUrl}/api/leads`, {
@@ -453,13 +456,16 @@ export default function Home() {
         body: JSON.stringify(leadForm),
       });
       if (res.ok) {
+        posthog.capture('lead_form_succeeded');
         setLeadSubmitted(true);
       } else {
+        posthog.capture('lead_form_failed', { reason: 'server_error' });
         const data = await res.json().catch(() => null);
         setLeadError(data?.error || "Couldn't send that. Try again in a moment.");
       }
     } catch (err) {
       console.error(err);
+      posthog.capture('lead_form_failed', { reason: 'network_error' });
       setLeadError('Network error. Check your connection and try again.');
     } finally {
       setLeadSubmitting(false);

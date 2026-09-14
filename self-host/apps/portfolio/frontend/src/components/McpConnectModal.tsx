@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState } from 'react';
 import { Copy, Check, ExternalLink, Terminal } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import SimpleIcon from '@/components/SimpleIcon';
@@ -50,8 +51,9 @@ function ClientIcon({ slug }: { slug?: string }) {
 // `open` takes an optional container element - passed by callers rendered inside a device frame
 // (e.g. ProjectsCrtFrame) so the dialog confines itself to that frame's own screen instead of
 // covering the whole page. Omitted (or null), it behaves exactly as before - centered over the
-// full viewport.
-const McpConnectModalContext = createContext<{ open: (container?: HTMLElement | null) => void } | null>(null);
+// full viewport. `source` identifies which of the 3 real trigger buttons (hero, footer, projects
+// CRT frame) opened it, for the mcp_connect_opened event.
+const McpConnectModalContext = createContext<{ open: (container?: HTMLElement | null, source?: string) => void } | null>(null);
 
 export function useMcpConnect() {
   const ctx = useContext(McpConnectModalContext);
@@ -70,8 +72,12 @@ function useCopy() {
   return { copied, copy };
 }
 
-function CopyLine({ label, value }: { label: string; value: string }) {
+// `client` is the currently-selected client in the dialog (undefined for the client-agnostic
+// Server URL line above the picker) - just context on the resulting event, not something this
+// component acts on itself.
+function CopyLine({ label, value, client }: { label: string; value: string; client?: ClientKey }) {
   const { copied, copy } = useCopy();
+  const posthog = usePostHog();
 
   return (
     <div className="space-y-1.5">
@@ -82,7 +88,10 @@ function CopyLine({ label, value }: { label: string; value: string }) {
         </pre>
         <button
           type="button"
-          onClick={() => copy(value)}
+          onClick={() => {
+            posthog.capture('mcp_connect_copy_clicked', { field: label, client });
+            copy(value);
+          }}
           aria-label={`Copy ${label}`}
           className="absolute top-2.5 right-2.5 w-7 h-7 flex items-center justify-center text-white/80 hover:text-white transition-colors"
         >
@@ -163,11 +172,15 @@ ${CURSOR_JSON}
 
 function CopyMarkdownButton() {
   const { copied, copy } = useCopy();
+  const posthog = usePostHog();
 
   return (
     <button
       type="button"
-      onClick={() => copy(buildMarkdown())}
+      onClick={() => {
+        posthog.capture('mcp_connect_markdown_copied');
+        copy(buildMarkdown());
+      }}
       aria-label="Copy this dialog as Markdown"
       data-cursor-label={copied ? 'Copied' : 'Copy as Markdown'}
       title="Copy as Markdown"
@@ -182,8 +195,8 @@ function ClientSetup({ client }: { client: ClientKey }) {
   if (client === 'claude-code') {
     return (
       <div className="space-y-2">
-        <CopyLine label="Add" value={CLAUDE_CODE_ADD} />
-        <CopyLine label="Done exploring? Remove it" value={CLAUDE_CODE_REMOVE} />
+        <CopyLine label="Add" value={CLAUDE_CODE_ADD} client={client} />
+        <CopyLine label="Done exploring? Remove it" value={CLAUDE_CODE_REMOVE} client={client} />
         <DocsLink href="https://code.claude.com/docs/en/mcp-quickstart">Claude Code MCP docs</DocsLink>
       </div>
     );
@@ -202,14 +215,14 @@ function ClientSetup({ client }: { client: ClientKey }) {
   if (client === 'codex') {
     return (
       <div className="space-y-2">
-        <CopyLine label="Add to ~/.codex/config.toml" value={CODEX_TOML} />
+        <CopyLine label="Add to ~/.codex/config.toml" value={CODEX_TOML} client={client} />
         <DocsLink href="https://developers.openai.com/codex/mcp">Codex MCP docs</DocsLink>
       </div>
     );
   }
   return (
     <div className="space-y-2">
-      <CopyLine label="Add to .cursor/mcp.json" value={CURSOR_JSON} />
+      <CopyLine label="Add to .cursor/mcp.json" value={CURSOR_JSON} client={client} />
       <DocsLink href="https://cursor.com/docs/context/mcp">Cursor MCP docs</DocsLink>
     </div>
   );
@@ -220,11 +233,13 @@ export function McpConnectProvider({ children }: { children: React.ReactNode }) 
   const [scopedContainer, setScopedContainer] = useState<HTMLElement | null>(null);
   const [selectedClient, setSelectedClient] = useState<ClientKey>('claude-code');
   const client = CLIENTS.find((c) => c.key === selectedClient)!;
+  const posthog = usePostHog();
 
   return (
     <McpConnectModalContext.Provider
       value={{
-        open: (container) => {
+        open: (container, source) => {
+          posthog.capture('mcp_connect_opened', { source: source ?? 'unknown' });
           setScopedContainer(container ?? null);
           setOpen(true);
         },
@@ -288,11 +303,17 @@ export function McpConnectProvider({ children }: { children: React.ReactNode }) 
               </div>
             </div>
 
-            <CopyLine label="Server URL" value={MCP_URL} />
+            <CopyLine label="Server URL" value={MCP_URL} client={selectedClient} />
 
             <div className="space-y-2">
               <div className="text-xs font-bold uppercase tracking-wider text-[var(--ds-charcoal)]/70">Add it to your client</div>
-              <Select value={selectedClient} onValueChange={(v) => setSelectedClient(v as ClientKey)}>
+              <Select
+                value={selectedClient}
+                onValueChange={(v) => {
+                  posthog.capture('mcp_connect_client_selected', { client: v });
+                  setSelectedClient(v as ClientKey);
+                }}
+              >
                 {/* Same fix as elsewhere in this DS: the primitive's own height/focus-ring classes
                     default to shadcn's blue theme token and lose the specificity fight against a
                     plain override, so height and focus colors are pinned explicitly. */}
