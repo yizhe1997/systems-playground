@@ -33,6 +33,14 @@ WORKDIR /app
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
+# Node 20 "happy eyeballs" gives each resolved address only 250ms to finish its TCP handshake
+# before abandoning it. On this WSL2/NAT host the handshake to PostHog's ingest ELB
+# (us.i.posthog.com, 8 A + 8 AAAA records, and this host has no IPv6 route at all) regularly
+# takes longer than that while the server is busy serving a page load, so every address gets
+# abandoned and the /ingest rewrite 500s with an AggregateError of ETIMEDOUT/ENETUNREACH.
+# Measured in a real browser load against otherwise-identical containers: default and
+# --dns-result-order=ipv4first both failed, this timeout (and disabling autoselection) passed.
+ENV NODE_OPTIONS="--network-family-autoselection-attempt-timeout=3000"
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
