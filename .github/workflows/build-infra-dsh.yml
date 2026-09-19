@@ -1,0 +1,91 @@
+name: Build and Push dsh
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "self-host/infra/dsh/**"
+      - ".github/workflows/build-infra-dsh.yml"
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions UI
+
+jobs:
+  build-and-push:
+    runs-on: self-hosted
+    env:
+      INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
+      INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+      INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
+      INFISICAL_DOMAIN: ${{ vars.INFISICAL_SITE_URL || 'http://localhost:8090' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install Infisical CLI
+        run: |
+          LATEST_TAG=$(curl -sL -o /dev/null -w '%{url_effective}' https://github.com/Infisical/cli/releases/latest | sed 's#.*/tag/##')
+          VERSION="${LATEST_TAG#v}"
+          curl -sL "https://github.com/Infisical/cli/releases/download/${LATEST_TAG}/cli_${VERSION}_linux_amd64.tar.gz" -o infisical-cli.tar.gz
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf infisical-cli.tar.gz -C "$HOME/.local/bin" infisical
+          chmod +x "$HOME/.local/bin/infisical"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          rm infisical-cli.tar.gz
+
+      - name: Authenticate to Infisical
+        id: infisical-auth
+        run: |
+          : "${INFISICAL_CLIENT_ID:?INFISICAL_CLIENT_ID repository variable must be set}"
+          : "${INFISICAL_CLIENT_SECRET:?INFISICAL_CLIENT_SECRET repository secret must be set}"
+          : "${INFISICAL_PROJECT_ID:?INFISICAL_PROJECT_ID repository variable must be set}"
+          TOKEN=$(infisical login --domain="$INFISICAL_DOMAIN" --method=universal-auth \
+            --client-id="$INFISICAL_CLIENT_ID" --client-secret="$INFISICAL_CLIENT_SECRET" \
+            --plain --silent)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to self-hosted registry
+        id: registry-auth
+        env:
+          INFISICAL_TOKEN: ${{ steps.infisical-auth.outputs.token }}
+        run: |
+          infisical run --domain="$INFISICAL_DOMAIN" --token="$INFISICAL_TOKEN" \
+            --projectId="$INFISICAL_PROJECT_ID" --env=prod -- \
+            sh -c 'REGISTRY_HOST="${REGISTRY_HOST:-localhost:5000}"; echo "::add-mask::$REGISTRY_PASSWORD" && echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_HOST" -u "$REGISTRY_USERNAME" --password-stdin && echo "host=$REGISTRY_HOST" >> "$GITHUB_OUTPUT"'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          # Same reason as build-infra-n8n.yml: the default docker-container driver runs buildkit in its own
+          # network namespace, where localhost:5000 is not the host's registry. network=host fixes the push.
+          driver-opts: network=host
+
+      - name: Build and push dsh image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./self-host/infra/dsh
+          file: ./self-host/infra/dsh/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.registry-auth.outputs.host }}/systems-playground-dsh:latest
+            ${{ steps.registry-auth.outputs.host }}/systems-playground-dsh:${{ github.sha }}
+
+      - name: Build and push dsh gateway image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./self-host/infra/dsh/gateway
+          file: ./self-host/infra/dsh/gateway/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.registry-auth.outputs.host }}/systems-playground-dsh-gateway:latest
+            ${{ steps.registry-auth.outputs.host }}/systems-playground-dsh-gateway:${{ github.sha }}
+
+      - name: Build and push dsh egress image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./self-host/infra/dsh/egress
+          file: ./self-host/infra/dsh/egress/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.registry-auth.outputs.host }}/systems-playground-dsh-egress:latest
+            ${{ steps.registry-auth.outputs.host }}/systems-playground-dsh-egress:${{ github.sha }}

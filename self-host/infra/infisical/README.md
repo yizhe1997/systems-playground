@@ -50,6 +50,8 @@ Each was previously a plain GitHub Secret/Variable and is now fetched live via `
 | `N8N_POSTGRES_USER` | n8n | No | `n8n` |
 | `N8N_BASIC_AUTH_USER` | n8n | No | `admin` |
 | `N8N_HOST` | n8n | No | `http://localhost:5678` |
+| `OPENROUTER_API_KEY` | dsh | One of these two is required | — |
+| `ANTHROPIC_API_KEY` | dsh | One of these two is required | — |
 | `WATCHTOWER_DISCORD_URL` | watchtower | Yes | — |
 
 A few things the table doesn't show:
@@ -57,6 +59,7 @@ A few things the table doesn't show:
 - Docker Hub is gone — replaced by the self-hosted `registry:2` instance (`self-host/infra/registry/`), auth required for both push and pull. The old `DOCKER_USERNAME`/`DOCKER_PASSWORD` are unused now and can be deleted from Infisical/GitHub.
 - `REGISTRY_HOST`'s `localhost:5000` default is always correct for CI, since every build/deploy workflow runs on the same host as the registry container (port hardcoded in its compose file) — only set it explicitly if you need these workflows to reach the registry through its public/tunnel hostname instead.
 - n8n additionally depends on the shared `REGISTRY_*` secrets above, since it now pulls a prebuilt image instead of building locally.
+- dsh does too, and `DSH_PUBLIC_HOST` (which publishes it through the tunnel) is deliberately a plain GitHub repo *variable*, not an Infisical secret: it is a hostname, and setting it is the "go public" switch (see [`../dsh/README.md`](../dsh/README.md)).
 
 ### What stays on plain GitHub Secrets/Variables (deliberately not migrated)
 

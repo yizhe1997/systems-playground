@@ -1,0 +1,76 @@
+worker_processes 1;
+pid /tmp/nginx.pid;
+error_log /dev/stderr warn;
+
+events {
+    worker_connections 512;
+}
+
+# Ingress: dsh listens on loopback inside its own container and sits on an internal-only network, so this
+# relay is the single published entry point. The name is resolved per connection so a redeployed dsh is picked up.
+stream {
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
+    server {
+        listen 3081;
+        set $dsh_upstream dsh:3081;
+        proxy_pass $dsh_upstream;
+    }
+}
+
+http {
+    resolver 127.0.0.11 valid=30s ipv6=off;
+    access_log /dev/stdout;
+    server_tokens off;
+    client_max_body_size 100m;
+    client_body_temp_path /tmp/client_temp;
+    proxy_temp_path /tmp/proxy_temp;
+    fastcgi_temp_path /tmp/fastcgi_temp;
+    uwsgi_temp_path /tmp/uwsgi_temp;
+    scgi_temp_path /tmp/scgi_temp;
+
+    # Stream tokens as they arrive, and verify the upstream certificate before any key is sent to it.
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_buffering off;
+    proxy_request_buffering off;
+    proxy_connect_timeout 10s;
+    proxy_send_timeout 900s;
+    proxy_read_timeout 900s;
+    proxy_ssl_server_name on;
+    proxy_ssl_verify on;
+    proxy_ssl_verify_depth 3;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+
+    server {
+        listen 8080;
+
+        location = /healthz {
+            access_log off;
+            return 200 "ok\n";
+        }
+
+        # Only the endpoints dsh needs are forwarded, so the injected key cannot be used for account or key management.
+        location ~ ^/openrouter(?<rest>/v1/(?:chat/completions|completions|models)(?:/[^?]*)?)$ {
+            set $or_base "${OPENROUTER_UPSTREAM}";
+            proxy_ssl_name openrouter.ai;
+            proxy_set_header Host openrouter.ai;
+            proxy_set_header Authorization "Bearer ${OPENROUTER_API_KEY}";
+            proxy_set_header x-api-key "";
+            proxy_pass $or_base$rest$is_args$args;
+        }
+
+        location ~ ^/anthropic(?<rest>/v1/(?:messages(?:/count_tokens)?|models(?:/[^?]*)?))$ {
+            set $an_base "${ANTHROPIC_UPSTREAM}";
+            proxy_ssl_name api.anthropic.com;
+            proxy_set_header Host api.anthropic.com;
+            proxy_set_header x-api-key "${ANTHROPIC_API_KEY}";
+            proxy_set_header Authorization "";
+            proxy_pass $an_base$rest$is_args$args;
+        }
+
+        location / {
+            return 404;
+        }
+    }
+}

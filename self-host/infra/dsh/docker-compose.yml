@@ -1,0 +1,105 @@
+services:
+  dsh:
+    build: .
+    image: ${REGISTRY_HOST:-localhost:5000}/systems-playground-dsh:latest
+    init: true
+    restart: unless-stopped
+    working_dir: /workspace
+    environment:
+      # Placeholders only: the real keys live in the gateway, where the agent cannot read them.
+      OPENROUTER_API_KEY: gateway-managed
+      ANTHROPIC_API_KEY: gateway-managed
+      DSH_TRUSTED_HOSTS: ${DSH_PUBLIC_HOST:-}
+      DSH_TELEMETRY_MODE: DISABLED
+      HTTP_PROXY: http://egress:3128
+      HTTPS_PROXY: http://egress:3128
+      NO_PROXY: gateway,egress
+    volumes:
+      - dsh_home:/home/node/.dsh
+      - ${DSH_WORKSPACES_DIR:-./workspaces}:/workspace
+    tmpfs:
+      - /tmp
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+    mem_limit: 2g
+    cpus: 2
+    healthcheck:
+      # Unauthenticated GET / must answer 401; anything else means the auth gate is not in front.
+      test: ["CMD-SHELL", "test \"$$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3080/)\" = 401"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    networks:
+      - sandbox
+
+  gateway:
+    build: ./gateway
+    image: ${REGISTRY_HOST:-localhost:5000}/systems-playground-dsh-gateway:latest
+    restart: unless-stopped
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENROUTER_UPSTREAM: ${OPENROUTER_UPSTREAM:-}
+      ANTHROPIC_UPSTREAM: ${ANTHROPIC_UPSTREAM:-}
+    ports:
+      - "127.0.0.1:${DSH_PORT:-3080}:3081"
+    labels:
+      # Empty until DSH_PUBLIC_HOST is set, and cloudflared-sync.sh skips a container missing either label,
+      # so nothing is exposed publicly until the Cloudflare Access policy for that hostname exists.
+      - cloudflare.tunnel.hostname=${DSH_PUBLIC_HOST:-}
+      - cloudflare.tunnel.port=${DSH_PORT:-3080}
+    tmpfs:
+      - /tmp
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - sandbox
+      - edge
+
+  egress:
+    build: ./egress
+    image: ${REGISTRY_HOST:-localhost:5000}/systems-playground-dsh-egress:latest
+    restart: unless-stopped
+    tmpfs:
+      - /tmp
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "squid -k check -f /etc/squid/squid.conf"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - sandbox
+      - edge
+
+networks:
+  # No route out of this network: dsh can only reach the gateway and the egress proxy.
+  sandbox:
+    internal: true
+  edge:
+
+volumes:
+  dsh_home:
