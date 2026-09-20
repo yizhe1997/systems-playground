@@ -9,6 +9,9 @@ RUN apt-get update \
  && mkdir -p /home/node/.dsh /workspace \
  && chown node:node /home/node/.dsh /workspace
 
+COPY patch-remote-settings.js /tmp/patch-remote-settings.js
+RUN node /tmp/patch-remote-settings.js && rm /tmp/patch-remote-settings.js
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY settings.seed.yaml /opt/dsh/settings.seed.yaml
 RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh /opt/dsh/settings.seed.yaml \

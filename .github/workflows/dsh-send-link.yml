@@ -53,12 +53,22 @@ jobs:
 
           cd "$INFRA_BASE_DIR/dsh" || { echo "❌ $INFRA_BASE_DIR/dsh not found - deploy dsh first."; exit 1; }
           LINK=$(sh link.sh)
+          LOCAL=$(sh link.sh local)
           echo "::add-mask::$LINK"
+          echo "::add-mask::$LOCAL"
           echo "::add-mask::${LINK#*token=}"
 
-          # The link holds only URL-safe characters, so it can be embedded in the JSON body as is.
+          # Both links carry the same token. The public one is for any device; the loopback one only works in a
+          # browser on the host machine itself (127.0.0.1), and is the fallback for anything the public page cannot
+          # do. When dsh is not published the two are identical, so it is sent once.
+          MSG="dsh launch link (open it once per browser; anyone with it can sign in until dsh next restarts): $LINK"
+          if [ "$LOCAL" != "$LINK" ]; then
+            MSG="$MSG\nLoopback link, for a browser on the host machine only: $LOCAL"
+          fi
+
+          # The links hold only URL-safe characters, so they can be embedded in the JSON body as is.
           curl -sS --fail -o /dev/null -H "Content-Type: application/json" \
-            -d "{\"content\":\"dsh launch link (open it once per browser; anyone with it can sign in until dsh next restarts): $LINK\"}" \
+            -d "{\"content\":\"$MSG\"}" \
             "$DSH_LINK_WEBHOOK_URL"
           echo "✅ Launch link sent to Discord."
           '

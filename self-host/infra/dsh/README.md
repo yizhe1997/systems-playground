@@ -66,7 +66,7 @@ wsl -e bash -c "cd ~/infra/dsh && sh link.sh"
 ```
 
   It prints the public `https://` link when the stack is published, otherwise the loopback one. `sh link.sh local` forces the loopback link.
-- **From anywhere (GitHub or Discord):** run the *dsh - Send Launch Link* workflow (Actions → Run workflow, from the website or mobile app). The link is posted to a private Discord channel and masked in the public run log. It needs a Discord webhook URL stored in Infisical as `DSH_LINK_WEBHOOK_URL`.
+- **From anywhere (GitHub or Discord):** run the *dsh - Send Launch Link* workflow (Actions → Run workflow, from the website or mobile app). The link is posted to a private Discord channel and masked in the public run log. When dsh is published the message carries two links with the same token: the public one for any device, and a loopback one (`http://127.0.0.1:…`) that only works in a browser on the host machine, as the fallback for model and settings editing. It needs a Discord webhook URL stored in Infisical as `DSH_LINK_WEBHOOK_URL`.
 
 Either way the link is a credential. It is useless without also passing Access, and it stops working when dsh next restarts (until then it can be reused), so keep the Discord channel private.
 
@@ -78,11 +78,14 @@ Either way the link is a credential. It is useless without also passing Access, 
 - dsh refuses `--host 0.0.0.0`; `entrypoint.sh` forwards its port and the gateway is the only thing published.
 - Revoke every session by deleting the `client-connection/browser-session` record in `.credentials.yaml` (in the `dsh_home` volume) and restarting.
 
-## Editing models and settings (loopback only)
+## Editing models and settings from a public hostname
 
-dsh decides in the browser whether it may read and write the host's settings, and it allows that only when the page's own hostname is loopback (`localhost`, `127.x.x.x`, `[::1]`). On a public hostname such as `dsh.<HOST>` the settings UI shows *Loading the provider directory failed: settings are unavailable in this browser*, and models cannot be created or edited from there. This is dsh's design in 0.1.5-rc.2 (there is no configuration switch), not a fault in this stack, and it is client-side only: the server would accept the writes from an authenticated browser.
+Upstream dsh enables host settings (Settings → Models, the provider directory, General) only when the page's own hostname is loopback. On a public hostname such as `dsh.<HOST>` it shows *Loading the provider directory failed: settings are unavailable in this browser*, and models cannot be created or edited. The restriction is in the browser client only; the server has no such check.
 
-To add or change providers and models, open dsh on the host through the loopback link (`sh link.sh local`, or from Windows `wsl -e bash -c "cd ~/infra/dsh && sh link.sh local"`, then use the printed `http://127.0.0.1:...` URL in a browser on that machine). The result is stored in the `dsh_home` volume, so it applies to every browser. `settings.seed.yaml` already registers the OpenRouter and Anthropic routes and their models on first start.
+The image therefore patches those two client-side checks at build time (`patch-remote-settings.js`, run from the `Dockerfile`). Checked against a non-loopback hostname: the unpatched image reproduces the error, the patched one loads Settings → Models with the seeded providers, and a settings change made from that page is written to `settings.yaml`. Every request still has to pass Cloudflare Access, the trusted-host fence and dsh's session cookie, and the agent can already edit `settings.yaml` itself (same user, writable volume), so this removes no protection.
+
+- **On a dsh upgrade** the patch fails the image build unless each expected line is present exactly once. Then review the new upstream code and update the script, or drop the patch if upstream has lifted the restriction.
+- **Fallback if it ever stops working:** the loopback link. `sh link.sh local` prints it (from Windows: `wsl -e bash -c "cd ~/infra/dsh && sh link.sh local"`), and the *dsh - Send Launch Link* workflow includes it in the Discord message. Open it in a browser on the host machine. Settings are stored in the `dsh_home` volume, so they apply to every browser.
 
 ## Workspaces and uploads
 
