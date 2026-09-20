@@ -1,0 +1,6 @@
+# Shell scripts and their bats tests run on Linux (the CI runner, the WSL host, and the containers the
+# tests bind-mount this checkout into), so they must have LF endings in the working tree. Without this,
+# core.autocrlf=true on a Windows checkout turns them into CRLF and bash fails on them
+# ("set: pipefail: invalid option name"), which breaks the pre-push test run.
+*.sh   text eol=lf
+*.bats text eol=lf
