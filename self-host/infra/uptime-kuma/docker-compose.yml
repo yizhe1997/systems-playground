@@ -13,7 +13,7 @@ services:
       # locally-managed host tunnel, which was never a deliberate design choice, just incidental.
       # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh now instead, same
       # as every other service - one tunnel, one config.yml, no separate token to manage.
-      - cloudflare.tunnel.hostname=kuma.38569123.xyz
+      - cloudflare.tunnel.hostname=${KUMA_SUBDOMAIN:-kuma}.${HOST:?HOST must be set}
       - cloudflare.tunnel.port=3001
 volumes:
   uptime_kuma_data:

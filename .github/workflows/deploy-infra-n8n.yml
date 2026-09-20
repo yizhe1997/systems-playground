@@ -25,6 +25,8 @@ jobs:
     runs-on: self-hosted
     env:
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
+      HOST: ${{ vars.HOST }}
+      N8N_SUBDOMAIN: ${{ vars.N8N_SUBDOMAIN }}
       INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
       INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
@@ -65,6 +67,7 @@ jobs:
             --projectId="$INFISICAL_PROJECT_ID" --env=prod -- bash -c '
           set -e
           : "${INFRA_BASE_DIR:?INFRA_BASE_DIR repository variable must be set}"
+          : "${HOST:?HOST repository variable must be set (your domain, e.g. example.com)}"
           : "${N8N_POSTGRES_PASSWORD:?N8N_POSTGRES_PASSWORD must be set in Infisical}"
           : "${N8N_BASIC_AUTH_PASSWORD:?N8N_BASIC_AUTH_PASSWORD must be set in Infisical}"
           export N8N_POSTGRES_USER="${N8N_POSTGRES_USER:-n8n}"
@@ -75,6 +78,16 @@ jobs:
 
           echo "📦 Syncing n8n compose..."
           cp -v self-host/infra/n8n/docker-compose.yml "$TARGET/"
+
+          # HOST is not a secret. Persisting it beside the compose file lets a bare docker compose up -d at
+          # boot (wsl-startup.sh has no GitHub variables) render the same tunnel label instead of failing.
+          ENV_FILE="$TARGET/.env"
+          touch "$ENV_FILE"
+          grep -v -E "^(HOST|N8N_SUBDOMAIN)=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
+          printf "HOST=%s\n" "$HOST" >> "$ENV_FILE.tmp"
+          if [ -n "${N8N_SUBDOMAIN:-}" ]; then printf "N8N_SUBDOMAIN=%s\n" "$N8N_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
+          cat "$ENV_FILE.tmp" > "$ENV_FILE"
+          rm -f "$ENV_FILE.tmp"
 
           cd "$TARGET" || { echo "❌ Directory $TARGET not found!"; exit 1; }
 

@@ -77,7 +77,7 @@ services:
 
   # Per-container resource metrics (CPU/memory/network/disk) for every container on the host.
   # Host port 8082, not cAdvisor's own default 8080 - this host's Cloudflare Tunnel config already
-  # routes yzportalserver.38569123.xyz to localhost:8080 for an unrelated project (currently not
+  # routes yzportalserver.<HOST> to localhost:8080 for an unrelated project (currently not
   # running, but the route is still configured - would collide the moment that project comes back).
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
@@ -136,7 +136,7 @@ services:
       - com.centurylinklabs.watchtower.enable=true
       # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh - adds/updates the
       # ingress entry in config.yml and the matching Cloudflare DNS record with no manual step.
-      - cloudflare.tunnel.hostname=grafana.38569123.xyz
+      - cloudflare.tunnel.hostname=${GRAFANA_SUBDOMAIN:-grafana}.${HOST:?HOST must be set}
       - cloudflare.tunnel.port=3030
 
 volumes:

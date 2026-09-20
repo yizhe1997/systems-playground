@@ -9,7 +9,7 @@ services:
       # Placeholders only: the real keys live in the gateway, where the agent cannot read them.
       OPENROUTER_API_KEY: gateway-managed
       ANTHROPIC_API_KEY: gateway-managed
-      DSH_TRUSTED_HOSTS: ${DSH_PUBLIC_HOST:-}
+      DSH_TRUSTED_HOSTS: ${HOST:+${DSH_SUBDOMAIN:-dsh}.${HOST}}
       DSH_TELEMETRY_MODE: DISABLED
       HTTP_PROXY: http://egress:3128
       HTTPS_PROXY: http://egress:3128
@@ -49,9 +49,9 @@ services:
     ports:
       - "127.0.0.1:${DSH_PORT:-3080}:3081"
     labels:
-      # Empty until DSH_PUBLIC_HOST is set, and cloudflared-sync.sh skips a container missing either label,
-      # so nothing is exposed publicly until the Cloudflare Access policy for that hostname exists.
-      - cloudflare.tunnel.hostname=${DSH_PUBLIC_HOST:-}
+      # Empty while HOST is unset, and cloudflared-sync.sh skips a container missing either label, so
+      # nothing is published until HOST is set. Create the Cloudflare Access policy for the hostname first.
+      - cloudflare.tunnel.hostname=${HOST:+${DSH_SUBDOMAIN:-dsh}.${HOST}}
       - cloudflare.tunnel.port=${DSH_PORT:-3080}
     tmpfs:
       - /tmp

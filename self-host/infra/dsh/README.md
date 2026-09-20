@@ -1,29 +1,27 @@
 # DeepSeek Harness (dsh)
 
-Self-hosted AI agent harness ([deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness), developer preview) that runs model-generated commands. It is treated as untrusted: pinned npm release, isolated network, keys it cannot read.
+Self-hosted AI agent harness ([deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness), developer preview) that runs model-generated commands. It is treated as untrusted: pinned npm release, isolated network, keys it cannot read. The reasoning and what was verified are in [ADR 004](../../../docs/adrs/004-dsh-isolation-and-access.md).
 
 ## Architecture
 
-```
-browser ──► gateway :3081 ──► dsh            sandbox network is internal: no route out, no host, no LAN
-            (published on       │  http://gateway:8080/{openrouter,anthropic}  ──► gateway injects the real key
-             127.0.0.1)         └─ HTTP(S)_PROXY=http://egress:3128            ──► egress (squid): public internet only
-```
+![dsh stack: trust zones, key custody and isolation](../../../docs/diagrams/dsh-stack-trust-zones.png)
+
+Interactive version: [`dsh-stack-trust-zones.html`](../../../docs/diagrams/dsh-stack-trust-zones.html).
 
 | Service | Image | Role |
 |---|---|---|
-| `dsh` | `systems-playground-dsh` | The harness. Holds only placeholder keys. Non-root, read-only rootfs, no capabilities. |
-| `gateway` | `systems-playground-dsh-gateway` | nginx. Sole published port; relays the UI to `dsh`; forwards only the chat/model endpoints of OpenRouter and Anthropic with the real key injected, after verifying the upstream certificate. |
-| `egress` | `systems-playground-dsh-egress` | squid. Web, git and npm for the agent on ports 80/443; refuses loopback, RFC 1918, link-local and CGNAT destinations (the host, the LAN, every other stack's published ports). |
+| `dsh` | `systems-playground-dsh` | The harness. Holds only placeholder keys. Non-root, read-only rootfs, no capabilities. Attached only to the internal `sandbox` network. |
+| `gateway` | `systems-playground-dsh-gateway` | nginx. The sole published port (`127.0.0.1:3080`). Relays the UI to `dsh`, and is dsh's LLM endpoint: it injects the real OpenRouter/Anthropic key, verifies the upstream certificate, and forwards only the chat and models endpoints. |
+| `egress` | `systems-playground-dsh-egress` | squid. The agent's only route to the public internet (ports 80/443, for web, git and npm). Refuses loopback, RFC 1918, link-local and CGNAT destinations: the host, the LAN, every other stack's published ports. |
 
-Why the split: a process running as the same user can read another's environment from `/proc`, so keys given to `dsh` are readable by the agent. They live only in the gateway. Model-authored scripts that ignore the proxy variables simply have no route.
+**Why the split.** A process running as the same user can read another's environment from `/proc`, so any key placed in `dsh` is readable by the agent, even though dsh scrubs credential-named variables for the commands it spawns. Keys therefore live only in the gateway. And a normal container can reach every service published on the host, so `dsh` sits on a network with no route out at all. Model-authored scripts that ignore the proxy variables simply have no route.
 
 ## Run locally
 
 ```bash
 cp .env.example .env        # add OPENROUTER_API_KEY and/or ANTHROPIC_API_KEY
 docker compose up -d --build
-sh link.sh                  # one-time launch URL
+sh link.sh                  # launch URL
 ```
 
 Open the launch URL once per browser; it is exchanged for a 30-day session cookie. `settings.seed.yaml` registers OpenRouter (`deepseek/deepseek-v4-flash-0731`) and Anthropic (`claude-sonnet-5`, `claude-haiku-4-5-20251001`) against the gateway. It is copied only into an empty `dsh_home` volume; on an existing volume change providers in Settings → Models.
@@ -36,27 +34,51 @@ Open the launch URL once per browser; it is exchanged for a 30-day session cooki
 - **Manual runs on the host** need the same environment. Use the workflow (or `infisical run -- docker compose up -d`); a bare `docker compose up -d` there blanks the keys.
 - **Backups.** `wsl-backup.sh` discovers services by that same glob, so `dsh_home` (settings, session history) is not backed up.
 
-## Going public
+## Going public (Cloudflare Access first)
 
-Nothing is published until `DSH_PUBLIC_HOST` is set, so do these in order:
+Nothing is published until the `HOST` repository variable (your domain, e.g. `example.com`) is set, and dsh's hostname is `<DSH_SUBDOMAIN or dsh>.<HOST>`. Because setting `HOST` is what publishes it, do these in order:
 
-1. Cloudflare Zero Trust → Access → Applications → Add → Self-hosted, hostname `dsh.<your domain>`, policy *Allow* for your own email only (one-time PIN or Google, ideally with MFA).
-2. Cloudflare → SSL/TLS → Edge Certificates → turn on *Always Use HTTPS* (dsh's cookie has no `Secure` flag).
-3. GitHub → Settings → Variables → set `DSH_PUBLIC_HOST` to that hostname and re-run *Deploy Infra - dsh*. It becomes both the tunnel label (`cloudflared-sync.sh` routes it within ~30s) and dsh's trusted Host.
-4. In a private window the hostname must show the Access login before anything else.
-5. `DSH_PUBLIC_HOST=dsh.<domain> sh link.sh` on the host prints the URL to open once per device.
+1. **A login method.** Cloudflare dashboard → Zero Trust → Integrations → Identity providers. If *One-time PIN* is not listed, add it (new accounts no longer get it automatically).
+2. **A policy (who may enter).** Zero Trust → Access controls → Policies → Add a policy. Action *Allow*, session duration 24 hours (deliberately shorter than dsh's 30-day cookie), *Include* your own email address only. Never add a *Bypass* policy.
+3. **An application (what it protects).** Zero Trust → Access controls → Applications → Create new application → Self-hosted and private → Add public hostname. Domain `<HOST>`, subdomain `dsh`, no path. Attach the policy, enable *One-time PIN*, set the session duration, Create.
+4. **HTTPS.** In the zone: SSL/TLS → Edge Certificates → *Always Use HTTPS*. dsh's cookie has no `Secure` flag, so it must only ever travel over HTTPS. This setting is zone-wide.
+5. **Publish.** GitHub → Settings → Secrets and variables → Actions → *Variables* tab → set `HOST`, then run *Deploy Infra - dsh*. Within about 30 seconds `cloudflared-sync.sh` adds the route and the DNS record from the container label.
+6. **Verify from outside.** An unauthenticated request must be redirected to your team's `cloudflareaccess.com` login, never reach dsh:
+
+```bash
+curl -sI https://dsh.<HOST>/ | grep -i -E "^HTTP|^location"
+```
+
+Cloudflare's docs also recommend that the origin verify the Access token, so a request that bypasses Access is rejected. This stack does not do that yet (see ADR 004, *Consequences*); dsh's own cookie is the backstop.
+
+## Getting a launch link
+
+dsh generates a new launch URL every time it starts (it is reusable until the next restart, not single-use), and you need one only for a new browser (or after the 30-day cookie expires). Two ways to get it:
+
+- **On the host or from Windows:**
+
+```bash
+wsl -e bash -c "cd ~/infra/dsh && sh link.sh"
+```
+
+  It prints the public `https://` link when the stack is published, otherwise the loopback one. `sh link.sh local` forces the loopback link.
+- **From anywhere (GitHub or Discord):** run the *dsh - Send Launch Link* workflow (Actions → Run workflow, from the website or mobile app). The link is posted to a private Discord channel and masked in the public run log. It needs a Discord webhook URL stored in Infisical as `DSH_LINK_WEBHOOK_URL`.
+
+Either way the link is a credential. It is useless without also passing Access, and it stops working when dsh next restarts (until then it can be reused), so keep the Discord channel private.
 
 ## Auth model (checked against 0.1.5-rc.2)
 
-- Every `/api` call needs a signed `HttpOnly; SameSite=Strict` cookie, minted by exchanging the launch token. The token rotates on every start and is accepted only at `GET /?token=` — not on API paths, not as a bearer.
-- The cookie is bound to the hostname it was minted for and has no `Secure` flag, so off-box it must only travel over HTTPS. It is a bearer for 30 days: anyone holding it has a shell in the container.
-- `/api` enforces a Host/Origin fence: loopback or `DSH_TRUSTED_HOSTS` only, anything else gets 403.
+- Every `/api` call needs a signed `HttpOnly; SameSite=Strict` cookie, minted by exchanging the launch token. The token rotates on every start and is accepted only at `GET /?token=`, not on API paths and not as a bearer.
+- The cookie is bound to the hostname it was minted for and has no `Secure` flag. It is a bearer for 30 days: anyone holding it has a shell in the container.
+- `/api` enforces a Host/Origin fence: loopback or `DSH_TRUSTED_HOSTS` (set from `HOST`) only; anything else gets 403.
 - dsh refuses `--host 0.0.0.0`; `entrypoint.sh` forwards its port and the gateway is the only thing published.
 - Revoke every session by deleting the `client-connection/browser-session` record in `.credentials.yaml` (in the `dsh_home` volume) and restarting.
 
-## Workspaces
+## Workspaces and uploads
 
-The workspace picker browses the server's filesystem, so folders on your own device are not visible to it. Whatever the agent may touch is bind-mounted from `DSH_WORKSPACES_DIR` (default `./workspaces`, on the host `~/infra/dsh/workspaces`) at `/workspace`. Put or clone the repos you want worked on there; on the WSL host that folder is also reachable from Windows at `\\wsl.localhost\Ubuntu\home\yizhe\infra\dsh\workspaces`. Get changes back to your dev checkout with git.
+The workspace picker browses the **server's** filesystem, so folders on your own device are not visible to it. Whatever the agent may touch is bind-mounted from `DSH_WORKSPACES_DIR` (default `./workspaces`, on the host `~/infra/dsh/workspaces`) at `/workspace`. Put or clone the repos you want worked on there; on the WSL host that folder is also reachable from Windows at `\\wsl.localhost\Ubuntu\home\yizhe\infra\dsh\workspaces`. Get changes back to your dev checkout with git.
+
+Files you attach in a chat are uploaded by the browser and stored on the server under `$DSH_HOME/attachments` (in the `dsh_home` volume), so they work from any device. Images need a model that declares image input; hand-declared models in `settings.seed.yaml` do so explicitly.
 
 ## Residual risk
 

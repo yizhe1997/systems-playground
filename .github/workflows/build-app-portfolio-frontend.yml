@@ -12,6 +12,7 @@ jobs:
   build-and-push:
     runs-on: self-hosted
     env:
+      HOST: ${{ vars.HOST }}
       INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
       INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
@@ -20,6 +21,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
+
+      - name: Require HOST
+        # NEXT_PUBLIC_API_URL below is baked into the client bundle, so an empty HOST would ship a broken URL.
+        run: |
+          : "${HOST:?HOST repository variable must be set (your domain, e.g. example.com)}"
 
       - name: Install Infisical CLI
         run: |
@@ -70,5 +76,5 @@ jobs:
           push: true
           tags: ${{ steps.registry-auth.outputs.host }}/systems-playground-frontend:latest
           build-args: |
-            NEXT_PUBLIC_API_URL=https://portfolio-api.38569123.xyz
+            NEXT_PUBLIC_API_URL=https://${{ vars.PORTFOLIO_API_SUBDOMAIN || 'portfolio-api' }}.${{ vars.HOST }}
             NEXT_PUBLIC_POSTHOG_KEY=${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}

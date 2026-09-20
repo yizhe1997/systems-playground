@@ -41,6 +41,9 @@ jobs:
     runs-on: self-hosted
     env:
       APP_BASE_DIR: ${{ vars.APP_BASE_DIR }}
+      HOST: ${{ vars.HOST }}
+      PORTFOLIO_SUBDOMAIN: ${{ vars.PORTFOLIO_SUBDOMAIN }}
+      PORTFOLIO_API_SUBDOMAIN: ${{ vars.PORTFOLIO_API_SUBDOMAIN }}
       INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
       INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
@@ -88,6 +91,7 @@ jobs:
             --projectId="$INFISICAL_PROJECT_ID" --env=prod -- bash -c '
           set -e
           : "${APP_BASE_DIR:?APP_BASE_DIR repository variable must be set}"
+          : "${HOST:?HOST repository variable must be set (your domain, e.g. example.com)}"
           APP_DIR="$APP_BASE_DIR/portfolio"
           mkdir -p "$APP_DIR"
 
@@ -99,6 +103,18 @@ jobs:
           # dollar-brace interpolation (environment blocks) instead of env_file, so docker
           # compose below reads every secret directly from its own process environment,
           # the same one infisical run injected into. See docs/adrs/002-infisical-secret-injection.md.
+          #
+          # The one thing persisted beside the compose file is HOST (plus optional subdomain overrides),
+          # which is not a secret. It lets a bare docker compose up -d at boot (wsl-startup.sh has no
+          # GitHub variables) render the same tunnel labels instead of failing on the required variable.
+          ENV_FILE="$APP_DIR/.env"
+          touch "$ENV_FILE"
+          grep -v -E "^(HOST|PORTFOLIO_SUBDOMAIN|PORTFOLIO_API_SUBDOMAIN)=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
+          printf "HOST=%s\n" "$HOST" >> "$ENV_FILE.tmp"
+          if [ -n "${PORTFOLIO_SUBDOMAIN:-}" ]; then printf "PORTFOLIO_SUBDOMAIN=%s\n" "$PORTFOLIO_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
+          if [ -n "${PORTFOLIO_API_SUBDOMAIN:-}" ]; then printf "PORTFOLIO_API_SUBDOMAIN=%s\n" "$PORTFOLIO_API_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
+          cat "$ENV_FILE.tmp" > "$ENV_FILE"
+          rm -f "$ENV_FILE.tmp"
 
           cd "$APP_DIR" || { echo "❌ Directory $APP_DIR not found!"; exit 1; }
           echo "📁 Contents of $APP_DIR after copy:"

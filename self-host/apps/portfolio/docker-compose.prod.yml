@@ -6,9 +6,9 @@ services:
   backend:
     image: ${REGISTRY_HOST}/systems-playground-backend:latest
     environment:
-      # Hardcoded rather than sourced from Infisical - not a secret, and it must
-      # match the frontend's tunnel hostname below exactly.
-      - FRONTEND_PUBLIC_URL=https://portfolio.38569123.xyz
+      # Built from the same variables as the frontend's tunnel label below, so the two cannot
+      # drift apart. Not a secret, so it is not sourced from Infisical.
+      - FRONTEND_PUBLIC_URL=https://${PORTFOLIO_SUBDOMAIN:-portfolio}.${HOST:?HOST must be set}
       # Drives resumeFilesDir() in filebrowser.go - see the matching comment
       # in docker-compose.override.yml.
       - APP_ENV=production
@@ -19,7 +19,7 @@ services:
       # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh - already live at
       # this hostname via a manually-added config.yml entry; migrating it to a label here means
       # the automated sync now owns it going forward instead.
-      - cloudflare.tunnel.hostname=portfolio-api.38569123.xyz
+      - cloudflare.tunnel.hostname=${PORTFOLIO_API_SUBDOMAIN:-portfolio-api}.${HOST:?HOST must be set}
       - cloudflare.tunnel.port=18085
 
   frontend:
@@ -37,7 +37,7 @@ services:
       - "18086:3000"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-      - cloudflare.tunnel.hostname=portfolio.38569123.xyz
+      - cloudflare.tunnel.hostname=${PORTFOLIO_SUBDOMAIN:-portfolio}.${HOST:?HOST must be set}
       - cloudflare.tunnel.port=18086
   redis:
     ports:

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import SimpleIcon from '@/components/SimpleIcon';
 import { copyText } from '@/lib/copy-text';
 
-const MCP_URL = 'https://portfolio-api.38569123.xyz/mcp';
+const MCP_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8085'}/mcp`;
 const MCP_SERVER_KEY = 'portfolio-chin-yi-zhe';
 
 // Mirrors the tool set actually registered in backend/mcp.go's buildMCPServer() - keep this in

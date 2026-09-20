@@ -1,29 +1,22 @@
-name: Deploy Infra - Uptime Kuma
+name: dsh - Send Launch Link
+# Manual only, on purpose: ADR 001 forbids pull_request triggers on the self-hosted runner. Run it from the
+# GitHub website or mobile app (Actions > "dsh - Send Launch Link" > Run workflow) and the dsh
+# launch link arrives in the Discord channel behind DSH_LINK_WEBHOOK_URL. The link is masked in this
+# (public) run log and never printed.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'self-host/infra/uptime-kuma/**'
-      - '.github/workflows/deploy-infra-uptime-kuma.yml'
   workflow_dispatch:
 
 jobs:
-  deploy:
+  send-link:
     runs-on: self-hosted
     env:
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
-      HOST: ${{ vars.HOST }}
-      KUMA_SUBDOMAIN: ${{ vars.KUMA_SUBDOMAIN }}
       INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
       INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
       INFISICAL_DOMAIN: ${{ vars.INFISICAL_SITE_URL || 'http://localhost:8090' }}
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
-
       - name: Install Infisical CLI
         run: |
           LATEST_TAG=$(curl -sL -o /dev/null -w '%{url_effective}' https://github.com/Infisical/cli/releases/latest | sed 's#.*/tag/##')
@@ -47,7 +40,7 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy uptime-kuma
+      - name: Send launch link
         env:
           INFISICAL_TOKEN: ${{ steps.infisical-auth.outputs.token }}
         run: |
@@ -55,29 +48,17 @@ jobs:
             --projectId="$INFISICAL_PROJECT_ID" --env=prod -- bash -c '
           set -e
           : "${INFRA_BASE_DIR:?INFRA_BASE_DIR repository variable must be set}"
-          : "${HOST:?HOST repository variable must be set (your domain, e.g. example.com)}"
-          TARGET="$INFRA_BASE_DIR/uptime-kuma"
-          mkdir -p "$TARGET"
+          : "${DSH_LINK_WEBHOOK_URL:?DSH_LINK_WEBHOOK_URL must be set in Infisical (a Discord webhook for a private channel)}"
+          echo "::add-mask::$DSH_LINK_WEBHOOK_URL"
 
-          echo "📦 Syncing uptime-kuma compose..."
-          cp -v self-host/infra/uptime-kuma/docker-compose.yml "$TARGET/"
+          cd "$INFRA_BASE_DIR/dsh" || { echo "❌ $INFRA_BASE_DIR/dsh not found - deploy dsh first."; exit 1; }
+          LINK=$(sh link.sh)
+          echo "::add-mask::$LINK"
+          echo "::add-mask::${LINK#*token=}"
 
-          # HOST is not a secret. Persisting it beside the compose file lets a bare docker compose up -d at
-          # boot (wsl-startup.sh has no GitHub variables) render the same tunnel label instead of failing.
-          ENV_FILE="$TARGET/.env"
-          touch "$ENV_FILE"
-          grep -v -E "^(HOST|KUMA_SUBDOMAIN)=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
-          printf "HOST=%s\n" "$HOST" >> "$ENV_FILE.tmp"
-          if [ -n "${KUMA_SUBDOMAIN:-}" ]; then printf "KUMA_SUBDOMAIN=%s\n" "$KUMA_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
-          cat "$ENV_FILE.tmp" > "$ENV_FILE"
-          rm -f "$ENV_FILE.tmp"
-
-          cd "$TARGET" || { echo "❌ Directory $TARGET not found!"; exit 1; }
-          echo "🔄 Restarting uptime-kuma..."
-          docker compose pull
-          docker compose up -d
-          echo "✅ uptime-kuma deployed."
+          # The link holds only URL-safe characters, so it can be embedded in the JSON body as is.
+          curl -sS --fail -o /dev/null -H "Content-Type: application/json" \
+            -d "{\"content\":\"dsh launch link (open it once per browser; anyone with it can sign in until dsh next restarts): $LINK\"}" \
+            "$DSH_LINK_WEBHOOK_URL"
+          echo "✅ Launch link sent to Discord."
           '
-
-      - name: Prune old images
-        run: docker image prune -f

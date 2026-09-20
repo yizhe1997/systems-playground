@@ -20,9 +20,11 @@ jobs:
     runs-on: self-hosted
     env:
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
-      # Optional. While unset the stack is reachable only on the host loopback; setting it publishes the hostname
-      # through the Cloudflare Tunnel, so create its Cloudflare Access policy first (see self-host/infra/dsh/README.md).
-      DSH_PUBLIC_HOST: ${{ vars.DSH_PUBLIC_HOST }}
+      # Optional. While HOST is unset the stack is reachable only on the host loopback; setting it publishes
+      # <DSH_SUBDOMAIN or dsh>.<HOST> through the Cloudflare Tunnel, so create its Cloudflare Access policy
+      # first (see self-host/infra/dsh/README.md).
+      HOST: ${{ vars.HOST }}
+      DSH_SUBDOMAIN: ${{ vars.DSH_SUBDOMAIN }}
       INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
       INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
@@ -82,6 +84,16 @@ jobs:
           cp -v self-host/infra/dsh/docker-compose.yml "$TARGET/compose.yml"
           cp -v self-host/infra/dsh/link.sh "$TARGET/link.sh"
 
+          # Persist the (non-secret) hostname settings so a manual docker compose up -d in this directory renders the
+          # same tunnel label instead of an empty one, which would silently drop the public route.
+          ENV_FILE="$TARGET/.env"
+          touch "$ENV_FILE"
+          grep -v -E "^(HOST|DSH_SUBDOMAIN)=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
+          if [ -n "${HOST:-}" ]; then printf "HOST=%s\n" "$HOST" >> "$ENV_FILE.tmp"; fi
+          if [ -n "${DSH_SUBDOMAIN:-}" ]; then printf "DSH_SUBDOMAIN=%s\n" "$DSH_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
+          cat "$ENV_FILE.tmp" > "$ENV_FILE"
+          rm -f "$ENV_FILE.tmp"
+
           cd "$TARGET" || { echo "❌ Directory $TARGET not found!"; exit 1; }
 
           echo "🔐 Logging in to self-hosted registry..."
@@ -92,10 +104,10 @@ jobs:
           echo "🔄 Restarting dsh..."
           docker compose up -d --wait --wait-timeout 180
           docker compose ps
-          if [ -n "${DSH_PUBLIC_HOST:-}" ]; then
-            echo "🌐 Published at https://$DSH_PUBLIC_HOST - it must already be behind a Cloudflare Access policy."
+          if [ -n "${HOST:-}" ]; then
+            echo "🌐 Published at https://${DSH_SUBDOMAIN:-dsh}.$HOST - it must already be behind a Cloudflare Access policy."
           else
-            echo "🔒 Loopback only (DSH_PUBLIC_HOST is not set)."
+            echo "🔒 Loopback only (HOST is not set)."
           fi
           echo "✅ dsh deployed. Launch link: cd $TARGET && sh link.sh"
           '
