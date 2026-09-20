@@ -78,9 +78,17 @@ Either way the link is a credential. It is useless without also passing Access, 
 - dsh refuses `--host 0.0.0.0`; `entrypoint.sh` forwards its port and the gateway is the only thing published.
 - Revoke every session by deleting the `client-connection/browser-session` record in `.credentials.yaml` (in the `dsh_home` volume) and restarting.
 
+## Editing models and settings (loopback only)
+
+dsh decides in the browser whether it may read and write the host's settings, and it allows that only when the page's own hostname is loopback (`localhost`, `127.x.x.x`, `[::1]`). On a public hostname such as `dsh.<HOST>` the settings UI shows *Loading the provider directory failed: settings are unavailable in this browser*, and models cannot be created or edited from there. This is dsh's design in 0.1.5-rc.2 (there is no configuration switch), not a fault in this stack, and it is client-side only: the server would accept the writes from an authenticated browser.
+
+To add or change providers and models, open dsh on the host through the loopback link (`sh link.sh local`, or from Windows `wsl -e bash -c "cd ~/infra/dsh && sh link.sh local"`, then use the printed `http://127.0.0.1:...` URL in a browser on that machine). The result is stored in the `dsh_home` volume, so it applies to every browser. `settings.seed.yaml` already registers the OpenRouter and Anthropic routes and their models on first start.
+
 ## Workspaces and uploads
 
 The workspace picker browses the **server's** filesystem, so folders on your own device are not visible to it. Whatever the agent may touch is bind-mounted from `DSH_WORKSPACES_DIR` (default `./workspaces`, on the host `~/infra/dsh/workspaces`) at `/workspace`. Put or clone the repos you want worked on there; on the WSL host that folder is also reachable from Windows at `\\wsl.localhost\Ubuntu\home\yizhe\infra\dsh\workspaces`. Get changes back to your dev checkout with git.
+
+The container's root filesystem is read-only, so the only writable places are `/workspace`, the `dsh_home` volume and `/tmp`. `HOME` is set to `/workspace`, so the picker starts there and `git`/`npm` keep their dotfiles and caches in that folder (`.gitconfig`, `.npm`, ...). Creating a folder anywhere else, for example under `/home/node`, fails with `EROFS: read-only file system`.
 
 Files you attach in a chat are uploaded by the browser and stored on the server under `$DSH_HOME/attachments` (in the `dsh_home` volume), so they work from any device. Images need a model that declares image input; hand-declared models in `settings.seed.yaml` do so explicitly.
 

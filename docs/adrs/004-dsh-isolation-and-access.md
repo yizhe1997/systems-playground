@@ -67,6 +67,7 @@ Interactive version: [`dsh-new-device-login.html`](../diagrams/dsh-new-device-lo
 - **The dsh cookie is a 30-day bearer** with no logout; revocation is deleting the signing record and restarting.
 - **Not backed up.** `wsl-backup.sh` discovers services by the same glob, so `dsh_home` (settings, history) is not covered.
 - **The launch link transits GitHub and Discord.** It is useless without also passing Access, and stops working when dsh next restarts, but it is reusable (not single-use) until then, so it is a credential and the Discord channel should be private.
+- **Settings and model editing only work from a loopback page.** dsh's browser client enables host settings only when the page hostname is loopback; from `dsh.<HOST>` the provider directory fails with "settings are unavailable in this browser". Providers and models are therefore seeded (`settings.seed.yaml`) and otherwise edited through the loopback link on the host. Server-side there is no such check, so this is a client restriction of the pinned version, not a control this stack relies on.
 - **Developer-preview software.** Compatibility-breaking releases are expected; the version is pinned in `self-host/infra/dsh/Dockerfile`.
 
 ### Related

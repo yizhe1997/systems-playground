@@ -11,6 +11,10 @@ services:
       ANTHROPIC_API_KEY: gateway-managed
       DSH_TRUSTED_HOSTS: ${HOST:+${DSH_SUBDOMAIN:-dsh}.${HOST}}
       DSH_TELEMETRY_MODE: DISABLED
+      # The root filesystem is read-only, so the image's default home (/home/node) cannot be written to. dsh's workspace
+      # picker starts in $HOME, and git/npm write their dotfiles and caches there, so point it at the writable workspace
+      # mount. dsh's own state is unaffected: DSH_HOME is set explicitly to the dsh_home volume.
+      HOME: /workspace
       HTTP_PROXY: http://egress:3128
       HTTPS_PROXY: http://egress:3128
       NO_PROXY: gateway,egress
