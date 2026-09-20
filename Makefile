@@ -64,7 +64,7 @@ test-bootstrap: check-bats
 	@$(BATS) $(TEST_SCRIPTS_DIR)/test-bootstrap.bats
 
 test-infra: check-bats
-	@$(BATS) $(TEST_SCRIPTS_DIR)/test-infra-startup-shutdown.bats $(TEST_SCRIPTS_DIR)/test-infra-backup-restore.bats
+	@$(BATS) $(TEST_SCRIPTS_DIR)/test-infra-startup-shutdown.bats $(TEST_SCRIPTS_DIR)/test-infra-backup-restore.bats $(TEST_SCRIPTS_DIR)/test-cloudflared-sync.bats
 
 test-apps: check-bats
 	@$(BATS) $(TEST_SCRIPTS_DIR)/test-apps-startup-shutdown.bats $(TEST_SCRIPTS_DIR)/test-apps-backup-restore.bats

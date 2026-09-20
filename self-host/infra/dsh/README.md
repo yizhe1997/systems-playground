@@ -49,7 +49,11 @@ Nothing is published until the `HOST` repository variable (your domain, e.g. `ex
 curl -sI https://dsh.<HOST>/ | grep -i -E "^HTTP|^location"
 ```
 
-Cloudflare's docs also recommend that the origin verify the Access token, so a request that bypasses Access is rejected. This stack does not do that yet (see ADR 004, *Consequences*); dsh's own cookie is the backstop.
+7. **Optional: make the tunnel verify Access too.** Access stamps every request it lets through with a signed token. Without this step nothing behind it checks the stamp, so if the Access application were deleted or mis-scoped, dsh's own cookie would be the only gate left. With it, `cloudflared` itself returns 403 for any request that lacks a valid token for this application.
+   1. Copy the application's **Audience (AUD) tag**: Access controls → Applications → *Configure* on the dsh app → *Additional settings*. It is an identifier, not a secret.
+   2. Set two more repository variables (both or neither): `CF_ACCESS_TEAM` (the `<team>` in `<team>.cloudflareaccess.com`) and `DSH_ACCESS_AUD` (the tag). Re-run *Deploy Infra - dsh*.
+   3. `cloudflared-sync.sh` (deploy *Deploy Infra - Scripts* first if it has not run since this change) adds an `originRequest.access` block for the hostname. It validates the regenerated config with `cloudflared tunnel ingress validate` before installing it and keeps the old one if that fails. A half-set pair leaves the hostname unrouted with a warning in `~/infra/logs/cloudflared-sync.log`, rather than silently skipping the check.
+   4. Check: `grep -B2 -A6 originRequest ~/.cloudflared/config.yml` shows the block, and signing in through Access still works. A request that bypasses Access can't be produced from outside to test the rejection; that part rests on cloudflared's own behaviour.
 
 ## Getting a launch link
 

@@ -25,6 +25,11 @@ jobs:
       # first (see self-host/infra/dsh/README.md).
       HOST: ${{ vars.HOST }}
       DSH_SUBDOMAIN: ${{ vars.DSH_SUBDOMAIN }}
+      # Optional, both or neither: your Zero Trust team name (the <team> in <team>.cloudflareaccess.com) and the
+      # dsh Access application's Audience (AUD) tag. Together they make cloudflared reject requests that did not
+      # pass Cloudflare Access. Identifiers, not secrets, so plain repository variables.
+      CF_ACCESS_TEAM: ${{ vars.CF_ACCESS_TEAM }}
+      DSH_ACCESS_AUD: ${{ vars.DSH_ACCESS_AUD }}
       INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
       INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
@@ -88,9 +93,11 @@ jobs:
           # same tunnel label instead of an empty one, which would silently drop the public route.
           ENV_FILE="$TARGET/.env"
           touch "$ENV_FILE"
-          grep -v -E "^(HOST|DSH_SUBDOMAIN)=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
+          grep -v -E "^(HOST|DSH_SUBDOMAIN|CF_ACCESS_TEAM|DSH_ACCESS_AUD)=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
           if [ -n "${HOST:-}" ]; then printf "HOST=%s\n" "$HOST" >> "$ENV_FILE.tmp"; fi
           if [ -n "${DSH_SUBDOMAIN:-}" ]; then printf "DSH_SUBDOMAIN=%s\n" "$DSH_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
+          if [ -n "${CF_ACCESS_TEAM:-}" ]; then printf "CF_ACCESS_TEAM=%s\n" "$CF_ACCESS_TEAM" >> "$ENV_FILE.tmp"; fi
+          if [ -n "${DSH_ACCESS_AUD:-}" ]; then printf "DSH_ACCESS_AUD=%s\n" "$DSH_ACCESS_AUD" >> "$ENV_FILE.tmp"; fi
           cat "$ENV_FILE.tmp" > "$ENV_FILE"
           rm -f "$ENV_FILE.tmp"
 

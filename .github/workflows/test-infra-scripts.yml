@@ -24,6 +24,7 @@ on:
       - 'self-host/infra/scripts/**'
       - 'scripts/tests/test-infra-startup-shutdown.bats'
       - 'scripts/tests/test-infra-backup-restore.bats'
+      - 'scripts/tests/test-cloudflared-sync.bats'
       - 'scripts/tests/vendor/**'
       - '.github/workflows/test-infra-scripts.yml'
   pull_request:
@@ -31,6 +32,7 @@ on:
       - 'self-host/infra/scripts/**'
       - 'scripts/tests/test-infra-startup-shutdown.bats'
       - 'scripts/tests/test-infra-backup-restore.bats'
+      - 'scripts/tests/test-cloudflared-sync.bats'
       - 'scripts/tests/vendor/**'
       - '.github/workflows/test-infra-scripts.yml'
   workflow_dispatch:
@@ -53,3 +55,12 @@ jobs:
         with:
           submodules: recursive
       - run: scripts/tests/vendor/bats-core/bin/bats scripts/tests/test-infra-backup-restore.bats
+
+  cloudflared-sync:
+    name: infra cloudflared-sync.sh (labels, Access origin check, config validation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: scripts/tests/vendor/bats-core/bin/bats scripts/tests/test-cloudflared-sync.bats

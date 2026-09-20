@@ -53,6 +53,11 @@ services:
       # nothing is published until HOST is set. Create the Cloudflare Access policy for the hostname first.
       - cloudflare.tunnel.hostname=${HOST:+${DSH_SUBDOMAIN:-dsh}.${HOST}}
       - cloudflare.tunnel.port=${DSH_PORT:-3080}
+      # Optional origin check: with BOTH set, cloudflared rejects any request that lacks a valid Cloudflare
+      # Access token for this application (see cloudflared-sync.sh). Set both or neither: a half-set pair
+      # leaves the hostname unrouted rather than silently skipping the check.
+      - cloudflare.tunnel.access-aud=${DSH_ACCESS_AUD:-}
+      - cloudflare.tunnel.access-team=${CF_ACCESS_TEAM:-}
     tmpfs:
       - /tmp
     read_only: true
