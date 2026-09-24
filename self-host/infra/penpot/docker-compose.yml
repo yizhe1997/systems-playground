@@ -19,7 +19,13 @@ x-flags: &penpot-flags
   PENPOT_FLAGS: disable-email-verification enable-smtp enable-prepl-server disable-secure-session-cookies enable-mcp enable-admin-console
 
 x-uri: &penpot-public-uri
-  PENPOT_PUBLIC_URI: "https://${PENPOT_HOST:-penpot.${HOST:?HOST must be set}}"
+  # This must match whatever origin you actually load Penpot from in a browser, or the frontend
+  # breaks with a generic "Something wrong has happened" - Penpot bakes this into its own API/asset
+  # base URL, it isn't just cosmetic. Upstream's own default (localhost:9001) is right for local
+  # access; only override PENPOT_PUBLIC_URI once this is actually reachable at the tunnel URL
+  # below. Previously wrongly force-derived from HOST, which broke local testing since the browser
+  # was at localhost:9001 while the app thought its own origin was https://penpot.<HOST>.
+  PENPOT_PUBLIC_URI: "${PENPOT_PUBLIC_URI:-http://localhost:${PENPOT_PORT:-9001}}"
 
 x-body-size: &penpot-http-body-size
   PENPOT_HTTP_SERVER_MAX_BODY_SIZE: 367001600
