@@ -1,0 +1,183 @@
+## Penpot — self-hosted Figma alternative, adopted specifically to get out from under Figma's
+## Starter-plan MCP rate limit (10 calls/min even on a Full seat) hit while wireframing Tradecraft.
+## Adapted from the official compose file (penpot/penpot develop/docker/images/docker-compose.yaml,
+## fetched 2026-09-24) to this repo's conventions: secrets via .env/Infisical instead of hardcoded
+## `penpot`/`penpot`/`change-this-insecure-key`, named local volumes (matching registry's pattern),
+## Watchtower + cloudflared-sync labels on the one service that needs to be reachable (frontend).
+##
+## MCP note: `penpot-mcp` below is Penpot's bundled MCP component, network-internal only by
+## default (matches upstream). It is NOT automatically usable by an external Claude Code session —
+## the real client-facing MCP server (`@penpot/mcp`, a separate TypeScript package) runs its own
+## process exposing a Streamable HTTP endpoint, and requires a live browser tab with Penpot open
+## and its MCP plugin actively WebSocket-connected as the execution bridge. That's a follow-up step
+## once this stack is confirmed running, not part of getting Penpot itself deployed.
+
+x-flags: &penpot-flags
+  # Same flags upstream ships by default. Read the two commented-out ones below before exposing
+  # this beyond the tunnel/local network — disable-secure-session-cookies and
+  # disable-email-verification are meant for localhost-only trial use.
+  PENPOT_FLAGS: disable-email-verification enable-smtp enable-prepl-server disable-secure-session-cookies enable-mcp enable-admin-console
+
+x-uri: &penpot-public-uri
+  # This must match whatever origin you actually load Penpot from in a browser, or the frontend
+  # breaks with a generic "Something wrong has happened" - Penpot bakes this into its own API/asset
+  # base URL, it isn't just cosmetic. Upstream's own default (localhost:9001) is right for local
+  # access; only override PENPOT_PUBLIC_URI once this is actually reachable at the tunnel URL
+  # below. Previously wrongly force-derived from HOST, which broke local testing since the browser
+  # was at localhost:9001 while the app thought its own origin was https://penpot.<HOST>.
+  PENPOT_PUBLIC_URI: "${PENPOT_PUBLIC_URI:-http://localhost:${PENPOT_PORT:-9001}}"
+
+x-body-size: &penpot-http-body-size
+  PENPOT_HTTP_SERVER_MAX_BODY_SIZE: 367001600
+  PENPOT_HTTP_SERVER_MAX_MULTIPART_BODY_SIZE: 367001600
+
+x-secret-key: &penpot-secret-key
+  # Message after :? must not contain a colon — YAML parses an unquoted "key: value"-shaped
+  # scalar as a nested mapping, which is the exact bug the compose-config validation caught here.
+  PENPOT_SECRET_KEY: "${PENPOT_SECRET_KEY:?generate one with the command in .env.example}"
+
+x-database: &penpot-database
+  PENPOT_DATABASE_URI: postgresql://penpot-postgres/penpot
+  PENPOT_DATABASE_USERNAME: penpot
+  PENPOT_DATABASE_PASSWORD: ${PENPOT_POSTGRES_PASSWORD:?set in .env}
+
+networks:
+  penpot:
+
+services:
+  penpot-frontend:
+    image: "penpotapp/frontend:${PENPOT_VERSION:-2.18}"
+    restart: unless-stopped
+    ports:
+      # Direct host access, same pattern n8n/filebrowser/uptime-kuma all use alongside their
+      # cloudflared-sync label below — the tunnel label is for public routing, this port is for
+      # local/LAN access without needing the tunnel up. Missing this was caught by actually
+      # running the stack, not just validating config syntax.
+      - "${PENPOT_PORT:-9001}:8080"
+    volumes:
+      - penpot_assets:/opt/data/assets
+    depends_on:
+      - penpot-backend
+      - penpot-admin-console
+      - penpot-mcp
+      - penpot-exporter
+    networks:
+      - penpot
+    environment:
+      <<: [*penpot-flags, *penpot-http-body-size, *penpot-public-uri]
+      PENPOT_ADMIN_CONSOLE_URI: http://penpot-admin-console:3000
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh
+      - cloudflare.tunnel.hostname=${PENPOT_SUBDOMAIN:-penpot}.${HOST:?HOST must be set}
+      - cloudflare.tunnel.port=8080
+
+  penpot-backend:
+    image: "penpotapp/backend:${PENPOT_VERSION:-2.18}"
+    restart: unless-stopped
+    volumes:
+      - penpot_assets:/opt/data/assets
+    depends_on:
+      penpot-postgres:
+        condition: service_healthy
+      penpot-valkey:
+        condition: service_healthy
+    networks:
+      - penpot
+    environment:
+      <<: [*penpot-flags, *penpot-public-uri, *penpot-http-body-size, *penpot-secret-key, *penpot-database]
+      PENPOT_ADMIN_CONSOLE_URI: http://penpot-admin-console:3000
+      PENPOT_REDIS_URI: redis://penpot-valkey/0
+      PENPOT_OBJECTS_STORAGE_BACKEND: fs
+      PENPOT_OBJECTS_STORAGE_FS_DIRECTORY: /opt/data/assets
+      PENPOT_TELEMETRY_ENABLED: "false"
+      PENPOT_SMTP_DEFAULT_FROM: no-reply@${HOST:?HOST must be set}
+      PENPOT_SMTP_DEFAULT_REPLY_TO: no-reply@${HOST:?HOST must be set}
+      PENPOT_SMTP_HOST: penpot-mailpit
+      PENPOT_SMTP_PORT: 1025
+      PENPOT_SMTP_TLS: "false"
+      PENPOT_SMTP_SSL: "false"
+
+  penpot-admin-console:
+    image: "penpotapp/admin-console:${PENPOT_VERSION:-2.18}"
+    restart: unless-stopped
+    depends_on:
+      penpot-postgres:
+        condition: service_healthy
+    networks:
+      - penpot
+    environment:
+      <<: [*penpot-public-uri, *penpot-secret-key, *penpot-database]
+      PENPOT_INTERNAL_URI: http://penpot-frontend:8080
+
+  penpot-mcp:
+    image: "penpotapp/mcp:${PENPOT_VERSION:-2.18}"
+    restart: unless-stopped
+    networks:
+      - penpot
+
+  penpot-exporter:
+    image: "penpotapp/exporter:${PENPOT_VERSION:-2.18}"
+    restart: unless-stopped
+    depends_on:
+      penpot-valkey:
+        condition: service_healthy
+    networks:
+      - penpot
+    environment:
+      <<: [*penpot-flags, *penpot-secret-key, *penpot-public-uri]
+      PENPOT_INTERNAL_URI: http://penpot-frontend:8080
+      PENPOT_REDIS_URI: redis://penpot-valkey/0
+
+  penpot-postgres:
+    image: "postgres:15"
+    restart: unless-stopped
+    stop_signal: SIGINT
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U penpot"]
+      interval: 2s
+      timeout: 10s
+      retries: 5
+      start_period: 2s
+    volumes:
+      - penpot_postgres:/var/lib/postgresql/data
+    networks:
+      - penpot
+    environment:
+      - POSTGRES_INITDB_ARGS=--data-checksums
+      - POSTGRES_DB=penpot
+      - POSTGRES_USER=penpot
+      - POSTGRES_PASSWORD=${PENPOT_POSTGRES_PASSWORD:?set in .env}
+
+  penpot-valkey:
+    image: valkey/valkey:8.1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep PONG"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+    networks:
+      - penpot
+    environment:
+      - VALKEY_EXTRA_FLAGS=--maxmemory 128mb --maxmemory-policy volatile-lfu
+
+  # Temporary SMTP sink so registration/invite emails don't fail — read at http://<host>:8025.
+  # Swap for a real SMTP provider (or this repo's own Listmonk+Postal, once that's built — see
+  # the backlog item on Boards/Work) before this matters for more than the operator's own account.
+  penpot-mailpit:
+    image: axllent/mailpit:v1
+    restart: unless-stopped
+    expose:
+      - "1025"
+    ports:
+      - "8025:8025"
+    networks:
+      - penpot
+
+volumes:
+  penpot_postgres:
+    driver: local
+  penpot_assets:
+    driver: local
