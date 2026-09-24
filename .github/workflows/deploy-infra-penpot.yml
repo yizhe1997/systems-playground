@@ -1,0 +1,35 @@
+name: Deploy Infra - Penpot
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'self-host/infra/penpot/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR || '/home/yizhe/infra' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Deploy penpot
+        run: |
+          TARGET="$INFRA_BASE_DIR/penpot"
+          mkdir -p "$TARGET"
+
+          echo "📦 Syncing penpot compose..."
+          cp self-host/infra/penpot/docker-compose.yml "$TARGET/"
+
+          echo "🔄 Restarting penpot..."
+          cd "$TARGET"
+          docker compose pull
+          docker compose up -d
+          echo "✅ penpot deployed."
+
+      - name: Prune old images
+        run: docker image prune -f
