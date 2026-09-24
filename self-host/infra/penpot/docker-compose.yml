@@ -42,6 +42,12 @@ services:
   penpot-frontend:
     image: "penpotapp/frontend:${PENPOT_VERSION:-2.18}"
     restart: unless-stopped
+    ports:
+      # Direct host access, same pattern n8n/filebrowser/uptime-kuma all use alongside their
+      # cloudflared-sync label below — the tunnel label is for public routing, this port is for
+      # local/LAN access without needing the tunnel up. Missing this was caught by actually
+      # running the stack, not just validating config syntax.
+      - "${PENPOT_PORT:-9001}:8080"
     volumes:
       - penpot_assets:/opt/data/assets
     depends_on:
