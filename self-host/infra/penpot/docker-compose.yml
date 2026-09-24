@@ -68,9 +68,12 @@ services:
       PENPOT_ADMIN_CONSOLE_URI: http://penpot-admin-console:3000
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-      # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh
+      # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh. cloudflared runs
+      # NATIVELY on the host (not containerized), so this must be the host-published port from
+      # the `ports:` mapping above (9001), not the container's internal port (8080) - using 8080
+      # here caused a live 502 (cloudflared connecting to a host port nothing listens on).
       - cloudflare.tunnel.hostname=${PENPOT_SUBDOMAIN:-penpot}.${HOST:?HOST must be set}
-      - cloudflare.tunnel.port=8080
+      - cloudflare.tunnel.port=${PENPOT_PORT:-9001}
 
   penpot-backend:
     image: "penpotapp/backend:${PENPOT_VERSION:-2.18}"
