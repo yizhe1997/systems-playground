@@ -109,18 +109,21 @@ Infisical's admin/org/machine-identity setup stays fully manual — see [`self-h
 Everything above runs identically whether the host is WSL2 or bare metal — Docker, `cloudflared`, the systemd units (section 2), all of it. The one thing genuinely specific to Windows: something has to actually **boot the WSL2 VM** when Windows starts, since Windows has no native concept of auto-starting a Linux VM — once it's running, `systemd` inside takes over completely. That's a one-time Windows-side Task Scheduler entry, and it's small enough to set up entirely from PowerShell rather than the old GUI wizard. Run this in an **elevated** PowerShell window (Run as Administrator — required for `-RunLevel Highest`):
 
 ```powershell
-$action = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d Ubuntu -- true"
+$action = New-ScheduledTaskAction -Execute "wsl.exe" -Argument "-d Ubuntu -- sleep infinity"
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Highest
-Register-ScheduledTask -TaskName "WSL Startup" -Action $action -Trigger $trigger -Principal $principal -Description "Wakes the WSL2 VM at boot - systemd inside Ubuntu handles startup from there."
+$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+Register-ScheduledTask -TaskName "WSL Startup" -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force -Description "Boots the WSL2 VM at startup and keeps it alive - systemd inside Ubuntu handles startup from there."
 ```
 
 - `-d Ubuntu` assumes your distro is literally named "Ubuntu" (`wsl -l -v` confirms — adjust the argument if yours differs).
-- `-- true` is a deliberate no-op — invoking `wsl.exe` at all is what boots the VM as a side effect, so the command run inside doesn't matter. Deliberately **not** `-u root -e bash wsl-startup.sh` — that would just re-run the infra bring-up a second time on top of what `systems-playground-infra.service` (section 2) already does natively.
+- `-- sleep infinity` is what keeps the VM up. WSL2 shuts the VM down as soon as no `wsl.exe` session is attached — `systemd` services and Docker containers inside do **not** count. An earlier version of this step ran `-- true`, which booted the VM and exited immediately: the VM then died ~16 seconds later (visible in `journalctl --list-boots` inside Ubuntu as boots that last seconds) and the sites stayed down until someone opened a terminal. So this task's long-running `wsl.exe` process is the thing holding the VM alive — it should show as `Running` in `Get-ScheduledTask`, not `Ready`. Deliberately **not** `-u root -e bash wsl-startup.sh` — that would just re-run the infra bring-up a second time on top of what `systems-playground-infra.service` (section 2) already does natively.
+- `-ExecutionTimeLimit ([TimeSpan]::Zero)` means no limit. Without it Task Scheduler's default 72-hour limit would kill the `sleep` after 3 days and take the VM down with it.
+- `-Force` overwrites an existing `WSL Startup` task, so this same block also upgrades one registered with the old `-- true` version.
 - `-LogonType S4U` runs the task as your own Windows account without needing to store a password — required here specifically because the "Ubuntu" distro is registered per-user; running this as `SYSTEM` instead would fail to find it at all.
 - `-RunLevel Highest` is the scripted equivalent of the old GUI wizard's "Run with highest privileges" checkbox.
 
-**Verify:** `Get-ScheduledTask -TaskName "WSL Startup" | Get-ScheduledTaskInfo` should show it registered with no errors. The real test is an actual Windows reboot, then the checks at the end of section 2.
+**Verify:** `Get-ScheduledTask -TaskName "WSL Startup"` should show `State: Running` after a boot (`Ready` means the `wsl.exe` process already exited and nothing is holding the VM up). The real test is an actual Windows reboot *without opening any terminal*, then the checks at the end of section 2 — opening Ubuntu yourself masks exactly the failure this step exists to prevent.
 
 ---
 
