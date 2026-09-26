@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-alpine AS base
+# Node 24 (active LTS, supported to 2028-04-30). Node 20 reached end-of-life on 2026-04-30.
+FROM node:24-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -33,6 +34,7 @@ WORKDIR /app
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
+# (Measured on Node 20, kept as a precaution after moving to Node 24; re-measure if it is ever removed.)
 # Node 20 "happy eyeballs" gives each resolved address only 250ms to finish its TCP handshake
 # before abandoning it. On this WSL2/NAT host the handshake to PostHog's ingest ELB
 # (us.i.posthog.com, 8 A + 8 AAAA records, and this host has no IPv6 route at all) regularly
