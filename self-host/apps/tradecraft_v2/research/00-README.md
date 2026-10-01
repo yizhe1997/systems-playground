@@ -28,10 +28,11 @@ The first pass was a skim of type definitions. The second pass read much more. T
 - The type definitions for trades, accounts, setups, prop challenges (rules, phases, payouts, policy revisions), reviews, review custom fields, session mode, trade gate, session log, import, and templates.
 - About 6,000 interface strings from the English language file: every screen, setting, notice, tooltip, empty state and guided tour. This is the product describing itself, and it is where the user flows in `09` come from. Roughly a fifth of the file did not parse into keys and was not read.
 - The tour definitions for each screen.
+- Built-in review layouts for every level, the default settings (home, navigation, quick links, review questions, checklists), the first-run personalisation rules, the sample journal's content (accounts, setups, mistakes, reviews, custom fields), and the demon tracker and grade widgets' behaviour.
 - Logic: review context inheritance, the weekly widget that pulls daily sections, trading-day cutoff, break-even classification, trade P&L calculation (costs, direct P&L, dividends), the prop rule engine's result types, drawdown evaluation (static, end-of-day and intraday trailing, lock, payout effects) and daily loss evaluation (tiers, scaling, soft versus hard breach), the trading score tables, session-phase resolution, review streaks (head only).
 
 **Not read (so treat related claims as inferred)**
-- The trade service (about 200 KB), account page service, setup service and its execution-gap calculation, missed and backtest services, the demon tracker's counting logic, the payout engine, the profit-target, consistency and position-size rule evaluation, the import and sync services (the parsers run on the product's servers anyway), the economic calendar service, share cards, and all of the 569 interface components and the settings code.
+- The setup service and its execution-gap calculation (known from the screen text and a formula tooltip, not the code), the missed and backtest services, the demon tracker's exact counting rules, the payout engine, the profit-target, consistency and position-size rule evaluation, the import and sync services (the parsers run on the product's servers anyway), and the trade and account services (about 340 KB together, mostly file-handling plumbing that does not apply to a database app; only their method lists were read), the economic calendar service, share cards, and all of the 569 interface components and the settings code.
 - Anything about how it *feels* to use. We have text and logic, not screenshots in motion.
 
 **Corrections made in this pass**
@@ -41,6 +42,8 @@ The first pass was a skim of type definitions. The second pass read much more. T
 
 | File | Contents |
 |---|---|
+| `11-react-to-this.md` | **Start here.** Concrete stories and ideas to react to, instead of abstract questions |
+| `10-philosophy-and-defaults.md` | The idea the product is built around, what it does by default, the sample journal's story |
 | `09-user-flows.md` | The product's flows step by step: first run, accounts, a trading day, reviews, import, prop challenge, setups, filters |
 | `diagrams/*.html` | Interactive diagrams of the trading day, the import pipeline and the prop challenge lifecycle (open in a browser) |
 | `01-module-inventory.md` | Every module, one line each, with its status in v1 |

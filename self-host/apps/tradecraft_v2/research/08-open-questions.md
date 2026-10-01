@@ -1,3 +1,5 @@
+> **Superseded 2026-10-02 by `11-react-to-this.md`.** These questions needed domain knowledge the owner does not have yet. Kept only as a record.
+
 # Open questions for the owner
 
 Ordered by what blocks the v2 spec. Each has my lean, so a quick yes or no is enough.
