@@ -1,7 +1,7 @@
 # How Tradecraft v2 is built
 
 Written 2026-10-02. This is the process every feature follows. The rules behind it are in the
-constitution (`.specify/memory/constitution.md`); this file says how to carry them out.
+constitution ([`.specify/memory/constitution.md`](../.specify/memory/constitution.md)); this file says how to carry them out.
 
 ## The short version
 
@@ -16,7 +16,7 @@ research -> constitution (once)
          -> implement -> verify -> converge
 ```
 
-A diagram of the same flow is in `docs/build-process.html`.
+A diagram of the same flow: [build-process.html](build-process.html) (open it in a browser).
 
 ## Status of each piece
 
@@ -78,16 +78,16 @@ Both are supported by Spec Kit without editing its own files, so upgrades do not
 
 | What | Where |
 |---|---|
-| Constitution | `.specify/memory/constitution.md` |
+| Constitution | [`.specify/memory/constitution.md`](../.specify/memory/constitution.md) |
 | Spec Kit templates, scripts, workflow | `.specify/` |
 | Skills for each step | `.claude/skills/speckit-*/` |
 | Features | `specs/NNN-name/` |
-| Research and your reactions | `research/` |
+| Research and your reactions | [`research/`](../research/00-README.md) |
 | Screens and wording | Penpot, plus `specs/NNN-name/screens.md` |
 | Domain rules, with sources | `docs/domain.md` (to be carried over from v1) |
 | Security review and gates | `docs/security-review.md` (to be carried over from v1) |
 | Dated decisions | `research/12-owner-decisions.md`, then `docs/decisions.md` |
-| Process diagram | `docs/build-process.html` |
+| Process diagram | [build-process.html](build-process.html) |
 | Dev-session notes | The vault, `H:\My Drive\claude-second-brain` |
 
 ## What is reused from Tradecraft v1
