@@ -24,8 +24,8 @@ A diagram of the same flow: [build-process.html](build-process.html) (open it in
 |---|---|
 | Research on a reference product, flows, and your reactions (`research/`) | Done 2026-10-02 |
 | Spec Kit installed and initialised (Claude integration) | Done |
-| Constitution v1.0.0 | Written, awaiting your approval |
-| The rough-screens step and the sign-off gate | **Not built yet**; designed below |
+| Constitution v1.0.0 | **Approved by the owner 2026-10-02** |
+| The rough-screens step and the sign-off gate | **Built and installed 2026-10-02**, not yet exercised on a real feature |
 | First feature `001-journal-and-reflect` | Not started |
 
 ## Stages, artifacts, tools and gates
@@ -57,10 +57,20 @@ you have seen it:
    constraints the plan, tasks and implementation must honour. Any later UI change updates the
    wireframe in the same change.
 
-How it will be built (not done yet): a small project-local command, `speckit-screens`, written by
-us rather than taken from the community catalogue (the one wireframe extension there is unvetted
-third-party code). It will be wired into the flow with a hook or a workflow overlay under `.specify/`.
-Both are supported by Spec Kit without editing its own files, so upgrades do not overwrite them.
+How it is built: our own Spec Kit extension, `screens`, source in `speckit-extensions/screens/` (see its
+[README](../speckit-extensions/screens/README.md)). We wrote it ourselves because the one wireframe
+extension in the community catalogue is unvetted third-party code. It adds two commands and two
+mandatory hooks:
+
+- `/speckit-screens-draft`, run automatically after `specify`: drafts the screens in Penpot with real
+  wording, writes `specs/NNN/screens.md`, collects your reactions, and passes the open questions to
+  clarify.
+- `/speckit-screens-signoff`, run automatically before `plan`: checks the screens against the
+  clarified spec, asks for your sign-off, records the spec's hash, and adds a "Signed-off screens"
+  section to the spec. If the spec changes later, the sign-off goes stale and is asked for again.
+
+Hooks live in `.specify/extensions.yml` (written by the install), so Spec Kit upgrades do not
+overwrite them. To change the extension, edit the source folder and reinstall with `--force`.
 
 ## How to run it
 

@@ -1,0 +1,45 @@
+schema_version: "1.0"
+
+extension:
+  id: screens
+  name: "Screens: rough drafts and sign-off"
+  version: "0.1.0"
+  description: "Adds a rough-screens step after specify and a screens sign-off gate before plan. Screens are drawn in Penpot with real wording; the signed-off screens become constraints for plan, tasks and implement."
+  author: tradecraft
+  license: MIT
+
+requires:
+  speckit_version: ">=1.0.0"
+  tools:
+    - name: penpot-mcp
+      required: false
+
+provides:
+  commands:
+    - name: speckit.screens.draft
+      file: commands/speckit.screens.draft.md
+      description: "Draft the feature's screens in Penpot with real wording, write screens.md, and collect the owner's reactions"
+    - name: speckit.screens.signoff
+      file: commands/speckit.screens.signoff.md
+      description: "Check screens against the clarified spec and get the owner's sign-off; blocks plan until signed off"
+
+  templates:
+    - name: screens-template
+      file: templates/screens-template.md
+      description: "The screens.md each feature gets: inventory, content list, reactions, sign-off"
+
+hooks:
+  after_specify:
+    command: speckit.screens.draft
+    optional: false
+    description: "Draft rough screens from the new spec (constitution principle V)"
+  before_plan:
+    command: speckit.screens.signoff
+    optional: false
+    description: "Screens must be signed off before technical design (constitution principle V)"
+
+tags:
+  - "design"
+  - "wireframe"
+  - "penpot"
+  - "gate"

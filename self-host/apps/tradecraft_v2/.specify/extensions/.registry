@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "extensions": {
+    "screens": {
+      "version": "0.1.0",
+      "source": "local",
+      "manifest_hash": "sha256:b22f83063a0a8e416aec123685a9d057602f3a4d7e83c19c787dfb36ebf27bee",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "claude": [
+          "speckit.screens.draft",
+          "speckit.screens.signoff"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-10-01T18:38:24.698204+00:00"
+    }
+  }
+}
