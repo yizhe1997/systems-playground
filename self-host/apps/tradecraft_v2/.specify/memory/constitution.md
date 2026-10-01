@@ -1,50 +1,128 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Tradecraft v2 Constitution
+
+Tradecraft v2 is a self-hosted trading journal for a single owner. It is built on the Tradecraft v1
+stack and is designed to be read and drafted into by agents, with the owner always in control.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Process Over Outcome
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+The product judges decisions, not results. A review surface MUST NOT show profit and loss alone:
+every figure MUST appear next to process information (plan-adherence grade, tagged mistakes) for
+the same period or trade.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+Rationale: a journal that only reports results teaches the owner to repeat lucky mistakes.
+Check: every review, summary and analytics screen is reviewed for a process figure beside each
+money figure.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Owner in Charge, Agents Read and Draft
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+Agents MAY read the owner's data and MAY write drafts. Anything that becomes a real record (a
+trade, a review, a rule) MUST be approved by the owner. Agent access MUST use scoped, revocable
+tokens, and every agent action MUST be written to the audit log. Features that cost model tokens
+(for example an agent-run pre-trade gate) MUST run only on request and MUST NOT be always on.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Rationale: the owner's journal is their own record and their own accountability.
+Check: no write path accepts an agent token without an approval step; each agent call appears in
+the audit log; no feature starts model calls without a user action.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. Honest Numbers
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Money MUST be exact decimals and MUST NOT be floating point. A figure that cannot be computed MUST
+show a dash and state why. The product MUST NOT invent a capital basis. Every statistic MUST state
+its definition and its sample size.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+Rationale: invented or silently rounded numbers make a journal worse than none.
+Check: calculation tests cover the dash cases; every statistic has a stated definition in the
+domain document.
+
+### IV. Security Gates and No Secrets
+
+The Tradecraft v1 gates remain in force: a single owner, an email allow-list, a service token
+between the web tier and the API, an audit log, step-up confirmation for identity changes, and
+same-origin checks on changes. Code for authentication, import or upload MUST pass local review
+passes before it merges, and MUST be reviewed again after any material change. The owner has chosen
+to rely on those reviews rather than reading such code personally. Secrets MUST NOT appear in logs,
+the repository or chat. Nothing MAY be exposed beyond localhost until continuous integration has
+been proven to run on GitHub.
+
+Rationale: the journal holds trading history that is worth protecting.
+Check: a security review record per gate, and a passing CI run before any exposure.
+
+### V. Design Before Code
+
+No feature code MAY be written until the feature's screens and wording are signed off in Penpot as
+wireframes plus a content list. Any change to the interface MUST update its wireframe in the same
+change. The flow includes a rough-screens step after specify (before clarify) and a final sign-off
+gate before plan.
+
+Rationale: the owner only knows what they want once they have seen it, so seeing it must come
+before building it.
+Check: a plan cannot start without a recorded sign-off for each screen it touches.
+
+### VI. One Small Slice at a Time
+
+Each feature MUST be usable on its own. The first version is deliberately small: logging trades,
+a daily review with yesterday's focus, plan-down focus fields, process grades, and mistake tags
+with a counter and an optional stop line. A slice MUST contain only what that slice needs.
+
+Rationale: a small usable slice gives real feedback before more is built on top of it.
+Check: each specification states its independent value and lists what it excludes.
+
+### VII. Own Your Data
+
+The system runs self-hosted in containers. All data MUST be exportable. Trade data MUST NOT go to
+a third party without a clear disclosure at the point of use. AI features MUST be opt-in and MUST
+have a working kill switch.
+
+Rationale: the owner keeps control of their records and of who sees them.
+Check: an export exists for every stored kind of data; every outbound call to a third party is
+listed in the security review with its disclosure text.
+
+### VIII. Decisions Logged, Domain Sourced
+
+Every decision MUST be recorded with its date and reason and MUST NOT be reopened without new
+information. Trading rules (the trading day, R-multiple, drawdown and similar) MUST live in a
+domain document with sources, and any interpretation the owner has not confirmed MUST be flagged
+there as unconfirmed.
+
+Rationale: domain knowledge is the weakest part of the project; writing down what is known, and
+what is guessed, stops guesses hardening into facts.
+Check: the domain document and the decision log are updated in the same change as the behaviour.
+
+## Technology and Domain Constraints
+
+- **Stack**: Go with Fiber and Postgres for the API, Next.js for the web tier, Penpot for design,
+  Docker Compose for running everything. Changing the stack needs a recorded decision.
+- **Testing**: domain logic and APIs MUST be tested against a real Postgres. The interface MUST be
+  verified in a real browser on the composed stack. Tests are added together with the feature;
+  test-first is not required.
+- **Domain**: the trading day, R-multiple, drawdown, break-even and similar rules are defined in
+  the domain document and nowhere else.
+- **Reuse**: the data layer, authentication, audit, rule engine, Rule Replay, tests and design
+  assets from Tradecraft v1 are reused where they fit. Reuse still passes through the specification
+  flow.
+
+## Workflow and Quality Gates
+
+- **Flow**: constitution (once), specify, rough screens, clarify, screens sign-off, plan,
+  checklist, tasks, analyze, implement, converge.
+- **Branches**: all work stays on the single branch `tradecraft_v2`; there are no per-feature git
+  branches. Feature directories are still numbered under `specs/`.
+- **Commits**: commits are made only when the owner asks, or as part of a flow step the owner has
+  started. Nothing is pushed to the remote without the owner's say-so. Commit messages end with
+  the Co-Authored-By line for Claude.
+- **Reviews**: local review passes run for any change to authentication, import or upload code;
+  findings are fixed or recorded as accepted risk with a reason.
+- **Verification**: a feature is not done until it has been exercised through the composed stack
+  and a real browser, and the result is stated honestly, including any failures.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution overrides other practices in this project. An amendment MUST be recorded with
+its date and reason and MUST bump the version. Versioning follows semantic rules: MAJOR for
+removing or redefining a principle, MINOR for adding a principle or materially widening guidance,
+PATCH for wording and clarifications. Each specification, plan and review MUST check compliance with
+these principles, and any exception MUST be written down with its justification and an expiry.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-02
