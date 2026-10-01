@@ -16,7 +16,7 @@ Confidence: *Read* unless noted. "v1" is Tradecraft v1 on the `tradecraft` branc
 | **Custom fields** | User-defined fields on trades (text, number, dropdown, multiselect, date/time) with validation | None |
 | **Daily review** | The richest review, one per trading day | Built as a templated Review entry |
 | **Weekly / monthly / quarterly / yearly reviews** | Roll-ups with stats, grades, mistakes, goals; can show what was written on lower levels | Built, but as separate aggregates (no quarterly, no inheritance) |
-| **Review custom fields + groups** | Fields you define once and place on chosen review levels, with inheritance rules | None |
+| **Review custom fields + groups** | Planning fields (bias, focus, intent) defined once; written on a higher review level and shown read-only on the lower ones (top-down inheritance, per-field modes) | None |
 | **Review layout builder** | A review is an ordered list of widgets chosen from a catalog | Built as templates and blocks |
 | **Review streaks** | Counts consecutive reviewed days, weeks, months, trades | None |
 | **Session mode** | Live trading-day companion: windows, prep, live, break, ended | None |

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Prop challenge phase lifecycle",
+    "quality_profile": "showcase",
+    "viewBox": [980, 680]
+  },
+  "lanes": [
+    { "id": "main", "label": "Phase progress" },
+    { "id": "terminal", "label": "Ends and hand-offs" }
+  ],
+  "states": [
+    { "id": "created", "type": "start", "label": "Challenge created", "sublabel": "firm rules applied", "lane": "main", "col": 0, "step": "01" },
+    { "id": "pending", "type": "waiting", "label": "Pending", "sublabel": "waits for the last phase", "lane": "main", "col": 1, "step": "02" },
+    { "id": "active", "type": "active", "label": "Active", "sublabel": "every rule tracked live", "lane": "main", "col": 2, "step": "03" },
+    { "id": "target", "type": "waiting", "label": "Target reached", "sublabel": "all pass rules met", "lane": "main", "col": 3, "step": "04" },
+    { "id": "passed", "type": "success", "label": "Phase passed", "sublabel": "you confirm the time", "lane": "main", "col": 4, "step": "05" },
+    { "id": "failed", "type": "failure", "label": "Failed", "sublabel": "a limit rule was breached", "lane": "terminal", "col": 0 },
+    { "id": "next", "type": "neutral", "label": "Next stage", "sublabel": "funded adds payouts", "lane": "terminal", "col": 2 }
+  ],
+  "transitions": [
+    { "from": "created", "to": "pending" },
+    { "from": "pending", "to": "active", "label": "phase starts", "labelDy": -26 },
+    { "from": "active", "to": "target", "label": "pass rules met", "labelDy": -26 },
+    { "from": "target", "to": "passed", "label": "advance", "labelDy": -26 },
+    { "from": "active", "to": "failed", "variant": "security", "route": "straight", "fromSide": "bottom", "toSide": "top", "label": "limit breached", "labelDy": 24 },
+    { "from": "passed", "to": "next", "variant": "emphasis", "route": "straight", "fromSide": "bottom", "toSide": "top" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Rules per phase", "items": ["Limit rules fail the phase: drawdown, daily loss, position size", "Achievement rules must be reached: profit target, trading days, consistency", "Each rule shows progress, a near-limit warning and a live example"] },
+    { "dot": "amber", "title": "Moving between phases", "items": ["The app asks before advancing and lets you pick a transition time", "A breach after the target was reached can be kept out of the phase", "A failed or passed challenge can be archived, or reopened"] },
+    { "dot": "rose", "title": "Funded stages", "items": ["Payout readiness lists each requirement met or missing", "A recorded payout can reset the cycle, lock the floor or reset the account", "The last payout can end the account or mark it eligible for live review"] }
+  ]
+}

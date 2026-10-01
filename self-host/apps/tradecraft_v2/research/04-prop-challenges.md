@@ -31,6 +31,20 @@ For each rule: current value, target, progress, remaining, satisfied, breached, 
 
 Other rules of the engine (read): a **trading-day cutoff time** decides which day a trade belongs to; a phase only counts the cash events it owns; waived failures can be recorded; a daily-loss breach that only suspends is not a hard breach.
 
+## How the two main limit rules are actually evaluated (read in the engine logic)
+
+**Drawdown.** The floor starts at starting balance minus the limit. It is checked after every closed trade and every cash event; the buffer is balance minus floor, and a buffer at or below zero is a breach dated at that event. Three modes:
+- *Static:* the floor never moves.
+- *End-of-day trailing:* trades are grouped by trading day (the cutoff time decides the day). Only when a day's events are all in does the app take the highest end-of-day balance and move the floor up to it minus the limit. The floor never moves down.
+- *Intraday trailing:* the floor moves up after every closed trade that sets a new high.
+An optional **lock** caps the trailing floor at a fixed balance, after which it stops rising. A payout can also lock the floor, or reset the account and the floor to the start. The result keeps the most the limit was ever used and how much is used right now, because the history and the present can differ. A warning shows from a fixed share of the limit used (a single threshold constant, value not read).
+
+**Daily loss.** Closed trades are grouped by trading day. For each day the engine keeps the **running P&L and its worst dip**, not the day's end result, and a breach happens at the first moment the dip reaches the limit. So a day that dips past the limit and recovers still breaches. The limit itself can vary: a fixed amount; a larger amount once lifetime profit passes a percentage of the starting balance; tiers based on the prior end-of-day profit (a tier applies from the *next* day); or a share of the peak end-of-day profit once the account reaches an activation balance (never decreasing). The breach action is either *fail* (the phase fails) or *pause until the next session* (counted only for the current day, and not a hard failure). Today's usage is reported separately, with a warning share.
+
+**Other rules in the engine, not read in detail:** profit target (closed trades only; can credit withdrawals), minimum trading days (a day with at least one closed trade), minimum profitable days, consistency (best day as a share of total profit, with the profit still needed to satisfy it), position size (including scaling by prior-day profit tiers, micros counted as a fraction), daily profit cap (profit above the cap is not credited).
+
+**Cross-cutting behaviours.** A phase only counts events that belong to it (by date window and broker account). A breach can be **waived** with a record, so history after it still counts. When rules change mid-phase, evaluation starts the new rules at the effective time and carries the drawdown state (floor, peak, locked) either from the old rules or from terms you enter by hand. The "failure after the target was reached" case is reported so you can set the transition time and keep later trades out.
+
 ## Payouts (read)
 
 A funded phase can carry a payout policy:

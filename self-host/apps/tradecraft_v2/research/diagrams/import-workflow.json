@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Importing trades: analyse, preview, confirm",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "you", "label": "You" },
+    { "id": "app", "label": "The app" },
+    { "id": "outcome", "label": "Outcome" }
+  ],
+  "phases": [
+    { "id": "prepare", "label": "Prepare", "fromCol": 0, "toCol": 1 },
+    { "id": "understand", "label": "Understand the file", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "commit", "label": "Check and commit", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [],
+  "mainPath": ["source", "upload", "analyse", "mapping", "preview", "confirm", "result"],
+  "nodes": [
+    { "id": "source", "lane": "you", "col": 0, "type": "frontend", "label": "Pick source", "sublabel": "platform or own file", "width": 132 },
+    { "id": "upload", "lane": "you", "col": 1, "type": "frontend", "label": "Upload file", "sublabel": "after a privacy note", "width": 132 },
+    { "id": "analyse", "lane": "app", "col": 2, "type": "backend", "label": "Analyse", "sublabel": "sheet, header, guesses", "width": 132 },
+    { "id": "mapping", "lane": "you", "col": 3, "type": "frontend", "label": "Settle doubts", "sublabel": "dates, columns, source", "width": 132 },
+    { "id": "preview", "lane": "app", "col": 4, "type": "security", "label": "Preview", "sublabel": "class for every trade", "width": 132 },
+    { "id": "confirm", "lane": "you", "col": 5, "type": "frontend", "label": "Confirm", "sublabel": "or import anyway", "width": 132 },
+    { "id": "result", "lane": "outcome", "col": 5, "type": "database", "label": "Result", "sublabel": "written, updated, skipped", "width": 132 },
+    { "id": "dupes", "lane": "outcome", "col": 4, "type": "messagebus", "label": "Held back", "sublabel": "duplicates and conflicts", "width": 132 }
+  ],
+  "edges": [
+    { "id": "source-upload", "from": "source", "to": "upload" },
+    { "id": "upload-analyse", "from": "upload", "to": "analyse", "label": "send", "variant": "emphasis" },
+    { "id": "analyse-mapping", "from": "analyse", "to": "mapping", "label": "questions" },
+    { "id": "mapping-preview", "from": "mapping", "to": "preview", "label": "map", "variant": "emphasis" },
+    { "id": "preview-confirm", "from": "preview", "to": "confirm" },
+    { "id": "confirm-result", "from": "confirm", "to": "result", "label": "commit", "variant": "emphasis" },
+    { "id": "preview-dupes", "from": "preview", "to": "dupes", "label": "held", "variant": "dashed", "role": "branch" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Ask, do not guess", "items": ["Ambiguous dates become a question", "A wrong report type points to the right export", "A file that looks like another source offers to switch"] },
+    { "dot": "amber", "title": "Every trade gets a class", "items": ["New, already imported, in another account, updates existing", "Possible duplicate, conflict, invalid, no open match, quantity mismatch"] },
+    { "dot": "rose", "title": "After the import", "items": ["View just these trades, or jump to the review period", "Undo an import; trades another import also holds stay"] }
+  ]
+}
