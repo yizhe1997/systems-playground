@@ -93,7 +93,7 @@ overwrite them. To change the extension, edit the source folder and reinstall wi
 | Skills for each step | `.claude/skills/speckit-*/` |
 | Features | `specs/NNN-name/` |
 | Research and your reactions | [`research/`](../research/00-README.md) |
-| Screens and wording | Penpot, plus `specs/NNN-name/screens.md` |
+| Screens and wording | Penpot file `Tradecraft_v2` (new file made 2026-10-02; one page per screen, plus a `Design kit` page), plus `specs/NNN-name/screens.md` and screenshots in `specs/NNN-name/screens/` |
 | Domain rules, with sources | `docs/domain.md` (to be carried over from v1) |
 | Security review and gates | `docs/security-review.md` (to be carried over from v1) |
 | Dated decisions | `research/12-owner-decisions.md`, then `docs/decisions.md` |
