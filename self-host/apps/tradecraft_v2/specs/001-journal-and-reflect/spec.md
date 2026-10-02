@@ -203,7 +203,7 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 
 ## Wireframes
 
-A first draft was made on 2026-10-02 in Penpot (file `Tradecraft_v2`, one page per screen) but it was styled with an earlier project's look, so the wireframes will be redrawn in greyscale. See [screens.md](screens.md) for the inventory, the full wording, and the open questions below, which clarify should ask the owner about.
+Greyscale wireframes were drawn on 2026-10-02 in Penpot (file `Tradecraft_v2`, one page per screen); images are in [wireframes/](wireframes/). An earlier styled draft was set aside because it assumed another project's look. See [screens.md](screens.md) for the inventory, the full wording, and the open questions below, which clarify should ask the owner about.
 
 - Weekend days in the weekly review: show Saturday and Sunday when there are no trades, or hide them?
 - Grade scale: three steps (A, B, C) or five stars?

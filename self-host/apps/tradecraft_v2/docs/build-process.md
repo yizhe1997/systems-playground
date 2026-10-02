@@ -45,7 +45,7 @@ Where Impeccable (the frontend design skill) is used:
 | Constitution | **v1.1.0, approved**: principle V split into wireframes, visual direction and visual review |
 | Design gates extension (wireframes, sign-off, direction check, visual review) | Built and installed v0.2.0; **not yet exercised end to end** |
 | Visual direction | **Not decided yet.** Tradecraft v1's `DESIGN.md` is one candidate starting point, only if you choose it |
-| Feature `001-journal-and-reflect` | Specified. First wireframe draft was styled with v1's look by mistake and has been set aside; wireframes to be redrawn in greyscale |
+| Feature `001-journal-and-reflect` | Specified. Wireframes redrawn in greyscale (15 frames, six screens); waiting for your reactions, then clarify |
 
 ## Stages, artifacts, tools and gates
 
