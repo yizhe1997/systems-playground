@@ -1,8 +1,8 @@
-# Screens: Journal and Reflect
+# Wireframes: Journal and Reflect
 
 **Feature**: `001-journal-and-reflect`
-**Status**: draft
-**Penpot**: file `Tradecraft_v2`, one page per screen (`S0 Reviews` to `S5 Weekly review`), plus `Design kit`
+**Status**: draft, **wireframes to be redrawn**. The first draft was styled with Tradecraft v1's look by mistake (constitution 1.1.0 forbids this). The styled images are kept as `screens-superseded-styled/` for their content and layout ideas only. The inventory, wording and open questions below stay as the starting point; the Penpot pages must be redrawn in greyscale.
+**Penpot**: file `Tradecraft_v2`, one page per screen (`S0 Reviews` to `S5 Weekly review`); the current frames are styled and are to be replaced
 **Signed off**: not yet
 **spec-sha256**: (filled in at sign-off)
 
@@ -16,12 +16,12 @@ They serve every user story in `spec.md`: S1 and S2 serve stories 1 and 2, S3 se
 
 | ID | Screen | Serves | States drawn | Image |
 |---|---|---|---|---|
-| S0 | Reviews: list of days and weeks, per account | US1, FR-003 | list; nothing to review yet | [S0](screens/S0-reviews-list.png) |
-| S1 | Daily review (one account, one day) | US1, US2, US4, FR-003 to FR-012, FR-018 | filled (draft); empty day; nothing earlier to show; reviewed but trades changed | [filled](screens/S1-daily-review-filled.png), [empty day](screens/S1-daily-review-empty-day.png), [nothing earlier](screens/S1-daily-review-nothing-earlier.png), [trades changed](screens/S1-daily-review-reviewed-trades-changed.png) |
-| S2 | Judge a trade (drawer opened from the Judge button) | US2, US3, FR-008, FR-009, FR-013 | a loss labelled mistake; a win flagged as a mistake | [loss](screens/S2-judge-a-loss.png), [win](screens/S2-judge-a-win.png) |
-| S3 | Mistakes: counter, stop lines, list management | US3, FR-013 to FR-016 | counter this week; stop line editor (with an error); nothing tagged yet | [counter](screens/S3-mistakes-counter.png), [editor](screens/S3-stop-line-editor.png) |
-| S4 | Write a focus (week or month) | US4, FR-017, FR-018 | week; month; nothing written yet | [week](screens/S4-set-a-focus.png) |
-| S5 | Weekly review (one account, one week) | US5, FR-019 to FR-021 | filled (draft) | [S5](screens/S5-weekly-review.png) |
+| S0 | Reviews: list of days and weeks, per account | US1, FR-003 | list; nothing to review yet | [S0](screens-superseded-styled/S0-reviews-list.png) |
+| S1 | Daily review (one account, one day) | US1, US2, US4, FR-003 to FR-012, FR-018 | filled (draft); empty day; nothing earlier to show; reviewed but trades changed | [filled](screens-superseded-styled/S1-daily-review-filled.png), [empty day](screens-superseded-styled/S1-daily-review-empty-day.png), [nothing earlier](screens-superseded-styled/S1-daily-review-nothing-earlier.png), [trades changed](screens-superseded-styled/S1-daily-review-reviewed-trades-changed.png) |
+| S2 | Judge a trade (drawer opened from the Judge button) | US2, US3, FR-008, FR-009, FR-013 | a loss labelled mistake; a win flagged as a mistake | [loss](screens-superseded-styled/S2-judge-a-loss.png), [win](screens-superseded-styled/S2-judge-a-win.png) |
+| S3 | Mistakes: counter, stop lines, list management | US3, FR-013 to FR-016 | counter this week; stop line editor (with an error); nothing tagged yet | [counter](screens-superseded-styled/S3-mistakes-counter.png), [editor](screens-superseded-styled/S3-stop-line-editor.png) |
+| S4 | Write a focus (week or month) | US4, FR-017, FR-018 | week; month; nothing written yet | [week](screens-superseded-styled/S4-set-a-focus.png) |
+| S5 | Weekly review (one account, one week) | US5, FR-019 to FR-021 | filled (draft) | [S5](screens-superseded-styled/S5-weekly-review.png) |
 
 ## Flows
 
@@ -128,7 +128,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 
 - [x] Every money figure has process information beside it (S0 rows, S1 numbers and table, S2 result strip, S5 numbers)
 - [x] Every figure that can be unavailable shows a dash and a reason (S1 win rate "Needs 5 trades; you have 3", S2 risk "No stop recorded, so no risk figure.")
-- [x] Results are shown in neutral ink, never green or red; process judgements carry the colour
+- [ ] Greyscale only: no brand colour, brand font or colour-coded meaning (the styled draft used colour for meaning; the redraw must use text labels instead)
 - [ ] No placeholder text anywhere (the rough draft still has sample data; owner to confirm wording at sign-off)
 
 ## Reactions

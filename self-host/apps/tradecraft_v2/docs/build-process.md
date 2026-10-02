@@ -1,22 +1,40 @@
 # How Tradecraft v2 is built
 
-Written 2026-10-02. This is the process every feature follows. The rules behind it are in the
-constitution ([`.specify/memory/constitution.md`](../.specify/memory/constitution.md)); this file says how to carry them out.
+Written 2026-10-02, revised the same day (constitution 1.1.0). This is the process every feature follows.
+The rules behind it are in the constitution
+([`.specify/memory/constitution.md`](../.specify/memory/constitution.md)); this file says how to carry
+them out.
 
 ## The short version
 
-Research first, then one small feature at a time. Each feature goes through a fixed flow where you
-see and sign off the screens before any technical design, and nothing is built until the design is
-agreed. Agents do the drafting; you make the calls.
+Research first, then one small feature at a time. Each feature goes through a fixed flow in which you see
+and sign off **greyscale wireframes** before any technical design, the **look** is decided once per
+project by you, and a **visual review** closes each feature. Agents do the drafting; you make the calls.
 
 ```
 research -> constitution (once)
-         -> specify -> rough screens -> clarify -> screens sign-off
+         -> specify -> wireframes -> clarify -> wireframe sign-off
          -> plan -> checklist -> tasks -> analyze
-         -> implement -> verify -> converge
+         -> visual-direction check -> implement -> visual review -> converge
 ```
 
 A diagram of the same flow: [build-process.html](build-process.html) (open it in a browser).
+
+## Three separate design decisions
+
+We keep structure, look and result apart, because they are different decisions with different costs.
+
+| Decision | When | Who decides | What it covers | Artifact |
+|---|---|---|---|---|
+| **Wireframes** | Per feature, after specify, signed off before plan | You | Structure, layout, content and wording, states, behaviour. Greyscale. **No brand, colour or type choices** | Penpot pages, `specs/NNN/screens.md`, `wireframes/` images |
+| **Visual direction** | Once per project, checked before the first implement (you can decide it earlier or later, but code cannot start without it) | You, with references you provide | Palette, type, density, component feel, tone. Never assumed from an earlier project | `DESIGN.md`, `PRODUCT.md`, `docs/visual-direction.md` |
+| **Visual review** | Per feature, after implement | You | The built screens, in a real browser, against the wireframes and the visual direction | `built/` screenshots, a "Visual review" section in `screens.md` |
+
+Where Impeccable (the frontend design skill) is used:
+- **Visual direction:** its `init` command writes `PRODUCT.md` and its `document` command writes `DESIGN.md`.
+- **Plan:** its `shape` command can turn the signed-off wireframes into a UI brief (optional).
+- **Implement:** the frontend code is written against `DESIGN.md`, with its design guidance active.
+- **Visual review:** its `critique` and `audit` commands run on the built screens, and `polish` if you want it.
 
 ## Status of each piece
 
@@ -24,65 +42,58 @@ A diagram of the same flow: [build-process.html](build-process.html) (open it in
 |---|---|
 | Research on a reference product, flows, and your reactions (`research/`) | Done 2026-10-02 |
 | Spec Kit installed and initialised (Claude integration) | Done |
-| Constitution v1.0.0 | **Approved by the owner 2026-10-02** |
-| The rough-screens step and the sign-off gate | **Built and installed 2026-10-02**, not yet exercised on a real feature |
-| First feature `001-journal-and-reflect` | Not started |
+| Constitution | **v1.1.0, approved**: principle V split into wireframes, visual direction and visual review |
+| Design gates extension (wireframes, sign-off, direction check, visual review) | Built and installed v0.2.0; **not yet exercised end to end** |
+| Visual direction | **Not decided yet.** Tradecraft v1's `DESIGN.md` is one candidate starting point, only if you choose it |
+| Feature `001-journal-and-reflect` | Specified. First wireframe draft was styled with v1's look by mistake and has been set aside; wireframes to be redrawn in greyscale |
 
 ## Stages, artifacts, tools and gates
 
 | # | Stage | What happens | Artifact | Tool | Gate |
 |---|---|---|---|---|---|
-| 0 | Research | Study a mature product and read what it does; you react to concrete ideas | `research/`, decision log `research/12-owner-decisions.md`, vault note | Reading, `archify` diagrams | You have reacted to the ideas |
+| 0 | Research | Study a mature product and read what it does; you react to concrete ideas | `research/`, `research/12-owner-decisions.md`, vault note | Reading, `archify` diagrams | You have reacted to the ideas |
 | 1 | Constitution | Non-negotiable rules for the project, set once | `.specify/memory/constitution.md` | `/speckit-constitution` | You approve the principles |
 | 2 | Specify | What to build and why, as user stories and requirements. No technology | `specs/NNN-name/spec.md` | `/speckit-specify` | You read the draft |
-| 3 | Rough screens | A first draft of each screen the stories need, with real wording | Penpot page for the feature, `screens.md` (screen list and content) | Penpot MCP, `archify` for flows | You react to what you see |
-| 4 | Clarify | Up to five targeted questions about whatever is still unclear, now about concrete screens; answers go back into the spec | updated `spec.md` | `/speckit-clarify` | Questions answered |
-| 5 | Screens sign-off | The final check on screens and wording | A signed-off line in `screens.md`, dated | You, in chat | **You sign off.** Plan cannot start without it |
+| 3 | Wireframes | Greyscale drawings of each screen and state, with the real wording | Penpot pages (one per screen), `screens.md`, `wireframes/` | `/speckit-screens-draft`, Penpot | You react to what you see |
+| 4 | Clarify | Up to five targeted questions about what is still unclear, now about concrete screens | updated `spec.md` | `/speckit-clarify` | Questions answered |
+| 5 | Wireframe sign-off | The final check on structure, content, states and behaviour. Not the look | A dated sign-off in `screens.md`, plus a "Signed-off wireframes" section in `spec.md` | `/speckit-screens-signoff` | **You sign off.** Plan cannot start without it |
 | 6 | Plan | Technical design: data, API contract, how it reuses Tradecraft v1 | `plan.md`, `data-model.md`, `contracts/`, `research.md`, `quickstart.md` | `/speckit-plan` | You approve the plan |
 | 7 | Checklist | "Unit tests for the requirements": is the spec complete and consistent | `checklists/*.md` | `/speckit-checklist` | Reviewer ticks the items |
 | 8 | Tasks and analyze | Dependency-ordered work list, then a read-only consistency report across spec, plan and tasks | `tasks.md`, analysis report | `/speckit-tasks`, `/speckit-analyze` | Conflicts fixed at the source |
-| 9 | Implement | Build in task order | Code, tests, migrations, OpenAPI | `/speckit-implement`, Go, Next.js, sqlc, goose | Pre-commit hook passes |
-| 10 | Verify | Run the real stack and a real browser; run a local review pass if the feature touches authentication, import or upload | Verification notes in the feature folder | Docker Compose, the browser pane, `/code-review` | Honest result, failures included |
-| 11 | Converge | Compare the code with spec, plan and tasks; any remaining work becomes new tasks | updated `tasks.md` | `/speckit-converge` | Nothing left unbuilt, or listed |
+| 9 | Visual-direction check | If the project's look is not decided and approved, decide it now with you and write `DESIGN.md` and `PRODUCT.md`; otherwise a one-line pass | `docs/visual-direction.md`, `DESIGN.md`, `PRODUCT.md` | `/speckit-screens-direction`, Impeccable | **You approve the look.** Implement cannot start without it |
+| 10 | Implement | Build in task order, against the wireframes and `DESIGN.md` | Code, tests, migrations, OpenAPI | `/speckit-implement`, Go, Next.js, sqlc, goose | Pre-commit hook passes |
+| 11 | Visual review | Run the real stack and a real browser; compare with the wireframes; critique and audit; run a local review pass if the feature touches authentication, import or upload | `built/` screenshots, "Visual review" in `screens.md` | `/speckit-screens-review`, Docker Compose, browser pane, Impeccable, `/code-review` | **You approve the look.** The feature is not done without it |
+| 12 | Converge | Compare the code with spec, plan and tasks; remaining work becomes new tasks | updated `tasks.md` | `/speckit-converge` | Nothing left unbuilt, or listed |
 
-## The two screen steps (our change to the standard flow)
+## The design gates extension
 
-The standard Spec Kit flow has no design step. We add two, because you only know what you want once
-you have seen it:
-
-1. **Rough screens, after specify and before clarify.** Once a first spec exists, draft each screen
-   its user stories need, quickly, in Penpot, with the real words (labels, empty states, messages).
-   You react. The clarify questions then ask about concrete screens, not abstractions.
-2. **Screens sign-off, after clarify and before plan.** A hard gate. The signed-off screens become
-   constraints the plan, tasks and implementation must honour. Any later UI change updates the
-   wireframe in the same change.
-
-How it is built: our own Spec Kit extension, `screens`, source in `speckit-extensions/screens/` (see its
+Our own Spec Kit extension, source in `speckit-extensions/screens/` (see its
 [README](../speckit-extensions/screens/README.md)). We wrote it ourselves because the one wireframe
-extension in the community catalogue is unvetted third-party code. It adds two commands and two
-mandatory hooks:
+extension in the community catalogue is unvetted third-party code. It adds four commands and four
+mandatory hooks, written to `.specify/extensions.yml` by the install so Spec Kit upgrades do not
+overwrite them:
 
-- `/speckit-screens-draft`, run automatically after `specify`: drafts the screens in Penpot with real
-  wording, writes `specs/NNN/screens.md`, collects your reactions, and passes the open questions to
-  clarify.
-- `/speckit-screens-signoff`, run automatically before `plan`: checks the screens against the
-  clarified spec, asks for your sign-off, records the spec's hash, and adds a "Signed-off screens"
-  section to the spec. If the spec changes later, the sign-off goes stale and is asked for again.
+| Hook | Command | What it does |
+|---|---|---|
+| after `specify` | `/speckit-screens-draft` | Draws greyscale wireframes, writes `screens.md`, collects your reactions, passes open questions to clarify |
+| before `plan` | `/speckit-screens-signoff` | Checks wireframes against the clarified spec (including that they are really greyscale), asks for your sign-off, records the spec hash; goes stale if the spec changes |
+| before `implement` | `/speckit-screens-direction` | Passes if the visual direction is approved; otherwise runs that step with you |
+| after `implement` | `/speckit-screens-review` | Built screens vs wireframes in a browser, Impeccable checks, your approval of the look |
 
-Hooks live in `.specify/extensions.yml` (written by the install), so Spec Kit upgrades do not
-overwrite them. To change the extension, edit the source folder and reinstall with `--force`.
+To change the extension, edit the source folder and reinstall with `--force`.
 
 ## How to run it
 
 - The `specify` command-line tool is installed (v1.0.14). On this machine Windows blocks its
   launcher, so run it through its Python environment:
   `"$APPDATA/uv/tools/specify-cli/Scripts/python.exe" -c "from specify_cli import main; import sys; sys.argv=['specify']+sys.argv[1:]; main()" <args>`
-- The step commands (`/speckit-specify` and the rest) are Claude Code skills in `.claude/skills/`.
-  They are available in a Claude session started inside `tradecraft_v2`, or when a session works on
-  files under that folder.
+- The step commands (`/speckit-specify` and the rest) are Claude Code skills in `.claude/skills/`. They
+  are available in a Claude session started inside `tradecraft_v2`, or one working on files under it.
 - Each step is run one at a time and reviewed before the next. The agent may stop and ask questions.
-- Git: everything stays on the branch `tradecraft_v2`. There are no per-feature branches. Feature
-  folders are still numbered (`specs/001-...`). Nothing is pushed without your say-so.
+- Git: everything stays on the branch `tradecraft_v2`. There are no per-feature branches. Feature folders
+  are still numbered (`specs/001-...`). Nothing is pushed without your say-so.
+- Penpot: the plugin tab must be open and connected for the wireframe steps. If it drops, the step says
+  so and waits.
 
 ## Where things live
 
@@ -93,7 +104,9 @@ overwrite them. To change the extension, edit the source folder and reinstall wi
 | Skills for each step | `.claude/skills/speckit-*/` |
 | Features | `specs/NNN-name/` |
 | Research and your reactions | [`research/`](../research/00-README.md) |
-| Screens and wording | Penpot file `Tradecraft_v2` (new file made 2026-10-02; one page per screen, plus a `Design kit` page), plus `specs/NNN-name/screens.md` and screenshots in `specs/NNN-name/screens/` |
+| Wireframes | Penpot file `Tradecraft_v2` (one page per screen, plus a wireframe kit page), `specs/NNN-name/screens.md`, images in `specs/NNN-name/wireframes/` |
+| Visual direction | `docs/visual-direction.md`, `DESIGN.md`, `PRODUCT.md` |
+| Built-screen screenshots | `specs/NNN-name/built/` |
 | Domain rules, with sources | `docs/domain.md` (to be carried over from v1) |
 | Security review and gates | `docs/security-review.md` (to be carried over from v1) |
 | Dated decisions | `research/12-owner-decisions.md`, then `docs/decisions.md` |
@@ -102,15 +115,16 @@ overwrite them. To change the extension, edit the source folder and reinstall wi
 
 ## What is reused from Tradecraft v1
 
-By default: the backend foundation (ledger, rule engine, Rule Replay, authentication, audit, tests),
-the design assets (logo kit, tokens, Penpot flows), and the security and domain documents. Rebuilt:
-the review model (focus fields, inheritance, grades) and anything the owner's reactions replaced.
-Each reuse decision is made inside a feature's plan and recorded there, so reuse is never silent.
+By default: the backend foundation (ledger, rule engine, Rule Replay, authentication, audit, tests), the
+logo and design assets as raw material, and the security and domain documents. Rebuilt: the review model
+(focus fields, inheritance, grades) and anything your reactions replaced. **The look is not reused
+unless you choose it** in the visual-direction step. Each reuse decision is made inside a feature's plan
+and recorded there, so reuse is never silent.
 
 ## Order of features
 
-1. `001-journal-and-reflect`: log trades, daily review with yesterday's focus, plan-down focus
-   fields, process grades, mistake tags and counter with an optional stop line.
+1. `001-journal-and-reflect`: log trades, daily review with yesterday's focus, plan-down focus fields,
+   process grades, mistake tags and counter with an optional stop line.
 2. Agent read access (ask your journal, Rule Replay in answers), right after the first version.
 3. After that, in an order to be chosen from use: live session (gate and log), import with reusable
    profiles, prop-challenge cockpit, setup playbooks, missed trades.

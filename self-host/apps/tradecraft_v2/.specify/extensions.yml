@@ -10,7 +10,8 @@ hooks:
     optional: false
     priority: 10
     prompt: Execute speckit.screens.draft?
-    description: Draft rough screens from the new spec (constitution principle V)
+    description: Draft greyscale wireframes from the new spec (constitution principle
+      V)
     condition: null
   before_plan:
   - extension: screens
@@ -19,6 +20,26 @@ hooks:
     optional: false
     priority: 10
     prompt: Execute speckit.screens.signoff?
-    description: Screens must be signed off before technical design (constitution
+    description: Wireframes must be signed off before technical design (constitution
+      principle V)
+    condition: null
+  before_implement:
+  - extension: screens
+    command: speckit.screens.direction
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.screens.direction?
+    description: The visual direction must be approved before implementation (constitution
+      principle V)
+    condition: null
+  after_implement:
+  - extension: screens
+    command: speckit.screens.review
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.screens.review?
+    description: Visual review of the built screens before the feature is done (constitution
       principle V)
     condition: null

@@ -43,3 +43,10 @@ Answers to `11-react-to-this.md`, recorded as given. Dated 2026-10-02. These are
 ## What this adds up to
 
 Nearly everything was wanted, so the work is sequencing. The first version is deliberately small and sits on the foundation Tradecraft v1 already has.
+
+## Design process decisions (2026-10-02)
+
+- **Wireframes are greyscale and assume no look.** The first draft of feature 001 used Tradecraft v1's palette and type without asking; that was a mistake and has been set aside.
+- **Three separate design decisions:** wireframes (structure and wording, signed off before plan), visual direction (the look, decided once per project by the owner, approved before the first implement), and visual review (built screens in a browser, approved after implement).
+- **Impeccable** is used for the visual direction (`init`, `document`), optionally at plan (`shape`), as implementation guidance, and in the visual review (`critique`, `audit`, `polish`).
+- The owner can provide design references whenever the visual direction is decided; code cannot start without it. Constitution amended to 1.1.0.

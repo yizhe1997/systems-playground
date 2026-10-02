@@ -1,47 +1,46 @@
 {
   "schema_version": 2,
   "diagram_type": "workflow",
-  "meta": {
-    "title": "How Tradecraft v2 is built",
-    "quality_profile": "showcase"
-  },
+  "meta": { "title": "How Tradecraft v2 is built", "quality_profile": "showcase" },
   "lanes": [
     { "id": "owner", "label": "You decide" },
     { "id": "kit", "label": "Spec Kit flow" },
-    { "id": "design", "label": "Screens (Penpot)" },
-    { "id": "build", "label": "Build and verify" }
+    { "id": "design", "label": "Design gates" },
+    { "id": "build", "label": "Build" }
   ],
   "phases": [
     { "id": "frame", "label": "Frame", "fromCol": 0, "toCol": 1 },
     { "id": "shape", "label": "Shape the feature", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
-    { "id": "make", "label": "Design and build", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+    { "id": "make", "label": "Make and check", "fromCol": 4, "toCol": 5, "variant": "dashed" }
   ],
   "groups": [],
-  "mainPath": ["research", "constitution", "specify", "screens", "clarify", "signoff", "plan", "tasks", "implement"],
+  "mainPath": ["research", "constitution", "specify", "wireframes", "clarify", "signoff", "plan", "direction", "implement", "review"],
   "nodes": [
     { "id": "research", "lane": "owner", "col": 0, "type": "external", "label": "Research", "sublabel": "reactions logged", "width": 132 },
     { "id": "constitution", "lane": "kit", "col": 1, "type": "backend", "label": "Constitution", "sublabel": "once, you approve", "width": 132 },
     { "id": "specify", "lane": "kit", "col": 2, "type": "backend", "label": "Specify", "sublabel": "what and why", "width": 132 },
-    { "id": "screens", "lane": "design", "col": 2, "type": "frontend", "label": "Rough screens", "sublabel": "real wording, you react", "width": 132 },
+    { "id": "wireframes", "lane": "design", "col": 2, "type": "frontend", "label": "Wireframes", "sublabel": "greyscale, real words", "width": 132 },
     { "id": "clarify", "lane": "kit", "col": 3, "type": "backend", "label": "Clarify", "sublabel": "questions on screens", "width": 132 },
-    { "id": "signoff", "lane": "design", "col": 3, "type": "security", "label": "Sign-off gate", "sublabel": "you approve screens", "width": 132 },
-    { "id": "plan", "lane": "kit", "col": 4, "type": "backend", "label": "Plan", "sublabel": "design and contract", "width": 132 },
-    { "id": "tasks", "lane": "kit", "col": 5, "type": "backend", "label": "Tasks, analyze", "sublabel": "checklist first", "width": 132 },
-    { "id": "implement", "lane": "build", "col": 5, "type": "database", "label": "Implement", "sublabel": "real stack and browser", "width": 132 }
+    { "id": "signoff", "lane": "design", "col": 3, "type": "security", "label": "Sign-off gate", "sublabel": "structure and wording", "width": 132 },
+    { "id": "plan", "lane": "kit", "col": 4, "type": "backend", "label": "Plan, tasks", "sublabel": "checks, then analyze", "width": 132 },
+    { "id": "direction", "lane": "build", "col": 4, "type": "security", "label": "Visual direction", "sublabel": "once, you decide", "width": 132 },
+    { "id": "implement", "lane": "build", "col": 5, "type": "database", "label": "Implement", "sublabel": "real stack, DESIGN.md", "width": 132 },
+    { "id": "review", "lane": "design", "col": 5, "type": "security", "label": "Visual review", "sublabel": "browser, you approve", "width": 132 }
   ],
   "edges": [
     { "id": "research-const", "from": "research", "to": "constitution" },
     { "id": "const-specify", "from": "constitution", "to": "specify", "variant": "emphasis" },
-    { "id": "specify-screens", "from": "specify", "to": "screens", "label": "draft", "variant": "emphasis" },
-    { "id": "screens-clarify", "from": "screens", "to": "clarify", "label": "you react" },
+    { "id": "specify-wire", "from": "specify", "to": "wireframes", "label": "draft", "variant": "emphasis" },
+    { "id": "wire-clarify", "from": "wireframes", "to": "clarify", "label": "you react" },
     { "id": "clarify-signoff", "from": "clarify", "to": "signoff", "variant": "emphasis" },
     { "id": "signoff-plan", "from": "signoff", "to": "plan", "label": "locked", "variant": "emphasis" },
-    { "id": "plan-tasks", "from": "plan", "to": "tasks" },
-    { "id": "tasks-implement", "from": "tasks", "to": "implement", "label": "build", "variant": "emphasis" }
+    { "id": "plan-direction", "from": "plan", "to": "direction", "label": "before code" },
+    { "id": "direction-impl", "from": "direction", "to": "implement", "label": "approved", "variant": "emphasis" },
+    { "id": "impl-review", "from": "implement", "to": "review", "label": "built", "variant": "emphasis" }
   ],
   "cards": [
-    { "dot": "cyan", "title": "Two screen steps", "items": ["Rough screens come right after the first spec draft", "A hard sign-off gate stands before any technical design"] },
-    { "dot": "amber", "title": "Your gates", "items": ["Constitution, screens sign-off, plan approval", "Anything an agent drafts becomes real only when you approve"] },
-    { "dot": "rose", "title": "Done means verified", "items": ["Real Postgres, composed stack and a real browser", "Local review passes for authentication, import and upload code"] }
+    { "dot": "cyan", "title": "Three design decisions", "items": ["Wireframes: structure and wording, greyscale", "Visual direction: the look, decided once by you", "Visual review: the built screens, you approve"] },
+    { "dot": "amber", "title": "Your gates", "items": ["Constitution, wireframe sign-off, visual direction, plan", "Visual review before a feature is done"] },
+    { "dot": "rose", "title": "Impeccable fits at", "items": ["Visual direction: init and document", "Implement: guidance from DESIGN.md", "Visual review: critique, audit, polish"] }
   ]
 }

@@ -1,27 +1,24 @@
-# Screens extension
+# Design gates extension
 
 Our own Spec Kit extension (written for this project, so there is no third-party code to vet). It adds
-two steps to the standard flow, in line with constitution principle V (design before code):
+the design steps to the standard flow, in line with constitution principle V.
 
 | Hook | Command | What it does |
 |---|---|---|
-| after `specify` | `/speckit-screens-draft` | Drafts the feature's screens in Penpot with real wording, writes `screens.md`, collects the owner's reactions, and hands the open questions to clarify |
-| before `plan` | `/speckit-screens-signoff` | Checks the screens against the clarified spec and asks the owner to sign off; plan must not start without it |
+| after `specify` | `/speckit-screens-draft` | Draws the feature's greyscale **wireframes** in Penpot with real wording, writes `screens.md`, collects the owner's reactions, passes open questions to clarify |
+| before `plan` | `/speckit-screens-signoff` | Checks the wireframes against the clarified spec and asks the owner to sign off **structure and wording**; plan must not start without it |
+| before `implement` | `/speckit-screens-direction` | Checks the project's **visual direction** (DESIGN.md, PRODUCT.md) is decided and approved by the owner; if not, runs that step (with Impeccable) first |
+| after `implement` | `/speckit-screens-review` | **Visual review**: built screens in a real browser against the wireframes, Impeccable critique and audit, owner approves the look |
 
-Both hooks are mandatory (`optional: false`).
+All hooks are mandatory (`optional: false`).
 
-Install (from the project root; see `docs/build-process.md` for how to run the `specify` tool on this
-machine):
+Install or update (from the project root; see `docs/build-process.md` for how to run `specify` here):
 
 ```
-specify extension add screens --dev ./speckit-extensions/screens
+specify extension add ./speckit-extensions/screens --dev --force
 ```
-
-Result: the commands are registered as skills in `.claude/skills/` and the hooks are written to
-`.specify/extensions.yml`. Keep this source folder under version control; re-run the command with
-`--force` after editing it.
 
 Files
-- `extension.yml`: the manifest and hooks
-- `commands/`: the two commands
-- `templates/screens-template.md`: the `screens.md` that each feature gets
+- `extension.yml`: manifest and hooks
+- `commands/`: the four commands
+- `templates/screens-template.md`: the `screens.md` each feature gets

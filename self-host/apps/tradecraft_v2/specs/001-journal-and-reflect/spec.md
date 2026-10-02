@@ -201,9 +201,9 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 - "Reviewed" is a state the owner sets; reviews are not created automatically in this version.
 - The first version is used on a computer in a browser; phone layout is not a goal.
 
-## Screens
+## Wireframes
 
-Rough screens were drafted on 2026-10-02 in Penpot (file `Tradecraft_v2`, one page per screen). See [screens.md](screens.md) for the inventory, the full wording, and the open questions below, which clarify should ask the owner about.
+A first draft was made on 2026-10-02 in Penpot (file `Tradecraft_v2`, one page per screen) but it was styled with an earlier project's look, so the wireframes will be redrawn in greyscale. See [screens.md](screens.md) for the inventory, the full wording, and the open questions below, which clarify should ask the owner about.
 
 - Weekend days in the weekly review: show Saturday and Sunday when there are no trades, or hide them?
 - Grade scale: three steps (A, B, C) or five stars?

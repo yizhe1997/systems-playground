@@ -1,15 +1,30 @@
 ---
-description: "Draft the feature's screens in Penpot with real wording, write screens.md, and collect the owner's reactions"
+description: "Draft the feature's wireframes (greyscale, structure, real wording, states) and collect the owner's reactions"
 ---
 
-# Rough screens (after specify, before clarify)
+# Wireframes (after specify, before clarify)
 
-You are drafting the screens a feature needs, **quickly and roughly**, so the owner can react to
-something visible. The owner has said they only know what they want once they have seen it, so this
-step exists to turn abstract requirements into concrete screens before clarify asks its questions.
+You are drafting **wireframes**: greyscale pictures of structure, content, states and behaviour, made
+quickly so the owner can react to something visible. The owner has said they only know what they want
+once they have seen it, and that a wireframe must not assume a visual identity.
 
 This step governs constitution principles **I** (process over outcome) and **V** (design before code).
 Read `.specify/memory/constitution.md` first.
+
+## What a wireframe is here, and is not
+
+A wireframe MUST:
+- Be greyscale: white, light grey, mid grey, dark grey, black. Nothing else.
+- Use a neutral, plain font. Never the brand font and never a type scale chosen for looks.
+- Show layout, grouping, hierarchy by size and weight only, every state, and the real words.
+- Mark meaning with a text label or an icon-less tag (for example `[STOP]`, `[draft]`), not with colour.
+- Mark a picture or chart as a box with a cross and a caption of what it shows.
+
+A wireframe MUST NOT:
+- Use a palette, a brand colour, a brand font, rounded decorative styling, shadows or gradients.
+- Copy the look of any earlier project, including Tradecraft v1. If the owner wants that look, it is
+  decided in the visual-direction step, not here.
+- Use colour to carry meaning (no green for good and red for bad).
 
 ## User Input
 
@@ -23,63 +38,57 @@ $ARGUMENTS
    the project root and read `FEATURE_DIR` and `FEATURE_SPEC`. Stop with a clear message if
    `spec.md` does not exist.
 
-2. **Read the spec.** Note each user story (with its priority), each functional requirement and each
-   key entity. Keep their ids; you will reference them.
+2. **Read the spec.** Note each user story (with priority), each functional requirement and each key
+   entity, with their ids.
 
-3. **Decide whether the feature has screens.** If it is purely backend or has no user-facing screen,
-   write `screens.md` from the template with `status: not-applicable` and one sentence of reason,
-   ask the owner to confirm with one question, and stop.
+3. **Decide whether the feature has screens.** If it is purely backend, write `screens.md` from the
+   template with `status: not-applicable` and one sentence of reason, ask the owner to confirm with
+   one question, and stop.
 
-4. **Propose the screen list first.** Before drawing anything, list the screens and the states
-   worth showing (empty, filled, error, near-limit, and so on), each mapped to the story or stories
-   it serves. Use AskUserQuestion to confirm or adjust the list. Keep the questions short and put
-   the full content of the question inside the question text: the owner may not see text above the
-   dialog.
+4. **Propose the screen list first.** Before drawing anything, list the screens and the states worth
+   showing (empty, filled, error, boundary), each mapped to the story or stories it serves. Confirm or
+   adjust with AskUserQuestion. Put the full content of each question inside the question text: the
+   owner may not see text written above the dialog.
 
-5. **Draw in Penpot.** Read the Penpot overview tool first. Then, in the owner's Penpot file:
-   - Create a page named `v2 NNN feature-name` (use the feature directory name).
-   - Reuse the library components from the **Design kit** page: Button / Primary and Secondary,
-     Card / Default and Stat, Chip, Input, Nav item, Tab. Do not invent new styling.
-   - One frame per screen per state worth showing. Name frames `S1 Daily review: filled`,
-     `S1 Daily review: empty` and so on, so they map back to `screens.md`.
-   - Use the **real words**: every label, button, empty state, error and notice as it will appear.
-     No lorem ipsum, no "label here".
-   - Apply the constitution while drawing. Any screen that shows a money figure MUST show process
-     information next to it for the same period or trade (principle I). A figure that cannot be
-     computed shows a dash and says why (principle III).
-   - Export each frame and check it visually before showing it to the owner. Save the images under
-     `FEATURE_DIR/screens/` (copy them from the tool result path).
+5. **Draw in Penpot.** Read the Penpot overview tool first. Then, in the owner's current Penpot file:
+   - Make one page per screen, named `S1 Daily review` and so on (never one page for everything).
+   - Use the **Wireframe kit** page: if it does not exist, make it first from plain grey boxes: a
+     button, an input, a tag, a card, a table row, a tab, a nav item, a media box. Nothing styled.
+   - One frame per state, named `S1 Daily review: empty day`, so each maps back to `screens.md`.
+   - Use the **real words** everywhere (labels, buttons, empty states, errors, notices). No lorem ipsum.
+   - Apply the constitution while drawing: any screen that shows a money figure shows process
+     information beside it (principle I); a figure that cannot be computed shows a dash and a reason
+     (principle III).
+   - Export each frame and look at it before showing it to the owner. Save the images under
+     `FEATURE_DIR/wireframes/`.
 
-   Penpot quirks learned on this project (follow them):
-   - The Penpot plugin tab must be open and connected, and its token must match; if a call fails
-     with a tunnel or connection error, wait and retry, and tell the owner.
+   Penpot quirks learned on this project:
+   - The Penpot plugin tab must be open and connected. If a call fails with a tunnel or connection
+     error, tell the owner and retry once they have reconnected.
    - Child `x` and `y` are absolute page coordinates, not relative to the board.
+   - Text with an empty string cannot be created; skip it.
    - Component names containing " / " are split into a path and a name; set them separately.
-   - After inserting component instances into a flex board, toggle `flex.rowGap` up and back to
-     force the layout to settle.
    - `openPage` needs a short wait before the page is current.
-   - Helper functions kept in `storage` are lost on a reload; rebuild them when needed.
-   - Remove any stray test shapes before finishing.
+   - Helper functions in `storage` are lost on reload; rebuild them when needed.
+   - Remove stray test shapes before finishing.
 
-6. **Write `screens.md`.** Run `.specify/scripts/bash/resolve-template.sh screens-template --json`, take `TEMPLATE_CONTENT`
-   as the scaffold, write it to `FEATURE_DIR/screens.md` and fill it in: the screen inventory, the content list per screen, the
-   flows between screens, the constitution check, and the open questions this draft raised. Set
-   `status: draft`.
+6. **Write `screens.md`.** Run `.specify/scripts/bash/resolve-template.sh screens-template --json`, take
+   `TEMPLATE_CONTENT` as the scaffold, write it to `FEATURE_DIR/screens.md` and fill it in: inventory,
+   content list, flows, constitution check, open questions. Set `status: draft`.
 
-7. **Show and collect reactions.** Show the owner the exported frames. Ask what they react to,
-   screen by screen if needed, using AskUserQuestion with the example inside the question text.
-   Record every reaction in the `Reactions` table of `screens.md`, and update the frames and wording
-   for any change that is clear. Leave unclear points as open questions for clarify.
+7. **Show and collect reactions.** Show the owner the exported frames. Ask what they react to, screen
+   by screen if needed (AskUserQuestion, with the example inside the question text). Record each
+   reaction in the `Reactions` table and update the wireframes for any clear change. Leave unclear
+   points as open questions for clarify.
 
-8. **Hand over to clarify.** Add a short `## Screens` section to `spec.md` that links to
-   `screens.md` and lists the open questions, so the clarify step asks about them. Do not run
-   clarify yourself.
+8. **Hand over to clarify.** Add a short `## Wireframes` section to `spec.md` that links to
+   `screens.md` and lists the open questions, so clarify asks about them. Do not run clarify yourself.
 
 ## Rules
 
-- Rough means rough. Do not polish. A screen the owner rejects costs nothing.
+- Rough means rough. Do not polish. A wireframe the owner rejects costs nothing.
 - Never write application code in this step.
 - Do not mark anything signed off here; that is the next gate.
-- Stay inside `FEATURE_DIR` and the Penpot page you created. Do not edit v1 pages.
-- If Penpot is unreachable, say so, write the screen inventory and content list in `screens.md`
-  as text, and set `penpot: pending` so the sign-off step does not pass.
+- Stay inside `FEATURE_DIR` and the Penpot pages you created.
+- If Penpot is unreachable, say so, write the inventory and content list as text in `screens.md`,
+  and set `penpot: pending` so the sign-off step does not pass.

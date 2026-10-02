@@ -2,19 +2,21 @@
   "schema_version": "1.0",
   "extensions": {
     "screens": {
-      "version": "0.1.0",
+      "version": "0.2.0",
       "source": "local",
-      "manifest_hash": "sha256:b22f83063a0a8e416aec123685a9d057602f3a4d7e83c19c787dfb36ebf27bee",
+      "manifest_hash": "sha256:4134e7d5c10cebff20e1ebe3277b103f756354ef22d0e5362d7795e8e9ab5d24",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
         "claude": [
           "speckit.screens.draft",
-          "speckit.screens.signoff"
+          "speckit.screens.signoff",
+          "speckit.screens.direction",
+          "speckit.screens.review"
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-10-01T18:38:24.698204+00:00"
+      "installed_at": "2026-10-02T14:51:38.342539+00:00"
     }
   }
 }

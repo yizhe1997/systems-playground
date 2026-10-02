@@ -1,9 +1,9 @@
-# Screens: [FEATURE NAME]
+# Wireframes: [FEATURE NAME]
 
 **Feature**: `[###-feature-name]`
 **Status**: draft <!-- draft | signed-off | not-applicable -->
 **Penpot**: page `v2 [###-feature-name]` <!-- or: pending -->
-**Signed off**: not yet
+**Signed off**: not yet (structure and wording only; the look is decided elsewhere)
 **spec-sha256**: <!-- filled in at sign-off -->
 
 ## Why these screens
@@ -40,6 +40,7 @@ Every word the owner will read. No placeholders.
 - [ ] Every money figure has process information beside it (principle I)
 - [ ] Every figure that can be unavailable shows a dash and a reason (principle III)
 - [ ] No placeholder text anywhere (principle V)
+- [ ] Greyscale only: no brand colour, brand font or colour-coded meaning (principle V)
 
 ## Reactions
 
@@ -56,3 +57,16 @@ Every word the owner will read. No placeholders.
 - **Date**:
 - **Spec hash**:
 - **Notes**:
+
+## Visual review
+
+Filled in after implementation (constitution principle V).
+
+- **Date**:
+- **Visual direction**: see `docs/visual-direction.md`
+- **Built screenshots**: `built/`
+- **Wireframe match**:
+- **Design checks run**: critique, audit
+- **Fixed**:
+- **Parked**:
+- **Owner's approval**:

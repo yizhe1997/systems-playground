@@ -51,14 +51,20 @@ Check: a security review record per gate, and a passing CI run before any exposu
 
 ### V. Design Before Code
 
-No feature code MAY be written until the feature's screens and wording are signed off in Penpot as
-wireframes plus a content list. Any change to the interface MUST update its wireframe in the same
-change. The flow includes a rough-screens step after specify (before clarify) and a final sign-off
-gate before plan.
+No feature code MAY be written until the feature's wireframes and wording are signed off. Wireframes
+are greyscale and carry structure, content, states and behaviour; they MUST NOT assume a visual
+identity. The visual direction (palette, type, density and component feel, recorded in `DESIGN.md`
+and `PRODUCT.md`) is decided once per project by the owner, and MUST be approved before the first
+implementation starts; it is never assumed from an earlier project. After implementation, the built
+screens MUST pass a visual review in a real browser against the wireframes, with the owner's approval
+of the look. Any change to an interface MUST update its wireframe in the same change. The flow
+includes wireframes after specify (before clarify), a sign-off gate before plan, a visual-direction
+check before implement, and a visual review after implement.
 
-Rationale: the owner only knows what they want once they have seen it, so seeing it must come
-before building it.
-Check: a plan cannot start without a recorded sign-off for each screen it touches.
+Rationale: the owner only knows what they want once they have seen it, and structure and look are
+different decisions: structure is expensive to change after code exists, look is cheap.
+Check: a plan cannot start without a recorded wireframe sign-off; implementation cannot start
+without an approved visual direction; a feature is not done without a recorded visual review.
 
 ### VI. One Small Slice at a Time
 
@@ -105,8 +111,8 @@ Check: the domain document and the decision log are updated in the same change a
 
 ## Workflow and Quality Gates
 
-- **Flow**: constitution (once), specify, rough screens, clarify, screens sign-off, plan,
-  checklist, tasks, analyze, implement, converge.
+- **Flow**: constitution (once), specify, wireframes, clarify, wireframe sign-off, plan, checklist,
+  tasks, analyze, visual-direction check, implement, visual review, converge.
 - **Branches**: all work stays on the single branch `tradecraft_v2`; there are no per-feature git
   branches. Feature directories are still numbered under `specs/`.
 - **Commits**: commits are made only when the owner asks, or as part of a flow step the owner has
@@ -122,7 +128,9 @@ Check: the domain document and the decision log are updated in the same change a
 This constitution overrides other practices in this project. An amendment MUST be recorded with
 its date and reason and MUST bump the version. Versioning follows semantic rules: MAJOR for
 removing or redefining a principle, MINOR for adding a principle or materially widening guidance,
-PATCH for wording and clarifications. Each specification, plan and review MUST check compliance with
+PATCH for wording and clarifications. Amendment log: 1.1.0 (2026-10-02) split principle V into
+wireframe sign-off, a once-per-project visual direction, and a post-implementation visual review,
+because the first screens drafted assumed the earlier project's look. Each specification, plan and review MUST check compliance with
 these principles, and any exception MUST be written down with its justification and an expiry.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-02
+**Version**: 1.1.0 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-02
