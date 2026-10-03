@@ -222,4 +222,4 @@ Questions this draft cannot answer alone. They are not decided; `/speckit-clarif
 
 ## Wireframes
 
-Not drawn yet. The screens step (`/speckit-screens-draft`) runs next, and the sign-off gate before the plan.
+Greyscale wireframes were drawn on 2026-10-03 in Penpot (file `Tradecraft_v2`, pages `L1` to `L5`); images are in [wireframes/](wireframes/). See [screens.md](screens.md) for the inventory, the full wording, and the open questions, which clarify will ask the owner about (the six points above plus three raised while drawing).
