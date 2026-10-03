@@ -1,7 +1,7 @@
 # Wireframes: Log Trades
 
 **Feature**: `000-log-trades`
-**Status**: draft, greyscale wireframes drawn 2026-10-03. Waiting for the owner's reactions, then clarify.
+**Status**: draft, greyscale wireframes drawn 2026-10-03 and revised 2026-10-04 after clarify (archive controls, currency notice). Next: sign-off.
 **Penpot**: file `Tradecraft_v2`, pages `L1 Trades list`, `L2 Log a trade`, `L3 Accounts`, `L4 Account dialog`, `L5 Settings` (L for log-trades, so they do not clash with the 001 pages). Images in [wireframes/](wireframes/).
 **Signed off**: not yet (structure and wording only; the look is decided elsewhere)
 **spec-sha256**: (filled in at sign-off)
@@ -18,8 +18,8 @@ They serve every user story in `spec.md`: L1 serves stories 2 and 3 (see and cor
 |---|---|---|---|---|
 | L1 | Trades list (the home screen) | US2, US3, FR-015 to FR-019 | filled; no trades at all; filters match nothing; showing deleted | [filled](wireframes/l1-trades-list-filled.png), [none at all](wireframes/l1-trades-list-no-trades-at-all.png), [no match](wireframes/l1-trades-list-filters-match-nothing.png), [deleted](wireframes/l1-trades-list-showing-deleted.png) |
 | L2 | Log or edit a trade | US1, US3, US4, US5, FR-005 to FR-012, FR-020 | new; filled with the result computed; dollars per point blank (typed result); validation errors; edit | [new](wireframes/l2-log-a-trade-new.png), [filled](wireframes/l2-log-a-trade-filled-result-computed.png), [typed result](wireframes/l2-log-a-trade-dollars-per-point-blank.png), [errors](wireframes/l2-log-a-trade-validation-errors.png), [edit](wireframes/l2-edit-a-trade.png) |
-| L3 | Accounts list | US1, US6, FR-003, FR-004 | list; none yet | [list](wireframes/l3-accounts-list.png), [none yet](wireframes/l3-accounts-none-yet.png) |
-| L4 | Account dialog (new or edit) | US1, US5, US6, FR-001 to FR-003 | new; edit; name already used | [new](wireframes/l4-account-dialog-new.png), [edit](wireframes/l4-account-dialog-edit.png), [name used](wireframes/l4-account-dialog-name-already-used.png) |
+| L3 | Accounts list | US1, US6, FR-003, FR-004, FR-004a | list; showing archived; none yet | [list](wireframes/l3-accounts-list.png), [archived](wireframes/l3-accounts-showing-archived.png), [none yet](wireframes/l3-accounts-none-yet.png) |
+| L4 | Account dialog (new or edit) | US1, US5, US6, FR-001 to FR-004a | new; edit; name already used | [new](wireframes/l4-account-dialog-new.png), [edit](wireframes/l4-account-dialog-edit.png), [name used](wireframes/l4-account-dialog-name-already-used.png) |
 | L5 | Settings (time zone) | US5, FR-014 | time zone | [time zone](wireframes/l5-settings-time-zone.png) |
 
 ## Flows
@@ -30,6 +30,7 @@ They serve every user story in `spec.md`: L1 serves stories 2 and 3 (see and cor
 4. **Correct a trade:** Trades (L1) → Edit → change a field → Save changes; or Delete.
 5. **Restore a trade:** Trades (L1) → switch on Show deleted → Restore.
 6. **Set up the trading day:** Accounts (L3) → Edit (L4) → set the trading-day start; Settings (L5) → time zone.
+6a. **Retire an account:** Accounts (L3) → Archive; Show archived → Restore.
 7. **Export:** Trades (L1) → Export.
 
 ## Content list
@@ -76,8 +77,9 @@ APP NAME; Trades, Accounts, Settings.
 | Element | Text |
 |---|---|
 | Title and subtitle | Accounts · Where your trades happen. |
-| Action | New account |
-| Columns | Name · Currency · Trading-day start · Edit |
+| Actions | New account · Show archived (switch) |
+| Columns | Name · Currency · Trading-day start · Edit · Archive |
+| Archived view | rows tagged Archived with a Restore button · Archived accounts keep all their trades. Restore one to use it again. |
 | Footnote | A trade that exits at or after the start time counts to the next day. With no start time, a trade counts to the calendar date of its exit. |
 | None yet | No accounts yet. / Create an account to start logging trades. / New account |
 
@@ -88,9 +90,9 @@ APP NAME; Trades, Accounts, Settings.
 | Titles | New account · Edit account |
 | Fields | Name (e.g. Funded 50K) · Currency (USD) · Trading-day start (optional, e.g. 17:00) |
 | Help | Leave the start empty to use the calendar date of each exit. Example: with 17:00, a trade that exits at 17:30 counts to the next day. |
-| Edit notice | Changing the start time moves this account's trades to the right trading days. |
+| Edit notices | Changing the start time moves this account's trades to the right trading days. · Changing the currency only changes the label. Existing results are not converted. |
 | Error | ! An account named Funded 50K already exists. Names are not case sensitive. |
-| Actions | Save account · Cancel |
+| Actions | Save account · Cancel · Archive account (edit only) |
 
 ### L5 Settings
 
@@ -111,23 +113,18 @@ APP NAME; Trades, Accounts, Settings.
 | Date | Screen | Owner's reaction | What changed |
 |---|---|---|---|
 | 2026-10-03 | All | Wants to see the screens drawn before reacting | Screens drawn as proposed |
+| 2026-10-04 | All | Looks good enough for now | Proceeded to clarify |
+| 2026-10-04 | Clarify: time zone | Chose the recommendation | One time zone for the whole journal; Settings holds it (as drawn) |
+| 2026-10-04 | Clarify: typed result | Chose the recommendation | A typed result is after costs; the costs field is "not used" (as drawn) |
+| 2026-10-04 | Clarify: retiring an account | Chose the recommendation (archive only) | Archive and Restore on the accounts list, Show archived switch, Archive account in the edit dialog |
+| 2026-10-04 | Clarify: currency change | Allow it, "after all it's just a label" | Edit dialog warns that existing results are relabelled, not converted |
+| 2026-10-04 | Clarify: R | Chose the recommendation | R is net result over risk (as drawn) |
 
 ## Open questions for clarify
 
-From the spec (`Points for clarify`):
+None. The six points from the spec were decided on 2026-10-04 (see Reactions and the spec's Clarifications), and three defaults were applied without asking: no duplicate-trade warning, the only active account is preselected when logging a trade, and R is shown with two decimals.
 
-1. Is the time zone one setting for the whole journal (drawn that way on L5), or one per account?
-2. Can an account be deleted or archived once it has trades? (No delete or archive is drawn.)
-3. If an account's currency changes after trades exist, what happens to their money figures?
-4. Is a typed result before or after costs? (Drawn as after costs, with the costs field marked "not used".)
-5. Is R based on the net result (drawn) or the gross result?
-6. Should the app warn about a probable duplicate trade?
-
-From drawing the screens:
-
-7. **Principle I exception:** the trades list shows money with no process information yet. Accept a written exception that ends when `001` is built?
-8. With exactly one account, should Log a trade preselect it?
-9. Should the Result preview and the trade list use the same rounding for R (two decimals drawn)?
+Left for the sign-off step: the principle I exception (process information beside money figures cannot be met until `001`; a written exception that ends when `001` is built).
 
 ## Sign-off
 

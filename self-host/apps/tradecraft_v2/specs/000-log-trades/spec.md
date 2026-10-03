@@ -14,6 +14,16 @@ The owner is one person: a day trader who takes a few trades a day on futures. T
 
 It is deliberately small. The trading day, the exact money, and the honest dash for what cannot be computed are in; everything a bigger journal has (balances, rules, tags, imports, several fills per trade) is not.
 
+## Clarifications
+
+### Session 2026-10-04
+
+- Q: Should the time zone be one setting for the whole journal, or one per account? → A: One setting for the whole journal (Central Time by default, changeable); accounts have no time zone of their own.
+- Q: When the owner types a result because dollars per point is blank, is it before or after costs? → A: After costs: the typed value is the net result, and the costs field is not used for that trade.
+- Q: What should happen to an account that has trades when the owner no longer wants it? → A: Archive only, never delete: an archived account is hidden from the account chooser when logging a trade and from the accounts list by default, its trades are kept and still appear in the trades list, and it can be restored.
+- Q: If the owner changes an account's currency after trades exist on it, what should happen? → A: The currency can always be changed. It is only a label, and nothing is converted; the product warns that old results are relabelled, not converted. Currency conversion is not planned.
+- Q: Should R use the net result (after costs) or the gross result (before costs)? → A: The net result: R = net result ÷ risk.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Set up an account and log a trade (Priority: P1)
@@ -117,6 +127,8 @@ The owner renames an account, changes its currency or its trading-day start time
 1. **Given** an account, **When** the owner renames it to a name already used by another account (ignoring case), **Then** the change is refused with a plain message.
 2. **Given** an account with trades, **When** the owner changes its start time, **Then** the trading day of its trades is recomputed.
 3. **Given** accounts, **When** the owner opens the accounts list, **Then** each account is shown with its currency and start time.
+4. **Given** an account with trades, **When** the owner archives it, **Then** it disappears from the account chooser and the default accounts list, its trades remain in the trades list, and restoring it brings it back.
+5. **Given** an account with trades, **When** the owner changes its currency, **Then** the change is allowed after a warning that existing results are shown with the new currency label and are not converted.
 
 ---
 
@@ -143,6 +155,7 @@ The owner renames an account, changes its currency or its trading-day start time
 - **FR-002**: An account name MUST be unique, ignoring case and surrounding spaces, and 1 to 80 characters.
 - **FR-003**: The owner MUST be able to edit an account's name, currency and trading-day start time, and to see all accounts in a list with their currency and start time.
 - **FR-004**: A trade MUST NOT be loggable until at least one account exists.
+- **FR-004a**: The owner MUST be able to archive an account and restore an archived one. An account is never deleted. An archived account MUST be left out of the account chooser when logging a trade and out of the accounts list by default (a "Show archived" switch reveals it); its trades MUST stay in the trades list and in exports, and its name stays reserved.
 
 **Trades**
 - **FR-005**: The owner MUST be able to log a closed trade on an account with: instrument (free text), direction (long or short), size (above zero), one entry price and time, one exit price and time, and one total cost (zero or more, default zero).
@@ -156,7 +169,7 @@ The owner renames an account, changes its currency or its trading-day start time
 
 **Trading day and time**
 - **FR-013**: A trade's trading day MUST be derived from its exit time, read in the journal's time zone: with an account start time set, an exit at or after that time counts to the next calendar date; with none, to the calendar date of the exit.
-- **FR-014**: The journal's time zone MUST default to Central Time and the owner MUST be able to change it; times are stored as exact instants so a zone change or a daylight-saving change never alters a trade's moment.
+- **FR-014**: The journal has one time zone for all accounts. It MUST default to Central Time and the owner MUST be able to change it; times are stored as exact instants so a zone change or a daylight-saving change never alters a trade's moment.
 
 **Trades list**
 - **FR-015**: The owner MUST be able to see trades newest first, filtered by account and by a date range (on trading day); the default is all accounts and the current month.
@@ -174,6 +187,7 @@ The owner renames an account, changes its currency or its trading-day start time
 - Account types, balances, deposits and withdrawals, drawdown and profit-target rules, prop-firm challenges, copy trading, monthly cost.
 - Several entries or exits per trade (scaling in and out is logged as separate trades).
 - A separate "direct entry" mode: typing the result is only the fallback when dollars per point is blank.
+- Currency conversion of any kind: an account's currency is only a label.
 - Options, forex and crypto details, take-profit targets, worst and best price reached (MAE and MFE), exchange, trade currency conversion.
 - Tags, setups, mistakes, attachments and screenshots, custom fields, open (unclosed) trades.
 - Importing or syncing trades, batch actions, saved filters, extra list columns, money totals.
@@ -203,23 +217,18 @@ The owner renames an account, changes its currency or its trading-day start time
 - **Local only, with a written exception (constitution IV):** this feature has no sign-in or audit log. Those arrive as their own later features. Until both exist and have passed their reviews, the product MUST run only on the owner's computer and MUST NOT be exposed beyond it. This exception expires when the sign-in and audit features are accepted, and in any case before any exposure.
 - Only closed trades exist. A trade is logged after it has exited.
 - The trading day is read from the exit time. (Unconfirmed domain interpretation, to be written into the domain document.)
-- R is the net result divided by risk. (Unconfirmed domain interpretation, to be written into the domain document.)
-- A typed result (when dollars per point is blank) is the net result, after costs; the cost field is then not used for the result.
+- R is the net result divided by risk (decided 2026-10-04). Still an unconfirmed domain interpretation until it is written into the domain document with a source.
+- A typed result (when dollars per point is blank) is the net result, after costs (decided 2026-10-04); the cost field is then not used for the result.
+- No warning is shown for a probable duplicate trade in this feature (two identical trades are allowed, as in the edge cases).
+- With exactly one active account, the Log a trade form preselects it. R is shown with two decimals; stored values keep full precision.
 - Currencies are chosen from the standard three-letter codes; USD is offered first.
 - Dollars per point is "money value of one whole price point per unit of size", for example 20 for an E-mini Nasdaq contract.
 - The first version is used on a computer in a browser; phone layout is not a goal.
 
 ## Points for clarify
 
-Questions this draft cannot answer alone. They are not decided; `/speckit-clarify` will ask the owner.
-
-1. Is the time zone one setting for the whole journal, or one per account?
-2. Can an account be deleted or archived once it has trades, or never?
-3. If an account's currency changes after trades exist, what happens to their money figures?
-4. Is a typed result before or after costs?
-5. Is R based on the net result (assumed) or the gross result?
-6. Should the app warn about a probable duplicate trade (same account, instrument and times)?
+All six original points are settled (see Clarifications, and the defaults in Assumptions for duplicates). One item is left for the sign-off step, not for clarify: the constitution's principle I (process information beside every money figure) cannot be met here, because plan adherence and mistakes arrive with `001`. It needs a written exception that ends when `001` is built.
 
 ## Wireframes
 
-Greyscale wireframes were drawn on 2026-10-03 in Penpot (file `Tradecraft_v2`, pages `L1` to `L5`); images are in [wireframes/](wireframes/). See [screens.md](screens.md) for the inventory, the full wording, and the open questions, which clarify will ask the owner about (the six points above plus three raised while drawing).
+Greyscale wireframes were drawn on 2026-10-03 (and revised on 2026-10-04 after clarify) in Penpot (file `Tradecraft_v2`, pages `L1` to `L5`); images are in [wireframes/](wireframes/). See [screens.md](screens.md) for the inventory, the full wording, and the open questions, which were settled in the clarification session of 2026-10-04.
