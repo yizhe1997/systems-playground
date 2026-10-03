@@ -71,7 +71,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Focus card labels | Yesterday: Tue 30 Sep · This week (29 Sep to 5 Oct) · This month (October) · Edit |
 | No week or month focus | This week (29 Sep to 5 Oct): No focus for this week yet. · Write one · This month (October): No focus for this month yet. · Write one |
 | Nothing earlier | Yesterday: nothing to show / No earlier focus yet. What you write in the last box below will appear here tomorrow. |
-| Numbers | Net result +$45 (Plan followed on 2 of 3 trades) · Plan followed 2 of 3 (1 trade off plan) · Mistakes 1 (Chased entry x1) · Valid losses 1 (of 2 losing trades) · Win rate 1 of 3 (1 winning trade of 3) |
+| Numbers | Net result +$45 (Plan followed on 2 of 3 trades) · Plan followed 2 of 3 (1 not followed · 0 partly) · Mistakes 1 (Chased entry x1) · Valid losses 1 (of 2 losing trades) · Win rate 1 of 3 (1 winning trade of 3) |
 | Trades table | Trades · Central Time. The result is the outcome; the judgement is what counts. · Time, Instrument, Side, Size, Result, Followed plan, Judgement, Mistakes · Not judged yet · Judge · Day total +$45 across 3 trades, 2 followed the plan. · Add a trade |
 | Judgement chips | Mistake, Valid loss |
 | Mistakes for the day | Mistakes for the whole day · Not tied to one trade. Same list as the mistakes on trades. Recorded once for the day. · Revenge mode · + Add a mistake |
@@ -88,7 +88,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Title | NQ Long x2 · Wed 1 Oct · 10:14 to 10:31 · Funded 50K · Close |
 | Result strip | Result -$240 · Risk — (No stop recorded, so no risk figure.) · Plan Not followed (or Followed, Partly followed) |
 | Plan question | Did you follow your plan? · Yes, Partly, No |
-| Decision (losses only) | What was this decision? · Only for losing trades. · Valid loss: I followed my rules. No change needed. · Mistake: I broke my rules. Tag what I did wrong below. |
+| Decision (losses only) | What was this decision? · Only for losing trades. · Valid loss: I followed my rules. No change needed. (unavailable, dashed, with "Not available: you answered that the plan was not followed." unless the plan answer is Yes) · Mistake: I broke my rules. Tag what I did wrong below. |
 | Win flagged | This win was a mistake / It made money, but I was off plan. It will show as a profitable mistake, not a clean win. |
 | Mistakes | Mistakes on this trade · Chased entry, Moved stop, Oversized, Ignored checklist, Traded outside plan, + New mistake |
 | Thesis | Why I took it (thesis) · read-only text · Written when you logged the trade. Shown here to read, not edit. |
@@ -101,7 +101,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Title | Mistakes · How often each mistake showed up, and the line you set for each. Across all accounts. |
 | Period and filter | Week, Month, 29 Sep to 5 Oct 2025, All accounts |
 | Table | Mistake (with the accounts it was on, for example Funded 3 · Practice 1), This week, This month (each count with its split, for example 3 on trades · 1 on the day), Stop line, Status · Stop line (button) · Each record counts once, whether it was tagged on a trade or recorded for the whole day. |
-| Statuses | STOP TRADING: 4 of 4 this week · Near the line: 5 of 6 this month · 2 of 3 this month · Count only |
+| Statuses | STOP TRADING: 4 of 4 this week · 5 of 6 this month · 2 of 3 this month · Count only (no "near the line" status) |
 | Stop line cells | 4 per week · 6 per month · 3 per month · none set |
 | Manage | Manage the list · Retiring a mistake hides it from new tags; past trades keep it, so history and counts stay correct. · Add a mistake (e.g. Averaged down) · Add, Rename, Retire |
 | Stop line editor | Stop line for Moved stop · When the count reaches this number, Moved stop shows STOP TRADING. It is advice. It does not block you. · Stop line · Counted per (week) · Stop line must be 1 or more. · Save, Cancel, Remove the stop line |
@@ -131,14 +131,14 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Day cells | Did well · Could improve · Next focus · Mental 4 of 5 · Technical 4 of 5 · Open · Review this day |
 | Missing day | No review for Mon 29 Sep. Its 4 trades (+$120, plan followed 3 of 4) are included in the totals below. |
 | No trades / future | No trades on Thu 2 Oct. · This day has not happened yet. |
-| Numbers | The week in numbers · Net result +$85 (Plan followed on 7 of 9 trades) · Plan followed 7 of 9 (2 trades off plan) · Mistakes 3 (Moved stop x2, Chased entry x1) · Valid losses 2 (of 4 losing trades) · Win rate 5 of 9 (56% of 9 trades) |
+| Numbers | The week in numbers · Net result +$85 (Plan followed on 7 of 9 trades) · Plan followed 7 of 9 (2 not followed · 0 partly) · Mistakes 3 (Moved stop x2, Chased entry x1) · Valid losses 2 (of 4 losing trades) · Win rate 5 of 9 (56% of 9 trades) |
 | Actions | Mark as reviewed · Save draft |
 
 ## Constitution check
 
 - [x] Every money figure has process information beside it (S0 rows, S1 numbers and table, S2 result strip, S5 numbers)
 - [x] Every figure that can be unavailable shows a dash and a reason (S2 risk "No stop recorded, so no risk figure.")
-- [x] Greyscale only: no brand colour, brand font or colour-coded meaning (meaning is carried by words such as "STOP TRADING", "! Near the line", "(x) Mistake"; selected and primary use a dark fill)
+- [x] Greyscale only: no brand colour, brand font or colour-coded meaning (meaning is carried by words such as "STOP TRADING", "(x) Mistake"; selected and primary use a dark fill)
 - [x] Every entry point has its empty state (S1 and S5 focus cards when no focus is written; S0 with nothing to review; the S4 dialog when nothing is written)
 - [ ] No placeholder text anywhere (the rough draft still has sample data; owner to confirm wording at sign-off)
 
@@ -151,6 +151,11 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | 2026-10-02 | S1 | The two buttons at the top right were confusing | Replaced with previous day, a middle button that opens a day picker, and next day; picker state drawn |
 | 2026-10-02 | S4 | Could not see how to reach the dialog | Entry points named on the screens ("Write one" when empty, "Edit" when filled, "Write a focus" on S0); empty-focus states drawn for S1 and S5 (a missed state) |
 | 2026-10-02 | S2 | Where are trade attachments? | Not in this feature; kept out on purpose (see spec non-goals) |
+| 2026-10-03 | Clarify: weekly review | Chose option A | The weekly review stores only a reviewed mark and its time; everything else is a read-only roll-up (FR-021a) |
+| 2026-10-03 | Clarify: Partly followed | Chose the recommendation | Partly is not counted as followed; the detail line shows it ("1 not followed · 0 partly") |
+| 2026-10-03 | Clarify: Missing | Chose the recommendation | A day is Missing only after it has ended; today never is (FR-007a) |
+| 2026-10-03 | Clarify: Near the line | No weird statuses; a count or a stop | No "near the line" status; colour may hint at proximity later, in the visual direction, never replacing the count |
+| 2026-10-03 | Clarify: valid loss and plan | A loss cannot be valid if the plan was not followed | Valid loss is unavailable unless the plan answer is Yes; shown dashed with a reason on S2 |
 | 2026-10-03 | Grades | Five stars better, for mental and technical | Stars with a "1: drifted, 5: followed fully" line; S5 shows "4 of 5" |
 | 2026-10-03 | Win rate | Unsure; asked what the reference product does | It has no minimum, so none here; the win rate is a count ("1 of 3") |
 | 2026-10-03 | Trade form | Yes to the suggested split | Thesis is written when logging; the rest of the judging stays in the review (S2 shows the thesis read-only). The v1 trade form itself is not redrawn here, only this one field is added to it |
@@ -168,7 +173,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 
 None from the wireframes: the six questions were decided on 2026-10-03 (see Reactions). Clarify may still ask about the spec itself.
 
-Known limits of this wireframe set: the v1 trade form (Log or Edit trade) is reused and not redrawn, apart from one new optional field, the thesis. The stop-line editor is shown but the retire and rename dialogs on S3 are not drawn.
+Known limits of this wireframe set: the v1 trade form (Log or Edit trade) is reused and not redrawn, apart from one new optional field, the thesis. The stop-line editor is shown but the retire and rename dialogs on S3 are not drawn. The state for today (trades logged, nothing saved yet, listed as today and not as Missing) is not drawn separately; it uses the same row as a Draft without the tag.
 
 ## Sign-off
 
