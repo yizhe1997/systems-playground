@@ -45,6 +45,10 @@
 - [ ] CHK024 Can SC-006 ("under 10 seconds to find a day's trades") be measured objectively, or is it a judgement? [Measurability, Spec SC-006]
 - [ ] CHK025 Is there a measurable requirement for how long a screen may take to respond at the stated data size? [Gap, plan.md]
 
+## Resolution notes (2026-10-04, not a review: the boxes stay for the reviewer)
+
+Each finding was answered in the spec, data model, contract, tasks or wireframes. CHK001 prices above zero: FR-005. CHK002 and CHK003 display rounding and zero-decimal currencies: FR-012. CHK004 typed result discarded on save: FR-010. CHK005 sign convention: FR-009. CHK006 at most 8 decimal places: FR-005. CHK007 and CHK008 R with a typed result, shown to 2 and kept to 6 decimals: FR-011. CHK009 current time plus one minute: FR-007. CHK010 nonexistent and repeated local times: FR-014a and the L2 messages. CHK011 start time 00:01 to 23:59: FR-001. CHK012 recompute covers deleted and archived-account trades: FR-013. CHK013 and CHK014 zone changes and a searchable list of all zones: FR-014. CHK015 trading-day column on the list: FR-016. CHK016 tie-break: FR-015. CHK017 ISO 4217 currencies: Assumptions. CHK018 trades of archived accounts: FR-004a. CHK019 moving a trade to another account: FR-008. CHK020 out-of-date saves: FR-022. CHK021 spaces inside names: FR-002. CHK022 unconfirmed rules and who confirms: Assumptions. CHK023 to CHK025: SC-001, SC-006, SC-008.
+
 ## Notes
 
 - Mark items `[x]` only after review confirms the requirement-quality criterion is satisfied

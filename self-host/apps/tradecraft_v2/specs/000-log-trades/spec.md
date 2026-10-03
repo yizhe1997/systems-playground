@@ -145,41 +145,51 @@ The owner renames an account, changes its currency or its trading-day start time
 - A trade logged for a time in the future: refused with a plain message.
 - Clearing the dollars-per-point value on a saved trade: the form asks for a typed result.
 - Two trades identical in every field: allowed (the owner may have taken them).
+- A trading-day start of 00:00: refused (FR-001).
+- A typed result on a trade that also has dollars per point: discarded on save (FR-010).
+- Editing a trade of an archived account: allowed; logging a new trade on it, or moving one onto it: refused (FR-004a).
+- The same trade edited in two windows: the second save is refused (FR-022).
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 **Accounts**
-- **FR-001**: The owner MUST be able to create an account with a name and a currency, and optionally a trading-day start time.
-- **FR-002**: An account name MUST be unique, ignoring case and surrounding spaces, and 1 to 80 characters.
+- **FR-001**: The owner MUST be able to create an account with a name and a currency, and optionally a trading-day start time. A start time may be any time from 00:01 to 23:59; 00:00 is refused with "Start time cannot be 00:00. Leave it empty to use the calendar date of each exit.", because it would put every trade on the next day.
+- **FR-002**: An account name MUST be unique, ignoring case and surrounding spaces, and 1 to 80 characters; each run of spaces inside the name counts as one space.
 - **FR-003**: The owner MUST be able to edit an account's name, currency and trading-day start time, and to see all accounts in a list with their currency and start time.
-- **FR-004**: A trade MUST NOT be loggable until at least one account exists.
-- **FR-004a**: The owner MUST be able to archive an account and restore an archived one. An account is never deleted. An archived account MUST be left out of the account chooser when logging a trade and out of the accounts list by default (a "Show archived" switch reveals it); its trades MUST stay in the trades list and in exports, and its name stays reserved.
+- **FR-004**: A trade MUST NOT be loggable until at least one active account exists. Every way into the log-a-trade form (the button, a direct address) MUST be unavailable until then and lead the owner to create an account.
+- **FR-004a**: The owner MUST be able to archive an account and restore an archived one. An account is never deleted. An archived account MUST be left out of the account chooser when logging a trade and out of the accounts list by default (a "Show archived" switch reveals it); its trades MUST stay in the trades list and in exports, and its name stays reserved. Existing trades of an archived account can still be edited, deleted and restored, but no new trade can be logged on it and no trade can be moved onto it.
 
 **Trades**
-- **FR-005**: The owner MUST be able to log a closed trade on an account with: instrument (free text), direction (long or short), size (above zero), one entry price and time, one exit price and time, and one total cost (zero or more, default zero).
-- **FR-006**: A trade MAY also carry a dollars-per-point value (above zero), a stop price, and a thesis note (why the trade was taken).
-- **FR-007**: The exit time MUST NOT be earlier than the entry time, and neither time MAY be in the future.
-- **FR-008**: The owner MUST be able to edit any field of a trade, and to delete it so that it can be restored (soft delete); a deleted trade MUST NOT appear in the list or in any figure until restored, and the owner MUST be able to view deleted trades to restore them.
-- **FR-009**: When dollars per point is present, the gross result MUST be computed as (exit price − entry price) × size × dollars per point for a long trade, and (entry price − exit price) × size × dollars per point for a short trade; the net result MUST be the gross result minus the cost.
-- **FR-010**: When dollars per point is blank, the owner MUST type the result, and that typed value is the trade's net result; gross result is then not shown.
-- **FR-011**: Risk MUST be |entry price − stop price| × size × dollars per point, and R MUST be the net result divided by risk. When any needed value is missing or risk is zero, risk and R MUST show a dash and a short reason naming what is missing (constitution principle III).
-- **FR-012**: All money values MUST be exact decimals, shown in the account's currency, with no floating-point error.
+- **FR-005**: The owner MUST be able to log a closed trade on an account with: instrument (free text), direction (long or short), size (above zero), one entry price and time, one exit price and time, and one total cost (zero or more, default zero). Prices MUST be above zero. Prices, size, cost, dollars per point and a typed result accept at most 8 decimal places and are typed with a point as the decimal mark; anything else is refused with a plain message ("Enter a number with a point for decimals, for example 21450.25." or "At most 8 decimal places.").
+- **FR-006**: A trade MAY also carry a dollars-per-point value (above zero), a stop price (above zero), and a thesis note (why the trade was taken, up to 5,000 characters).
+- **FR-007**: The exit time MUST NOT be earlier than the entry time, and neither time MAY be later than the current time plus one minute.
+- **FR-008**: The owner MUST be able to edit any field of a trade, including its account (to an active account, after which its trading day is recomputed), and to delete it so that it can be restored (soft delete); a deleted trade MUST NOT appear in the list or in any figure until restored, and the owner MUST be able to view deleted trades to restore them.
+- **FR-009**: When dollars per point is present, the gross result MUST be computed as (exit price − entry price) × size × dollars per point for a long trade, and (entry price − exit price) × size × dollars per point for a short trade; the net result MUST be the gross result minus the cost. The cost is typed as a positive amount and subtracted; a loss is a negative result.
+- **FR-010**: When dollars per point is blank, the owner MUST type the result, and that typed value is the trade's net result (after costs); gross result is then not shown. When dollars per point is present, any typed result is discarded on save; clearing dollars per point later asks for a typed result again.
+- **FR-011**: Risk MUST be |entry price − stop price| × size × dollars per point, and R MUST be the net result divided by risk. When any needed value is missing or risk is zero, risk and R MUST show a dash and a short reason naming what is missing (constitution principle III). A trade with a typed result therefore always shows a dash for risk and R. R is shown to two decimal places and kept to six.
+- **FR-012**: All money values MUST be exact decimals, shown in the account's currency, with no floating-point error. A value is rounded only when it is shown, to the number of decimals its currency normally uses (for example 2 for USD and 0 for JPY); stored values and exports keep full precision.
 
 **Trading day and time**
-- **FR-013**: A trade's trading day MUST be derived from its exit time, read in the journal's time zone: with an account start time set, an exit at or after that time counts to the next calendar date; with none, to the calendar date of the exit.
-- **FR-014**: The journal has one time zone for all accounts. It MUST default to Central Time and the owner MUST be able to change it; times are stored as exact instants so a zone change or a daylight-saving change never alters a trade's moment.
+- **FR-013**: A trade's trading day MUST be derived from its exit time, read in the journal's time zone: with an account start time set, an exit at or after that time counts to the next calendar date; with none, to the calendar date of the exit. Changing an account's start time, or the journal's time zone, MUST recompute the trading day of every affected trade, including deleted trades and trades of archived accounts.
+- **FR-014**: The journal has one time zone for all accounts. It MUST default to Central Time and the owner MUST be able to change it; times are stored as exact instants so a zone change or a daylight-saving change never alters a trade's moment; changing the zone changes only how times and days are written. Any standard time zone can be chosen, from a searchable list of all of them.
+- **FR-014a**: A time typed in the journal's time zone that does not exist (the hour skipped when clocks go forward) MUST be refused with "That time does not exist on that date in this time zone."; a time that happens twice (the hour repeated when clocks go back) uses its first occurrence. Times are typed to the minute and shown on a 24-hour clock.
 
 **Trades list**
-- **FR-015**: The owner MUST be able to see trades newest first, filtered by account and by a date range (on trading day); the default is all accounts and the current month.
-- **FR-016**: The list MUST show, for each trade: exit time, account, instrument, direction, size and net result (with R, or a dash and reason).
+- **FR-015**: The owner MUST be able to see trades newest first (trades with the same exit moment, the one saved later first), filtered by account and by a date range (on trading day); the default is all accounts and the current month. The Account filter lists archived accounts too, marked as archived.
+- **FR-016**: The list MUST show, for each trade: exit time, trading day, account, instrument, direction, size and net result (with R, or a dash and reason; a typed result is marked "typed in").
 - **FR-017**: The list MUST show a clear message when there are no trades at all, and a different one when the filters match nothing.
 - **FR-018**: The list MUST NOT add results of different currencies together. It MUST NOT show money totals in this feature, because money figures need process information beside them (constitution principle I) and that arrives in `001`.
 
 **Across the feature**
-- **FR-019**: The owner MUST be able to export all accounts and all trades (including deleted ones, marked as deleted) from the trades list; the file format is decided at the plan step.
+- **FR-019**: The owner MUST be able to export all accounts and all trades (including deleted ones, marked as deleted) from the trades list. The export is one JSON file, downloaded as `tradecraft-export-YYYY-MM-DD.json`, holding the journal time zone; every account (name, currency, start time, archived or not); and every trade with all its input fields, its gross result, net result, risk, R, trading day and a deleted flag.
 - **FR-020**: The form for logging and editing a trade MUST show its essential fields first and keep the thesis note under a separate "Details" section.
+- **FR-021**: The form MUST show a live preview, using the same rules as saving, of gross result, costs, net result, risk, R and trading day, with a dash and a reason for any figure that cannot be worked out.
+- **FR-022**: The edit screen MUST show when the trade was last saved. Saving an edit made from an out-of-date copy (for example from a second open window) MUST be refused with "This trade was changed elsewhere. Reload to see the latest version."; the same holds for accounts.
+- **FR-023**: Every screen MUST show that it is loading when a wait is noticeable. When the journal cannot be reached it MUST say "Could not reach the journal." and offer a retry; when a save fails it adds "Nothing was saved.", keeps what the owner typed, and allows a retry; no save is ever partial. Leaving a form with unsaved changes MUST ask "Leave without saving? Your changes will be lost." Deleting a trade and archiving an account act at once and show "Trade deleted." or "Account archived." with an Undo for 10 seconds; they can also be reversed later from Show deleted and Show archived.
+- **FR-024**: Every control MUST be reachable and usable with the keyboard alone, with a visible focus; dialogs close with Escape and keep focus inside while open; every field has a label that assistive software can read, and errors are written out (marked with "!") rather than shown by colour or position alone.
+- **FR-025**: Data MUST survive stopping and starting the stack. A database change or a recompute that fails part way MUST change nothing, and the app MUST say so rather than run on partly changed data.
 
 ### Out of Scope (non-goals for this version)
 
@@ -203,13 +213,16 @@ The owner renames an account, changes its currency or its trading-day start time
 
 ### Measurable Outcomes
 
-- **SC-001**: The owner can log a trade, with an account already set up, in under 1 minute.
+- **SC-001**: In a timed browser run with an account already set up and every field typed, the time from opening the log-a-trade form to the saved trade appearing in the list is under 60 seconds.
 - **SC-002**: A set of hand-calculated trades (long and short, with and without costs, with and without a typed result) produces exactly the expected gross, net, risk and R in 100% of cases.
 - **SC-003**: Every figure that cannot be computed shows a dash and a reason; a check of the edge cases above finds no blank, zero or made-up value.
 - **SC-004**: In a test of trades logged at, just before, and just after the account start time, and across a daylight-saving change, every trade lands on the expected trading day.
 - **SC-005**: Deleting a trade and restoring it returns every field exactly as before, in 100% of tests.
-- **SC-006**: Filtering by account and date range returns exactly the matching trades in 100% of tests, and the owner can find a given day's trades in under 10 seconds.
+- **SC-006**: Filtering by account and date range returns exactly the matching trades in 100% of tests, and a given day's trades are reachable in at most three actions (choose the account, set From and To, read the list).
 - **SC-007**: A full export contains every account and every trade, deleted ones marked, and its trade count matches the app's count.
+- **SC-008**: With 5,000 trades across 10 accounts, opening the trades list, changing a filter and saving a trade each take under 1 second on the owner's computer, measured in the browser run.
+- **SC-009**: Listing the published ports of the running stack shows only loopback addresses.
+- **SC-010**: After the stack is stopped and started, every account and trade is still there, in 100% of runs.
 
 ## Assumptions
 
@@ -221,9 +234,11 @@ The owner renames an account, changes its currency or its trading-day start time
 - A typed result (when dollars per point is blank) is the net result, after costs (decided 2026-10-04); the cost field is then not used for the result.
 - No warning is shown for a probable duplicate trade in this feature (two identical trades are allowed, as in the edge cases).
 - With exactly one active account, the Log a trade form preselects it. R is shown with two decimals; stored values keep full precision.
-- Currencies are chosen from the standard three-letter codes; USD is offered first.
+- Currencies are chosen from the active ISO 4217 three-letter codes; USD is listed first.
+- The trades list and the export return everything, with no paging, up to the data size in SC-008; paging is added only if that size is exceeded.
+- Domain rules awaiting the owner's confirmation, each listed in `docs/domain.md` with a "Confirmed by owner on" line and a source: the trading day taken from the exit time; R on the net result; the local-time rule (FR-014a); prices above zero. `docs/domain.md` is created in the same change as the behaviour (constitution principle VIII).
 - Dollars per point is "money value of one whole price point per unit of size", for example 20 for an E-mini Nasdaq contract.
-- The first version is used on a computer in a browser; phone layout is not a goal.
+- The first version is used on a computer in a browser; phone layout is not a goal. The data lives in a volume that is kept when the stack is rebuilt; the owner backs it up with the export and by copying that volume (instructions in the README).
 
 ## Points for clarify
 
@@ -242,9 +257,9 @@ Penpot frames in the same change (constitution principle V).
 Written exceptions accepted at sign-off (constitution governance: justification and expiry):
 
 1. **Principle I (process information beside money).** The trades list shows each result with R but no
-   plan-adherence or mistake information, which only exists from feature `001`. Expires when `001` is built.
+   plan-adherence or mistake information, which only exists from feature `001`. Expires when `001` is built; the owner ends it by recording that `001` is accepted.
 2. **Principle IV (security gates).** This feature has no sign-in or audit log. It MUST run only on the
    owner's own computer and MUST NOT be exposed. Expires when the sign-in and audit features are accepted,
-   and in any case before any exposure.
+   and in any case before any exposure; the owner ends it by accepting those two features.
 
-Noted, not blocking: the export file format is chosen at the plan step.
+The export file format was chosen at the plan step (JSON, see FR-019).

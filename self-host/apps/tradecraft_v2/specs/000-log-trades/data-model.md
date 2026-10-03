@@ -18,11 +18,11 @@ Changing `time_zone` recomputes `trading_day` for every trade (see the rule belo
 | Field | Type | Rule |
 |---|---|---|
 | id | uuid | primary key |
-| name | text | 1 to 80 characters after trimming; unique ignoring case and surrounding spaces, **including archived accounts** (a unique index on the lower-cased, trimmed name) |
+| name | text | 1 to 80 characters after trimming, each run of spaces inside collapsed to one; unique ignoring case and surrounding spaces, **including archived accounts** (a unique index on the lower-cased, trimmed name) |
 | currency | text | one of the allowed three-letter codes (a CHECK); a label only, never converted |
-| trading_day_start | time | optional; time of day without a zone, read in the journal time zone |
+| trading_day_start | time | optional; time of day without a zone, read in the journal time zone; `00:01` to `23:59` (a CHECK refuses `00:00`, which would put every trade on the next day) |
 | archived_at | timestamptz | null while active; set by Archive, cleared by Restore. Accounts are never deleted |
-| created_at, updated_at | timestamptz | |
+| created_at, updated_at | timestamptz | `updated_at` is set on every update and is the version token for concurrent edits |
 
 Changing `trading_day_start` recomputes `trading_day` for that account's trades.
 
@@ -33,7 +33,7 @@ Inputs the owner types:
 | Field | Type | Rule |
 |---|---|---|
 | id | uuid | primary key |
-| account_id | uuid | references an account that is not archived at the time of logging; an archived account's existing trades stay |
+| account_id | uuid | references an account; a new trade, or a trade moved to another account, needs an account that is not archived; existing trades of an archived account stay and remain editable |
 | instrument | text | 1 to 40 characters, free text, not unique |
 | direction | text | `long` or `short` (a CHECK) |
 | size | numeric(24,8) | above zero |
@@ -42,10 +42,10 @@ Inputs the owner types:
 | dollars_per_point | numeric(24,8) | optional; above zero when present |
 | cost | numeric(24,8) | zero or more, default 0 |
 | stop_price | numeric(24,8) | optional; above zero when present |
-| typed_result | numeric(24,8) | required when `dollars_per_point` is null (a CHECK); the net result after costs; ignored when `dollars_per_point` is present |
+| typed_result | numeric(24,8) | required when `dollars_per_point` is null (a CHECK); the net result after costs; null when `dollars_per_point` is present (a CHECK; the API discards it on save) |
 | thesis | text | optional, up to 5,000 characters |
 | deleted_at | timestamptz | null while live; set by soft delete, cleared by restore |
-| created_at, updated_at | timestamptz | |
+| created_at, updated_at | timestamptz | `updated_at` is set on every update and is the version token: an edit carrying an older `expectedUpdatedAt` is refused (409) |
 
 Derived, stored, never typed (generated columns that call the SQL functions below):
 
@@ -102,7 +102,8 @@ what feature 001 builds on: it will add reviews keyed by `(account_id, trading_d
 
 ## Validation summary (server side, in this order)
 
-Required fields present; numbers parse as exact decimals; size, prices, dollars per point and stop above zero;
-cost zero or more; exit not earlier than entry; neither time in the future; typed result present when dollars per
+Required fields present; numbers parse as exact decimals typed with a point, with at most 8 decimal places; size, prices,
+dollars per point and stop above zero; cost zero or more; exit not earlier than entry; neither time later than the
+current time plus one minute; typed result present when dollars per
 point is blank; account exists and is not archived; a local time that does not exist in the zone is refused. The
 database repeats the numeric and ordering rules as CHECK constraints.

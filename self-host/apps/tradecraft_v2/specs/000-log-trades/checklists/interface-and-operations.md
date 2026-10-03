@@ -43,6 +43,10 @@
 - [ ] CHK022 Are the two written exceptions (principle I and principle IV) each stated in the spec with their expiry and who ends them? [Traceability, Spec Signed-off screens]
 - [ ] CHK023 Is it stated that the domain document is created in the same change as the behaviour, and who confirms each unconfirmed rule? [Traceability, plan.md, constitution VIII]
 
+## Resolution notes (2026-10-04, not a review: the boxes stay for the reviewer)
+
+CHK001 live preview: FR-021. CHK002 last saved: FR-022. CHK003 typed-in marker: FR-016. CHK004 messages in the wireframe content list: screens.md. CHK005 entry points: FR-004. CHK006 loading, failure, unsaved changes and undo: FR-023. CHK007 number typing: FR-005. CHK008 date and time format: FR-014a. CHK009 archived accounts in the filter: FR-015 and the contract. CHK010 normalised decimal strings: the contract (Decimal) and research section 4, which is an interface rule rather than a user requirement, so left for the reviewer. CHK011 matching messages: the contract returns the wireframe wording and the API tests check it. CHK012 paging: Assumptions (everything, up to the SC-008 size). CHK013 and CHK014 export content, name and delivery: FR-019. CHK015 and CHK016 keyboard, labels and error text: FR-024. CHK017 and CHK018 unsaved changes, delete and archive undo: FR-023. CHK019 loopback check: SC-009. CHK020 and CHK021 restart, backup and failed changes: FR-025, SC-010 and Assumptions. CHK022 exceptions with expiry and who ends them: the signed-off section of the spec. CHK023 domain document: Assumptions.
+
 ## Notes
 
 - Mark items `[x]` only after review confirms the requirement-quality criterion is satisfied
