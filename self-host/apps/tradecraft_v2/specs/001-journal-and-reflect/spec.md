@@ -231,3 +231,13 @@ Decided on 2026-10-03, after the owner's reactions to the wireframes (no wirefra
 - A reviewed review is never locked; it shows when it was last edited.
 - Weekends: all seven days are listed in the weekly review (an empty weekend day takes one line) and are selectable in the pickers.
 - The strategy or setup of a trade is not shown in this feature (owner: ignore for now); the strategy builder and playbooks stay a later feature.
+
+## Signed-off screens
+
+The screens in `screens.md` were signed off by the owner on 2026-10-03. Plan, tasks and implementation
+MUST honour them. Any change to an interface covered here MUST update `screens.md` and its
+Penpot frames in the same change (constitution principle V).
+
+Accepted exceptions at sign-off (not drawn, to be handled in plan): the v1 trade form with its one new
+optional thesis field; the rename and retire dialogs for mistakes; where export lives; the state for
+today (a Draft row without the tag).

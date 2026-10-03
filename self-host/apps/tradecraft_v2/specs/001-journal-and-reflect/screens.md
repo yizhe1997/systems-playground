@@ -1,10 +1,10 @@
 # Wireframes: Journal and Reflect
 
 **Feature**: `001-journal-and-reflect`
-**Status**: draft, greyscale wireframes redrawn 2026-10-02 and revised on 2026-10-02 and 2026-10-03 after the owner's reactions. All wireframe questions are decided; next is clarify, then sign-off. Sample dates use the 2025 calendar so weekdays are right.
+**Status**: signed-off 2026-10-03. Greyscale wireframes: structure, wording, states and behaviour. The look is not part of this sign-off.
 **Penpot**: file `Tradecraft_v2`, one page per screen (`S0 Reviews` to `S5 Weekly review`, plus a `Wireframe kit` page). Images exported to [wireframes/](wireframes/).
-**Signed off**: not yet
-**spec-sha256**: (filled in at sign-off)
+**Signed off**: 2026-10-03
+**spec-sha256**: 7b809da360b4951f10e6d4efc07a7648aba46062d3ce4fa51c0d0be9a3572411
 
 All sample data is made up: account "Funded 50K", Wednesday 1 October 2025, NQ and ES trades.
 
@@ -142,7 +142,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 - [x] Every figure that can be unavailable shows a dash and a reason (S2 risk "No stop recorded, so no risk figure.")
 - [x] Greyscale only: no brand colour, brand font or colour-coded meaning (meaning is carried by words such as "STOP TRADING", "(x) Mistake"; selected and primary use a dark fill)
 - [x] Every entry point has its empty state (S1 and S5 focus cards when no focus is written; S0 with nothing to review; the S4 dialog when nothing is written)
-- [ ] No placeholder text anywhere (the rough draft still has sample data; owner to confirm wording at sign-off)
+- [x] No placeholder text anywhere (sample data is made up and labelled as such; wording confirmed by the owner at sign-off)
 
 ## Reactions
 
@@ -180,6 +180,6 @@ Known limits of this wireframe set: the v1 trade form (Log or Edit trade) is reu
 ## Sign-off
 
 - **Signed off by**: owner
-- **Date**:
-- **Spec hash**:
-- **Notes**:
+- **Date**: 2026-10-03
+- **Spec hash**: 7b809da360b4951f10e6d4efc07a7648aba46062d3ce4fa51c0d0be9a3572411
+- **Notes**: Accepted exceptions, not drawn and handled in plan: (1) the v1 trade form with one new optional thesis field; (2) the rename and retire dialogs for mistakes; (3) where export lives (spec says exportable; proposed home is Settings); (4) the state for today (a Draft row without the tag).
