@@ -179,9 +179,9 @@ components:
         direction: { type: string, enum: [long, short] }
         size: { $ref: "#/components/schemas/Decimal" }
         entryPrice: { $ref: "#/components/schemas/Decimal" }
-        entryAt: { type: string, format: date-time }
+        entryAt: { type: string, description: "Either an RFC 3339 instant with an offset, or a local date and time without an offset (for example 2025-10-01T09:41:00) read in the journal time zone. Responses always carry an offset." }
         exitPrice: { $ref: "#/components/schemas/Decimal" }
-        exitAt: { type: string, format: date-time }
+        exitAt: { type: string, description: "Either an RFC 3339 instant with an offset, or a local date and time without an offset (for example 2025-10-01T09:41:00) read in the journal time zone. Responses always carry an offset." }
         dollarsPerPoint: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
         cost: { $ref: "#/components/schemas/Decimal", description: Zero or more; defaults to 0 }
         stopPrice: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
