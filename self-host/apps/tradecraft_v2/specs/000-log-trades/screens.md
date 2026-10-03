@@ -16,7 +16,7 @@ They serve every user story in `spec.md`: L1 serves stories 2 and 3 (see and cor
 
 | ID | Screen | Serves | States drawn | Image |
 |---|---|---|---|---|
-| L1 | Trades list (the home screen) | US2, US3, FR-015 to FR-019 | filled; no trades at all; filters match nothing; showing deleted | [filled](wireframes/l1-trades-list-filled.png), [none at all](wireframes/l1-trades-list-no-trades-at-all.png), [no match](wireframes/l1-trades-list-filters-match-nothing.png), [deleted](wireframes/l1-trades-list-showing-deleted.png) |
+| L1 | Trades list (the home screen) | US1, US2, US3, FR-004, FR-015 to FR-019 | filled; no accounts yet; no trades at all; filters match nothing; showing deleted | [filled](wireframes/l1-trades-list-filled.png), [no accounts](wireframes/l1-trades-list-no-accounts-yet.png), [none at all](wireframes/l1-trades-list-no-trades-at-all.png), [no match](wireframes/l1-trades-list-filters-match-nothing.png), [deleted](wireframes/l1-trades-list-showing-deleted.png) |
 | L2 | Log or edit a trade | US1, US3, US4, US5, FR-005 to FR-012, FR-020 | new; filled with the result computed; dollars per point blank (typed result); validation errors; edit | [new](wireframes/l2-log-a-trade-new.png), [filled](wireframes/l2-log-a-trade-filled-result-computed.png), [typed result](wireframes/l2-log-a-trade-dollars-per-point-blank.png), [errors](wireframes/l2-log-a-trade-validation-errors.png), [edit](wireframes/l2-edit-a-trade.png) |
 | L3 | Accounts list | US1, US6, FR-003, FR-004, FR-004a | list; showing archived; none yet | [list](wireframes/l3-accounts-list.png), [archived](wireframes/l3-accounts-showing-archived.png), [none yet](wireframes/l3-accounts-none-yet.png) |
 | L4 | Account dialog (new or edit) | US1, US5, US6, FR-001 to FR-004a | new; edit; name already used | [new](wireframes/l4-account-dialog-new.png), [edit](wireframes/l4-account-dialog-edit.png), [name used](wireframes/l4-account-dialog-name-already-used.png) |
@@ -24,7 +24,7 @@ They serve every user story in `spec.md`: L1 serves stories 2 and 3 (see and cor
 
 ## Flows
 
-1. **First run:** open the app, see Trades with no trades, press Log a trade, find there is no account (the account list is empty), go to Accounts, New account (L4), save, return to Log a trade (L2), save the trade, land on Trades (L1).
+1. **First run:** open the app, see Trades saying "Create an account first", press New account (L4), save, return to Trades, press Log a trade (L2), save the trade, land on Trades (L1).
 2. **Log a trade:** Trades (L1) → Log a trade (L2) → fill the Basic fields, watch the Result preview → Save trade → back on Trades.
 3. **Find a trade:** Trades (L1) → choose an account and a date range → read the list.
 4. **Correct a trade:** Trades (L1) → Edit → change a field → Save changes; or Delete.
@@ -52,6 +52,7 @@ APP NAME; Trades, Accounts, Settings.
 | Result cell | -$125.00; a typed result adds "typed in" underneath |
 | R cell | -0.50 R, or a dash with a reason underneath: "no stop recorded", "no dollars per point" |
 | Footnote | Each result is in its own account's currency. This list has no totals. |
+| No accounts yet | Create an account first. / Every trade belongs to an account. Log a trade is available as soon as you have one. / New account · Log a trade is unavailable until an account exists |
 | No trades at all | No trades yet. / Log your first trade and it appears here. / Log a trade |
 | Filters match nothing | No trades for these filters. / Try another account or a wider date range. / Clear filters |
 | Showing deleted | Showing deleted trades. They are hidden everywhere else until restored. · rows tagged Deleted with a Restore button |
@@ -70,6 +71,7 @@ APP NAME; Trades, Accounts, Settings.
 | Preview, typed result | Gross result: dash, "needs dollars per point" · Costs: not used, "a typed result is already after costs" · Net result: -$120.00, "typed in" · Risk and R: dash, "needs dollars per point" · Add dollars per point and the result is computed instead. |
 | Preview, new | dashes with "needs prices, size and dollars per point", "needs a stop and dollars per point", "needs a net result and a risk", "needs an exit time" |
 | Errors | 3 things to fix before this trade can be saved. · ! Instrument is required. · ! Size must be above zero. · ! Exit must not be earlier than the entry. · Fix the fields marked with a !. |
+| More error messages | ! Times cannot be in the future. · ! Entry price and exit price are required. · ! Result is required while dollars per point is blank. · ! Dollars per point must be above zero. · ! Costs cannot be negative. · ! Choose an account. |
 | Actions | Save trade, or Save changes · Cancel · Delete trade (edit only) · Last saved Wed 1 Oct 10:05 |
 
 ### L3 Accounts
@@ -114,6 +116,7 @@ APP NAME; Trades, Accounts, Settings.
 |---|---|---|---|
 | 2026-10-03 | All | Wants to see the screens drawn before reacting | Screens drawn as proposed |
 | 2026-10-04 | All | Looks good enough for now | Proceeded to clarify |
+| 2026-10-04 | Sign-off check | FR-004 (no trade without an account) had no screen | Added the trades list state "no accounts yet" and the missing error messages to the content list |
 | 2026-10-04 | Clarify: time zone | Chose the recommendation | One time zone for the whole journal; Settings holds it (as drawn) |
 | 2026-10-04 | Clarify: typed result | Chose the recommendation | A typed result is after costs; the costs field is "not used" (as drawn) |
 | 2026-10-04 | Clarify: retiring an account | Chose the recommendation (archive only) | Archive and Restore on the accounts list, Show archived switch, Archive account in the edit dialog |
