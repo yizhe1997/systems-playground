@@ -1,12 +1,12 @@
 # Wireframes: Journal and Reflect
 
 **Feature**: `001-journal-and-reflect`
-**Status**: draft, greyscale wireframes redrawn 2026-10-02 (after the first styled draft was set aside). Waiting for the owner's reactions, then clarify.
+**Status**: draft, greyscale wireframes redrawn 2026-10-02, revised the same day after the owner's first reactions (day navigation, looking back, entry points to focus). Waiting for more reactions, then clarify. Sample dates use the 2025 calendar so weekdays are right.
 **Penpot**: file `Tradecraft_v2`, one page per screen (`S0 Reviews` to `S5 Weekly review`, plus a `Wireframe kit` page). Images exported to [wireframes/](wireframes/).
 **Signed off**: not yet
 **spec-sha256**: (filled in at sign-off)
 
-All sample data is made up: account "Funded 50K", Wednesday 1 October 2026, NQ and ES trades.
+All sample data is made up: account "Funded 50K", Wednesday 1 October 2025, NQ and ES trades.
 
 ## Why these screens
 
@@ -16,20 +16,23 @@ They serve every user story in `spec.md`: S1 and S2 serve stories 1 and 2, S3 se
 
 | ID | Screen | Serves | States drawn | Image |
 |---|---|---|---|---|
-| S0 | Reviews: list of days and weeks, per account | US1, FR-003 | list; nothing to review yet | [S0](wireframes/S0-reviews-list.png), [empty](wireframes/S0-reviews-empty.png) |
-| S1 | Daily review (one account, one day) | US1, US2, US4, FR-003 to FR-012, FR-018 | filled (draft); empty day; nothing earlier to show; reviewed but trades changed | [filled](wireframes/S1-daily-review-filled.png), [empty day](wireframes/S1-daily-review-empty-day.png), [nothing earlier](wireframes/S1-daily-review-nothing-earlier.png), [trades changed](wireframes/S1-daily-review-trades-changed.png) |
-| S2 | Judge a trade (drawer opened from the Judge button) | US2, US3, FR-008, FR-009, FR-013 | a loss labelled mistake; a win flagged as a mistake | [loss](wireframes/S2-judge-a-loss.png), [win](wireframes/S2-judge-a-win.png) |
-| S3 | Mistakes: counter, stop lines, list management | US3, FR-013 to FR-016 | counter this week; stop line editor (with an error); nothing tagged yet | [counter](wireframes/S3-mistakes-counter.png), [editor](wireframes/S3-stop-line-editor.png), [empty](wireframes/S3-mistakes-empty.png) |
-| S4 | Write a focus (week or month) | US4, FR-017, FR-018 | week; month; nothing written yet | [week](wireframes/S4-focus-week.png), [month](wireframes/S4-focus-month.png), [empty](wireframes/S4-focus-empty.png) |
-| S5 | Weekly review (one account, one week) | US5, FR-019 to FR-021 | filled (draft) | [S5](wireframes/S5-weekly-review.png) |
+| S0 | Reviews: list of days and weeks, per account, newest first, with month stepper and jump to date | US1, FR-003 | list; stepped back to an older month; nothing to review yet | [list](wireframes/s0-reviews-list-of-days.png), [older month](wireframes/s0-reviews-stepped-back-to-an-older-month.png), [empty](wireframes/s0-reviews-nothing-to-review-yet.png) |
+| S1 | Daily review (one account, one day) | US1, US2, US4, FR-003 to FR-012, FR-018 | filled (draft); empty day; nothing earlier to show; reviewed but trades changed; no week or month focus yet; day picker open | [filled](wireframes/s1-daily-review-filled-draft.png), [empty day](wireframes/s1-daily-review-empty-day.png), [nothing earlier](wireframes/s1-daily-review-nothing-earlier-to-show.png), [trades changed](wireframes/s1-daily-review-reviewed-but-trades-changed.png), [no focus](wireframes/s1-daily-review-no-week-or-month-focus-yet.png), [day picker](wireframes/s1-daily-review-day-picker-open.png) |
+| S2 | Judge a trade (drawer opened from the Judge button) | US2, US3, FR-008, FR-009, FR-013 | a loss labelled mistake; a win flagged as a mistake | [loss](wireframes/s2-judge-a-trade-a-loss-labelled-mistake.png), [win](wireframes/s2-judge-a-trade-a-win-flagged-as-a-mistake.png) |
+| S3 | Mistakes: counter, stop lines, list management | US3, FR-013 to FR-016 | counter this week; stop line editor (with an error); nothing tagged yet | [counter](wireframes/s3-mistakes-counter-this-week.png), [editor](wireframes/s3-mistakes-stop-line-editor.png), [empty](wireframes/s3-mistakes-nothing-tagged-yet.png) |
+| S4 | Write a focus (week or month), a dialog | US4, FR-017, FR-018 | week; month; nothing written yet | [week](wireframes/s4-set-a-focus-week.png), [month](wireframes/s4-set-a-focus-month.png), [empty](wireframes/s4-set-a-focus-nothing-written-yet.png) |
+| S5 | Weekly review (one account, one week) | US5, FR-019 to FR-021 | filled (draft); no focus for the week yet | [filled](wireframes/s5-weekly-review-filled-draft.png), [no focus](wireframes/s5-weekly-review-no-focus-for-the-week-yet.png) |
+
+**How S4 is reached** (it is a dialog, not a page): the "Write one" or "Edit" button on the week and month lines of the focus card in S1; the same buttons on the focus card in S5; the "Write a focus" button at the top of S0.
 
 ## Flows
 
 1. **Evening:** Reviews (S0) → Review this day → Daily review (S1) → Judge a trade (S2) for each trade → write the three answers and grades → Mark as reviewed.
 2. **Morning:** Reviews (S0) → open today's day, or the next one: the top of the daily review (S1) shows yesterday's focus plus the week's and month's.
-3. **Set the longer focus:** Daily review (S1) → Edit next to the week or month → Write a focus (S4).
-4. **Watch a habit:** Mistakes (S3) → Stop line → editor.
-5. **End of week:** Reviews (S0) → Open weekly review (S5) → open any day from it → write next week's focus → Mark as reviewed.
+3. **Set the longer focus:** Daily review (S1), weekly review (S5) or Reviews (S0) → Write one / Edit / Write a focus → Write a focus (S4).
+4. **Look back:** Reviews (S0) → step months with the arrows, scroll down for older months, or "Jump to date" → open the day. From any daily review (S1) the previous and next day buttons step one day, and the middle button opens a day picker that marks days with trades and days with a missing review.
+5. **Watch a habit:** Mistakes (S3) → Stop line → editor.
+6. **End of week:** Reviews (S0) → Open weekly review (S5) → open any day from it → write next week's focus → Mark as reviewed.
 
 ## Content list
 
@@ -46,22 +49,26 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Title | Reviews |
 | Subtitle | Every day and week, with what is still missing. |
 | Account switcher | Account: Funded 50K |
+| Header button | Write a focus (opens S4) |
 | Filters | All, Missing 2, Draft 1, Reviewed 4 |
-| Month heading | October 2026 |
+| Month navigation | < October 2025 v > (steps one month; the name opens a month list) · Jump to date |
+| Month headings in the list | October 2025, September 2025, and so on, newest first; older months load as you scroll down |
 | Day row | Wed 1 Oct · 3 trades · +$45 · Plan followed 2 of 3 · 1 mistake · Draft · Open |
 | Day row (missing) | Mon 29 Sep · 4 trades · +$120 · Plan followed 3 of 4 · 1 mistake · Missing · Review this day |
 | Week row | Week of 29 Sep to 5 Oct · weekly review · Gathers Mon to Fri once the days are reviewed · Missing · Open weekly review |
-| Footnote | Days with no trades are listed only after you open them. The money figure always has the plan figure beside it. |
+| Footnote | Newest first. Older months load as you scroll down, or step back with the arrows, or jump to a date. Days with no trades are listed only after you open them. The money figure always has the plan figure beside it. |
 | Empty state | Nothing to review yet for Funded 50K. / Log your first trade and its day appears here, ready to review. / Add a trade |
 
 ### S1 Daily review
 
 | Element | Text |
 |---|---|
-| Title and subtitle | Daily review · Wednesday 1 October 2026 · Funded 50K |
+| Title and subtitle | Daily review · Wednesday 1 October 2025 · Funded 50K |
 | Status chips | Draft, Reviewed |
-| Day navigation | Tue 30 Sep, Thu 2 Oct |
+| Day navigation | < Tue 30 Sep (previous day) · Wed 1 Oct v (opens a day picker) · Thu 2 Oct > (next day) |
+| Day picker | < September 2025 > · Mo to Su · • has trades · ! review missing · Go to today |
 | Focus card labels | Yesterday: Tue 30 Sep · This week (29 Sep to 5 Oct) · This month (October) · Edit |
+| No week or month focus | This week (29 Sep to 5 Oct): No focus for this week yet. · Write one · This month (October): No focus for this month yet. · Write one |
 | Nothing earlier | Yesterday: nothing to show / No earlier focus yet. What you write in the last box below will appear here tomorrow. |
 | Numbers | Net result +$45 (Plan followed on 2 of 3 trades) · Plan followed 2 of 3 (1 trade off plan) · Mistakes 1 (Chased entry x1) · Valid losses 1 (of 2 losing trades) · Win rate — (Needs 5 trades; you have 3) |
 | Trades table | Trades · Central Time. The result is the outcome; the judgement is what counts. · Time, Instrument, Side, Size, Result, Followed plan, Judgement, Mistakes · Not judged yet · Judge · Day total +$45 across 3 trades, 2 followed the plan. · Add a trade |
@@ -91,7 +98,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Element | Text |
 |---|---|
 | Title | Mistakes · How often each habit showed up, and the line you set for each. Across all accounts. |
-| Period and filter | Week, Month, 29 Sep to 5 Oct 2026, All accounts |
+| Period and filter | Week, Month, 29 Sep to 5 Oct 2025, All accounts |
 | Table | Mistake, This week, This month, Stop line, Status, By account · Stop line (button) |
 | Statuses | STOP TRADING: 4 of 4 this week · Near the line: 5 of 6 this month · 2 of 3 this month · Count only |
 | Stop line cells | 4 per week · 6 per month · 3 per month · none set |
@@ -104,7 +111,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Element | Text |
 |---|---|
 | Title and tabs | Write a focus · Week, Month |
-| Labels | Focus for the week of 29 Sep to 5 Oct · Focus for October 2026 |
+| Labels | Focus for the week of 29 Sep to 5 Oct · Focus for October 2025 |
 | Field | One sentence you want to see every day this week. (placeholder) · 43 of 280 characters · Up to 280 characters. |
 | Help | Shown at the top of every daily review this week, on all your accounts. |
 | Actions | Save focus · Cancel · Clear this focus |
@@ -113,8 +120,9 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 
 | Element | Text |
 |---|---|
-| Title | Weekly review · Week of 29 Sep to 5 Oct 2026 · Funded 50K · Previous week, Next week |
+| Title | Weekly review · Week of 29 Sep to 5 Oct 2025 · Funded 50K · Previous week, Next week |
 | Focus | Focus for this week · Shown on every daily review this week. · Edit |
+| No focus yet | Focus for this week · No focus for this week yet. · Write one |
 | Days | The days · What you wrote each day. Days without a review are named, and their trades still count below. |
 | Day statuses | Missing, Reviewed, Draft, No trades, Not yet |
 | Day cells | Did well · Could improve · Next focus · Mental B · Technical B · Open · Review this day |
@@ -129,6 +137,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 - [x] Every money figure has process information beside it (S0 rows, S1 numbers and table, S2 result strip, S5 numbers)
 - [x] Every figure that can be unavailable shows a dash and a reason (S1 win rate "Needs 5 trades; you have 3", S2 risk "No stop recorded, so no risk figure.")
 - [x] Greyscale only: no brand colour, brand font or colour-coded meaning (meaning is carried by words such as "STOP TRADING", "! Near the line", "(x) Mistake"; selected and primary use a dark fill)
+- [x] Every entry point has its empty state (S1 and S5 focus cards when no focus is written; S0 with nothing to review; the S4 dialog when nothing is written)
 - [ ] No placeholder text anywhere (the rough draft still has sample data; owner to confirm wording at sign-off)
 
 ## Reactions
@@ -136,6 +145,10 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Date | Screen | Owner's reaction | What changed |
 |---|---|---|---|
 | 2026-10-02 | Look | Wireframes must not assume v1's look | Redrawn in greyscale; the look is decided later in the visual-direction step |
+| 2026-10-02 | S0 | Cannot see how to look at older reviews; month label alone is not navigation | Month stepper, month list, jump to date and month grouping added; older-month state drawn |
+| 2026-10-02 | S1 | The two buttons at the top right were confusing | Replaced with previous day, a middle button that opens a day picker, and next day; picker state drawn |
+| 2026-10-02 | S4 | Could not see how to reach the dialog | Entry points named on the screens ("Write one" when empty, "Edit" when filled, "Write a focus" on S0); empty-focus states drawn for S1 and S5 (a missed state) |
+| 2026-10-02 | S2 | Where are trade attachments? | Not in this feature; kept out on purpose (see spec non-goals) |
 | 2026-10-02 | Account scope | Chose one review per account | Every screen carries an account switcher; S1 and S5 are per account; S3 counts across accounts with a per-account split |
 
 ## Open questions for clarify
@@ -145,7 +158,9 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 3. **Win rate:** shown as a dash with "Needs 5 trades" under that threshold. Is five the right minimum, or should a win rate not appear on a daily review at all?
 4. **Where "Add a trade" goes:** it opens the existing v1 trade form. Should the form gain the judging fields (S2) too, so a trade can be judged as it is logged?
 5. **Habits not tied to a trade (S1):** drawn as chips ("Revenge mode"). Should these share the same list as trade mistakes (S3 shows them together) or have their own?
-6. **Reviewed state:** after "Mark as reviewed" the answers stay editable. Should a reviewed review lock until you press Reopen?
+6. **Overlap between S4 and S5:** S5 has its own "Focus for next week" box as well as the S4 dialog. Keep both ways to write next week's focus, or make the S5 box open S4?
+7. **Day picker and weekends:** should Saturday and Sunday be selectable in the picker when there are no trades?
+8. **Reviewed state:** after "Mark as reviewed" the answers stay editable. Should a reviewed review lock until you press Reopen?
 
 ## Sign-off
 

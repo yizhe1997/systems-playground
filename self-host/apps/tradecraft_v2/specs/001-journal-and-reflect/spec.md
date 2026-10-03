@@ -146,7 +146,7 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 
 **Plan flows down, reflection flows up**
 - **FR-017**: The owner MUST be able to write one focus for a week and one for a month.
-- **FR-018**: Every daily review MUST show the focus of its week and of its month, each labelled by period; periods with no focus show nothing.
+- **FR-018**: Every daily review MUST show the focus of its week and of its month, each labelled by period; a period with no focus says so and offers a way to write one.
 - **FR-019**: The owner MUST be able to open a weekly review for an account that lists, by weekday, the answers written on that account's daily reviews for the week, states plainly which weekdays have no review, and still counts all of the week's trades.
 - **FR-020**: The weekly review MUST include a place to write the focus for next week, which MUST then be shown on next week's daily reviews.
 - **FR-021**: The weekly review MUST show the week's numbers with process information beside them.
@@ -156,6 +156,7 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 - **FR-023**: Every statistic shown MUST state its definition and the number of trades it is based on.
 - **FR-024**: Money MUST be exact (no rounding drift) and shown in the account's currency.
 - **FR-025**: The records created here (reviews, focuses, grades, mistake tags) MUST be exportable.
+- **FR-026**: The owner MUST be able to look back: the list of reviews is newest first, grouped by month, reachable month by month, by scrolling and by jumping to a date; any daily review can step to the previous or next day or pick a day, with days that have trades or a missing review marked.
 
 ### Out of Scope (non-goals for this version)
 
@@ -166,6 +167,7 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 - Missed and backtest trades as separate records.
 - Monthly, quarterly and yearly review documents (only a monthly focus field is in scope).
 - A free-form notebook.
+- Attachments and screenshots on trades (decided 2026-10-02: its own later feature).
 - Agent and MCP features. These come right after this version, and nothing here may prevent them.
 
 ### Key Entities
