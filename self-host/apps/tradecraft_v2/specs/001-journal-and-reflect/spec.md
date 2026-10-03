@@ -90,17 +90,17 @@ The owner writes a focus once for a week or a month (for example "wait for the c
 
 ### User Story 5 - Reflection flows up: the weekly review (Priority: P3)
 
-The owner opens a weekly review. It gathers, by weekday, what the owner wrote on that week's daily reviews, shows the week's numbers with process information beside them, and has a place for the focus for next week. Writing it sets next week's focus, which then appears on next week's daily reviews.
+The owner opens a weekly review. It gathers, by weekday, what the owner wrote on that week's daily reviews, shows the week's numbers with process information beside them, and shows the focus of the week and of its month with a way to write or edit them. To plan the next week the owner steps to that week and writes its focus there.
 
 **Why this priority**: it closes the loop at the week level, but only has value once daily reviews exist.
 
-**Independent Test**: with answers on three days of a week, open the weekly review and confirm each day's answers are listed under its weekday, the numbers are paired with process information, and a next-week focus written here appears on the following week's daily reviews.
+**Independent Test**: with answers on three days of a week, open the weekly review and confirm each day's answers are listed under its weekday, the numbers are paired with process information, and the week's and month's focus can be written or edited from it.
 
 **Acceptance Scenarios**:
 
 1. **Given** daily reviews exist for days in a week, **When** the owner opens the weekly review, **Then** each day's answers are listed under its weekday.
 2. **Given** a day in that week has no review, **When** the weekly review is shown, **Then** that weekday says so plainly and the week's totals still include that day's trades.
-3. **Given** the owner writes a focus for next week in the weekly review, **When** they open a daily review in the following week, **Then** that focus is shown.
+3. **Given** the owner opens next week's weekly review and writes its focus, **When** they open a daily review in that week, **Then** that focus is shown.
 4. **Given** the weekly review shows money figures, **When** it is displayed, **Then** process information is shown beside them.
 
 ---
@@ -147,8 +147,8 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 **Plan flows down, reflection flows up**
 - **FR-017**: The owner MUST be able to write one focus for a week and one for a month.
 - **FR-018**: Every daily review MUST show the focus of its week and of its month, each labelled by period; a period with no focus says so and offers a way to write one.
-- **FR-019**: The owner MUST be able to open a weekly review for an account that lists, by weekday, the answers written on that account's daily reviews for the week, states plainly which weekdays have no review, and still counts all of the week's trades.
-- **FR-020**: The weekly review MUST include a place to write the focus for next week, which MUST then be shown on next week's daily reviews.
+- **FR-019**: The owner MUST be able to open a weekly review for an account that lists, for all seven days (an empty weekend day takes one line), the answers written on that account's daily reviews for the week, states plainly which weekdays have no review, and still counts all of the week's trades.
+- **FR-020**: The weekly review MUST show the focus of its week and of its month, each with a way to write or edit it (or to say none is written), and MUST let the owner step to any other week, including by a picker, so a focus for a coming week is written on that week's review.
 - **FR-021**: The weekly review MUST show the week's numbers with process information beside them.
 
 **Across the feature**
@@ -176,7 +176,7 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 - **Daily review**: the owner's review of one account on one trading day: three answers, a mental grade, a technical grade, a reviewed state with its time. Linked to that day's trades.
 - **Focus**: one sentence of intent for a week or a month, written once by the owner. Shown on every daily review in its period, on every account.
 - **Mistake**: a named habit (from an owner-managed list) that can be tagged on a trade or recorded once for a day, with an optional stop line.
-- **Weekly review**: the owner's review of one account for one week: gathers that account's daily answers by weekday and holds the focus for next week.
+- **Weekly review**: the owner's review of one account for one week: gathers that account's daily answers by weekday and shows the week's and month's focus.
 - **Account**: where trades happen; carries the currency and the trading-day settings. Exists already in Tradecraft v1.
 
 ## Success Criteria *(mandatory)*
@@ -207,7 +207,6 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 
 Greyscale wireframes were drawn on 2026-10-02 in Penpot (file `Tradecraft_v2`, one page per screen); images are in [wireframes/](wireframes/). An earlier styled draft was set aside because it assumed another project's look. See [screens.md](screens.md) for the inventory, the full wording, and the open questions below, which clarify should ask the owner about.
 
-- Weekend days in the weekly review: show Saturday and Sunday when there are no trades, or hide them?
 - Grade scale: three steps (A, B, C) or five stars?
 - Minimum number of trades before a win rate is shown on a daily review (drafted as five).
 - Should the existing trade form also carry the judging fields so a trade can be judged as it is logged?

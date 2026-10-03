@@ -21,18 +21,18 @@ They serve every user story in `spec.md`: S1 and S2 serve stories 1 and 2, S3 se
 | S2 | Judge a trade (drawer opened from the Judge button) | US2, US3, FR-008, FR-009, FR-013 | a loss labelled mistake; a win flagged as a mistake | [loss](wireframes/s2-judge-a-trade-a-loss-labelled-mistake.png), [win](wireframes/s2-judge-a-trade-a-win-flagged-as-a-mistake.png) |
 | S3 | Mistakes: counter, stop lines, list management | US3, FR-013 to FR-016 | counter this week; stop line editor (with an error); nothing tagged yet | [counter](wireframes/s3-mistakes-counter-this-week.png), [editor](wireframes/s3-mistakes-stop-line-editor.png), [empty](wireframes/s3-mistakes-nothing-tagged-yet.png) |
 | S4 | Write a focus (week or month), a dialog | US4, FR-017, FR-018 | week; month; nothing written yet | [week](wireframes/s4-set-a-focus-week.png), [month](wireframes/s4-set-a-focus-month.png), [empty](wireframes/s4-set-a-focus-nothing-written-yet.png) |
-| S5 | Weekly review (one account, one week) | US5, FR-019 to FR-021 | filled (draft); no focus for the week yet | [filled](wireframes/s5-weekly-review-filled-draft.png), [no focus](wireframes/s5-weekly-review-no-focus-for-the-week-yet.png) |
+| S5 | Weekly review (one account, one week) | US5, FR-019 to FR-021 | filled (draft); no focus yet (week and month); week picker open | [filled](wireframes/s5-weekly-review-filled-draft.png), [no focus](wireframes/s5-weekly-review-no-focus-yet.png), [week picker](wireframes/s5-weekly-review-week-picker-open.png) |
 
-**How S4 is reached** (it is a dialog, not a page): the "Write one" or "Edit" button on the week and month lines of the focus card in S1; the same buttons on the focus card in S5; the "Write a focus" button at the top of S0.
+**How S4 is reached** (it is a dialog, not a page): the "Write one" or "Edit" button on the week and month lines of the focus card in S1; the same buttons on the focus card in S5 (week and month); the "Month focus" band under each month heading in S0 (Edit, or Write one when empty). The week's focus is reached by opening the week row, which opens S5.
 
 ## Flows
 
 1. **Evening:** Reviews (S0) → Review this day → Daily review (S1) → Judge a trade (S2) for each trade → write the three answers and grades → Mark as reviewed.
 2. **Morning:** Reviews (S0) → open today's day, or the next one: the top of the daily review (S1) shows yesterday's focus plus the week's and month's.
-3. **Set the longer focus:** Daily review (S1), weekly review (S5) or Reviews (S0) → Write one / Edit / Write a focus → Write a focus (S4).
+3. **Set the longer focus:** Daily review (S1) or weekly review (S5) focus card, or the month band in Reviews (S0) → Write one / Edit → Write a focus (S4).
 4. **Look back:** Reviews (S0) → step months with the arrows, scroll down for older months, or "Jump to date" → open the day. From any daily review (S1) the previous and next day buttons step one day, and the middle button opens a day picker that marks days with trades and days with a missing review.
 5. **Watch a habit:** Mistakes (S3) → Stop line → editor.
-6. **End of week:** Reviews (S0) → Open weekly review (S5) → open any day from it → write next week's focus → Mark as reviewed.
+6. **End of week:** Reviews (S0) → Open weekly review (S5) → open any day from it → Mark as reviewed. To plan ahead, step to next week (S5) and write its focus there.
 
 ## Content list
 
@@ -49,13 +49,13 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Title | Reviews |
 | Subtitle | Every day and week, with what is still missing. |
 | Account switcher | Account: Funded 50K |
-| Header button | Write a focus (opens S4) |
 | Filters | All, Missing 2, Draft 1, Reviewed 4 |
 | Month navigation | < October 2025 v > (steps one month; the name opens a month list) · Jump to date |
 | Month headings in the list | October 2025, September 2025, and so on, newest first; older months load as you scroll down |
+| Month focus band (under each month heading) | Month focus · Grade every trade, not just the day. · Edit  (empty: No focus for this month yet. · Write one) |
 | Day row | Wed 1 Oct · 3 trades · +$45 · Plan followed 2 of 3 · 1 mistake · Draft · Open |
 | Day row (missing) | Mon 29 Sep · 4 trades · +$120 · Plan followed 3 of 4 · 1 mistake · Missing · Review this day |
-| Week row | Week of 29 Sep to 5 Oct · weekly review · Gathers Mon to Fri once the days are reviewed · Missing · Open weekly review |
+| Week row | Week of 29 Sep to 5 Oct · weekly review · Gathers the days once they are reviewed · Missing · Open weekly review |
 | Footnote | Newest first. Older months load as you scroll down, or step back with the arrows, or jump to a date. Days with no trades are listed only after you open them. The money figure always has the plan figure beside it. |
 | Empty state | Nothing to review yet for Funded 50K. / Log your first trade and its day appears here, ready to review. / Add a trade |
 
@@ -120,16 +120,17 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 
 | Element | Text |
 |---|---|
-| Title | Weekly review · Week of 29 Sep to 5 Oct 2025 · Funded 50K · Previous week, Next week |
-| Focus | Focus for this week · Shown on every daily review this week. · Edit |
-| No focus yet | Focus for this week · No focus for this week yet. · Write one |
+| Title | Weekly review · Week of 29 Sep to 5 Oct 2025 · Funded 50K |
+| Week navigation | < Previous week · Week of 29 Sep to 5 Oct v (opens a week picker) · Next week > |
+| Week picker | < September 2025 > · Mo to Su · Week column: Reviewed, Missing · Click any day, or a row, to open that week. Weekends count. · This week |
+| Focus | This week (29 Sep to 5 Oct) · A+ setups only. Maximum three trades a day. · Edit · This month (October) · Grade every trade, not just the day. · Edit |
+| No focus yet | No focus for this week yet. · No focus for this month yet. · Write one (each) |
 | Days | The days · What you wrote each day. Days without a review are named, and their trades still count below. |
-| Day statuses | Missing, Reviewed, Draft, No trades, Not yet |
+| Day statuses | Missing, Reviewed, Draft, No trades, Not yet. All seven days are listed; an empty Saturday or Sunday is one line. |
 | Day cells | Did well · Could improve · Next focus · Mental B · Technical B · Open · Review this day |
 | Missing day | No review for Mon 29 Sep. Its 4 trades (+$120, plan followed 3 of 4) are included in the totals below. |
 | No trades / future | No trades on Thu 2 Oct. · This day has not happened yet. |
 | Numbers | The week in numbers · Net result +$85 (Plan followed on 7 of 9 trades) · Plan followed 7 of 9 (2 trades off plan) · Mistakes 3 (Moved stop x2, Chased entry x1) · Valid losses 2 (of 4 losing trades) · Win rate 5 of 9 (56% of 9 trades) |
-| Next week | Focus for next week · Week of 6 Oct to 12 Oct. Shown on every daily review next week, on all your accounts. |
 | Actions | Mark as reviewed · Save draft |
 
 ## Constitution check
@@ -149,18 +150,20 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | 2026-10-02 | S1 | The two buttons at the top right were confusing | Replaced with previous day, a middle button that opens a day picker, and next day; picker state drawn |
 | 2026-10-02 | S4 | Could not see how to reach the dialog | Entry points named on the screens ("Write one" when empty, "Edit" when filled, "Write a focus" on S0); empty-focus states drawn for S1 and S5 (a missed state) |
 | 2026-10-02 | S2 | Where are trade attachments? | Not in this feature; kept out on purpose (see spec non-goals) |
+| 2026-10-03 | S5 | The box for next week's focus is noise when you can step to that week | Removed; next week's focus is written on next week's review. Month focus added to the focus card (it matched S1) |
+| 2026-10-03 | S5 | Prev and next week cannot reach a week far back | Middle button opens a week picker with a Reviewed or Missing mark per week |
+| 2026-10-03 | S5 | Weekends | All seven days listed; an empty weekend day is one line; weekends selectable in both pickers |
+| 2026-10-03 | S0 | A Write a focus button on S0 is pointless; entry should be through rows | Button removed; a Month focus band with Edit sits under each month heading, because there is no monthly review page yet |
+| 2026-10-03 | Strategy on trades | Show read-only in S1 and S2? | Ignored for now (owner: asked only because forgotten); strategy builder and playbooks stay a later feature |
 | 2026-10-02 | Account scope | Chose one review per account | Every screen carries an account switcher; S1 and S5 are per account; S3 counts across accounts with a per-account split |
 
 ## Open questions for clarify
 
-1. **Weekend and holiday days:** the weekly review lists Monday to Friday and shows "No trades" or "Not yet". Should Saturday and Sunday appear when there are no trades, or stay hidden?
-2. **Grades:** A, B and C for both mental and technical, with the meaning "followed the plan / mostly / drifted". Is a three-step scale right, or would you rather use 1 to 5 stars?
-3. **Win rate:** shown as a dash with "Needs 5 trades" under that threshold. Is five the right minimum, or should a win rate not appear on a daily review at all?
-4. **Where "Add a trade" goes:** it opens the existing v1 trade form. Should the form gain the judging fields (S2) too, so a trade can be judged as it is logged?
-5. **Habits not tied to a trade (S1):** drawn as chips ("Revenge mode"). Should these share the same list as trade mistakes (S3 shows them together) or have their own?
-6. **Overlap between S4 and S5:** S5 has its own "Focus for next week" box as well as the S4 dialog. Keep both ways to write next week's focus, or make the S5 box open S4?
-7. **Day picker and weekends:** should Saturday and Sunday be selectable in the picker when there are no trades?
-8. **Reviewed state:** after "Mark as reviewed" the answers stay editable. Should a reviewed review lock until you press Reopen?
+1. **Grades:** A, B and C for both mental and technical, with the meaning "followed the plan / mostly / drifted". Is a three-step scale right, or would you rather use 1 to 5 stars?
+2. **Win rate:** shown as a dash with "Needs 5 trades" under that threshold. Is five the right minimum, or should a win rate not appear on a daily review at all?
+3. **Where "Add a trade" goes:** it opens the existing v1 trade form. Should the form gain the judging fields (S2) too, so a trade can be judged as it is logged?
+4. **Habits not tied to a trade (S1):** drawn as chips ("Revenge mode"). Should these share the same list as trade mistakes (S3 shows them together) or have their own?
+5. **Reviewed state:** after "Mark as reviewed" the answers stay editable. Should a reviewed review lock until you press Reopen?
 
 ## Sign-off
 
