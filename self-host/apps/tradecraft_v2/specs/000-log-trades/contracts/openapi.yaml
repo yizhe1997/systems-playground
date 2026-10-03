@@ -1,0 +1,224 @@
+openapi: 3.1.0
+info:
+  title: Tradecraft v2 API, feature 000 (log trades)
+  version: 0.1.0
+  description: >
+    Accounts, closed trades, journal settings and export. Money, prices and sizes are JSON strings holding exact
+    decimals; they are never numbers. Times are RFC 3339 instants with an offset; trading days are plain dates.
+    There is no sign-in in this feature: the API listens on the loopback address only (written exception,
+    constitution IV) and is called by the web tier, never by the browser.
+servers:
+  - url: http://127.0.0.1:8081
+paths:
+  /accounts:
+    get:
+      operationId: listAccounts
+      summary: List accounts by name
+      parameters:
+        - { name: includeArchived, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200": { description: Accounts, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Account" } } } } }
+    post:
+      operationId: createAccount
+      summary: Create an account
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AccountInput" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Account" } } } }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /accounts/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getAccount
+      responses:
+        "200": { description: The account, content: { application/json: { schema: { $ref: "#/components/schemas/Account" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      operationId: updateAccount
+      summary: Replace an account's name, currency and trading-day start
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AccountInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Account" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /accounts/{id}/archive:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: archiveAccount
+      responses:
+        "200": { description: Archived, content: { application/json: { schema: { $ref: "#/components/schemas/Account" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /accounts/{id}/restore:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: restoreAccount
+      responses:
+        "200": { description: Restored, content: { application/json: { schema: { $ref: "#/components/schemas/Account" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /trades:
+    get:
+      operationId: listTrades
+      summary: List trades newest exit first, filtered by account and trading-day range
+      parameters:
+        - { name: accountId, in: query, schema: { type: string, format: uuid } }
+        - { name: from, in: query, description: "First trading day, inclusive", schema: { type: string, format: date } }
+        - { name: to, in: query, description: "Last trading day, inclusive", schema: { type: string, format: date } }
+        - { name: deleted, in: query, description: Only deleted trades when true, schema: { type: boolean, default: false } }
+      responses:
+        "200": { description: Trades, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Trade" } } } } }
+        "422": { $ref: "#/components/responses/Invalid" }
+    post:
+      operationId: createTrade
+      summary: Log a closed trade
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TradeInput" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Trade" } } } }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /trades/preview:
+    post:
+      operationId: previewTrade
+      summary: Work out the figures for a trade without saving it
+      description: Uses the same SQL functions as the saved columns. A field that cannot be worked out is null and has a reason.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TradeInput" } } } }
+      responses:
+        "200": { description: The figures, content: { application/json: { schema: { $ref: "#/components/schemas/TradeFigures" } } } }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /trades/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getTrade
+      responses:
+        "200": { description: The trade, content: { application/json: { schema: { $ref: "#/components/schemas/Trade" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      operationId: updateTrade
+      summary: Replace every editable field of a trade
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TradeInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Trade" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Invalid" }
+    delete:
+      operationId: deleteTrade
+      summary: Soft delete; the trade can be restored
+      responses:
+        "200": { description: Deleted, content: { application/json: { schema: { $ref: "#/components/schemas/Trade" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /trades/{id}/restore:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: restoreTrade
+      responses:
+        "200": { description: Restored, content: { application/json: { schema: { $ref: "#/components/schemas/Trade" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /settings:
+    get:
+      operationId: getSettings
+      responses:
+        "200": { description: Journal settings, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } }
+    put:
+      operationId: updateSettings
+      summary: Change the journal time zone; every trading day is recomputed, no trade moves in time
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /export:
+    get:
+      operationId: exportJournal
+      summary: Everything as one JSON file (settings, all accounts, all trades including deleted ones, marked)
+      responses:
+        "200": { description: The export, content: { application/json: { schema: { $ref: "#/components/schemas/Export" } } } }
+components:
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    NotFound: { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Invalid: { description: One or more fields are invalid, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  schemas:
+    Decimal: { type: string, pattern: "^-?[0-9]+(\\.[0-9]+)?$", description: "An exact decimal, never a JSON number. Normalised: trailing zeros dropped, at least two decimals kept.", example: "95.40" }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: invalid }
+        message: { type: string, example: 3 things to fix before this trade can be saved. }
+        fields:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field: { type: string, example: size }
+              message: { type: string, example: Size must be above zero. }
+    Settings:
+      type: object
+      required: [timeZone]
+      properties:
+        timeZone: { type: string, description: A valid IANA zone name, example: America/Chicago }
+    AccountInput:
+      type: object
+      required: [name, currency]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        currency: { type: string, pattern: "^[A-Z]{3}$" }
+        tradingDayStart: { type: [string, "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$", description: HH:MM in the journal time zone; null or absent means the calendar date of each exit }
+    Account:
+      allOf:
+        - { $ref: "#/components/schemas/AccountInput" }
+        - type: object
+          required: [id, archived]
+          properties:
+            id: { type: string, format: uuid }
+            archived: { type: boolean }
+    TradeInput:
+      type: object
+      required: [accountId, instrument, direction, size, entryPrice, entryAt, exitPrice, exitAt]
+      properties:
+        accountId: { type: string, format: uuid }
+        instrument: { type: string, minLength: 1, maxLength: 40 }
+        direction: { type: string, enum: [long, short] }
+        size: { $ref: "#/components/schemas/Decimal" }
+        entryPrice: { $ref: "#/components/schemas/Decimal" }
+        entryAt: { type: string, format: date-time }
+        exitPrice: { $ref: "#/components/schemas/Decimal" }
+        exitAt: { type: string, format: date-time }
+        dollarsPerPoint: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        cost: { $ref: "#/components/schemas/Decimal", description: Zero or more; defaults to 0 }
+        stopPrice: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        typedResult: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }], description: Required when dollarsPerPoint is null; the net result after costs }
+        thesis: { type: [string, "null"], maxLength: 5000 }
+    TradeFigures:
+      type: object
+      required: [netResult, tradingDay, reasons]
+      properties:
+        grossResult: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        netResult: { $ref: "#/components/schemas/Decimal" }
+        risk: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        rMultiple: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        tradingDay: { type: string, format: date }
+        reasons:
+          type: object
+          description: For each figure that is null, the plain reason shown next to its dash
+          properties:
+            grossResult: { type: string, example: needs dollars per point }
+            risk: { type: string, example: no stop recorded }
+            rMultiple: { type: string, example: needs a stop and dollars per point }
+    Trade:
+      allOf:
+        - { $ref: "#/components/schemas/TradeInput" }
+        - { $ref: "#/components/schemas/TradeFigures" }
+        - type: object
+          required: [id, deleted, accountName, currency]
+          properties:
+            id: { type: string, format: uuid }
+            accountName: { type: string }
+            currency: { type: string }
+            deleted: { type: boolean }
+    Export:
+      type: object
+      required: [exportedAt, settings, accounts, trades]
+      properties:
+        exportedAt: { type: string, format: date-time }
+        settings: { $ref: "#/components/schemas/Settings" }
+        accounts: { type: array, items: { $ref: "#/components/schemas/Account" } }
+        trades: { type: array, items: { $ref: "#/components/schemas/Trade" } }
