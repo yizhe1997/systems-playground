@@ -1,10 +1,10 @@
 # Wireframes: Log Trades
 
 **Feature**: `000-log-trades`
-**Status**: draft, greyscale wireframes drawn 2026-10-03 and revised 2026-10-04 after clarify (archive controls, currency notice). Next: sign-off.
+**Status**: signed-off 2026-10-04. Greyscale wireframes: structure, wording, states and behaviour. The look is not part of this sign-off.
 **Penpot**: file `Tradecraft_v2`, pages `L1 Trades list`, `L2 Log a trade`, `L3 Accounts`, `L4 Account dialog`, `L5 Settings` (L for log-trades, so they do not clash with the 001 pages). Images in [wireframes/](wireframes/).
-**Signed off**: not yet (structure and wording only; the look is decided elsewhere)
-**spec-sha256**: (filled in at sign-off)
+**Signed off**: 2026-10-04 (structure and wording only; the look is decided elsewhere)
+**spec-sha256**: 57564666f27ce45097db8ebe41c27b25f917325a8664a3042385034c4e23e919
 
 All sample data is made up: accounts "Funded 50K", "Practice" and "Swing EUR", Wednesday 1 October 2025, NQ and ES trades.
 
@@ -105,9 +105,9 @@ APP NAME; Trades, Accounts, Settings.
 
 ## Constitution check
 
-- [ ] Every money figure has process information beside it (principle I). **Not met in this feature, and cannot be:** plan adherence and mistakes arrive with `001`. This list shows R beside each result and has no totals. Needs the owner's decision (see open questions).
+- [x] Every money figure has process information beside it (principle I). **Not met, accepted as a written exception by the owner on 2026-10-04, expiring when `001` is built:** plan adherence and mistakes arrive with `001`. This list shows R beside each result and has no totals. Needs the owner's decision (see open questions).
 - [x] Every figure that can be unavailable shows a dash and a reason (L1 R cell, L2 preview)
-- [ ] No placeholder text anywhere (sample data is made up; the owner confirms the wording at sign-off)
+- [x] No placeholder text anywhere (sample data is made up and labelled as such; wording confirmed by the owner at sign-off)
 - [x] Greyscale only: no brand colour, brand font or colour-coded meaning (meaning is carried by words and a dark fill for selected and primary)
 
 ## Reactions
@@ -132,6 +132,6 @@ Left for the sign-off step: the principle I exception (process information besid
 ## Sign-off
 
 - **Signed off by**: owner
-- **Date**:
-- **Spec hash**:
-- **Notes**:
+- **Date**: 2026-10-04
+- **Spec hash**: 57564666f27ce45097db8ebe41c27b25f917325a8664a3042385034c4e23e919
+- **Notes**: Two written exceptions accepted: principle I (expires when 001 is built) and principle IV, no sign-in or audit log, local use only (expires when the sign-in and audit features are accepted, and before any exposure). Export format is chosen at plan.

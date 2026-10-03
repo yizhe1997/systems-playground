@@ -232,3 +232,19 @@ All six original points are settled (see Clarifications, and the defaults in Ass
 ## Wireframes
 
 Greyscale wireframes were drawn on 2026-10-03 (and revised on 2026-10-04 after clarify) in Penpot (file `Tradecraft_v2`, pages `L1` to `L5`); images are in [wireframes/](wireframes/). See [screens.md](screens.md) for the inventory, the full wording, and the open questions, which were settled in the clarification session of 2026-10-04.
+
+## Signed-off screens
+
+The screens in `screens.md` were signed off by the owner on 2026-10-04. Plan, tasks and implementation
+MUST honour them. Any change to an interface covered here MUST update `screens.md` and its
+Penpot frames in the same change (constitution principle V).
+
+Written exceptions accepted at sign-off (constitution governance: justification and expiry):
+
+1. **Principle I (process information beside money).** The trades list shows each result with R but no
+   plan-adherence or mistake information, which only exists from feature `001`. Expires when `001` is built.
+2. **Principle IV (security gates).** This feature has no sign-in or audit log. It MUST run only on the
+   owner's own computer and MUST NOT be exposed. Expires when the sign-in and audit features are accepted,
+   and in any case before any exposure.
+
+Noted, not blocking: the export file format is chosen at the plan step.

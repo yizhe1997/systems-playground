@@ -45,7 +45,8 @@ Where Impeccable (the frontend design skill) is used:
 | Constitution | **v1.1.0, approved**: principle V split into wireframes, visual direction and visual review |
 | Design gates extension (wireframes, sign-off, direction check, visual review) | Built and installed v0.2.0; **not yet exercised end to end** |
 | Visual direction | **Not decided yet.** Tradecraft v1's `DESIGN.md` is one candidate starting point, only if you choose it |
-| Feature `001-journal-and-reflect` | Specified, clarified, wireframes **signed off 2026-10-03**. Next: plan |
+| Feature `000-log-trades` (accounts and trades) | Specified, clarified, wireframes **signed off 2026-10-04**. Next: plan. Built first |
+| Feature `001-journal-and-reflect` | Specified, clarified, wireframes signed off 2026-10-03; **paused** until 000 is built. Its spec needs one small fix (it assumed accounts and trades came from v1) and a re-sign-off |
 
 ## Stages, artifacts, tools and gates
 
@@ -123,8 +124,10 @@ and recorded there, so reuse is never silent.
 
 ## Order of features
 
-1. `001-journal-and-reflect`: log trades, daily review with yesterday's focus, plan-down focus fields,
-   process grades, mistake tags and counter with an optional stop line.
+0. `000-log-trades`: accounts and closed trades, with exact money, the trading day and the honest dash.
+   Built first because everything else needs it. Written from scratch (the owner's rule: v2 starts clean).
+1. `001-journal-and-reflect`: daily review with yesterday's focus, plan-down focus fields, process grades,
+   mistake tags and counter with an optional stop line, weekly review.
 2. Agent read access (ask your journal, Rule Replay in answers), right after the first version.
-3. After that, in an order to be chosen from use: live session (gate and log), import with reusable
-   profiles, prop-challenge cockpit, setup playbooks, missed trades.
+3. After that, in an order to be chosen from use: sign-in and audit (with a review pass), live session
+   (gate and log), import with reusable profiles, prop-challenge cockpit, setup playbooks, missed trades.
