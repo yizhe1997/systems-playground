@@ -54,6 +54,7 @@ The first pass was a skim of type definitions. The second pass read much more. T
 | `06-analytics-and-scoring.md` | Dashboard widgets, trading score, streaks, drawdown, setups analytics |
 | `07-gap-analysis.md` | RP vs Tradecraft v1, and what to recycle from v1 |
 | `08-open-questions.md` | Decisions for the owner, in the order they block the spec |
+| `13-trades-and-accounts.md` | How the RP creates an account and logs and lists a trade, cut down to the smallest useful version (feeds `000-log-trades`) |
 
 Real provenance (product name, repo, licence, commit studied) is recorded in the vault note
 "Reference product study", not here.
