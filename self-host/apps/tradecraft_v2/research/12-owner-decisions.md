@@ -50,3 +50,12 @@ Nearly everything was wanted, so the work is sequencing. The first version is de
 - **Three separate design decisions:** wireframes (structure and wording, signed off before plan), visual direction (the look, decided once per project by the owner, approved before the first implement), and visual review (built screens in a browser, approved after implement).
 - **Impeccable** is used for the visual direction (`init`, `document`), optionally at plan (`shape`), as implementation guidance, and in the visual review (`critique`, `audit`, `polish`).
 - The owner can provide design references whenever the visual direction is decided; code cannot start without it. Constitution amended to 1.1.0.
+
+## Starting clean and building order (2026-10-03 and 2026-10-04)
+
+- **v2 code starts clean.** No v1 code, schema or screens are copied by default. When a feature that v1 already has comes up (sign-in, audit log), the owner will say so and the plan will look at v1 and record what it reuses. Constitution amended to 1.2.0. Reason: avoid my own bias and inherited assumptions clashing with v2 later.
+- **Feature `000-log-trades` comes before `001`.** 001 needs accounts and trades; they become their own small feature, usable on its own as a trade log. 001 is paused (spec signed off) until 000 is built; its spec needs a small fix and a re-sign-off.
+- **No mock-first.** Features are built real, in vertical slices, tested against Postgres.
+- **Closed trades only, one entry and one exit per trade** (scaling is logged as separate trades), result computed from prices and dollars per point or typed when the value is blank, one journal-wide time zone (Central by default), archive-only accounts, currency is only a label. Details in `research/13-trades-and-accounts.md` and `specs/000-log-trades/spec.md`.
+- **Sign-in and audit are later features.** Until they exist the product runs only on the owner's computer (written exception, constitution IV).
+

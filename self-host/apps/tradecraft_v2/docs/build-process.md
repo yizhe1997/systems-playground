@@ -42,7 +42,7 @@ Where Impeccable (the frontend design skill) is used:
 |---|---|
 | Research on a reference product, flows, and your reactions (`research/`) | Done 2026-10-02 |
 | Spec Kit installed and initialised (Claude integration) | Done |
-| Constitution | **v1.1.0, approved**: principle V split into wireframes, visual direction and visual review |
+| Constitution | **v1.2.0**: principle V split into wireframes, visual direction and visual review (1.1.0); clean start, v1 reused only when you ask (1.2.0, 2026-10-04) |
 | Design gates extension (wireframes, sign-off, direction check, visual review) | Built and installed v0.2.0; **not yet exercised end to end** |
 | Visual direction | **Not decided yet.** Tradecraft v1's `DESIGN.md` is one candidate starting point, only if you choose it |
 | Feature `000-log-trades` (accounts and trades) | Specified, clarified, wireframes **signed off 2026-10-04**. Next: plan. Built first |
@@ -116,11 +116,10 @@ To change the extension, edit the source folder and reinstall with `--force`.
 
 ## What is reused from Tradecraft v1
 
-By default: the backend foundation (ledger, rule engine, Rule Replay, authentication, audit, tests), the
-logo and design assets as raw material, and the security and domain documents. Rebuilt: the review model
-(focus fields, inheritance, grades) and anything your reactions replaced. **The look is not reused
-unless you choose it** in the visual-direction step. Each reuse decision is made inside a feature's plan
-and recorded there, so reuse is never silent.
+**Nothing, by default** (constitution 1.2.0, 2026-10-04). v2 starts clean so that no earlier assumption
+sneaks in. Features Tradecraft v1 already has (sign-in, audit log, rule engine, import) are separate v2
+features; when you ask for one, its plan looks at v1 and records exactly what was reused and why. **The look
+is never reused unless you choose it** in the visual-direction step.
 
 ## Order of features
 

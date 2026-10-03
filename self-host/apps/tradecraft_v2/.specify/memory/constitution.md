@@ -105,9 +105,10 @@ Check: the domain document and the decision log are updated in the same change a
   test-first is not required.
 - **Domain**: the trading day, R-multiple, drawdown, break-even and similar rules are defined in
   the domain document and nowhere else.
-- **Reuse**: the data layer, authentication, audit, rule engine, Rule Replay, tests and design
-  assets from Tradecraft v1 are reused where they fit. Reuse still passes through the specification
-  flow.
+- **Reuse**: Tradecraft v2 starts clean. Code, database schema, screens and design assets from
+  Tradecraft v1 are NOT carried over by default, and a plan MUST NOT assume them. When the owner asks
+  for a specific feature to look at v1 (for example sign-in or the audit log), that feature's plan
+  records what was reused and why. Reuse still passes through the specification flow.
 
 ## Workflow and Quality Gates
 
@@ -128,9 +129,9 @@ Check: the domain document and the decision log are updated in the same change a
 This constitution overrides other practices in this project. An amendment MUST be recorded with
 its date and reason and MUST bump the version. Versioning follows semantic rules: MAJOR for
 removing or redefining a principle, MINOR for adding a principle or materially widening guidance,
-PATCH for wording and clarifications. Amendment log: 1.1.0 (2026-10-02) split principle V into
+PATCH for wording and clarifications. Amendment log: 1.2.0 (2026-10-04) replaced the Reuse constraint (v1 reused where it fits) with a clean start, reused only when the owner asks for a feature, because the owner wants no inherited assumptions in v2; 1.1.0 (2026-10-02) split principle V into
 wireframe sign-off, a once-per-project visual direction, and a post-implementation visual review,
 because the first screens drafted assumed the earlier project's look. Each specification, plan and review MUST check compliance with
 these principles, and any exception MUST be written down with its justification and an expiry.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-02
+**Version**: 1.2.0 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-04
