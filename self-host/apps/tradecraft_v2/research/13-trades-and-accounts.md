@@ -119,3 +119,16 @@ more than a dozen list columns; saved filters.
 All of sections 1 to 3 are *Read* from the RP's source and interface strings on 2026-10-03; the exact field
 list for creating an account and the validation rules for a trade were read directly. Section 4 is my
 proposal, not the RP's behaviour.
+
+## 6. Owner decisions (2026-10-03)
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | Trading day | Optional start time per account. A trade at or after it counts to the next calendar day. Empty means the calendar date in the account's time zone. It only decides which day's review a trade appears on |
+| 2 | Fills | One entry and one exit per trade. Scaling in or out is recorded as separate trades (a later feature may revisit) |
+| 3 | Result | Computed from prices, size and dollars per point whenever possible. If dollars per point is blank, the owner types the result, and risk and R show a dash with the reason |
+| 4 | Instruments | Free-text symbol, with dollars per point on each trade |
+| 5 | Time zone | Central Time by default, configurable |
+| 6 | List filters | Account and date range only |
+| 7 | Form shape | Basic first, with the thesis under Details |
+
