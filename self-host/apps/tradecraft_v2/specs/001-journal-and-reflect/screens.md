@@ -20,7 +20,7 @@ They serve every user story in `spec.md`: S1 and S2 serve stories 1 and 2, S3 se
 | S1 | Daily review (one account, one day) | US1, US2, US4, FR-003 to FR-012, FR-018 | filled (draft); empty day; nothing earlier to show; reviewed but trades changed; no week or month focus yet; day picker open | [filled](wireframes/s1-daily-review-filled-draft.png), [empty day](wireframes/s1-daily-review-empty-day.png), [nothing earlier](wireframes/s1-daily-review-nothing-earlier-to-show.png), [trades changed](wireframes/s1-daily-review-reviewed-but-trades-changed.png), [no focus](wireframes/s1-daily-review-no-week-or-month-focus-yet.png), [day picker](wireframes/s1-daily-review-day-picker-open.png) |
 | S2 | Judge a trade (drawer opened from the Judge button) | US2, US3, FR-008, FR-009, FR-013 | a loss labelled mistake; a win flagged as a mistake | [loss](wireframes/s2-judge-a-trade-a-loss-labelled-mistake.png), [win](wireframes/s2-judge-a-trade-a-win-flagged-as-a-mistake.png) |
 | S3 | Mistakes: counter, stop lines, list management | US3, FR-013 to FR-016 | counter this week; stop line editor (with an error); nothing tagged yet | [counter](wireframes/s3-mistakes-counter-this-week.png), [editor](wireframes/s3-mistakes-stop-line-editor.png), [empty](wireframes/s3-mistakes-nothing-tagged-yet.png) |
-| S4 | Write a focus (week or month), a dialog | US4, FR-017, FR-018 | week; month; nothing written yet | [week](wireframes/s4-set-a-focus-week.png), [month](wireframes/s4-set-a-focus-month.png), [empty](wireframes/s4-set-a-focus-nothing-written-yet.png) |
+| S4 | Write a focus (week or month), a dialog | US4, FR-017, FR-018 | week; month; nothing written yet; too long | [week](wireframes/s4-set-a-focus-week.png), [month](wireframes/s4-set-a-focus-month.png), [empty](wireframes/s4-set-a-focus-nothing-written-yet.png), [too long](wireframes/s4-set-a-focus-too-long.png) |
 | S5 | Weekly review (one account, one week) | US5, FR-019 to FR-021 | filled (draft); no focus yet (week and month); week picker open | [filled](wireframes/s5-weekly-review-filled-draft.png), [no focus](wireframes/s5-weekly-review-no-focus-yet.png), [week picker](wireframes/s5-weekly-review-week-picker-open.png) |
 
 **How S4 is reached** (it is a dialog, not a page): the "Write one" or "Edit" button on the week and month lines of the focus card in S1; the same buttons on the focus card in S5 (week and month); the "Month focus" band under each month heading in S0 (Edit, or Write one when empty). The week's focus is reached by opening the week row, which opens S5.
@@ -113,7 +113,8 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 |---|---|
 | Title and tabs | Write a focus · Week, Month |
 | Labels | Focus for the week of 29 Sep to 5 Oct · Focus for October 2025 |
-| Field | One sentence you want to see every day this week. (placeholder) · 43 of 280 characters · Up to 280 characters. |
+| Field | One sentence you want to see every day this week. (greyed hint) · 43 of 280 characters · Up to 280 characters. |
+| Too long | The counter reads, for example, "307 of 280 characters". ! Too long: 27 characters over. Shorten it to save. Save focus is unavailable (dashed). |
 | Help | Shown at the top of every daily review this week, on all your accounts. |
 | Actions | Save focus · Cancel · Clear this focus |
 
@@ -127,12 +128,13 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Focus | This week (29 Sep to 5 Oct) · A+ setups only. Maximum three trades a day. · Edit · This month (October) · Grade every trade, not just the day. · Edit |
 | No focus yet | No focus for this week yet. · No focus for this month yet. · Write one (each) |
 | Days | The days · What you wrote each day. Days without a review are named, and their trades still count below. |
+| Week status (title, top right) | Not reviewed (current week, or nothing marked yet) · Reviewed · Missing (the week has ended with no reviewed mark). No draft state. |
 | Day statuses | Missing, Reviewed, Draft, No trades, Not yet. All seven days are listed; an empty Saturday or Sunday is one line. |
 | Day cells | Did well · Could improve · Next focus · Mental 4 of 5 · Technical 4 of 5 · Open · Review this day |
 | Missing day | No review for Mon 29 Sep. Its 4 trades (+$120, plan followed 3 of 4) are included in the totals below. |
 | No trades / future | No trades on Thu 2 Oct. · This day has not happened yet. |
 | Numbers | The week in numbers · Net result +$85 (Plan followed on 7 of 9 trades) · Plan followed 7 of 9 (2 not followed · 0 partly) · Mistakes 3 (Moved stop x2, Chased entry x1) · Valid losses 2 (of 4 losing trades) · Win rate 5 of 9 (56% of 9 trades) |
-| Actions | Mark as reviewed · Save draft |
+| Actions | Mark as reviewed · Weekly reviews save only this mark and its time. The focus is saved from its own dialog. |
 
 ## Constitution check
 

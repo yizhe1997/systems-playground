@@ -159,12 +159,12 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 - **FR-016**: The owner MUST be able to set an optional stop line per mistake; when the count in the chosen period reaches it, the product MUST say "stop trading" for that mistake. The message is advice; it does not block anything. A mistake with a stop line that has not been reached shows its count against the line (for example "5 of 6 this month") and no other status.
 
 **Plan flows down, reflection flows up**
-- **FR-017**: The owner MUST be able to write one focus for a week and one for a month.
+- **FR-017**: The owner MUST be able to write one focus for a week and one for a month, each up to 280 characters; a longer text MUST be refused with a plain message saying how many characters are over.
 - **FR-018**: Every daily review MUST show the focus of its week and of its month, each labelled by period; a period with no focus says so and offers a way to write one.
 - **FR-019**: The owner MUST be able to open a weekly review for an account that lists, for all seven days (an empty weekend day takes one line), the answers written on that account's daily reviews for the week, states plainly which weekdays have no review, and still counts all of the week's trades.
 - **FR-020**: The weekly review MUST show the focus of its week and of its month, each with a way to write or edit it (or to say none is written), and MUST let the owner step to any other week, including by a picker, so a focus for a coming week is written on that week's review.
 - **FR-021**: The weekly review MUST show the week's numbers with process information beside them.
-- **FR-021a**: A weekly review MUST record only a reviewed mark and its time, per account per week; it MUST NOT store its own copy of the days' answers or numbers.
+- **FR-021a**: A weekly review MUST record only a reviewed mark and its time, per account per week; it MUST NOT store its own copy of the days' answers or numbers. It has no draft state: it is Reviewed, Missing (its week has ended, it has days with trades, and it has no reviewed mark) or not yet reviewed. The current week is never Missing.
 
 **Across the feature**
 - **FR-022**: The product MUST be single-owner and MUST keep Tradecraft v1's access controls and audit trail for these new records.
