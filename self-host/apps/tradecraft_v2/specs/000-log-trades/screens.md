@@ -4,7 +4,7 @@
 **Status**: signed-off 2026-10-04 (again, after the requirements checklist review). Greyscale wireframes: structure, wording, states and behaviour. The look is not part of this sign-off.
 **Penpot**: file `Tradecraft_v2`, pages `L1 Trades list`, `L2 Log a trade`, `L3 Accounts`, `L4 Account dialog`, `L5 Settings` (L for log-trades, so they do not clash with the 001 pages). Images in [wireframes/](wireframes/).
 **Signed off**: 2026-10-04 (structure and wording only; the look is decided elsewhere)
-**spec-sha256**: 8f64cd81006eab27a72e363922d335ba0261f582a0dbf3b540ac8f4dfcec5ae9
+**spec-sha256**: e7fad36a909ebe36f735228fd9a50c455da2fa3794d4b80d752dcc47dac8a5ad
 
 All sample data is made up: accounts "Funded 50K", "Practice" and "Swing EUR", Wednesday 1 October 2025, NQ and ES trades.
 
@@ -127,6 +127,7 @@ APP NAME; Trades, Accounts, Settings.
 | 2026-10-04 | All | Looks good enough for now | Proceeded to clarify |
 | 2026-10-04 | Sign-off check | FR-004 (no trade without an account) had no screen | Added the trades list state "no accounts yet" and the missing error messages to the content list |
 | 2026-10-04 | Re-sign-off | Signed off again after the checklist fixes | Hash and notes updated |
+| 2026-10-04 | Re-sign-off | Signed off again after the checklist fixes | Hash and notes updated |
 | 2026-10-04 | Requirements checklists | Asked to fix all the gaps in the spec | 48 findings resolved in the spec, data model, contract and tasks; screens gained a Trading day column and six new states (could not load, trade deleted undo, could not save, changed elsewhere, leave without saving, start time 00:00) and a time zone search hint |
 | 2026-10-04 | Clarify: time zone | Chose the recommendation | One time zone for the whole journal; Settings holds it (as drawn) |
 | 2026-10-04 | Clarify: typed result | Chose the recommendation | A typed result is after costs; the costs field is "not used" (as drawn) |
@@ -144,5 +145,5 @@ Left for the sign-off step: the principle I exception (process information besid
 
 - **Signed off by**: owner
 - **Date**: 2026-10-04
-- **Spec hash**: 8f64cd81006eab27a72e363922d335ba0261f582a0dbf3b540ac8f4dfcec5ae9
+- **Spec hash**: e7fad36a909ebe36f735228fd9a50c455da2fa3794d4b80d752dcc47dac8a5ad
 - **Notes**: Re-signed after the checklist review changed the spec. Two written exceptions kept: principle I (ends when 001 is accepted) and principle IV, no sign-in or audit log, local use only (ends when those features are accepted, and before any exposure). Accepted gaps: the failure and Undo notices are drawn once, on the trades list.
