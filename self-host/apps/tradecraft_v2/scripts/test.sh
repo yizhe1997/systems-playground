@@ -6,12 +6,13 @@ set -u
 cd "$(dirname "$0")/.."
 : "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD (any value; the database is thrown away)}"
 export POSTGRES_PASSWORD
-# a separate compose project, so this never touches the running app's data volume
+# a separate compose project and other host ports, so this never touches the running app or its data volume
+export POSTGRES_HOST_PORT=15435 BACKEND_HOST_PORT=18081 FRONTEND_HOST_PORT=13100
 compose=(docker compose -p tradecraft-v2-test)
 status=0
 "${compose[@]}" --profile tests run --rm tests || status=$?
 if [ "$status" -eq 0 ]; then
-  BACKEND_HOST_PORT=18081 FRONTEND_HOST_PORT=13100 POSTGRES_HOST_PORT=15435 "${compose[@]}" up --build -d --wait || status=$?
+  "${compose[@]}" up --build -d --wait || status=$?
   if [ "$status" -eq 0 ]; then
     (cd frontend && E2E_BASE_URL=http://127.0.0.1:13100 E2E_API_URL=http://127.0.0.1:18081 npx playwright test) || status=$?
   fi
