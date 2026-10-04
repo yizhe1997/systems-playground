@@ -69,7 +69,10 @@ func reset(t *testing.T) {
 	t.Helper()
 	clock = time.Date(2025, 10, 15, 12, 0, 0, 0, time.UTC)
 	if _, err := pool.Exec(context.Background(),
-		"TRUNCATE trade, account; UPDATE journal_settings SET time_zone = 'America/Chicago'"); err != nil {
+		`TRUNCATE trade, account, focus CASCADE;
+		 UPDATE journal_settings SET time_zone = 'America/Chicago';
+		 DELETE FROM mistake WHERE name NOT IN ('Chased entry', 'Moved stop', 'Oversized', 'Ignored checklist', 'Traded outside plan');
+		 UPDATE mistake SET stop_line = NULL, stop_period = NULL, retired_at = NULL`); err != nil {
 		t.Fatal(err)
 	}
 }
