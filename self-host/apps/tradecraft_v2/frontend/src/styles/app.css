@@ -1,6 +1,15 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html { background: var(--parchment); }
+
+/* Wide screens: everything (type, sidebar, rows, fields) scales together, so the layout keeps the proportions it was
+   designed in at 1440 px (the screen then measures about 1440 to 1700 "design pixels" wide). It is the same as the
+   browser's own zoom, applied for the owner. --z lets full-height boxes cancel the scale. */
+html { --z: 1; }
+@media (min-width: 1600px) { html { zoom: 1.1; --z: 1.1; } }
+@media (min-width: 1800px) { html { zoom: 1.25; --z: 1.25; } }
+@media (min-width: 2300px) { html { zoom: 1.5; --z: 1.5; } }
+@media (min-width: 3000px) { html { zoom: 2; --z: 2; } }
 body {
   margin: 0;
   background: var(--parchment);
@@ -19,7 +28,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 .field-input:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--halo); border-color: var(--accent); }
 
 /* ---------- layout ---------- */
-.shell { display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); min-height: 100vh; }
+.shell { display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); min-height: calc(100vh / var(--z)); }
 .sidebar { background: var(--bone-mist); padding: var(--space-lg) var(--space-sm); }
 .brand { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); padding: 0 var(--space-md) var(--space-lg); }
 .nav { display: flex; flex-direction: column; gap: var(--space-xs); }

@@ -177,6 +177,8 @@ Warm parchment and bone-mist surfaces, violet-black ink, one plum accent, and tw
 
 A 220px sidebar and a single content column up to 1136px; content cards on the parchment. Base unit 8px; rows 48px, fields 36px, card padding 18px, gaps 8 to 24px. Desktop browser first; below 1100px the sidebar narrows and two-column forms stack. Phone layout is not a goal.
 
+**Wide screens (added 2026-10-04 after the owner found the build too small and too empty at 1907 px).** The Penpot frames are 1440 px wide, and the design says nothing about larger screens, so the build scales the whole interface (type, sidebar, rows, fields, spacing) together: x1.1 from 1600 px, x1.25 from 1800 px, x1.5 from 2300 px, x2 from 3000 px. A 1920 px screen therefore reads like the 1440 px design at 125 percent, with the content column centred beside the sidebar. The type scale itself is unchanged (no display type, 24 px largest) and no separate typography pass has been run yet (Impeccable's `typeset` and `layout` commands exist for that and are the way to refine it).
+
 ## Elevation & Depth
 
 Hybrid, mostly flat. Depth comes from tone steps (parchment, bone-mist, card-white) and hairlines. In light mode only, cards carry a soft violet-tinted shadow (`0 0 0 1px rgba(71,57,130,0.06), 0 14px 40px -18px rgba(49,38,59,0.28)`). Night mode uses no shadows, only tone. Dialogs sit on a 35% dim of the canvas.
