@@ -44,7 +44,7 @@ Where Impeccable (the frontend design skill) is used:
 | Spec Kit installed and initialised (Claude integration) | Done |
 | Constitution | **v1.2.0**: principle V split into wireframes, visual direction and visual review (1.1.0); clean start, v1 reused only when you ask (1.2.0, 2026-10-04) |
 | Design gates extension (wireframes, sign-off, direction check, visual review) | Built and installed v0.2.0; **not yet exercised end to end** |
-| Visual direction | **Not decided yet.** Tradecraft v1's `DESIGN.md` is one candidate starting point, only if you choose it |
+| Visual direction | **Approved 2026-10-04**: Hex, comfortable density, light and dark, standard profit and loss tints (`docs/visual-direction.md`, `DESIGN.md`, `PRODUCT.md`) |
 | Feature `000-log-trades` (accounts and trades) | Specified, clarified, wireframes **signed off 2026-10-04**. Next: plan. Built first |
 | Feature `001-journal-and-reflect` | Specified, clarified, wireframes signed off 2026-10-03; **paused** until 000 is built. Its spec needs one small fix (it assumed accounts and trades came from v1) and a re-sign-off |
 

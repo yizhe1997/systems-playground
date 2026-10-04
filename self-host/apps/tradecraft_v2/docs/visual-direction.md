@@ -1,28 +1,35 @@
 # Visual direction
 
-**Status**: in progress (three candidate looks to compare; not approved)
+**Status**: approved on 2026-10-04 by the owner
 
-The look of Tradecraft v2 (palette, type, density, component feel, tone) is decided once per project by the owner and must be approved before the first implementation starts (constitution principle V). Nothing here is assumed from Tradecraft v1.
+**Decision**: new look for Tradecraft v2, chosen from three finalists (Dovetail, Hex, Inngest): **Hex**, comfortable density, light as the main mode with a matching night mode, standard green and red for profit and loss. Nothing is inherited from Tradecraft v1.
 
-## Decision
+**One line**: "The Lab Notebook": warm parchment and violet-black ink, thin rules, outlined primary buttons, quiet.
 
-Not made yet. On 2026-10-04 the owner chose three candidate directions from the earlier reference study (Dovetail, Hex, Inngest; the reference files themselves stay out of git because they describe other companies' branding), both light and dark.
+## Documents
 
-What exists to compare:
+- [`PRODUCT.md`](../PRODUCT.md): who it is for, purpose, constraints (written with the Impeccable init, confirmed by the owner).
+- [`DESIGN.md`](../DESIGN.md) and `.impeccable/design.json`: the directional seed of the design system (colours for both modes, type, spacing, shapes, components, rules). Written 2026-10-04 in seed mode; re-document from the built UI (`/impeccable document`, scan mode) once it exists.
 
-- `PRODUCT.md` (written with the Impeccable init, confirmed by the owner).
-- A throwaway playground, `docs/visual-direction/playground.html` (serve it with the `tradecraft-v2-playground` entry in `.claude/launch.json`): direction, light or dark, and three densities on the trades list, the log-a-trade form and the accounts screen.
-- Penpot file `Tradecraft_v2`: skinned frames beneath the greyscale wireframes on the pages `L1 Trades list` and `L2 Log a trade`, named `Dovetail: ...`, `Hex: ...`, `Inngest: ...` (dark and light). Images in `docs/visual-direction/skins/`.
-- Each reference defines only one mode (Dovetail dark, Hex light, Inngest dark); the other mode of each is derived and is an interpretation, not a source.
+## How it was chosen
 
-Still to decide: the direction, the density, whether profit and loss gets any colour hint at all, and how the primary button looks (Hex's own rule keeps it outlined, Inngest's is a gold pill, Dovetail's is a white or black filled rectangle). After approval, Impeccable's `document` writes `DESIGN.md`, and the look is refined in the browser with live mode once the frontend runs.
+- References: the three finalists from the earlier reference study, adapted to dense app screens. Each reference defines one mode only, so the other mode of each was derived. The reference files stay out of git (they describe other companies' branding).
+- Compared in: a throwaway playground (`docs/visual-direction/playground.html`, served by the `tradecraft-v2-playground` entry in `.claude/launch.json`) and skinned frames in Penpot `Tradecraft_v2` under the wireframes on the L pages (images in `docs/visual-direction/skins/`).
+- The owner's choices: direction Hex, density comfortable, both modes, standard profit and loss colours.
+- After approval, the chosen Hex look was also drawn for the other screens and key states (typed result, validation errors, accounts, account dialog, settings), light and dark, beneath the wireframes in Penpot and in `docs/visual-direction/skins/`. The remaining states follow from `DESIGN.md` and are checked in the visual review after implementation.
 
-## Options on record
+## Changes made to the Hex reference, with reasons
 
-- **Reuse Tradecraft v1's look** (`self-host/apps/tradecraft/DESIGN.md` and `PRODUCT.md`): only if the owner chooses it. Starting point, not a default.
-- **Revise** v1's look.
-- **Start new** from the owner's references.
+1. Muted grey: the reference's `#89828d` is 3.7:1 on its parchment, below the 4.5:1 minimum for small text. Light uses `#6b6472` (5.7:1), night uses `#9a92b0`.
+2. A selected choice (Long, Short) is a filled ink segment, because with outlined-only buttons the selected side was hard to see. This is the only filled control.
+3. Profit and loss: `#187a47` and `#b3261e` (light), `#5fd08f` and `#ff7b72` (night), all above 4.5:1. The tint is allowed only on the text of a net-result figure, never on rows, borders, icons or R, and every figure keeps its sign (colour is never the only signal). This guards the product's idea that the decision matters more than the result; process figures in feature 001 must carry equal visual weight.
 
-## When approved
+## Open or accepted
 
-Fill in: date, decision, references, links to `DESIGN.md` and `PRODUCT.md`, one-line summary, and set the status to `approved`.
+- Hex's own rule keeps the primary button outlined, so it is quiet beside the text-only secondary buttons. Accepted for now; revisit at the visual review.
+- Impeccable live mode needs a running frontend. It is set up once the frontend skeleton exists (a dev-server entry in `.claude/launch.json`, then refinement in the browser), and DESIGN.md is re-written from the built UI.
+- Impeccable update (v4.0.2 to v4.5.0): the owner said not important for now.
+
+## Changing it later
+
+A change to the visual direction is a recorded decision that updates this file and the documents.

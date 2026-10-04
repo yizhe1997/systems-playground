@@ -16,7 +16,7 @@ description: "Task list for 000-log-trades (accounts and closed trades)"
 ## Gates before and around implementation
 
 - **Before T001 (implement gate):** the two requirements-quality checklists in `checklists/` (`domain-rules.md`, `interface-and-operations.md`) are reviewer-owned and `/speckit-implement` reads their state. Items the owner wants fixed in the spec change `spec.md` and make the 2026-10-04 sign-off stale, so the sign-off step runs again.
-- **Before T001 (design gate, constitution V):** the visual direction (`DESIGN.md`, `PRODUCT.md`, `docs/visual-direction.md`) must be decided and approved (`/speckit-screens-direction`). Until then, no feature code.
+- **Before T001 (design gate, constitution V): satisfied on 2026-10-04.** The visual direction (Hex, comfortable, light and dark) is approved in `docs/visual-direction.md`, with `DESIGN.md` and `PRODUCT.md` written.
 - **After the last task:** the visual review (`/speckit-screens-review`) against `wireframes/`, and the owner's approval of the look.
 
 ## Format: `[ID] [P?] [Story] Description`
