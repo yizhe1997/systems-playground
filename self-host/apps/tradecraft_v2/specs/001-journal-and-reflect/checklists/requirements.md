@@ -31,5 +31,5 @@
 
 ## Notes
 
-- The spec names "Tradecraft v1" and "the domain document" as existing context (assumptions), not as technology choices.
+- The spec mentions feature `000` and "the domain document" (docs/domain.md) as existing context in the assumptions, not as technology choices; Tradecraft v1 is no longer referred to.
 - Knock-on choices from the account-scope answer (weekly reviews per account, owner-level focus, cross-account mistake counts) are recorded as assumptions to confirm at the screens step.

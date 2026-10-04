@@ -120,7 +120,7 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 ### Edge Cases
 
 - A trading day with no trades: the review opens, shows an empty-day message, and the questions still work.
-- A trade that spans two calendar days or has no exit yet (open): it is counted on the trading day defined in the domain document, and open trades are shown as open with no result figure.
+- A trade that spans two calendar days: it is counted on the trading day of its exit, as defined in the domain document. Only closed trades exist (feature `000` logs a trade after it exits), so there are no open trades to show.
 - A figure that cannot be computed (no stop recorded so no risk figure, no trades so no win rate, too few trades for a ratio): it shows a dash and says why.
 - A day or week with a single trade: statistics that need more trades show a dash and say how many trades they need.
 - The owner edits or soft-deletes a trade after reviewing the day: the review and counters update, and the review shows that it changed after being marked reviewed.
@@ -133,8 +133,8 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 ### Functional Requirements
 
 **Trades**
-- **FR-001**: The owner MUST be able to record a trade on an account with instrument, direction, one or more entries and exits (scaling in and out), a stop, costs, and an optional thesis note (why the trade was taken), written when the trade is logged and shown read-only in the review.
-- **FR-002**: The owner MUST be able to edit a trade and to delete it so that it can be restored (soft delete).
+- **FR-001**: Trades are the closed trades of feature `000` (an account, instrument, direction, one entry and one exit, a stop, costs, and an optional thesis note, written when the trade is logged). This feature does not change how a trade is logged; it shows the thesis read-only in the review. Scaling in and out (several entries and exits) is not part of this version.
+- **FR-002**: Editing a trade, and deleting it so that it can be restored (soft delete), are the behaviour of feature `000`. A review MUST reflect an edit or a soft delete (see the edge case below).
 
 **Daily review**
 - **FR-003**: The owner MUST be able to open a daily review for any trading day and any account. There is one daily review per account per trading day, each with its own answers and grades.
@@ -167,7 +167,7 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 - **FR-021a**: A weekly review MUST record only a reviewed mark and its time, per account per week; it MUST NOT store its own copy of the days' answers or numbers. It has no draft state: it is Reviewed, Missing (its week has ended, it has days with trades, and it has no reviewed mark) or not yet reviewed. The current week is never Missing.
 
 **Across the feature**
-- **FR-022**: The product MUST be single-owner and MUST keep Tradecraft v1's access controls and audit trail for these new records.
+- **FR-022**: The product MUST be single-owner. There is no sign-in and no audit trail yet: this feature inherits the written constitution exception of feature `000` (principle IV), so it is for local use only, reachable on the owner's own computer and published on the loopback address only. Sign-in, access control and an audit trail of these records are separate later features, and MUST exist before the product is exposed beyond that computer.
 - **FR-023**: Every statistic shown MUST state its definition and the number of trades it is based on.
 - **FR-024**: Money MUST be exact (no rounding drift) and shown in the account's currency.
 - **FR-025**: The records created here (reviews, focuses, grades, mistake tags) MUST be exportable.
@@ -192,7 +192,7 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 - **Focus**: one sentence of intent for a week or a month, written once by the owner. Shown on every daily review in its period, on every account.
 - **Mistake**: a named mistake (from an owner-managed list) that can be tagged on a trade or recorded once for a day, with an optional stop line.
 - **Weekly review**: the owner's review of one account for one week: a read-only roll-up of that account's daily answers by weekday and the week's numbers, with the week's and month's focus; stores only a reviewed mark and its time.
-- **Account**: where trades happen; carries the currency and the trading-day settings. Exists already in Tradecraft v1.
+- **Account**: where trades happen; carries the currency and the trading-day settings. Exists from feature `000`.
 
 ## Success Criteria *(mandatory)*
 
@@ -208,10 +208,10 @@ The owner opens a weekly review. It gathers, by weekday, what the owner wrote on
 
 ## Assumptions
 
-- The owner is the only user. Several accounts are possible, and the existing sign-in and access controls are kept as they are.
+- The owner is the only user. Several accounts are possible. **Local use only:** there is no sign-in and no audit log (the written exception from feature `000`, principle IV). The app listens on the owner's computer only, and nothing in this feature may be exposed beyond it until sign-in and an audit trail exist.
 - **Account scope (decided 2026-10-02):** the owner chose one daily review per account per day, not a combined review. The reference product, by contrast, keeps one review per day with an account breakdown inside it. Consequences assumed here, confirmed in the wireframes on 2026-10-02: weekly reviews are also per account; a focus for a week or month is the owner's, written once and shown on every account's daily reviews; mistake counters count across accounts with a per-account split, because habits belong to the trader; "yesterday's focus" comes from the same account's earlier review; there is no combined all-accounts review in this version.
-- Accounts, trades, tags and rule status already exist in Tradecraft v1 and are reused where they fit. This feature adds the review, focus, grade and mistake records and the screens for them.
-- The trading day and the week follow the definitions in the domain document (v1's day is the Central Time date of the exit, and weeks run Monday to Sunday). Changing those definitions is outside this feature.
+- Accounts and closed trades come from feature `000`, which is built and approved; nothing is carried over from Tradecraft v1. This feature adds the review, focus, grade, mistake and plan-adherence records, and the screens for them, on top of those accounts and trades.
+- The trading day follows `docs/domain.md` as built in `000`: the exit time read in the one journal time zone (Central Time by default), moved to the next day when the account has a trading-day start and the exit is at or after it. Weeks run Monday to Sunday. Changing those definitions is outside this feature.
 - Process grades are 1 to 5 stars for both mental and technical (decided 2026-10-03).
 - The starter list of mistakes is: chased entry, moved stop, oversized, ignored checklist, traded outside plan. The owner can edit it.
 - Mistake counters use calendar weeks and calendar months.
@@ -226,7 +226,7 @@ Decided on 2026-10-03, after the owner's reactions to the wireframes (no wirefra
 
 - Grades are 1 to 5 stars, for mental and technical.
 - No minimum number of trades for a win rate; it is shown as a count ("1 of 3") with its basis.
-- The trade form gains one optional field, the thesis. Plan adherence, the loss label and mistake tags stay in the review.
+- The thesis is an optional field of the trade form (built in `000`). Plan adherence, the loss label and mistake tags stay in the review.
 - Mistakes tied to a trade and mistakes for the whole day share one list; the counter counts each record once and shows the split.
 - A reviewed review is never locked; it shows when it was last edited.
 - Weekends: all seven days are listed in the weekly review (an empty weekend day takes one line) and are selectable in the pickers.
@@ -234,10 +234,10 @@ Decided on 2026-10-03, after the owner's reactions to the wireframes (no wirefra
 
 ## Signed-off screens
 
-The screens in `screens.md` were signed off by the owner on 2026-10-03. Plan, tasks and implementation
+The screens in `screens.md` were signed off by the owner on 2026-10-03 and again on 2026-10-04 (after the spec stopped depending on Tradecraft v1). Plan, tasks and implementation
 MUST honour them. Any change to an interface covered here MUST update `screens.md` and its
 Penpot frames in the same change (constitution principle V).
 
-Accepted exceptions at sign-off (not drawn, to be handled in plan): the v1 trade form with its one new
-optional thesis field; the rename and retire dialogs for mistakes; where export lives; the state for
+Accepted exceptions at sign-off (not drawn, to be handled in plan): the trade form, which is feature `000`'s and already
+has the thesis field; the rename and retire dialogs for mistakes; where export lives; the state for
 today (a Draft row without the tag).

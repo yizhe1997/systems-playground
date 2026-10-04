@@ -1,16 +1,16 @@
 # Wireframes: Journal and Reflect
 
 **Feature**: `001-journal-and-reflect`
-**Status**: signed-off 2026-10-03. Greyscale wireframes: structure, wording, states and behaviour. The look is not part of this sign-off.
+**Status**: signed-off 2026-10-03, signed off again 2026-10-04. Greyscale wireframes: structure, wording, states and behaviour. The look is not part of this sign-off.
 **Penpot**: file `Tradecraft_v2`, one page per screen (`S0 Reviews` to `S5 Weekly review`, plus a `Wireframe kit` page). Images exported to [wireframes/](wireframes/).
 **Signed off**: 2026-10-03
-**spec-sha256**: 7b809da360b4951f10e6d4efc07a7648aba46062d3ce4fa51c0d0be9a3572411
+**spec-sha256**: a4a303b37294c5a4e08ee872e9a84d5ab199cf3b78f8f17074bff2f3416bfe7f
 
 All sample data is made up: account "Funded 50K", Wednesday 1 October 2025, NQ and ES trades.
 
 ## Why these screens
 
-They serve every user story in `spec.md`: S1 and S2 serve stories 1 and 2, S3 serves story 3, S4 serves story 4, S5 serves story 5, and S0 is how the owner reaches any day or week. Logging a trade (FR-001 and FR-002) reuses the existing trade form from Tradecraft v1; only the new judging fields (S2) are drawn here.
+They serve every user story in `spec.md`: S1 and S2 serve stories 1 and 2, S3 serves story 3, S4 serves story 4, S5 serves story 5, and S0 is how the owner reaches any day or week. Logging and editing a trade (FR-001 and FR-002) is feature `000`'s trade form, built and approved; only the new judging fields (S2) are drawn here.
 
 ## Screen inventory
 
@@ -160,7 +160,8 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | 2026-10-03 | Clarify: valid loss and plan | A loss cannot be valid if the plan was not followed | Valid loss is unavailable unless the plan answer is Yes; shown dashed with a reason on S2 |
 | 2026-10-03 | Grades | Five stars better, for mental and technical | Stars with a "1: drifted, 5: followed fully" line; S5 shows "4 of 5" |
 | 2026-10-03 | Win rate | Unsure; asked what the reference product does | It has no minimum, so none here; the win rate is a count ("1 of 3") |
-| 2026-10-03 | Trade form | Yes to the suggested split | Thesis is written when logging; the rest of the judging stays in the review (S2 shows the thesis read-only). The v1 trade form itself is not redrawn here, only this one field is added to it |
+| 2026-10-04 | Re-sign-off | Signed off after the v1 dependencies were removed from the spec | Hash and notes updated |
+| 2026-10-03 | Trade form | Yes to the suggested split | Thesis is written when logging; the rest of the judging stays in the review (S2 shows the thesis read-only). The trade form is not redrawn here; it is feature `000`'s, and the thesis field is already in it |
 | 2026-10-03 | Habits and mistakes | They are the same thing | One shared list; day-level and trade-level records; the counter shows the split |
 | 2026-10-03 | Reviewed state | No need to lock | Never locked; "Edited" time shown |
 | 2026-10-03 | S0 | Redesign: defaults to now, collapsible weeks with days, month focus on top | Done; weeks that cross two months are listed under the month they end in; older months by arrows, picker, Today or jump to date (no endless scroll) |
@@ -175,11 +176,11 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 
 None from the wireframes: the six questions were decided on 2026-10-03 (see Reactions). Clarify may still ask about the spec itself.
 
-Known limits of this wireframe set: the v1 trade form (Log or Edit trade) is reused and not redrawn, apart from one new optional field, the thesis. The stop-line editor is shown but the retire and rename dialogs on S3 are not drawn. The state for today (trades logged, nothing saved yet, listed as today and not as Missing) is not drawn separately; it uses the same row as a Draft without the tag.
+Known limits of this wireframe set: the trade form (Log or Edit trade) is feature `000`'s and is not redrawn; the thesis field is already in it. The S2 button that reads "Edit stop, entries, costs and thesis" should read "Edit trade" (a trade has one entry and one exit); adjust it in Penpot at the next session. The stop-line editor is shown but the retire and rename dialogs on S3 are not drawn. The state for today (trades logged, nothing saved yet, listed as today and not as Missing) is not drawn separately; it uses the same row as a Draft without the tag.
 
 ## Sign-off
 
 - **Signed off by**: owner
-- **Date**: 2026-10-03
-- **Spec hash**: 7b809da360b4951f10e6d4efc07a7648aba46062d3ce4fa51c0d0be9a3572411
-- **Notes**: Accepted exceptions, not drawn and handled in plan: (1) the v1 trade form with one new optional thesis field; (2) the rename and retire dialogs for mistakes; (3) where export lives (spec says exportable; proposed home is Settings); (4) the state for today (a Draft row without the tag).
+- **Date**: 2026-10-04 (first signed off 2026-10-03)
+- **Spec hash**: a4a303b37294c5a4e08ee872e9a84d5ab199cf3b78f8f17074bff2f3416bfe7f
+- **Notes**: Re-signed after the spec stopped depending on Tradecraft v1 (accounts and trades come from feature `000`; no open trades; local use only, no sign-in or audit log yet; one entry and one exit per trade). Known gap: the S2 button reads "Edit stop, entries, costs and thesis" and should read "Edit trade", to be fixed in Penpot at the next session (Penpot was unreachable). Accepted exceptions, not drawn and handled in plan: (1) the trade form, which is feature `000`'s and already has the thesis field; (2) the rename and retire dialogs for mistakes; (3) where export lives (spec says exportable; proposed home is Settings); (4) the state for today (a Draft row without the tag).
