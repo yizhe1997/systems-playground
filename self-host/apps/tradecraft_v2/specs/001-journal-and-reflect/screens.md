@@ -92,7 +92,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Win flagged | This win was a mistake / It made money, but I was off plan. It will show as a profitable mistake, not a clean win. |
 | Mistakes | Mistakes on this trade · Chased entry, Moved stop, Oversized, Ignored checklist, Traded outside plan, + New mistake |
 | Thesis | Why I took it (thesis) · read-only text · Written when you logged the trade. Shown here to read, not edit. |
-| Actions | Save · Cancel · Edit stop, entries, costs and thesis in the trade form. |
+| Actions | Save · Cancel · Edit trade in the trade form. |
 
 ### S3 Mistakes
 
@@ -138,7 +138,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 
 ## Content added after sign-off (not drawn)
 
-Wording for states that were accepted as not drawn, and for new refusals, written at the plan stage (2026-10-04). They follow the structure of the signed-off screens; they are drawn in Penpot at the next session.
+Wording for states that were accepted as not drawn, and for new refusals, written at the plan stage (2026-10-04). They follow the structure of the signed-off screens. On 2026-10-04 the following were drawn in Penpot and exported to [wireframes/](wireframes/): S0 Reviews: today row, S0 Reviews: no account yet, S1 Daily review: trades not judged yet, S1 Daily review: day not happened yet, S3 Mistakes: rename a mistake, S3 Mistakes: rename, name already used, S3 Mistakes: retire a mistake. The Undo and failure notices are drawn once, on the trades list of feature 000, as before. All frames of S0 to S5 now carry the shared sidebar (TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings).
 
 | Where | Text |
 |---|---|
@@ -200,11 +200,11 @@ Wording for states that were accepted as not drawn, and for new refusals, writte
 
 None from the wireframes: the six questions were decided on 2026-10-03 (see Reactions). Clarify may still ask about the spec itself.
 
-Known limits of this wireframe set: the trade form (Log or Edit trade) is feature `000`'s and is not redrawn; the thesis field is already in it. The S2 button that reads "Edit stop, entries, costs and thesis" should read "Edit trade" (a trade has one entry and one exit); adjust it in Penpot at the next session. The stop-line editor is shown but the retire and rename dialogs on S3 are not drawn. The state for today (trades logged, nothing saved yet, listed as today and not as Missing) is not drawn separately; it uses the same row as a Draft without the tag.
+Known limits of this wireframe set: the trade form (Log or Edit trade) is feature `000`'s and is not redrawn; the thesis field is already in it. The S2 link was corrected on 2026-10-04 to "Edit trade in the trade form." (a trade has one entry and one exit). The stop-line editor is shown but the retire and rename dialogs on S3 are not drawn. The state for today (trades logged, nothing saved yet, listed as today and not as Missing) is not drawn separately; it uses the same row as a Draft without the tag.
 
 ## Sign-off
 
 - **Signed off by**: owner
 - **Date**: 2026-10-04 (first signed off 2026-10-03; third sign-off after the checklists)
 - **Spec hash**: 0bee1f844680764b742bbb4eeeea73174562a3c8096d181dd12da3d18b73b9fd
-- **Notes**: Third sign-off 2026-10-04, after the requirements checklists changed the spec (definitions, the owner's three decisions, FR-027 to FR-030, SC-008); the wording of states that were not drawn is in the section Content added after sign-off, to be drawn in Penpot at the next session. Earlier: re-signed after the spec stopped depending on Tradecraft v1 (accounts and trades come from feature `000`; no open trades; local use only, no sign-in or audit log yet; one entry and one exit per trade). Known gap: the S2 button reads "Edit stop, entries, costs and thesis" and should read "Edit trade", to be fixed in Penpot at the next session (Penpot was unreachable). Accepted exceptions, not drawn and handled in plan: (1) the trade form, which is feature `000`'s and already has the thesis field; (2) the rename and retire dialogs for mistakes; (3) where export lives (spec says exportable; proposed home is Settings); (4) the state for today (a Draft row without the tag).
+- **Notes**: Third sign-off 2026-10-04, after the requirements checklists changed the spec (definitions, the owner's three decisions, FR-027 to FR-030, SC-008); the wording of states that were not drawn is in the section Content added after sign-off, to be drawn in Penpot at the next session. Earlier: re-signed after the spec stopped depending on Tradecraft v1 (accounts and trades come from feature `000`; no open trades; local use only, no sign-in or audit log yet; one entry and one exit per trade). The S2 link text ("Edit trade in the trade form.") was corrected in Penpot on 2026-10-04. Accepted exceptions, not drawn and handled in plan: (1) the trade form, which is feature `000`'s and already has the thesis field; (2) the rename and retire dialogs for mistakes; (3) where export lives (spec says exportable; proposed home is Settings); (4) the state for today (a Draft row without the tag).

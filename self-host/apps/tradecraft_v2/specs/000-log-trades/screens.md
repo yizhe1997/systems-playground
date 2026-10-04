@@ -39,7 +39,7 @@ Every word the owner will read, as drawn. Money is shown in the account's curren
 
 ### Navigation (all screens)
 
-APP NAME; Trades, Accounts, Settings.
+TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings (the same sidebar on every screen of features 000 and 001; Reviews and Mistakes belong to feature 001; changed 2026-10-04).
 
 ### L1 Trades list
 
@@ -48,10 +48,10 @@ APP NAME; Trades, Accounts, Settings.
 | Title and subtitle | Trades · Your closed trades, newest first. |
 | Actions | Log a trade · Export |
 | Filters | Account (All accounts) · From (1 Oct 2025) · To (31 Oct 2025) · Clear filters · Show deleted (switch) |
-| Columns | Exit time · Trading day · Account · Instrument · Direction · Size · Net result · R · Edit · Delete. The trading day can differ from the exit date when the account has a start time (a Tue 17:30 exit with a 17:00 start is on Wed). |
+| Columns | Exit time · Trading day · Account · Instrument · Direction · Size · Net result · **Plan** · R · Edit · Delete. The Plan column (added 2026-10-04 by feature 001, FR-027, owner approved; it ends the principle I exception) shows Followed, Partly, Not followed or Not judged yet, with Mistake or Valid loss underneath when the trade is labelled so. The trading day can differ from the exit date when the account has a start time (a Tue 17:30 exit with a 17:00 start is on Wed). |
 | Result cell | -$125.00; a typed result adds "typed in" underneath |
 | R cell | -0.50 R, or a dash with a reason underneath: "no stop recorded", "no dollars per point" |
-| Footnote | Each result is in its own account's currency. This list has no totals. |
+| Footnote | Each result is in its own account's currency. This list has no totals. The plan answer comes from the daily review. |
 | Could not load | ! Could not reach the journal. · Try again (drawn on L1; every screen uses the same notice) |
 | Trade deleted | Trade deleted. · Undo (for 10 seconds; Show deleted keeps it restorable afterwards) |
 | No accounts yet | Create an account first. / Every trade belongs to an account. Log a trade is available as soon as you have one. / New account · Log a trade is unavailable until an account exists |
@@ -134,6 +134,7 @@ APP NAME; Trades, Accounts, Settings.
 | 2026-10-04 | Clarify: retiring an account | Chose the recommendation (archive only) | Archive and Restore on the accounts list, Show archived switch, Archive account in the edit dialog |
 | 2026-10-04 | Clarify: currency change | Allow it, "after all it's just a label" | Edit dialog warns that existing results are relabelled, not converted |
 | 2026-10-04 | Clarify: R | Chose the recommendation | R is net result over risk (as drawn) |
+| 2026-10-04 | Feature 001 plan | Yes to the Plan column on the Trades list and to the shared sidebar | L1 gains a Plan column and footnote sentence; every L screen shows the sidebar Reviews, Trades, Mistakes, Accounts, Settings under the brand TRADECRAFT; Penpot frames, Hex skins and wireframe images updated the same day |
 
 ## Open questions for clarify
 
