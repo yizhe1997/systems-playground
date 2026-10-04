@@ -78,11 +78,18 @@ paths:
     post:
       operationId: previewTrade
       summary: Work out the figures for a trade without saving it
-      description: Uses the same SQL functions as the saved columns. A field that cannot be worked out is null and has a reason.
-      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TradeInput" } } } }
+      description: "Takes whatever has been typed so far. Every field is optional and the preview never refuses an incomplete or malformed form: a figure that cannot be worked out is null and has a plain reason. Uses the same SQL functions as the saved columns."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TradePreviewInput" }
       responses:
-        "200": { description: The figures, content: { application/json: { schema: { $ref: "#/components/schemas/TradeFigures" } } } }
-        "422": { $ref: "#/components/responses/Invalid" }
+        "200":
+          description: The figures
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TradePreview" }
   /trades/{id}:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     get:
@@ -209,6 +216,36 @@ components:
             grossResult: { type: string, example: needs dollars per point }
             risk: { type: string, example: no stop recorded }
             rMultiple: { type: string, example: needs a stop and dollars per point }
+    TradePreviewInput:
+      type: object
+      description: "Whatever has been typed so far, as typed. Every field is optional."
+      properties:
+        accountId: { type: [string, "null"], format: uuid }
+        instrument: { type: [string, "null"] }
+        direction: { type: [string, "null"], enum: [long, short, null] }
+        size: { type: [string, "null"] }
+        entryPrice: { type: [string, "null"] }
+        entryAt: { type: [string, "null"] }
+        exitPrice: { type: [string, "null"] }
+        exitAt: { type: [string, "null"] }
+        dollarsPerPoint: { type: [string, "null"] }
+        cost: { type: [string, "null"] }
+        stopPrice: { type: [string, "null"] }
+        typedResult: { type: [string, "null"] }
+    TradePreview:
+      type: object
+      required: [grossResult, costs, netResult, risk, rMultiple, tradingDay, reasons]
+      properties:
+        grossResult: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        costs: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        netResult: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        risk: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        rMultiple: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        tradingDay: { type: [string, "null"], format: date }
+        reasons:
+          type: object
+          description: "For each figure that is null, the plain reason shown beside its dash, for example: needs prices, size and dollars per point; needs an account; not a number."
+          additionalProperties: { type: string }
     Trade:
       allOf:
         - { $ref: "#/components/schemas/TradeInput" }

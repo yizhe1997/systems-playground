@@ -64,7 +64,7 @@ specs/000-log-trades/
 ├── research.md          # decisions and alternatives
 ├── data-model.md        # tables, rules, state transitions
 ├── quickstart.md        # how to prove it works
-├── contracts/openapi.yaml
+├── contracts/openapi.yaml   # the API contract and its only copy; the API is built to it
 ├── checklists/requirements.md
 └── tasks.md             # next step: /speckit-tasks (not created here)
 ```
@@ -75,9 +75,8 @@ specs/000-log-trades/
 backend/
 ├── cmd/api/main.go                 # starts the API, applies migrations
 ├── internal/
-│   ├── api/                        # Fiber handlers, validation with the wireframe wording, error shape
-│   ├── store/                      # sqlc-generated queries over the SQL files
-│   ├── settings/                   # time zone setting
+│   ├── api/                        # Fiber handlers (accounts, trades, settings, export), errors.go, decimal.go, concurrency.go
+│   ├── store/                      # sqlc-generated queries over the SQL files, migrate.go
 │   └── timeinput/                  # local date and time in the journal zone to an instant, with the DST rules
 ├── migrations/                     # goose SQL files: tables, functions, generated columns, triggers
 ├── queries/                        # plain SQL for sqlc
@@ -90,7 +89,6 @@ frontend/
 ├── src/lib/                        # server-side API client, formatting of money and dates for display only
 └── e2e/                            # Playwright scenarios from quickstart.md
 
-contracts/openapi.yaml              # copied from this feature once accepted; the API is built to it
 docker-compose.yml                  # postgres, backend, frontend, tests
 scripts/test.sh                     # runs the Go tests and the Playwright run in containers
 docs/domain.md                      # created with the behaviour; unconfirmed rules flagged

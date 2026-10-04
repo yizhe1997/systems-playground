@@ -18,7 +18,7 @@ Changing `time_zone` recomputes `trading_day` for every trade (see the rule belo
 | Field | Type | Rule |
 |---|---|---|
 | id | uuid | primary key |
-| name | text | 1 to 80 characters after trimming, each run of spaces inside collapsed to one; unique ignoring case and surrounding spaces, **including archived accounts** (a unique index on the lower-cased, trimmed name) |
+| name | text | 1 to 80 characters after trimming, each run of spaces inside collapsed to one; unique ignoring case and surrounding spaces, **including archived accounts**: a unique index on `lower(regexp_replace(btrim(name), '\s+', ' ', 'g'))`, and a CHECK that the stored name has no leading, trailing or repeated spaces (the API collapses them on save, so the database also holds if something else writes) |
 | currency | text | one of the allowed three-letter codes (a CHECK); a label only, never converted |
 | trading_day_start | time | optional; time of day without a zone, read in the journal time zone; `00:01` to `23:59` (a CHECK refuses `00:00`, which would put every trade on the next day) |
 | archived_at | timestamptz | null while active; set by Archive, cleared by Restore. Accounts are never deleted |
@@ -58,6 +58,8 @@ Derived, stored, never typed (generated columns that call the SQL functions belo
 | trading_day | `date`, set by a trigger from the rule below; indexed |
 
 Indexes: `(account_id, trading_day)`, `(trading_day)`, and `(deleted_at)` for the deleted view.
+
+The preview endpoint accepts a form that is still empty or half typed and answers with every figure null and its plain reason; it calls the same functions and never refuses for incompleteness.
 
 ### Why the dash is known
 
@@ -105,5 +107,5 @@ what feature 001 builds on: it will add reviews keyed by `(account_id, trading_d
 Required fields present; numbers parse as exact decimals typed with a point, with at most 8 decimal places; size, prices,
 dollars per point and stop above zero; cost zero or more; exit not earlier than entry; neither time later than the
 current time plus one minute; typed result present when dollars per
-point is blank; account exists and is not archived; a local time that does not exist in the zone is refused. The
+point is blank; account exists, and is not archived when the trade is new or is being moved to that account (an existing trade of an archived account can still be edited, deleted and restored); a local time that does not exist in the zone is refused. The
 database repeats the numeric and ordering rules as CHECK constraints.
