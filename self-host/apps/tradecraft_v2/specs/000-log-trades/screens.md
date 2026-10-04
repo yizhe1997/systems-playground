@@ -150,7 +150,7 @@ Left for the sign-off step: the principle I exception (process information besid
 
 ## Visual review
 
-**Status**: findings recorded 2026-10-04; owner's approval of the look pending.
+**Status**: findings recorded 2026-10-04. The owner chose "approve, fix 1 and 4 first"; both were fixed the same day (below); approval is recorded once the fixes are accepted.
 **Built screens**: [built/](built/), 23 states in light and night, named like their wireframes (`-light.png`, `-dark.png`), captured in real Chromium on the composed stack with sample data (`frontend/e2e/zz-screens.spec.ts`). "Could not load" was captured with the API container really stopped; "could not save" and "changed elsewhere" by simulating the failure in the browser.
 **Checks run**: comparison with each wireframe and with the approved Hex skins; axe (WCAG 2 A and AA, including 4.5:1 text contrast) on five screens and their states in both modes, no violations; Impeccable detector on `frontend/src`, no findings; the Impeccable critique, run inline in one context (⚠️ DEGRADED: single-context, because this session does not spawn sub-agents), so its heuristic scoring is lighter than a full run.
 
@@ -171,6 +171,8 @@ Left for the sign-off step: the principle I exception (process information besid
 
 **Fixed during the review**: the month abbreviation read "Sept" (now "Sep" as in the wireframes); the preview's trading-day value wrapped onto two lines (now one line); the list of 5,000 rows took 7.2 s (now 3.9 s, see item 4).
 
-**Parked**: items 1 to 4 above, until the owner decides.
+**Fixed at the owner's request (2026-10-04)**: item 1, each time is one typed field (placeholder "Date and time"); it accepts `2025-10-01 09:41` or `Wed 1 Oct 2025 09:41` and shows the second form. Item 4, the trades list is paged at 200 trades: below the table, "Showing 1 to 200 of 5,023", Newer and Older (these two interface changes are not yet in the Penpot wireframes, which were unreachable; update them with the next Penpot session). The whole 5,000-trade list now opens in about 0.3 s a page.
 
-**Owner's approval of the look**: pending.
+**Parked**: items 2 and 3 stay as built unless the owner says otherwise. `spec.md` still says lists are not paged; changing it makes the sign-off stale.
+
+**Owner's approval of the look**: approved with fixes 1 and 4 (2026-10-04); fixes done, to be seen once more.

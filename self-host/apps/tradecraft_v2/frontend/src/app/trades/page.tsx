@@ -1,15 +1,18 @@
 import Link from "next/link";
-import { api, ApiFailure } from "@/lib/api";
+import { redirect } from "next/navigation";
+import { api, apiPaged, ApiFailure } from "@/lib/api";
 import { getAccounts, getSettings } from "@/lib/data";
 import { currentMonth } from "@/lib/format";
 import type { Trade } from "@/lib/types";
 import { TradeFilters } from "@/components/TradeFilters";
 import { TradesTable } from "@/components/TradesTable";
 import { CouldNotLoad } from "@/components/Notice";
+import { Pager } from "@/components/Pager";
 import { ExportButton } from "@/components/ExportButton";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 200;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 function Head({ canLog, exportable = true }: { canLog: boolean; exportable?: boolean }) {
@@ -67,6 +70,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   const from = hasRange ? one(sp.from) : month.from;
   const to = hasRange ? one(sp.to) : month.to;
   const deleted = one(sp.deleted) === "1";
+  const page = Math.max(1, Number.parseInt(one(sp.page), 10) || 1);
 
   const q = new URLSearchParams();
   if (account) q.set("accountId", account);
@@ -74,12 +78,15 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   if (to) q.set("to", to);
   if (deleted) q.set("deleted", "true");
 
+  q.set("limit", String(PAGE_SIZE));
+  q.set("offset", String((page - 1) * PAGE_SIZE));
   let trades: Trade[] = [];
+  let total = 0;
   let problem: string | null = null;
   let anyTrades = true;
   try {
-    trades = await api<Trade[]>(`/trades?${q}`);
-    if (trades.length === 0 && !deleted) anyTrades = (await api<Trade[]>("/trades")).length > 0;
+    ({ data: trades, total } = await apiPaged<Trade>(`/trades?${q}`));
+    if (trades.length === 0 && !deleted) anyTrades = (await apiPaged<Trade>("/trades?limit=1")).total > 0;
   } catch (e) {
     if (e instanceof ApiFailure && e.status === 422) {
       problem = e.body?.fields?.[0]?.message ?? e.message;
@@ -91,6 +98,17 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
         </>
       );
     }
+  }
+
+  if (!problem && trades.length === 0 && total > 0 && page > 1) {
+    // the last row of the last page was removed: go to the new last page
+    const back = new URLSearchParams(q);
+    back.delete("limit");
+    back.delete("offset");
+    const last = Math.ceil(total / PAGE_SIZE);
+    if (last > 1) back.set("page", String(last));
+    else back.delete("page");
+    redirect(`/trades?${back}`);
   }
 
   return (
@@ -108,6 +126,9 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
         </div>
       )}
       {!problem && trades.length > 0 && <TradesTable trades={trades} zone={settings.timeZone} deletedView={deleted} />}
+      {!problem && total > PAGE_SIZE && (
+        <Pager page={page} pageSize={PAGE_SIZE} total={total} params={{ account, from, to, deleted: deleted ? "1" : "" }} />
+      )}
       {!problem && trades.length === 0 && !deleted && !anyTrades && (
         <div className="card empty">
           <h2 className="section">No trades yet.</h2>

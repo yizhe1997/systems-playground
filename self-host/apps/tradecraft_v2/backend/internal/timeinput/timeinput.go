@@ -11,9 +11,16 @@ import (
 var ErrNonexistent = errors.New("That time does not exist on that date in this time zone.")
 
 // ErrFormat is returned for text that is neither an RFC 3339 instant nor a local date and time.
-var ErrFormat = errors.New("Enter a date and time, for example 2025-10-01 09:41.")
+var ErrFormat = errors.New("Enter a date and time, for example Wed 1 Oct 2025 09:41.")
 
-var localLayouts = []string{"2006-01-02T15:04:05", "2006-01-02T15:04", "2006-01-02 15:04:05", "2006-01-02 15:04"}
+// The ISO styles, and the style the screens show: "Wed 1 Oct 2025 09:41", with or without the weekday.
+var localLayouts = []string{
+	"2006-01-02T15:04:05", "2006-01-02T15:04", "2006-01-02 15:04:05", "2006-01-02 15:04",
+	"Mon 2 Jan 2006 15:04", "2 Jan 2006 15:04",
+}
+
+// ErrWeekday is returned when a typed weekday does not belong to the typed date.
+var ErrWeekday = errors.New("That weekday does not match the date.")
 
 // Parse reads s as an RFC 3339 instant with an offset (used as given), or as a local date and time with no
 // offset, read in loc. A local time that does not exist is refused; one that happens twice (clocks going
@@ -23,10 +30,14 @@ func Parse(s string, loc *time.Location) (time.Time, error) {
 	if t, err := time.Parse(time.RFC3339, s); err == nil {
 		return t, nil
 	}
+	s = strings.Join(strings.Fields(strings.Replace(s, "Sept", "Sep", 1)), " ")
 	var wall time.Time
 	var err error
 	for _, layout := range localLayouts {
 		if wall, err = time.Parse(layout, s); err == nil {
+			if strings.HasPrefix(layout, "Mon") && wall.Weekday().String()[:3] != s[:3] {
+				return time.Time{}, ErrWeekday
+			}
 			break
 		}
 	}

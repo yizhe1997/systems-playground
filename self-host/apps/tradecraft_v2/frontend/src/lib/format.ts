@@ -104,3 +104,9 @@ export function monthQuery(day: string): string {
   const mm = String(m).padStart(2, "0");
   return `/trades?from=${y}-${mm}-01&to=${y}-${mm}-${String(last).padStart(2, "0")}`;
 }
+
+/** "Wed 1 Oct 2025 09:41" for a local date and time kept as "2025-10-01T09:41..." (API) or typed as "2025-10-01 09:41". */
+export function screenTime(local: string): string {
+  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/.exec(local.trim());
+  return m ? `${dayLabel(m[1])} ${m[2]}` : local;
+}

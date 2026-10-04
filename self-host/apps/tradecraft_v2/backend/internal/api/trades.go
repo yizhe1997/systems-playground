@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -409,6 +410,21 @@ func (s *Server) listTrades(c *fiber.Ctx) error {
 	if p.FromDay != nil && p.ToDay != nil && p.FromDay.After(*p.ToDay) {
 		fe = append(fe, fieldError{"to", "To must not be earlier than From."})
 	}
+	// optional paging: limit 1 to 1000 (absent means everything), offset from 0
+	if v := c.Query("limit"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > 1000 {
+			fe = append(fe, fieldError{"limit", "Limit must be a whole number from 1 to 1000."})
+		}
+		p.PageSize = int32(n)
+	}
+	if v := c.Query("offset"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			fe = append(fe, fieldError{"offset", "Offset must be a whole number, zero or more."})
+		}
+		p.PageOffset = int32(n)
+	}
 	if len(fe) > 0 {
 		return invalid("filter", fe)
 	}
@@ -416,6 +432,11 @@ func (s *Server) listTrades(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	total, err := s.q.CountTrades(c.Context(), store.CountTradesParams{Deleted: p.Deleted, AccountID: p.AccountID, FromDay: p.FromDay, ToDay: p.ToDay})
+	if err != nil {
+		return err
+	}
+	c.Set("X-Total-Count", strconv.FormatInt(total, 10)) // the whole match, not just this page
 	loc, err := s.journalLocation(c.Context())
 	if err != nil {
 		return err

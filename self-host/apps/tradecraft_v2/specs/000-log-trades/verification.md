@@ -5,15 +5,13 @@ Everything below was run, not assumed. Failures and gaps are listed first.
 
 ## What did not fully meet the plan
 
-1. **SC-008, the whole journal on one screen is slow.** With 5,000 trades across 10 accounts spread over twelve months,
-   opening **a month** (417 trades, the page's default view) took 424 ms, changing a filter 116 ms, and saving a trade
-   471 ms, so the criterion holds for the list as the owner normally sees it. Opening the **entire** unfiltered list of
-   5,025 trades took about 3.9 s (7.2 s before a fix this session). It is measured by `e2e/zz-scale.spec.ts`
-   ("worst case"), which only guards against it getting worse (limit 8 s). Meeting 1 s for that view needs windowing or
-   paging, which changes a signed-off screen, so it is the owner's call: accept (a month is the default), or add paging.
-   The API alone answers the 5,000 trades in 164 ms; the time is in drawing the rows.
-2. **Dates show in the browser's own format** (for example 10/01/2025) in the two time fields, not as "Wed 1 Oct 2025".
-   The time of day is a 24-hour `HH:MM` text field. Everywhere else the screens use the spec's style (Wed 1 Oct 2025, 24-hour clock).
+1. **SC-008 holds, after a change you asked for.** The first build opened the whole unfiltered list of 5,000 trades in
+   3.9 s (a month in 0.4 s). At the visual review you chose paging, so lists are now paged at 200 trades. With 5,000
+   trades across 10 accounts: opening a month 293 ms, changing a filter 83 ms, saving a trade 284 ms, opening the whole
+   journal 287 ms and the next page 318 ms. `spec.md` still says lists are not paged; it is untouched because editing it
+   would make the sign-off stale.
+2. **Time entry** is now one typed field per time (the owner's fix 1). It takes `2025-10-01 09:41` or `Wed 1 Oct 2025 09:41`
+   and shows the second form. The From and To filter dates are still the browser's native date pickers (format 10/01/2025).
 3. **The Result preview tints only the net result.** The approved Hex skin image also tinted the gross result green.
    `DESIGN.md` (Quiet Outcome Rule) says net result only, and the build follows the written rule.
 4. **The browser's Back button does not trigger "Leave without saving?"** App Router offers no hook for it. Closing the
@@ -33,13 +31,13 @@ Everything below was run, not assumed. Failures and gaps are listed first.
 
 | Check | Result |
 |---|---|
-| Go tests against a real PostgreSQL 18 (`./scripts/test.sh`, first step) | all packages pass: 55 top-level tests, 93 with subtests, 0 failures |
-| Playwright in Chromium on the composed stack, fresh database | 36 pass, 2 skipped (screen capture, which is not a check), 0 fail |
+| Go tests against a real PostgreSQL 18 (`./scripts/test.sh`, first step) | all packages pass, 0 failures |
+| Playwright in Chromium on the composed stack, fresh database | 38 pass, 2 skipped (screen capture, which is not a check), 0 fail |
 | Accessibility (axe, WCAG 2 A and AA including text contrast 4.5:1), five screens and their states, light and night | no violations in 8 runs |
 | No console errors or 5xx responses across every screen and the main actions | none |
 | SC-009: published ports | `127.0.0.1` only, for all three services |
 | Constitution IV: the database password | in no tracked file and in no container log |
-| SC-010: stop and start the stack | 45 accounts and 5,028 trades identical in the full export |
+| SC-010: stop and start the stack | 47 accounts and 5,234 trades identical in the full export |
 | SC-001: open the form to the saved trade in the list | the first-run test finishes the whole flow in about 1.7 s, far under 60 s |
 | SC-006: a given day in three actions | passes (Trades, From, To) |
 

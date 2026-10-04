@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { api, makeAccount, makeTrade, tradesFor, uniq } from "./helpers";
+import { api, makeAccount, makeTrade, tradeA, tradesFor, uniq } from "./helpers";
 
 async function twoAccountsWithTrades() {
   const a = await makeAccount(uniq("Alpha"));
@@ -72,4 +72,33 @@ test("a fresh month shows the current month by default", async ({ page }) => {
   expect(from).toMatch(/^\d{4}-\d{2}-01$/);
   expect(to).toMatch(/^\d{4}-\d{2}-(28|29|30|31)$/);
   expect(from.slice(0, 7)).toBe(to.slice(0, 7));
+});
+
+test("long lists are paged at 200: Showing x to y of n, Newer and Older", async ({ page }) => {
+  const acct = await makeAccount(uniq("Pages"));
+  const jobs: Array<() => Promise<unknown>> = [];
+  for (let n = 0; n < 205; n++) {
+    const day = String(1 + (n % 28)).padStart(2, "0");
+    const min = String(10 + (n % 40)).padStart(2, "0");
+    jobs.push(() => api("POST", "/trades", tradeA(acct.id, { entryAt: `2025-08-${day}T09:00`, exitAt: `2025-08-${day}T09:${min}` })));
+  }
+  await Promise.all(Array.from({ length: 10 }, async () => { for (let j = jobs.shift(); j; j = jobs.shift()) await j(); }));
+
+  await page.goto(tradesFor(acct.id));
+  await expect(page.getByText("Showing 1 to 200 of 205")).toBeVisible();
+  await expect(page.locator("tbody tr")).toHaveCount(200);
+  await expect(page.getByText("Newer", { exact: true })).toHaveAttribute("aria-disabled", "true");
+  await page.getByRole("link", { name: "Older" }).click();
+  await expect(page.getByText("Showing 201 to 205 of 205")).toBeVisible();
+  await expect(page.locator("tbody tr")).toHaveCount(5);
+  await page.getByRole("link", { name: "Newer" }).click();
+  await expect(page.getByText("Showing 1 to 200 of 205")).toBeVisible();
+
+  // changing a filter starts again at the first page
+  await page.getByRole("link", { name: "Older" }).click();
+  await page.getByLabel("From").fill("2025-08-10");
+  await expect(page).not.toHaveURL(/page=/);
+  // a short list shows no pager
+  await page.goto(`/trades?account=${acct.id}&from=2025-08-27&to=2025-08-28`);
+  await expect(page.getByLabel("Pages of trades")).toBeHidden();
 });

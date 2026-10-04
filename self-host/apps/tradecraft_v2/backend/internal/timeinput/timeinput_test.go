@@ -30,6 +30,12 @@ func TestParse(t *testing.T) {
 		{"hour that does not exist", "2025-03-09T02:30:00", "", ErrNonexistent},
 		{"repeated hour uses the first occurrence", "2025-11-02T01:30:00", "2025-11-02T06:30:00Z", nil}, // 01:30 CDT, not 01:30 CST
 		{"after the repeated hour", "2025-11-02T02:30:00", "2025-11-02T08:30:00Z", nil},
+		{"screen style with weekday", "Wed 1 Oct 2025 09:41", "2025-10-01T14:41:00Z", nil},
+		{"screen style without weekday", "1 Oct 2025 09:41", "2025-10-01T14:41:00Z", nil},
+		{"September as shown on the screens", "Tue 30 Sept 2025 17:30", "2025-09-30T22:30:00Z", nil},
+		{"extra spaces", "  Wed   1 Oct 2025  09:41 ", "2025-10-01T14:41:00Z", nil},
+		{"wrong weekday", "Thu 1 Oct 2025 09:41", "", ErrWeekday},
+		{"screen style, hour that does not exist", "Sun 9 Mar 2025 02:30", "", ErrNonexistent},
 		{"not a date", "yesterday", "", ErrFormat},
 		{"empty", "", "", ErrFormat},
 	}

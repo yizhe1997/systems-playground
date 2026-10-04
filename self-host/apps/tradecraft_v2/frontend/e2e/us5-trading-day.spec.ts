@@ -10,7 +10,7 @@ test("the preview shows the trading day, from the exit and the account's start",
     exitPrice: "101", exitDate: "2025-10-07", exitTime: "17:30", dollarsPerPoint: "10",
   });
   await expect(preview(page)).toContainText("Wed 8 Oct 2025");
-  await fillTrade(page, { exitTime: "16:59", entryTime: "16:00" });
+  await fillTrade(page, { entryDate: "2025-10-07", entryTime: "16:00", exitDate: "2025-10-07", exitTime: "16:59" });
   await expect(preview(page)).toContainText("Tue 7 Oct 2025");
 });
 

@@ -64,8 +64,10 @@ paths:
         - { name: from, in: query, description: "First trading day, inclusive", schema: { type: string, format: date } }
         - { name: to, in: query, description: "Last trading day, inclusive", schema: { type: string, format: date } }
         - { name: deleted, in: query, description: Only deleted trades when true, schema: { type: boolean, default: false } }
+        - { name: limit, in: query, description: "Page size, 1 to 1000. Absent means everything. Added at the visual review (2026-10-04)", schema: { type: integer, minimum: 1, maximum: 1000 } }
+        - { name: offset, in: query, description: "Trades to skip, zero or more", schema: { type: integer, minimum: 0, default: 0 } }
       responses:
-        "200": { description: Trades, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Trade" } } } } }
+        "200": { description: "Trades. The header X-Total-Count holds the number of trades that match the filters, however many this page holds", headers: { X-Total-Count: { schema: { type: integer } } }, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Trade" } } } } }
         "422": { $ref: "#/components/responses/Invalid" }
     post:
       operationId: createTrade

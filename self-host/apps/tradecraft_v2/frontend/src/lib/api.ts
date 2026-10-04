@@ -42,3 +42,16 @@ export async function forward(path: string, init: RequestInit): Promise<Response
     return Response.json({ code: "unreachable", message: "Could not reach the journal." }, { status: 502 });
   }
 }
+
+/** A list with the total number of matches (the X-Total-Count header), for paging. */
+export async function apiPaged<T>(path: string): Promise<{ data: T[]; total: number }> {
+  let res: Response;
+  try {
+    res = await fetch(base + path, { cache: "no-store" });
+  } catch {
+    throw new Unreachable();
+  }
+  if (!res.ok) throw new ApiFailure(res.status, await res.json().catch(() => null));
+  const data = (await res.json()) as T[];
+  return { data, total: Number(res.headers.get("x-total-count") ?? data.length) };
+}

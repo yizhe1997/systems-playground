@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Account, FieldError, Preview, Trade, TradeFormValues } from "@/lib/types";
 import { call } from "@/lib/browserApi";
-import { dateTime, dayLabel, monthQuery, plain, splitLocal } from "@/lib/format";
+import { dateTime, dayLabel, monthQuery, plain, screenTime } from "@/lib/format";
 import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
 import { FailureBanner, Waiting, useNoticeableWait } from "@/components/Notice";
 import { ResultPreview } from "@/components/ResultPreview";
@@ -16,11 +16,9 @@ const blankValues = (accounts: Account[]): TradeFormValues => ({
   direction: "",
   size: "",
   entryPrice: "",
-  entryDate: "",
-  entryTime: "",
+  entryAt: "",
   exitPrice: "",
-  exitDate: "",
-  exitTime: "",
+  exitAt: "",
   dollarsPerPoint: "",
   cost: "",
   stopPrice: "",
@@ -29,19 +27,15 @@ const blankValues = (accounts: Account[]): TradeFormValues => ({
 });
 
 function fromTrade(t: Trade): TradeFormValues {
-  const entry = splitLocal(t.entryAt);
-  const exit = splitLocal(t.exitAt);
   return {
     accountId: t.accountId,
     instrument: t.instrument,
     direction: t.direction,
     size: t.size,
     entryPrice: t.entryPrice,
-    entryDate: entry.date,
-    entryTime: entry.time,
+    entryAt: screenTime(t.entryAt),
     exitPrice: t.exitPrice,
-    exitDate: exit.date,
-    exitTime: exit.time,
+    exitAt: screenTime(t.exitAt),
     dollarsPerPoint: t.dollarsPerPoint ?? "",
     cost: t.cost,
     stopPrice: t.stopPrice ?? "",
@@ -50,7 +44,6 @@ function fromTrade(t: Trade): TradeFormValues {
   };
 }
 
-const instant = (date: string, time: string) => (date && time ? `${date}T${time}` : date || time || "");
 const orNull = (s: string) => (s.trim() === "" ? null : s.trim());
 
 export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Account[]; zone: string; zoneLabel: string; trade?: Trade }) {
@@ -72,12 +65,11 @@ export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Acco
 
   const set = <K extends keyof TradeFormValues>(k: K, value: TradeFormValues[K]) => {
     setV((p) => ({ ...p, [k]: value }));
-    // typing in a field clears its own message (the date and time of one instant share one message)
-    const key = k === "entryDate" || k === "entryTime" ? "entryAt" : k === "exitDate" || k === "exitTime" ? "exitAt" : k;
+    // typing in a field clears its own message
     setErrors((p) => {
-      if (!(key in p)) return p;
+      if (!(k in p)) return p;
       const rest = { ...p };
-      delete rest[key];
+      delete rest[k];
       return rest;
     });
   };
@@ -96,9 +88,9 @@ export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Acco
         direction: v.direction || null,
         size: orNull(v.size),
         entryPrice: orNull(v.entryPrice),
-        entryAt: orNull(instant(v.entryDate, v.entryTime)),
+        entryAt: orNull(v.entryAt),
         exitPrice: orNull(v.exitPrice),
-        exitAt: orNull(instant(v.exitDate, v.exitTime)),
+        exitAt: orNull(v.exitAt),
         dollarsPerPoint: orNull(v.dollarsPerPoint),
         cost: orNull(v.cost),
         stopPrice: orNull(v.stopPrice),
@@ -119,9 +111,9 @@ export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Acco
       direction: v.direction,
       size: v.size,
       entryPrice: v.entryPrice,
-      entryAt: instant(v.entryDate, v.entryTime),
+      entryAt: v.entryAt,
       exitPrice: v.exitPrice,
-      exitAt: instant(v.exitDate, v.exitTime),
+      exitAt: v.exitAt,
       dollarsPerPoint: orNull(v.dollarsPerPoint),
       cost: orNull(v.cost),
       stopPrice: orNull(v.stopPrice),
@@ -244,11 +236,9 @@ export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Acco
             </div>
 
             <div className="field">
-              <span className="label" id="t-entry-label">Entry time ({zoneLabel})</span>
-              <div className="datetime" role="group" aria-labelledby="t-entry-label">
-                <input type="date" aria-label="Entry date" className="field-input" value={v.entryDate} onChange={(e) => set("entryDate", e.target.value)} {...inv("entryAt", "t-entry")} />
-                <input aria-label="Entry time of day, 24-hour HH:MM" className="field-input" placeholder="HH:MM" inputMode="numeric" pattern="[0-2][0-9]:[0-5][0-9]" value={v.entryTime} onChange={(e) => set("entryTime", e.target.value)} {...inv("entryAt", "t-entry")} />
-              </div>
+              <label className="label" htmlFor="t-entry">Entry time ({zoneLabel})</label>
+              <input id="t-entry" className="field-input" placeholder="Date and time" value={v.entryAt} autoComplete="off"
+                onChange={(e) => set("entryAt", e.target.value)} onBlur={() => set("entryAt", screenTime(v.entryAt))} {...inv("entryAt", "t-entry")} />
               {err("entryAt", "t-entry")}
             </div>
 
@@ -259,13 +249,11 @@ export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Acco
             </div>
 
             <div className="field">
-              <span className="label" id="t-exit-label">Exit time ({zoneLabel})</span>
-              <div className="datetime" role="group" aria-labelledby="t-exit-label">
-                <input type="date" aria-label="Exit date" className="field-input" value={v.exitDate} onChange={(e) => set("exitDate", e.target.value)} {...inv("exitAt", "t-exit")} />
-                <input aria-label="Exit time of day, 24-hour HH:MM" className="field-input" placeholder="HH:MM" inputMode="numeric" pattern="[0-2][0-9]:[0-5][0-9]" value={v.exitTime} onChange={(e) => set("exitTime", e.target.value)} {...inv("exitAt", "t-exit")} />
-              </div>
+              <label className="label" htmlFor="t-exit">Exit time ({zoneLabel})</label>
+              <input id="t-exit" className="field-input" placeholder="Date and time" value={v.exitAt} autoComplete="off"
+                onChange={(e) => set("exitAt", e.target.value)} onBlur={() => set("exitAt", screenTime(v.exitAt))} {...inv("exitAt", "t-exit")} />
               {err("exitAt", "t-exit")}
-              <p className="helper">Times are typed to the minute and shown on a 24-hour clock.</p>
+              <p className="helper">Times are typed to the minute and shown on a 24-hour clock, for example Wed 1 Oct 2025 09:41 or 2025-10-01 09:41.</p>
             </div>
 
             <div className="field">

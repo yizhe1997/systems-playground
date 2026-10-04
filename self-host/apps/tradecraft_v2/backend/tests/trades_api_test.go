@@ -254,3 +254,18 @@ func TestPreviewNeverRefuses(t *testing.T) {
 	r = call(t, "POST", "/trades/preview", map[string]any{"exitAt": "2025-10-07T09:58:00"})
 	wantStr(t, "needs an account", r.body["reasons"].(map[string]any)["tradingDay"].(string), "needs an account")
 }
+
+// The time field takes the style the screens show as well as ISO.
+func TestTimeInScreenStyle(t *testing.T) {
+	reset(t)
+	acct := account(t, "A", "USD", "17:00")
+	in := tradeA(acct)
+	in["entryAt"], in["exitAt"] = "Wed 1 Oct 2025 09:41", "Wed 1 Oct 2025 17:30"
+	r := trade(t, in)
+	wantStr(t, "entryAt", r.str("entryAt"), "2025-10-01T09:41:00-05:00")
+	wantStr(t, "trading day", r.str("tradingDay"), "2025-10-02")
+	in["exitAt"] = "Thu 1 Oct 2025 17:30"
+	r = call(t, "POST", "/trades", in)
+	mustStatus(t, r, 422)
+	wantStr(t, "weekday", r.fields()["exitAt"], "That weekday does not match the date.")
+}

@@ -56,11 +56,9 @@ export type TradeFormValues = {
   direction: "long" | "short" | "";
   size: string;
   entryPrice: string;
-  entryDate: string;
-  entryTime: string;
+  entryAt: string;
   exitPrice: string;
-  exitDate: string;
-  exitTime: string;
+  exitAt: string;
   dollarsPerPoint: string;
   cost: string;
   stopPrice: string;

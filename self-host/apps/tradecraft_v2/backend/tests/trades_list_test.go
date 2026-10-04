@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"fmt"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 )
@@ -107,4 +109,42 @@ func TestListShowsArchivedAccountsTrades(t *testing.T) {
 	id := exitTrade(t, a, "2025-10-01T09:00:00", "2025-10-01T09:30:00").str("id")
 	mustStatus(t, call(t, "POST", "/accounts/"+a+"/archive", nil), 200)
 	sameIDs(t, "archived account", ids(call(t, "GET", "/trades", nil)), id)
+}
+
+func TestListPaging(t *testing.T) {
+	reset(t)
+	a := account(t, "A", "USD", "")
+	var want []string // newest first
+	for d := 1; d <= 5; d++ {
+		id := exitTrade(t, a, fmt.Sprintf("2025-10-0%dT09:00:00", d), fmt.Sprintf("2025-10-0%dT09:30:00", d)).str("id")
+		want = append([]string{id}, want...)
+	}
+	page := func(q string) resp {
+		r := call(t, "GET", "/trades?"+q, nil)
+		mustStatus(t, r, 200)
+		return r
+	}
+	first := page("limit=2")
+	sameIDs(t, "page 1", ids(first), want[0:2]...)
+	wantStr(t, "total", header(t, "limit=2"), "5")
+	sameIDs(t, "page 2", ids(page("limit=2&offset=2")), want[2:4]...)
+	sameIDs(t, "page 3", ids(page("limit=2&offset=4")), want[4:5]...)
+	sameIDs(t, "past the end", ids(page("limit=2&offset=6")))
+	sameIDs(t, "no limit is everything", ids(page("")), want...)
+	// the total follows the filters
+	wantStr(t, "filtered total", header(t, "limit=1&from=2025-10-04"), "2")
+	for _, bad := range []string{"limit=0", "limit=1001", "limit=x", "offset=-1"} {
+		mustStatus(t, call(t, "GET", "/trades?"+bad, nil), 422)
+	}
+}
+
+// header returns X-Total-Count of a list request.
+func header(t *testing.T, query string) string {
+	t.Helper()
+	req := httptest.NewRequest("GET", "/trades?"+query, nil)
+	res, err := app.Test(req, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res.Header.Get("X-Total-Count")
 }

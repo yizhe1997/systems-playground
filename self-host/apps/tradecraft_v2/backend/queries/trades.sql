@@ -4,7 +4,15 @@ SELECT * FROM trade_detail
    AND (sqlc.narg(account_id)::uuid IS NULL OR account_id = sqlc.narg(account_id)::uuid)
    AND (sqlc.narg(from_day)::date IS NULL OR trading_day >= sqlc.narg(from_day)::date)
    AND (sqlc.narg(to_day)::date IS NULL OR trading_day <= sqlc.narg(to_day)::date)
- ORDER BY exit_at DESC, id DESC;
+ ORDER BY exit_at DESC, id DESC
+ LIMIT NULLIF(sqlc.arg(page_size)::int, 0) OFFSET sqlc.arg(page_offset)::int;
+
+-- name: CountTrades :one
+SELECT count(*)::bigint FROM trade_detail
+ WHERE deleted = sqlc.arg(deleted)::boolean
+   AND (sqlc.narg(account_id)::uuid IS NULL OR account_id = sqlc.narg(account_id)::uuid)
+   AND (sqlc.narg(from_day)::date IS NULL OR trading_day >= sqlc.narg(from_day)::date)
+   AND (sqlc.narg(to_day)::date IS NULL OR trading_day <= sqlc.narg(to_day)::date);
 
 -- name: GetTrade :one
 SELECT * FROM trade_detail WHERE id = sqlc.arg(id)::uuid;

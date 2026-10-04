@@ -5,7 +5,7 @@ import { uniq } from "./helpers";
 // SC-008, measured in the browser: with 5,000 trades across 10 accounts, opening the trades list, changing a filter and
 // saving a trade each take under one second. The 5,000 trades are spread over twelve months of 2025, so the list the
 // owner opens (one month, as the page does by default) holds about 420 of them.
-// The whole journal at once, unfiltered, is measured separately: it is the worst case and is reported, not promised.
+// The whole journal, unfiltered, is measured too. Lists are paged at 200 trades (added at the visual review).
 
 const accounts: { id: string; name: string }[] = [];
 
@@ -38,11 +38,9 @@ async function saveATrade(page: Page) {
   await page.getByText("Long", { exact: true }).click();
   await page.getByLabel("Size", { exact: true }).fill("1");
   await page.getByLabel("Entry price").fill("100");
-  await page.getByLabel("Entry date").fill("2025-06-15");
-  await page.getByLabel(/Entry time of day/).fill("09:00");
+  await page.getByLabel(/Entry time \(/).fill("2025-06-15 09:00");
   await page.getByLabel("Exit price").fill("101");
-  await page.getByLabel("Exit date").fill("2025-06-15");
-  await page.getByLabel(/Exit time of day/).fill("09:30");
+  await page.getByLabel(/Exit time \(/).fill("2025-06-15 09:30");
   await page.getByLabel(/Dollars per point/).fill("10");
   return timed(async () => {
     await page.getByRole("button", { name: "Save trade" }).click();
@@ -57,6 +55,7 @@ test("5,000 trades: open a month, change a filter, save a trade, each under one 
     await expect(page.locator("tbody tr").first()).toBeVisible();
   });
   const rows = await page.locator("tbody tr").count();
+  await expect(page.getByText(/Showing 1 to 200 of 4\d\d/)).toBeVisible(); // a month of the seeded data, in pages of 200
 
   const filter = await timed(async () => {
     await page.getByLabel("Account", { exact: true }).selectOption({ value: accounts[3].id });
@@ -65,19 +64,23 @@ test("5,000 trades: open a month, change a filter, save a trade, each under one 
   const save = await saveATrade(page);
 
   console.log(`SC-008: open a month of ${rows} trades ${open} ms, change a filter ${filter} ms, save a trade ${save} ms`);
-  expect.soft(rows, "a month of the seeded data").toBeGreaterThan(300);
+  expect.soft(rows, "the first page").toBe(200);
   expect.soft(open, "open the list").toBeLessThan(1000);
   expect.soft(filter, "change a filter").toBeLessThan(1000);
   expect.soft(save, "save a trade").toBeLessThan(1000);
 });
 
-test("worst case: the whole journal of 5,000 trades on one screen (reported, not promised)", async ({ page }) => {
+test("the whole journal of 5,000 trades, unfiltered, opens its first page and pages through it in under a second", async ({ page }) => {
   const open = await timed(async () => {
     await page.goto("/trades?from=&to=");
     await expect(page.locator("tbody tr").first()).toBeVisible();
   });
-  const rows = await page.locator("tbody tr").count();
-  console.log(`SC-008 worst case: the whole list of ${rows} trades opens in ${open} ms (target for a month: under 1000 ms)`);
-  expect(rows).toBeGreaterThanOrEqual(5000);
-  expect(open, "a regression guard, not the SC-008 target").toBeLessThan(8000);
+  await expect(page.getByText(/Showing 1 to 200 of [\d,]{5,}/)).toBeVisible();
+  const older = await timed(async () => {
+    await page.getByRole("link", { name: "Older" }).click();
+    await expect(page.getByText(/Showing 201 to 400 of/)).toBeVisible();
+  });
+  console.log(`SC-008 whole journal: first page ${open} ms, next page ${older} ms`);
+  expect.soft(open, "open the whole list").toBeLessThan(1000);
+  expect.soft(older, "next page").toBeLessThan(1000);
 });
