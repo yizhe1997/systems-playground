@@ -143,7 +143,7 @@ table.table { width: 100%; border-collapse: collapse; }
 .preview-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-md); padding: 12px 0; border-top: 1px solid var(--border); }
 .preview-row:first-of-type { border-top: 0; }
 .preview-row .name { color: var(--text-2); }
-.preview-row .value { font-weight: 600; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; text-align: right; }
+.preview-row .value { white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; text-align: right; }
 .preview-row .value .reason { text-align: right; }
 .preview-row.big .value { font-size: 16px; }
 

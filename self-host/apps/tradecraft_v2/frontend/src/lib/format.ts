@@ -4,9 +4,24 @@
 type Decimalish = number; // Intl.NumberFormat accepts exact decimal strings; its typings only say number
 const asNum = (s: string) => s as unknown as Decimalish;
 
+// Building an Intl formatter is the slow part; a list of thousands of rows reuses a handful of them.
+const formatters = new Map<string, Intl.NumberFormat | Intl.DateTimeFormat>();
+function numberFormat(options: Intl.NumberFormatOptions): Intl.NumberFormat {
+  const key = "n" + JSON.stringify(options);
+  let f = formatters.get(key) as Intl.NumberFormat | undefined;
+  if (!f) formatters.set(key, (f = new Intl.NumberFormat("en-US", options)));
+  return f;
+}
+function dateFormat(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = "d" + locale + JSON.stringify(options);
+  let f = formatters.get(key) as Intl.DateTimeFormat | undefined;
+  if (!f) formatters.set(key, (f = new Intl.DateTimeFormat(locale, options)));
+  return f;
+}
+
 /** -$125.00, +$100.00 (signed), or a plain number with two decimals when there is no currency yet. */
 export function money(value: string, currency: string | null, signed = false): string {
-  return new Intl.NumberFormat("en-US", {
+  return numberFormat({
     style: currency ? "currency" : "decimal",
     currency: currency ?? undefined,
     minimumFractionDigits: currency ? undefined : 2,
@@ -18,14 +33,14 @@ export function money(value: string, currency: string | null, signed = false): s
 /** +0.24 R, -0.50 R: two decimals, display only. */
 export function rValue(value: string): string {
   return (
-    new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: "always" }).format(asNum(value)) +
+    numberFormat({ minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: "always" }).format(asNum(value)) +
     " R"
   );
 }
 
 /** Size shown as stored, without trailing zeros. */
 export function plain(value: string): string {
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 8, useGrouping: false }).format(asNum(value));
+  return numberFormat({ maximumFractionDigits: 8, useGrouping: false }).format(asNum(value));
 }
 
 export function profitClass(value: string | null): string {
@@ -36,7 +51,7 @@ export function profitClass(value: string | null): string {
 
 function parts(date: Date, zone: string, opts: Intl.DateTimeFormatOptions) {
   const out: Record<string, string> = {};
-  for (const p of new Intl.DateTimeFormat("en-GB", { timeZone: zone, hourCycle: "h23", ...opts }).formatToParts(date)) out[p.type] = p.value;
+  for (const p of dateFormat("en-US", { timeZone: zone, hourCycle: "h23", ...opts }).formatToParts(date)) out[p.type] = p.value;
   return out;
 }
 

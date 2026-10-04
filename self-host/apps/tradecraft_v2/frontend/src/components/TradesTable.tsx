@@ -1,7 +1,6 @@
-import Link from "next/link";
 import type { Trade } from "@/lib/types";
 import { dateTime, dayLabel, money, plain, profitClass, rValue } from "@/lib/format";
-import { DeleteButton, RestoreButton } from "@/components/TradeRowActions";
+import { RowActions } from "@/components/TradeRowActions";
 
 function ResultCell({ t }: { t: Trade }) {
   if (t.netResult === null) return <>—</>;
@@ -25,6 +24,7 @@ function RCell({ t }: { t: Trade }) {
 
 export function TradesTable({ trades, zone, deletedView }: { trades: Trade[]; zone: string; deletedView: boolean }) {
   return (
+    <RowActions>
     <div className="card card-flush">
       <div className="table-wrap">
         <table className="table">
@@ -59,11 +59,12 @@ export function TradesTable({ trades, zone, deletedView }: { trades: Trade[]; zo
                   <td className="num tall"><RCell t={t} /></td>
                   <td className="actions">
                     {deletedView ? (
-                      <RestoreButton id={t.id} label={label} />
+                      <button type="button" className="btn" data-restore={t.id} aria-label={`Restore ${label}`}>Restore</button>
                     ) : (
                       <>
-                        <Link className="btn-quiet" href={`/trades/${t.id}/edit`} aria-label={`Edit ${label}`}>Edit</Link>
-                        <DeleteButton id={t.id} label={label} />
+                        {/* a plain link: thousands of prefetching Link components would slow the list down */}
+                        <a className="btn-quiet" href={`/trades/${t.id}/edit`} aria-label={`Edit ${label}`}>Edit</a>
+                        <button type="button" className="btn-quiet" data-delete={t.id} aria-label={`Delete ${label}`}>Delete</button>
                       </>
                     )}
                   </td>
@@ -75,5 +76,6 @@ export function TradesTable({ trades, zone, deletedView }: { trades: Trade[]; zo
       </div>
       <p className="helper table-foot">Each result is in its own account&apos;s currency. This list has no totals.</p>
     </div>
+    </RowActions>
   );
 }

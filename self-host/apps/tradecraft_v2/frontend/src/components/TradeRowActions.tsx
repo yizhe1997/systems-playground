@@ -33,26 +33,28 @@ export function useTradeActions() {
   return { busy, failure, remove, restore };
 }
 
-export function DeleteButton({ id, label }: { id: string; label: string }) {
-  const { busy, failure, remove } = useTradeActions();
+/**
+ * One handler for every Delete and Restore button of the table. The buttons are plain server-rendered HTML
+ * (data-delete / data-restore), so a list of thousands of trades hydrates one component, not thousands.
+ */
+export function RowActions({ children }: { children: React.ReactNode }) {
+  const { busy, failure, remove, restore } = useTradeActions();
   return (
-    <>
-      <button type="button" className="btn-quiet" disabled={busy} onClick={() => remove(id)} aria-label={`Delete ${label}`}>
-        Delete
-      </button>
-      {failure && <span className="reason" role="alert">! {failure}</span>}
-    </>
-  );
-}
-
-export function RestoreButton({ id, label }: { id: string; label: string }) {
-  const { busy, failure, restore } = useTradeActions();
-  return (
-    <>
-      <button type="button" className="btn" disabled={busy} onClick={() => restore(id)} aria-label={`Restore ${label}`}>
-        Restore
-      </button>
-      {failure && <span className="reason" role="alert">! {failure}</span>}
-    </>
+    <div
+      onClick={(e) => {
+        if (busy) return;
+        const el = (e.target as Element).closest<HTMLElement>("[data-delete],[data-restore]");
+        if (!el) return;
+        if (el.dataset.delete) void remove(el.dataset.delete);
+        else if (el.dataset.restore) void restore(el.dataset.restore);
+      }}
+    >
+      {failure && (
+        <div className="banner" role="alert">
+          <span className="banner-title">! {failure}</span>
+        </div>
+      )}
+      {children}
+    </div>
   );
 }

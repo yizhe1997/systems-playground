@@ -15,6 +15,9 @@ if [ "$status" -eq 0 ]; then
   "${compose[@]}" up --build -d --wait || status=$?
   if [ "$status" -eq 0 ]; then
     (cd frontend && E2E_BASE_URL=http://127.0.0.1:13100 E2E_API_URL=http://127.0.0.1:18081 npx playwright test) || status=$?
+    # SC-009 (loopback only, no secret in the repository or a log) and SC-010 (data survives a stop and start)
+    bash scripts/check-loopback.sh tradecraft-v2-test || status=$?
+    bash scripts/check-persistence.sh tradecraft-v2-test http://127.0.0.1:18081 || status=$?
   fi
 fi
 "${compose[@]}" down -v >/dev/null 2>&1
