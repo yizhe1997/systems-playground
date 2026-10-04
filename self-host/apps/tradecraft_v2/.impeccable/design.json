@@ -1,0 +1,414 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-04T03:47:17.138787+00:00",
+  "title": "Design System: Tradecraft",
+  "extensions": {
+    "colorMeta": {
+      "parchment": {
+        "role": "neutral",
+        "displayName": "Parchment",
+        "canonical": "#fffcfc",
+        "tonalRamp": [
+          "#4c0000",
+          "#870000",
+          "#c10000",
+          "#fb0000",
+          "#ff3737",
+          "#ff7171",
+          "#ffabab",
+          "#ffe5e5"
+        ]
+      },
+      "bone-mist": {
+        "role": "neutral",
+        "displayName": "Bone Mist",
+        "canonical": "#ecedf2",
+        "tonalRamp": [
+          "#1f212d",
+          "#373b50",
+          "#4e5473",
+          "#666e95",
+          "#888eae",
+          "#abafc5",
+          "#cdd0dd",
+          "#f0f1f5"
+        ]
+      },
+      "card-white": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#262626",
+          "#434343",
+          "#616161",
+          "#7e7e7e",
+          "#9b9b9b",
+          "#b8b8b8",
+          "#d5d5d5",
+          "#f2f2f2"
+        ]
+      },
+      "fog-border": {
+        "role": "neutral",
+        "displayName": "Fog Border",
+        "canonical": "#dbd7da",
+        "tonalRamp": [
+          "#282427",
+          "#474045",
+          "#665b63",
+          "#847781",
+          "#a0969d",
+          "#bcb4ba",
+          "#d7d3d6",
+          "#f3f2f3"
+        ]
+      },
+      "ink-violet": {
+        "role": "neutral",
+        "displayName": "Ink Violet",
+        "canonical": "#01011b",
+        "tonalRamp": [
+          "#03034a",
+          "#050582",
+          "#0707ba",
+          "#0909f2",
+          "#3e3ef8",
+          "#7676fa",
+          "#aeaefc",
+          "#e6e6fe"
+        ]
+      },
+      "storm-mauve": {
+        "role": "neutral",
+        "displayName": "Storm Mauve",
+        "canonical": "#43394c",
+        "tonalRamp": [
+          "#27212c",
+          "#443a4d",
+          "#61536e",
+          "#7f6c90",
+          "#9c8da9",
+          "#b8aec2",
+          "#d5cfdb",
+          "#f2f0f4"
+        ]
+      },
+      "plum-ash": {
+        "role": "neutral",
+        "displayName": "Plum Ash",
+        "canonical": "#6b6472",
+        "tonalRamp": [
+          "#262429",
+          "#433f48",
+          "#615a67",
+          "#7e7586",
+          "#9b94a1",
+          "#b8b3bd",
+          "#d5d2d8",
+          "#f2f1f3"
+        ]
+      },
+      "plum-charcoal": {
+        "role": "neutral",
+        "displayName": "Plum Charcoal",
+        "canonical": "#31263b",
+        "tonalRamp": [
+          "#271e2f",
+          "#443552",
+          "#624c75",
+          "#7f6299",
+          "#9c85b1",
+          "#b9a9c7",
+          "#d6ccde",
+          "#f2eff5"
+        ]
+      },
+      "twilight-plum": {
+        "role": "primary",
+        "displayName": "Twilight Plum",
+        "canonical": "#473982",
+        "tonalRamp": [
+          "#1d1735",
+          "#33295e",
+          "#493b86",
+          "#5f4daf",
+          "#8374c2",
+          "#a79cd4",
+          "#cbc5e5",
+          "#efedf7"
+        ]
+      },
+      "profit-green": {
+        "role": "semantic",
+        "displayName": "Profit Green",
+        "canonical": "#187a47",
+        "tonalRamp": [
+          "#0d4025",
+          "#167142",
+          "#20a15e",
+          "#29d27a",
+          "#58de98",
+          "#88e8b6",
+          "#b9f1d4",
+          "#eafbf2"
+        ]
+      },
+      "loss-red": {
+        "role": "semantic",
+        "displayName": "Loss Red",
+        "canonical": "#b3261e",
+        "tonalRamp": [
+          "#420e0b",
+          "#731913",
+          "#a5231c",
+          "#d72e24",
+          "#e25b53",
+          "#eb8b85",
+          "#f3bab7",
+          "#fbeae9"
+        ]
+      },
+      "night-canvas": {
+        "role": "neutral",
+        "displayName": "Night Canvas",
+        "canonical": "#100f19",
+        "tonalRamp": [
+          "#1f1d30",
+          "#363354",
+          "#4d4879",
+          "#655e9d",
+          "#8782b4",
+          "#aaa6ca",
+          "#cdcbe0",
+          "#f0eff5"
+        ]
+      },
+      "night-card": {
+        "role": "neutral",
+        "displayName": "Night Card",
+        "canonical": "#1c1a2b",
+        "tonalRamp": [
+          "#1f1d30",
+          "#373354",
+          "#4e4978",
+          "#665f9d",
+          "#8882b4",
+          "#aba6c9",
+          "#cdcbdf",
+          "#f0eff5"
+        ]
+      },
+      "night-ink": {
+        "role": "neutral",
+        "displayName": "Night Ink",
+        "canonical": "#f2f0fa",
+        "tonalRamp": [
+          "#1b1339",
+          "#2f2265",
+          "#443091",
+          "#583fbd",
+          "#7d69cd",
+          "#a394db",
+          "#c9c0ea",
+          "#eeecf9"
+        ]
+      },
+      "amethyst": {
+        "role": "primary",
+        "displayName": "Amethyst",
+        "canonical": "#9e91d6",
+        "tonalRamp": [
+          "#1b1538",
+          "#302562",
+          "#45348d",
+          "#5a44b7",
+          "#7e6dc9",
+          "#a498d8",
+          "#c9c2e8",
+          "#efecf8"
+        ]
+      },
+      "profit-green-night": {
+        "role": "semantic",
+        "displayName": "Profit Green (night)",
+        "canonical": "#5fd08f",
+        "tonalRamp": [
+          "#113b23",
+          "#1f683e",
+          "#2c9559",
+          "#39c273",
+          "#64d293",
+          "#91dfb2",
+          "#beecd2",
+          "#ebf9f1"
+        ]
+      },
+      "loss-red-night": {
+        "role": "semantic",
+        "displayName": "Loss Red (night)",
+        "canonical": "#ff7b72",
+        "tonalRamp": [
+          "#4c0500",
+          "#870900",
+          "#c10c00",
+          "#fb1000",
+          "#ff4337",
+          "#ff7a71",
+          "#ffb1ab",
+          "#ffe7e5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "Page title only; nothing in the app is larger."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All readable text at 14px."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, column headers, tags."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Money, sizes and R, tabular numerals."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-light",
+        "value": "0 0 0 1px rgba(71,57,130,0.06), 0 14px 40px -18px rgba(49,38,59,0.28)",
+        "purpose": "Lifts cards in light mode only; night mode uses tone, not shadow."
+      },
+      {
+        "name": "focus-halo",
+        "value": "0 0 0 3px rgba(71,57,130,0.15)",
+        "purpose": "Focus ring on controls."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "State changes, 120 to 160 ms. No decorative motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "1100px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main action on a screen: outlined, never filled.",
+      "html": "<button class=\"ds-btn\">Log a trade</button>",
+      "css": ".ds-btn{height:36px;padding:0 16px;border-radius:3px;border:1px solid #31263b;background:transparent;color:#01011b;font:500 14px 'IBM Plex Sans',system-ui,sans-serif;cursor:pointer}.ds-btn:hover{border-width:2px;padding:0 15px}.ds-btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(71,57,130,.15)}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quiet actions beside a primary: text only.",
+      "html": "<button class=\"ds-btn2\">Export</button>",
+      "css": ".ds-btn2{height:36px;padding:0 12px;border:0;background:transparent;color:#01011b;font:500 14px 'IBM Plex Sans',system-ui,sans-serif;cursor:pointer;border-radius:3px}.ds-btn2:hover{text-decoration:underline}.ds-btn2:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(71,57,130,.15)}"
+    },
+    {
+      "name": "Selected Choice",
+      "kind": "chip",
+      "refersTo": "segment-selected",
+      "description": "The one filled control: a selected option such as Long.",
+      "html": "<span class=\"ds-seg ds-on\">Long</span> <span class=\"ds-seg\">Short</span>",
+      "css": ".ds-seg{display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:3px;border:1px solid #31263b;color:#01011b;font:500 14px 'IBM Plex Sans',system-ui,sans-serif}.ds-on{background:#01011b;color:#fffcfc}"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "36px field with a hairline border and a plum focus halo.",
+      "html": "<label class=\"ds-lab\">Instrument</label><input class=\"ds-in\" value=\"NQ\">",
+      "css": ".ds-lab{display:block;font:500 12px 'IBM Plex Sans',sans-serif;color:#43394c;margin-bottom:5px}.ds-in{height:36px;width:220px;padding:0 12px;border:1px solid #dbd7da;border-radius:6px;background:#fff;color:#01011b;font:400 14px 'IBM Plex Sans',sans-serif}.ds-in:focus{outline:none;border-color:#473982;box-shadow:0 0 0 3px rgba(71,57,130,.15)}"
+    },
+    {
+      "name": "Tag",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "Pill, no fill, hairline border.",
+      "html": "<span class=\"ds-tag\">Draft</span>",
+      "css": ".ds-tag{display:inline-block;padding:2px 10px;border:1px solid #dbd7da;border-radius:9999px;color:#43394c;font:500 12px 'IBM Plex Sans',sans-serif}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Card White on parchment with the soft violet shadow (light mode only).",
+      "html": "<div class=\"ds-card\"><b>Result preview</b><p class=\"ds-net\">+$95.40</p><span class=\"ds-help\">net result</span></div>",
+      "css": ".ds-card{background:#fff;border:1px solid #dbd7da;border-radius:6px;padding:18px;width:260px;font:400 14px 'IBM Plex Sans',sans-serif;color:#01011b;box-shadow:0 0 0 1px rgba(71,57,130,.06),0 14px 40px -18px rgba(49,38,59,.28)}.ds-net{margin:8px 0 2px;font-weight:600;font-size:20px;color:#187a47;font-feature-settings:'tnum' 1}.ds-help{color:#6b6472;font-size:12px}"
+    },
+    {
+      "name": "Net Result Figure",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "A signed figure: tint on the text only, sign always present, reason beneath a dash.",
+      "html": "<div class=\"ds-fig\"><span class=\"ds-pos\">+$410.00</span> <span class=\"ds-neg\">-$240.00</span> <span class=\"ds-dash\">&mdash;</span><small>no stop recorded</small></div>",
+      "css": ".ds-fig{font:600 14px 'IBM Plex Sans',sans-serif;font-feature-settings:'tnum' 1}.ds-pos{color:#187a47}.ds-neg{color:#b3261e}.ds-dash{color:#6b6472}.ds-fig small{display:block;font-weight:400;font-size:12px;color:#6b6472}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lab Notebook",
+    "overview": "A calm notebook where you check your own work: warm parchment, violet-black ink, thin rules, small soft shadows. The loudest thing on the page is what you wrote and judged, never the profit figure. Comfortable density, light primary, night matching.",
+    "keyCharacteristics": [
+      "Warm near-white paper, never pure white or black.",
+      "One ink and one quiet accent.",
+      "Outlined primary buttons; filled only for a selected choice.",
+      "Profit and loss tinted on the figure alone, always with a sign."
+    ],
+    "rules": [
+      {
+        "name": "The Quiet Outcome Rule",
+        "body": "Profit and loss colour only on the text of a net-result figure; never rows, borders, icons or R.",
+        "section": "colors"
+      },
+      {
+        "name": "The Words Before Colour Rule",
+        "body": "Every signed figure keeps its sign or a word; colour is only a hint.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Ink Rule",
+        "body": "One text family, one accent, never a button fill.",
+        "section": "colors"
+      },
+      {
+        "name": "The Contrast Floor Rule",
+        "body": "All text at least 4.5:1 in both modes; the reference grey #89828d fails, so Plum Ash is used.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Display Rule",
+        "body": "No hero or display type; the title at 24px is the largest.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do keep the primary button outlined with a 1px Plum Charcoal border and 3px radius.",
+      "Do tint a net-result figure and keep its sign.",
+      "Do write errors and dash reasons in words.",
+      "Do use tabular figures for money, size and R."
+    ],
+    "donts": [
+      "Don't fill a button with the accent.",
+      "Don't colour rows, borders, icons or R.",
+      "Don't use radii above 6px or any gradient.",
+      "Don't add display or serif type."
+    ]
+  }
+}
