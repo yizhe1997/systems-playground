@@ -16,8 +16,8 @@
 /* ---------- directions x modes ---------- */
 [data-dir="dovetail"][data-mode="dark"]{--bg:#0a0a0a;--surface:#141414;--card:#1e1e1e;--raised:#262626;--border:#313131;--border2:#454545;--text:#fff;--text2:#a7a7a7;--text3:#7c7c7c;--accent:#6798ff;--btn-p-bg:#fff;--btn-p-fg:#0a0a0a;--btn-p-bd:#fff;--btn-s-bg:transparent;--btn-s-fg:#fff;--btn-s-bd:#454545;--r-btn:8px;--r-card:8px;--r-in:8px;--r-tag:4px;--ui:"Inter",system-ui,sans-serif;--lab:var(--mono);--lab-track:.06em;--lab-up:uppercase}
 [data-dir="dovetail"][data-mode="light"]{--bg:#f6f6f6;--surface:#efefef;--card:#fff;--raised:#f2f2f2;--border:#e2e2e2;--border2:#c9c9c9;--text:#0a0a0a;--text2:#5c5c5c;--text3:#8a8a8a;--accent:#2f5fd0;--btn-p-bg:#0a0a0a;--btn-p-fg:#fff;--btn-p-bd:#0a0a0a;--btn-s-bg:transparent;--btn-s-fg:#0a0a0a;--btn-s-bd:#c9c9c9;--r-btn:8px;--r-card:8px;--r-in:8px;--r-tag:4px;--ui:"Inter",system-ui,sans-serif;--lab:var(--mono);--lab-track:.06em;--lab-up:uppercase}
-[data-dir="hex"][data-mode="light"]{--bg:#fffcfc;--surface:#ecedf2;--card:#fff;--raised:#f6f5f8;--border:#dbd7da;--border2:#31263b;--text:#01011b;--text2:#43394c;--text3:#89828d;--accent:#473982;--btn-p-bg:#fff;--btn-p-fg:#01011b;--btn-p-bd:#31263b;--btn-s-bg:transparent;--btn-s-fg:#01011b;--btn-s-bd:transparent;--r-btn:3px;--r-card:6px;--r-in:6px;--r-tag:9999px;--ui:"IBM Plex Sans",system-ui,sans-serif;--lab:var(--ui);--lab-track:.04em;--lab-up:none}
-[data-dir="hex"][data-mode="dark"]{--bg:#100f19;--surface:#171525;--card:#1c1a2b;--raised:#252238;--border:#2f2b45;--border2:#d9d4ee;--text:#f2f0fa;--text2:#b3abc8;--text3:#82799a;--accent:#9e91d6;--btn-p-bg:transparent;--btn-p-fg:#f2f0fa;--btn-p-bd:#d9d4ee;--btn-s-bg:transparent;--btn-s-fg:#f2f0fa;--btn-s-bd:transparent;--r-btn:3px;--r-card:6px;--r-in:6px;--r-tag:9999px;--ui:"IBM Plex Sans",system-ui,sans-serif;--lab:var(--ui);--lab-track:.04em;--lab-up:none}
+[data-dir="hex"][data-mode="light"]{--bg:#fffcfc;--surface:#ecedf2;--card:#fff;--raised:#f6f5f8;--border:#dbd7da;--border2:#31263b;--text:#01011b;--text2:#43394c;--text3:#6b6472;--pos:#187a47;--neg:#b3261e;--accent:#473982;--btn-p-bg:#fff;--btn-p-fg:#01011b;--btn-p-bd:#31263b;--btn-s-bg:transparent;--btn-s-fg:#01011b;--btn-s-bd:transparent;--r-btn:3px;--r-card:6px;--r-in:6px;--r-tag:9999px;--ui:"IBM Plex Sans",system-ui,sans-serif;--lab:var(--ui);--lab-track:.04em;--lab-up:none}
+[data-dir="hex"][data-mode="dark"]{--bg:#100f19;--surface:#171525;--card:#1c1a2b;--raised:#252238;--border:#2f2b45;--border2:#d9d4ee;--text:#f2f0fa;--text2:#b3abc8;--text3:#9a92b0;--pos:#5fd08f;--neg:#ff7b72;--accent:#9e91d6;--btn-p-bg:transparent;--btn-p-fg:#f2f0fa;--btn-p-bd:#d9d4ee;--btn-s-bg:transparent;--btn-s-fg:#f2f0fa;--btn-s-bd:transparent;--r-btn:3px;--r-card:6px;--r-in:6px;--r-tag:9999px;--ui:"IBM Plex Sans",system-ui,sans-serif;--lab:var(--ui);--lab-track:.04em;--lab-up:none}
 [data-dir="inngest"][data-mode="dark"]{--bg:#0c0a09;--surface:#1c1917;--card:#1c1917;--raised:#292524;--border:#292524;--border2:#44403c;--text:#e5e7eb;--text2:#a8a29e;--text3:#78716c;--accent:#cab16a;--btn-p-bg:#cab16a;--btn-p-fg:#0c0a09;--btn-p-bd:#cab16a;--btn-s-bg:transparent;--btn-s-fg:#e5e7eb;--btn-s-bd:#44403c;--r-btn:9999px;--r-card:12px;--r-in:10px;--r-tag:9999px;--ui:"Inter",system-ui,sans-serif;--lab:var(--ui);--lab-track:.05em;--lab-up:uppercase}
 [data-dir="inngest"][data-mode="light"]{--bg:#faf9f7;--surface:#f3f1ee;--card:#fff;--raised:#f5f3f0;--border:#e7e3de;--border2:#cfc9c2;--text:#1c1917;--text2:#57534e;--text3:#8a847e;--accent:#8f7424;--btn-p-bg:#cab16a;--btn-p-fg:#1c1917;--btn-p-bd:#cab16a;--btn-s-bg:transparent;--btn-s-fg:#1c1917;--btn-s-bd:#cfc9c2;--r-btn:9999px;--r-card:12px;--r-in:10px;--r-tag:9999px;--ui:"Inter",system-ui,sans-serif;--lab:var(--ui);--lab-track:.05em;--lab-up:uppercase}
 
@@ -50,6 +50,8 @@ label.f{display:block;color:var(--text2);font:500 var(--fs-sm) var(--ui);margin-
 .btn{height:var(--field);padding:0 16px;border-radius:var(--r-btn);font:500 var(--fs)/1 var(--ui);cursor:pointer;display:inline-flex;align-items:center;border:1px solid var(--btn-s-bd);background:var(--btn-s-bg);color:var(--btn-s-fg)}
 .btn.p{background:var(--btn-p-bg);color:var(--btn-p-fg);border-color:var(--btn-p-bd)}
 [data-dir="hex"] .btn.p{border-width:1px}
+[data-dir="hex"] .seg .btn.p{background:var(--text);color:var(--bg);border-color:var(--text)}
+[data-dir="hex"] .seg .btn.s{border-color:var(--border2)}
 [data-dir="hex"] .btn.s:hover{text-decoration:underline}
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-card)}
 .tablecard{overflow-x:auto}
@@ -61,6 +63,7 @@ th{font:500 var(--fs-sm) var(--lab);text-transform:var(--lab-up);letter-spacing:
 td{height:var(--row);padding:0 var(--pad);border-bottom:1px solid var(--border);white-space:nowrap}
 tr:last-child td{border-bottom:0}
 tr:hover td{background:var(--raised)}
+.pos{color:var(--pos,inherit)}.neg{color:var(--neg,inherit)}
 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .b{font-weight:600}
 .mute{color:var(--text2)}
@@ -81,15 +84,15 @@ tr:hover td{background:var(--raised)}
 .dlg{width:min(520px,100%);padding:var(--pad);margin:var(--gap) auto;box-shadow:0 20px 60px rgba(0,0,0,.35)}
 </style>
 </head>
-<body data-dir="dovetail" data-mode="dark" data-density="comfortable">
+<body data-dir="hex" data-mode="light" data-density="comfortable">
 <div class="ctl">
   <div class="grp"><b>Direction</b>
-    <button data-k="dir" data-v="dovetail" aria-pressed="true">Dovetail</button>
-    <button data-k="dir" data-v="hex" aria-pressed="false">Hex</button>
+    <button data-k="dir" data-v="dovetail" aria-pressed="false">Dovetail</button>
+    <button data-k="dir" data-v="hex" aria-pressed="true">Hex</button>
     <button data-k="dir" data-v="inngest" aria-pressed="false">Inngest</button></div>
   <div class="grp"><b>Mode</b>
-    <button data-k="mode" data-v="dark" aria-pressed="true">Dark</button>
-    <button data-k="mode" data-v="light" aria-pressed="false">Light</button></div>
+    <button data-k="mode" data-v="dark" aria-pressed="false">Dark</button>
+    <button data-k="mode" data-v="light" aria-pressed="true">Light</button></div>
   <div class="grp"><b>Density</b>
     <button data-k="density" data-v="compact" aria-pressed="false">Compact</button>
     <button data-k="density" data-v="comfortable" aria-pressed="true">Comfortable</button>
@@ -123,12 +126,12 @@ tr:hover td{background:var(--raised)}
       <div class="card tablecard"><table>
         <thead><tr><th>Exit time</th><th>Trading day</th><th>Account</th><th>Instrument</th><th>Direction</th><th class="num">Size</th><th class="num">Net result</th><th class="num">R</th><th></th></tr></thead>
         <tbody>
-        <tr><td>Wed 1 Oct 10:52</td><td>Wed 1 Oct</td><td>Funded 50K</td><td class="b">ES</td><td>Short</td><td class="num">1</td><td class="num b">-$125.00</td><td class="num b">-0.50 R</td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
-        <tr><td>Wed 1 Oct 10:31</td><td>Wed 1 Oct</td><td>Funded 50K</td><td class="b">NQ</td><td>Long</td><td class="num">2</td><td class="num b">-$240.00</td><td><span class="mute">&mdash;</span><span class="why">no stop recorded</span></td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
-        <tr><td>Wed 1 Oct 09:58</td><td>Wed 1 Oct</td><td>Funded 50K</td><td class="b">NQ</td><td>Long</td><td class="num">2</td><td class="num b">+$410.00</td><td class="num b">+1.03 R</td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
-        <tr><td>Tue 30 Sep 17:30</td><td>Wed 1 Oct</td><td>Funded 50K</td><td class="b">NQ</td><td>Long</td><td class="num">1</td><td class="num b">+$55.00</td><td class="num b">+0.28 R</td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
-        <tr><td>Tue 30 Sep 14:20</td><td>Tue 30 Sep</td><td>Funded 50K</td><td class="b">ES</td><td>Long</td><td class="num">1</td><td><span class="num b">-$80.00</span><span class="why">typed in</span></td><td><span class="mute">&mdash;</span><span class="why">no dollars per point</span></td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
-        <tr><td>Tue 30 Sep 11:05</td><td>Tue 30 Sep</td><td>Practice</td><td class="b">NQ</td><td>Short</td><td class="num">1</td><td class="num b">+$130.00</td><td class="num b">+0.65 R</td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
+        <tr><td>Wed 1 Oct 10:52</td><td>Wed 1 Oct</td><td>Funded 50K</td><td class="b">ES</td><td>Short</td><td class="num">1</td><td class="num b neg">-$125.00</td><td class="num b">-0.50 R</td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
+        <tr><td>Wed 1 Oct 10:31</td><td>Wed 1 Oct</td><td>Funded 50K</td><td class="b">NQ</td><td>Long</td><td class="num">2</td><td class="num b neg">-$240.00</td><td><span class="mute">&mdash;</span><span class="why">no stop recorded</span></td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
+        <tr><td>Wed 1 Oct 09:58</td><td>Wed 1 Oct</td><td>Funded 50K</td><td class="b">NQ</td><td>Long</td><td class="num">2</td><td class="num b pos">+$410.00</td><td class="num b">+1.03 R</td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
+        <tr><td>Tue 30 Sep 17:30</td><td>Wed 1 Oct</td><td>Funded 50K</td><td class="b">NQ</td><td>Long</td><td class="num">1</td><td class="num b pos">+$55.00</td><td class="num b">+0.28 R</td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
+        <tr><td>Tue 30 Sep 14:20</td><td>Tue 30 Sep</td><td>Funded 50K</td><td class="b">ES</td><td>Long</td><td class="num">1</td><td><span class="num b neg">-$80.00</span><span class="why">typed in</span></td><td><span class="mute">&mdash;</span><span class="why">no dollars per point</span></td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
+        <tr><td>Tue 30 Sep 11:05</td><td>Tue 30 Sep</td><td>Practice</td><td class="b">NQ</td><td>Short</td><td class="num">1</td><td class="num b pos">+$130.00</td><td class="num b">+0.65 R</td><td><button class="btn s">Edit</button> <button class="btn s">Delete</button></td></tr>
         </tbody></table>
         <div class="foot">Each result is in its own account's currency. This list has no totals.</div>
       </div>
@@ -150,9 +153,9 @@ tr:hover td{background:var(--raised)}
         </div>
         <div class="card pv">
           <div class="b" style="margin-bottom:6px">Result preview</div>
-          <div class="l"><span class="mute">Gross result<span class="why">(21452.50 - 21450.00) x 2 x 20</span></span><span class="num b">+$100.00</span></div>
+          <div class="l"><span class="mute">Gross result<span class="why">(21452.50 - 21450.00) x 2 x 20</span></span><span class="num b pos">+$100.00</span></div>
           <div class="l"><span class="mute">Costs</span><span class="num b">-$4.60</span></div>
-          <div class="l"><span class="mute">Net result</span><span class="num big">+$95.40</span></div>
+          <div class="l"><span class="mute">Net result</span><span class="num big pos">+$95.40</span></div>
           <div class="l"><span class="mute">Risk<span class="why">|21450.00 - 21440.00| x 2 x 20</span></span><span class="num b">$400.00</span></div>
           <div class="l"><span class="mute">R<span class="why">net result over risk</span></span><span class="num b">+0.24 R</span></div>
           <div class="l"><span class="mute">Trading day<span class="why">exit read in Central Time</span></span><span class="num b">Wed 1 Oct 2025</span></div>
