@@ -113,8 +113,8 @@ func TestDayLevelMistakesCountOncePerRecord(t *testing.T) {
 }
 
 type countRow struct {
-	Name           string
-	Account        string
+	Name             string
+	Account          string
 	OnTrades, OnDays int
 }
 

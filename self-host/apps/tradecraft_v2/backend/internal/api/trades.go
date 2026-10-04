@@ -129,13 +129,13 @@ func optionalDecimal(fe *[]fieldError, field, label string, p *string, positive 
 
 // tradeFields is the validated trade, ready for the database.
 type tradeFields struct {
-	accountID                  string
-	instrument, direction      string
+	accountID                   string
+	instrument, direction       string
 	size, entryPrice, exitPrice string
-	entryAt, exitAt            time.Time
-	dollarsPerPoint, stopPrice *string
-	typedResult, thesis        *string
-	cost                       string
+	entryAt, exitAt             time.Time
+	dollarsPerPoint, stopPrice  *string
+	typedResult, thesis         *string
+	cost                        string
 }
 
 // validateTrade checks the typed trade in the order of data-model.md and answers every problem at once,
@@ -354,7 +354,7 @@ func (s *Server) updateTrade(c *fiber.Ctx) error {
 	return c.JSON(t)
 }
 
-func (s *Server) deleteTrade(c *fiber.Ctx) error { return s.setDeleted(c, true) }
+func (s *Server) deleteTrade(c *fiber.Ctx) error  { return s.setDeleted(c, true) }
 func (s *Server) restoreTrade(c *fiber.Ctx) error { return s.setDeleted(c, false) }
 
 func (s *Server) setDeleted(c *fiber.Ctx, del bool) error {

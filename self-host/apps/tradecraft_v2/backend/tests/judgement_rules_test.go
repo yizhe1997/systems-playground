@@ -73,15 +73,15 @@ func TestMistakeRules(t *testing.T) {
 		t.Errorf("starter mistakes: %s", got)
 	}
 	bad := map[string]string{
-		"stop line 0":                  `INSERT INTO mistake (name, stop_line, stop_period) VALUES ('X', 0, 'week')`,
-		"stop line 1000":               `INSERT INTO mistake (name, stop_line, stop_period) VALUES ('X', 1000, 'week')`,
-		"stop line without a period":   `INSERT INTO mistake (name, stop_line) VALUES ('X', 3)`,
-		"period without a stop line":   `INSERT INTO mistake (name, stop_period) VALUES ('X', 'week')`,
-		"unknown period":               `INSERT INTO mistake (name, stop_line, stop_period) VALUES ('X', 3, 'year')`,
-		"empty name":                   `INSERT INTO mistake (name) VALUES ('')`,
-		"name over 60":                 `INSERT INTO mistake (name) VALUES (repeat('a', 61))`,
-		"name with a double space":     `INSERT INTO mistake (name) VALUES ('a  b')`,
-		"name already used, any case":  `INSERT INTO mistake (name) VALUES ('MOVED STOP')`,
+		"stop line 0":                 `INSERT INTO mistake (name, stop_line, stop_period) VALUES ('X', 0, 'week')`,
+		"stop line 1000":              `INSERT INTO mistake (name, stop_line, stop_period) VALUES ('X', 1000, 'week')`,
+		"stop line without a period":  `INSERT INTO mistake (name, stop_line) VALUES ('X', 3)`,
+		"period without a stop line":  `INSERT INTO mistake (name, stop_period) VALUES ('X', 'week')`,
+		"unknown period":              `INSERT INTO mistake (name, stop_line, stop_period) VALUES ('X', 3, 'year')`,
+		"empty name":                  `INSERT INTO mistake (name) VALUES ('')`,
+		"name over 60":                `INSERT INTO mistake (name) VALUES (repeat('a', 61))`,
+		"name with a double space":    `INSERT INTO mistake (name) VALUES ('a  b')`,
+		"name already used, any case": `INSERT INTO mistake (name) VALUES ('MOVED STOP')`,
 	}
 	for name, q := range bad {
 		if _, err := pool.Exec(contextBG(), q); err == nil {
@@ -100,14 +100,14 @@ func TestReviewAndFocusRules(t *testing.T) {
 	reset(t)
 	acct := account(t, "A", "USD", "")
 	bad := map[string]string{
-		"grade 0":              `INSERT INTO daily_review (account_id, trading_day, mental_grade) VALUES ($1, '2025-10-01', 0)`,
-		"grade 6":              `INSERT INTO daily_review (account_id, trading_day, technical_grade) VALUES ($1, '2025-10-01', 6)`,
-		"answer over 2000":     `INSERT INTO daily_review (account_id, trading_day, did_well) VALUES ($1, '2025-10-01', repeat('x', 2001))`,
-		"focus empty":          `INSERT INTO focus (period, period_start, body) VALUES ('week', '2025-09-29', '')`,
-		"focus over 280":       `INSERT INTO focus (period, period_start, body) VALUES ('week', '2025-09-29', repeat('x', 281))`,
-		"week not a Monday":    `INSERT INTO focus (period, period_start, body) VALUES ('week', '2025-10-01', 'x')`,
-		"month not the first":  `INSERT INTO focus (period, period_start, body) VALUES ('month', '2025-10-02', 'x')`,
-		"unknown period":       `INSERT INTO focus (period, period_start, body) VALUES ('year', '2025-01-01', 'x')`,
+		"grade 0":             `INSERT INTO daily_review (account_id, trading_day, mental_grade) VALUES ($1, '2025-10-01', 0)`,
+		"grade 6":             `INSERT INTO daily_review (account_id, trading_day, technical_grade) VALUES ($1, '2025-10-01', 6)`,
+		"answer over 2000":    `INSERT INTO daily_review (account_id, trading_day, did_well) VALUES ($1, '2025-10-01', repeat('x', 2001))`,
+		"focus empty":         `INSERT INTO focus (period, period_start, body) VALUES ('week', '2025-09-29', '')`,
+		"focus over 280":      `INSERT INTO focus (period, period_start, body) VALUES ('week', '2025-09-29', repeat('x', 281))`,
+		"week not a Monday":   `INSERT INTO focus (period, period_start, body) VALUES ('week', '2025-10-01', 'x')`,
+		"month not the first": `INSERT INTO focus (period, period_start, body) VALUES ('month', '2025-10-02', 'x')`,
+		"unknown period":      `INSERT INTO focus (period, period_start, body) VALUES ('year', '2025-01-01', 'x')`,
 	}
 	for name, q := range bad {
 		var err error

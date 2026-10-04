@@ -17,8 +17,8 @@ func TestEditRecomputesEverything(t *testing.T) {
 	a := account(t, "Funded 50K", "USD", "17:00")
 	tr := trade(t, tradeA(a))
 	in := tradeA(a)
-	in["exitPrice"] = "21460.00"               // gross (21460-21450)*2*20 = 400, net 395.4, R 0.9885
-	in["exitAt"] = "2025-10-07T17:30:00"       // lands on the next trading day
+	in["exitPrice"] = "21460.00"         // gross (21460-21450)*2*20 = 400, net 395.4, R 0.9885
+	in["exitAt"] = "2025-10-07T17:30:00" // lands on the next trading day
 	r := put(t, tr, in)
 	mustStatus(t, r, 200)
 	wantNum(t, "gross", r.str("grossResult"), "400")

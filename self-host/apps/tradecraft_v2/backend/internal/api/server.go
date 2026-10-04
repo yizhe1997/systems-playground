@@ -52,6 +52,11 @@ func New(pool *pgxpool.Pool, now func() time.Time) *fiber.App {
 	app.Delete("/trades/:id", s.deleteTrade)
 	app.Post("/trades/:id/restore", s.restoreTrade)
 
+	app.Get("/reviews", s.listReviews)
+	app.Get("/reviews/calendar", s.reviewsCalendar)
+	app.Get("/reviews/day", s.getDailyReview)
+	app.Put("/reviews/day", s.saveDailyReview)
+
 	app.Get("/export", s.export)
 	return app
 }

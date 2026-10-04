@@ -332,12 +332,13 @@ components:
         mistakeIds: { type: array, items: { type: string, format: uuid } }
     DailyReview:
       type: object
-      required: [accountId, accountName, currency, date, isToday, state, answers, stats, trades, dayMistakes, focus, previousDate, nextDate, tradesChangedAfterReview]
+      required: [accountId, accountName, currency, date, today, isToday, state, answers, stats, trades, dayMistakes, focus, previousDate, nextDate, tradesChangedAfterReview]
       properties:
         accountId: { type: string, format: uuid }
         accountName: { type: string }
         currency: { type: string }
         date: { type: string, format: date }
+        today: { type: string, format: date, description: "The account's today (its current trading day); a date after it has not happened yet" }
         isToday: { type: boolean }
         state: { oneOf: [{ $ref: "#/components/schemas/DayState" }, { type: "null" }] }
         answers: { type: object, required: [didWell, couldImprove, nextFocus], properties: { didWell: { type: string }, couldImprove: { type: string }, nextFocus: { type: string } } }

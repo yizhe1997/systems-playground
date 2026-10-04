@@ -59,11 +59,11 @@ func judgeSample(t *testing.T, s sample) {
 }
 
 type dayRow struct {
-	Day                                                    string
-	Trades                                                 int
-	Net                                                    string
-	Followed, Partly, NotFollowed, NotJudged, Tags         int
-	ValidLosses, Losses, Wins                              int
+	Day                                            string
+	Trades                                         int
+	Net                                            string
+	Followed, Partly, NotFollowed, NotJudged, Tags int
+	ValidLosses, Losses, Wins                      int
 }
 
 func dayStats(t *testing.T, acct, from, to string) []dayRow {

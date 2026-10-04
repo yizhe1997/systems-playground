@@ -20,10 +20,60 @@ type Account struct {
 	UpdatedAt       time.Time   `json:"updated_at"`
 }
 
+type DailyReview struct {
+	AccountID      string      `json:"account_id"`
+	TradingDay     time.Time   `json:"trading_day"`
+	DidWell        string      `json:"did_well"`
+	CouldImprove   string      `json:"could_improve"`
+	NextFocus      string      `json:"next_focus"`
+	MentalGrade    pgtype.Int2 `json:"mental_grade"`
+	TechnicalGrade pgtype.Int2 `json:"technical_grade"`
+	ReviewedAt     *time.Time  `json:"reviewed_at"`
+	EditedAt       *time.Time  `json:"edited_at"`
+	CreatedAt      time.Time   `json:"created_at"`
+	UpdatedAt      time.Time   `json:"updated_at"`
+}
+
+type DayMistake struct {
+	AccountID  string    `json:"account_id"`
+	TradingDay time.Time `json:"trading_day"`
+	MistakeID  string    `json:"mistake_id"`
+}
+
+type Focu struct {
+	Period      string    `json:"period"`
+	PeriodStart time.Time `json:"period_start"`
+	Body        string    `json:"body"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 type JournalSetting struct {
 	ID        int16     `json:"id"`
 	TimeZone  string    `json:"time_zone"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type JudgedTrade struct {
+	ID           string     `json:"id"`
+	AccountID    string     `json:"account_id"`
+	TradingDay   *time.Time `json:"trading_day"`
+	NetResult    *string    `json:"net_result"`
+	PlanFollowed *string    `json:"plan_followed"`
+	Label        *string    `json:"label"`
+	IsWin        bool       `json:"is_win"`
+	IsLoss       bool       `json:"is_loss"`
+	MistakeTags  int32      `json:"mistake_tags"`
+}
+
+type Mistake struct {
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	StopLine   pgtype.Int4 `json:"stop_line"`
+	StopPeriod *string     `json:"stop_period"`
+	RetiredAt  *time.Time  `json:"retired_at"`
+	CreatedAt  time.Time   `json:"created_at"`
+	UpdatedAt  time.Time   `json:"updated_at"`
 }
 
 type Trade struct {
@@ -75,4 +125,23 @@ type TradeDetail struct {
 	TradingDay      *time.Time `json:"trading_day"`
 	Deleted         bool       `json:"deleted"`
 	UpdatedAt       time.Time  `json:"updated_at"`
+}
+
+type TradeJudgement struct {
+	TradeID      string    `json:"trade_id"`
+	PlanFollowed *string   `json:"plan_followed"`
+	Label        *string   `json:"label"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+type TradeMistake struct {
+	TradeID   string `json:"trade_id"`
+	MistakeID string `json:"mistake_id"`
+}
+
+type WeeklyReviewMark struct {
+	AccountID  string    `json:"account_id"`
+	WeekStart  time.Time `json:"week_start"`
+	ReviewedAt time.Time `json:"reviewed_at"`
 }
