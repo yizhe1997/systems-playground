@@ -132,7 +132,7 @@ description: "Task list for 000-log-trades (accounts and closed trades)"
 - [X] T059 [P] Accessibility pass on the five screens: keyboard-only use of the form, filters and dialogs, labels and error messages available to screen readers, no meaning carried by colour alone; text contrast at least 4.5:1 in light and night
 - [X] T060 [P] Write the run instructions (start, test, back up the data volume) in `README.md`
 - [X] T061 Run every scenario in `quickstart.md` (A to M and the browser run) on the composed stack and record the results, including any failure, in `specs/000-log-trades/verification.md`
-- [ ] T062 Visual review (`/speckit-screens-review`): compare the built screens with `wireframes/` in a real browser, save screenshots to `specs/000-log-trades/built/`, run the design critique and audit, and record the owner's decision on the look; check both modes, the profit and loss tint on net-result text only, and the filled selected segment
+- [X] T062 Visual review (`/speckit-screens-review`): compare the built screens with `wireframes/` in a real browser, save screenshots to `specs/000-log-trades/built/`, run the design critique and audit, and record the owner's decision on the look; check both modes, the profit and loss tint on net-result text only, and the filled selected segment
 
 ## Dependencies and order
 

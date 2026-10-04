@@ -150,7 +150,7 @@ Left for the sign-off step: the principle I exception (process information besid
 
 ## Visual review
 
-**Status**: findings recorded 2026-10-04. The owner chose "approve, fix 1 and 4 first"; both were fixed the same day (below); approval is recorded once the fixes are accepted.
+**Status**: findings recorded 2026-10-04. The owner chose "approve, fix 1 and 4 first"; both were fixed the same day (below); the owner then approved the look.
 **Built screens**: [built/](built/), 23 states in light and night, named like their wireframes (`-light.png`, `-dark.png`), captured in real Chromium on the composed stack with sample data (`frontend/e2e/zz-screens.spec.ts`). "Could not load" was captured with the API container really stopped; "could not save" and "changed elsewhere" by simulating the failure in the browser.
 **Checks run**: comparison with each wireframe and with the approved Hex skins; axe (WCAG 2 A and AA, including 4.5:1 text contrast) on five screens and their states in both modes, no violations; Impeccable detector on `frontend/src`, no findings; the Impeccable critique, run inline in one context (⚠️ DEGRADED: single-context, because this session does not spawn sub-agents), so its heuristic scoring is lighter than a full run.
 
@@ -175,4 +175,4 @@ Left for the sign-off step: the principle I exception (process information besid
 
 **Parked**: items 2 and 3 stay as built unless the owner says otherwise. `spec.md` still says lists are not paged; changing it makes the sign-off stale.
 
-**Owner's approval of the look**: approved with fixes 1 and 4 (2026-10-04); fixes done, to be seen once more.
+**Owner's approval of the look**: approved by the owner on 2026-10-04, after fixes 1 and 4 were built. The owner has further feel and design changes they are not happy about; those come after feature 001 is specified.
