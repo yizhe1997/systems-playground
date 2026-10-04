@@ -141,6 +141,8 @@ colour). The owner has further feel changes in mind for after this feature; they
 
 ## 14. Defaults the owner may overrule at the plan gate
 
+**Approved by the owner on 2026-10-04: yes to all eight (a to h), including the Plan column on the Trades list.**
+
 a. "Mistakes" figures count **tags**, not the "Mistake" label (section 4).
 b. The plan line also shows trades **not judged yet** when there are any, for example "Plan followed 1 of 3 (1 not followed · 0 partly · 1 not judged yet)". The wireframe omits it; without it the three parts do not add up to the total on a day with an unjudged trade.
 c. Export stays on the existing Export button of the Trades screen (section 10).

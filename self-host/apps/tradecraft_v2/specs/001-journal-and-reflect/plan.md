@@ -119,6 +119,8 @@ reads and writes, then the screens; each user story can be built and checked on 
 
 ## Open items for the plan gate
 
+**Resolved 2026-10-04: the owner said yes to all of them** (the Plan column on the Trades list, the seven other defaults, and the domain interpretations as working assumptions, still flagged unconfirmed in `docs/domain.md`). The list is kept for the record.
+
 1. **The Plan column on the Trades list** (changes a signed-off `000` screen, and its wireframe and `screens.md` in the same change): yes or no.
 2. The seven other defaults in `research.md` section 14 (mistake tags versus label, "not judged yet" in the plan line, export on the existing button, a retired name comes back, Reviews as the home screen, the "Tradecraft" brand, breakeven trades).
 3. The domain interpretations in section 2 (Monday weeks, per-account "today", a week under the month of its Sunday) are guesses to confirm, flagged in `docs/domain.md` when written.
