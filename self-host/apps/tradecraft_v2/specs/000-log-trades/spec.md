@@ -250,16 +250,20 @@ Greyscale wireframes were drawn on 2026-10-03 (and revised on 2026-10-04 after c
 
 ## Signed-off screens
 
-The screens in `screens.md` were signed off by the owner on 2026-10-04. Plan, tasks and implementation
-MUST honour them. Any change to an interface covered here MUST update `screens.md` and its
-Penpot frames in the same change (constitution principle V).
+The screens in `screens.md` were signed off by the owner on 2026-10-04, and signed off again on the same day after the requirements
+checklist review changed the spec. Plan, tasks and implementation MUST honour them. Any change to an interface
+covered here MUST update `screens.md` and its Penpot frames in the same change (constitution principle V).
 
 Written exceptions accepted at sign-off (constitution governance: justification and expiry):
 
 1. **Principle I (process information beside money).** The trades list shows each result with R but no
-   plan-adherence or mistake information, which only exists from feature `001`. Expires when `001` is built; the owner ends it by recording that `001` is accepted.
+   plan-adherence or mistake information, which only exists from feature `001`. Expires when `001` is built;
+   the owner ends it by recording that `001` is accepted.
 2. **Principle IV (security gates).** This feature has no sign-in or audit log. It MUST run only on the
    owner's own computer and MUST NOT be exposed. Expires when the sign-in and audit features are accepted,
    and in any case before any exposure; the owner ends it by accepting those two features.
+
+Accepted gaps at sign-off (the pattern is drawn once): the failure notice and the Undo notice on screens other
+than the trades list, and the "Account archived" Undo notice.
 
 The export file format was chosen at the plan step (JSON, see FR-019).

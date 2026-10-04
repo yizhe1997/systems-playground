@@ -1,10 +1,10 @@
 # Wireframes: Log Trades
 
 **Feature**: `000-log-trades`
-**Status**: signed off 2026-10-04, **stale**: the spec and these screens were revised on 2026-10-04 after the requirements checklist review (trading day column, failure and undo states, concurrency, accessibility, limits). Needs a new sign-off.
+**Status**: signed-off 2026-10-04 (again, after the requirements checklist review). Greyscale wireframes: structure, wording, states and behaviour. The look is not part of this sign-off.
 **Penpot**: file `Tradecraft_v2`, pages `L1 Trades list`, `L2 Log a trade`, `L3 Accounts`, `L4 Account dialog`, `L5 Settings` (L for log-trades, so they do not clash with the 001 pages). Images in [wireframes/](wireframes/).
 **Signed off**: 2026-10-04 (structure and wording only; the look is decided elsewhere)
-**spec-sha256**: 57564666f27ce45097db8ebe41c27b25f917325a8664a3042385034c4e23e919
+**spec-sha256**: 8f64cd81006eab27a72e363922d335ba0261f582a0dbf3b540ac8f4dfcec5ae9
 
 All sample data is made up: accounts "Funded 50K", "Practice" and "Swing EUR", Wednesday 1 October 2025, NQ and ES trades.
 
@@ -126,6 +126,7 @@ APP NAME; Trades, Accounts, Settings.
 | 2026-10-03 | All | Wants to see the screens drawn before reacting | Screens drawn as proposed |
 | 2026-10-04 | All | Looks good enough for now | Proceeded to clarify |
 | 2026-10-04 | Sign-off check | FR-004 (no trade without an account) had no screen | Added the trades list state "no accounts yet" and the missing error messages to the content list |
+| 2026-10-04 | Re-sign-off | Signed off again after the checklist fixes | Hash and notes updated |
 | 2026-10-04 | Requirements checklists | Asked to fix all the gaps in the spec | 48 findings resolved in the spec, data model, contract and tasks; screens gained a Trading day column and six new states (could not load, trade deleted undo, could not save, changed elsewhere, leave without saving, start time 00:00) and a time zone search hint |
 | 2026-10-04 | Clarify: time zone | Chose the recommendation | One time zone for the whole journal; Settings holds it (as drawn) |
 | 2026-10-04 | Clarify: typed result | Chose the recommendation | A typed result is after costs; the costs field is "not used" (as drawn) |
@@ -143,5 +144,5 @@ Left for the sign-off step: the principle I exception (process information besid
 
 - **Signed off by**: owner
 - **Date**: 2026-10-04
-- **Spec hash**: 57564666f27ce45097db8ebe41c27b25f917325a8664a3042385034c4e23e919
-- **Notes**: Two written exceptions accepted: principle I (expires when 001 is built) and principle IV, no sign-in or audit log, local use only (expires when the sign-in and audit features are accepted, and before any exposure). Export format is chosen at plan.
+- **Spec hash**: 8f64cd81006eab27a72e363922d335ba0261f582a0dbf3b540ac8f4dfcec5ae9
+- **Notes**: Re-signed after the checklist review changed the spec. Two written exceptions kept: principle I (ends when 001 is accepted) and principle IV, no sign-in or audit log, local use only (ends when those features are accepted, and before any exposure). Accepted gaps: the failure and Undo notices are drawn once, on the trades list.
