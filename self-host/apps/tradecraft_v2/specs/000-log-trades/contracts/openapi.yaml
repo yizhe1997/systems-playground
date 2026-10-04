@@ -119,6 +119,12 @@ paths:
       responses:
         "200": { description: Restored, content: { application/json: { schema: { $ref: "#/components/schemas/Trade" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+  /currencies:
+    get:
+      operationId: listCurrencies
+      summary: The allowed account currencies (active ISO 4217 codes), USD first
+      responses:
+        "200": { description: Codes, content: { application/json: { schema: { type: array, items: { type: string, pattern: "^[A-Z]{3}$" } } } } }
   /settings:
     get:
       operationId: getSettings
