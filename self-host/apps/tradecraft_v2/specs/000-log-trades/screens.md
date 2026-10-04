@@ -52,7 +52,7 @@ APP NAME; Trades, Accounts, Settings.
 | Result cell | -$125.00; a typed result adds "typed in" underneath |
 | R cell | -0.50 R, or a dash with a reason underneath: "no stop recorded", "no dollars per point" |
 | Footnote | Each result is in its own account's currency. This list has no totals. |
-| Could not load | ! Could not reach the journal. · Try again |
+| Could not load | ! Could not reach the journal. · Try again (drawn on L1; every screen uses the same notice) |
 | Trade deleted | Trade deleted. · Undo (for 10 seconds; Show deleted keeps it restorable afterwards) |
 | No accounts yet | Create an account first. / Every trade belongs to an account. Log a trade is available as soon as you have one. / New account · Log a trade is unavailable until an account exists |
 | No trades at all | No trades yet. / Log your first trade and it appears here. / Log a trade |
