@@ -45,14 +45,15 @@ export function SettingsForm({ timeZone, zones }: { timeZone: string; zones: str
     <>
       {failure && <FailureBanner message={failure} retry={save} />}
       <form
-        className="card stack-md"
-        style={{ maxWidth: 640 }}
+        className="card"
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
           void save();
         }}
       >
+        {/* the card is as wide as every other card; its content keeps a readable line length */}
+        <div className="stack-md" style={{ maxWidth: 640 }}>
         <div className="field">
           <label className="label" htmlFor="s-zone">Time zone (type to search any standard time zone)</label>
           <input id="s-zone" className="field-input" list="zones" value={zone} autoComplete="off" spellCheck={false}
@@ -74,6 +75,7 @@ export function SettingsForm({ timeZone, zones }: { timeZone: string; zones: str
           <button type="submit" className="btn" disabled={saving}>Save</button>
           {waiting && <Waiting label="Saving…" />}
           {saved && <span role="status">Saved. Trading days were recomputed.</span>}
+        </div>
         </div>
       </form>
     </>
