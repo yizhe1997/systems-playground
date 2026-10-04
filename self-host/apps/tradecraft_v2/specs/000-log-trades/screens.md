@@ -147,3 +147,30 @@ Left for the sign-off step: the principle I exception (process information besid
 - **Date**: 2026-10-04
 - **Spec hash**: e7fad36a909ebe36f735228fd9a50c455da2fa3794d4b80d752dcc47dac8a5ad
 - **Notes**: Re-signed after the checklist review changed the spec. Two written exceptions kept: principle I (ends when 001 is accepted) and principle IV, no sign-in or audit log, local use only (ends when those features are accepted, and before any exposure). Accepted gaps: the failure and Undo notices are drawn once, on the trades list.
+
+## Visual review
+
+**Status**: findings recorded 2026-10-04; owner's approval of the look pending.
+**Built screens**: [built/](built/), 23 states in light and night, named like their wireframes (`-light.png`, `-dark.png`), captured in real Chromium on the composed stack with sample data (`frontend/e2e/zz-screens.spec.ts`). "Could not load" was captured with the API container really stopped; "could not save" and "changed elsewhere" by simulating the failure in the browser.
+**Checks run**: comparison with each wireframe and with the approved Hex skins; axe (WCAG 2 A and AA, including 4.5:1 text contrast) on five screens and their states in both modes, no violations; Impeccable detector on `frontend/src`, no findings; the Impeccable critique, run inline in one context (⚠️ DEGRADED: single-context, because this session does not spawn sub-agents), so its heuristic scoring is lighter than a full run.
+
+**Matches the wireframes**: structure, wording, every state and behaviour on L1 to L5 (empty, filled, error, deleted, undo, leave prompt, conflict, typed result, name already used, start 00:00). Dashes always carry a reason; the list shows no totals.
+
+**Differences, for the owner to decide**
+
+| # | Difference | Kind | Proposal |
+|---|---|---|---|
+| 1 | The two time fields use the browser's date format (10/01/2025) plus a separate 24-hour HH:MM box; the wireframe shows one field reading "Wed 1 Oct 2025 09:41". The filter dates also use the browser format. | Decision | Keep (picker, accessible, cheap) or build one typed field that reads and shows the spec's style |
+| 2 | In the edit form, numbers come back without trailing zeros (4.6, 21452.5) where the wireframe shows 4.60 and 21452.50. Trailing zeros carry no meaning (spec), but it reads less tidy. | Decision | Keep, or show prices to the instrument's usual decimals (needs a decision on what that is) |
+| 3 | The Result preview tints only the net result; the approved skin image tinted the gross result too. | Decision | Keep the written rule (Quiet Outcome Rule) unless you say otherwise |
+| 4 | The whole unfiltered list of 5,000 trades opens in about 3.9 s (a month opens in 0.4 s). | Decision | Accept, or add paging (a change to the signed-off list screen) |
+| 5 | In the deleted view the "Deleted" tag sits beside the instrument, not in its own column. | Minor | Keep |
+| 6 | When the journal cannot be reached, Log a trade is shown disabled and Export is hidden. | Minor | Keep |
+
+**Critique, in short.** Strengths: the screens read as the quiet notebook that `DESIGN.md` describes, with a single ink, thin rules, and colour only on the net-result text; the preview is the clearest part (formula under each figure, dash plus reason otherwise); every error is written out with "!" and never carried by colour. Weaker: the most-used input (time) is the least polished (item 1); rows with a two-line cell are slightly taller than 48 px, so the list rhythm is a little uneven; the page has no phone layout (not a goal) and below 1100 px the table scrolls sideways.
+
+**Fixed during the review**: the month abbreviation read "Sept" (now "Sep" as in the wireframes); the preview's trading-day value wrapped onto two lines (now one line); the list of 5,000 rows took 7.2 s (now 3.9 s, see item 4).
+
+**Parked**: items 1 to 4 above, until the owner decides.
+
+**Owner's approval of the look**: pending.
