@@ -1,0 +1,14 @@
+node_modules/
+.next/
+frontend/test-results/
+frontend/playwright-report/
+frontend/npm-install.log
+coverage/
+*.exe
+*.test
+*.out
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

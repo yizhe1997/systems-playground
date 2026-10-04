@@ -26,12 +26,12 @@ description: "Task list for 000-log-trades (accounts and closed trades)"
 
 ## Phase 1: Setup
 
-- [ ] T001 Create the project skeleton from plan.md: `backend/` (Go module, `cmd/api`, `internal/{api,store,timeinput}`, `migrations`, `queries`, `tests`), `frontend/` (Next.js App Router, TypeScript, `src/{app,components,lib,styles}`, `e2e`), `docs/`, `scripts/`. Pin Go, Node and PostgreSQL to the then-current stable releases in `backend/go.mod`, `frontend/package.json` and the Dockerfiles, and note the versions in `docs/decisions.md`
-- [ ] T002 [P] Write `docker-compose.yml` with services `postgres` (volume for data, healthcheck), `backend` (published only on `127.0.0.1:8081`), `frontend` (published only on `127.0.0.1:3100`, calls the backend by its internal name), and a `tests` profile; the database password comes from the environment variable `POSTGRES_PASSWORD` and is never written to a file in the repository
-- [ ] T003 [P] Write `backend/Dockerfile` and `frontend/Dockerfile` (multi-stage; the backend image embeds the time-zone database via Go's `time/tzdata`)
-- [ ] T004 [P] Configure sqlc in `backend/sqlc.yaml` (engine postgresql, pgx/v5, `numeric` mapped to a string-safe decimal type, queries in `backend/queries`, schema from `backend/migrations`)
-- [ ] T005 [P] Write `scripts/test.sh`: starts a throwaway Postgres, runs the Go tests, then the Playwright run against the composed stack, and tears everything down
-- [ ] T006 [P] Create `docs/domain.md` with a section per rule (trading day, gross and net result, risk, R, the local-time rule, the price rule), each marked **unconfirmed** with an empty "Source" line (constitution VIII); and `docs/decisions.md` seeded from `research.md`
+- [X] T001 Create the project skeleton from plan.md: `backend/` (Go module, `cmd/api`, `internal/{api,store,timeinput}`, `migrations`, `queries`, `tests`), `frontend/` (Next.js App Router, TypeScript, `src/{app,components,lib,styles}`, `e2e`), `docs/`, `scripts/`. Pin Go, Node and PostgreSQL to the then-current stable releases in `backend/go.mod`, `frontend/package.json` and the Dockerfiles, and note the versions in `docs/decisions.md`
+- [X] T002 [P] Write `docker-compose.yml` with services `postgres` (volume for data, healthcheck), `backend` (published only on `127.0.0.1:8081`), `frontend` (published only on `127.0.0.1:3100`, calls the backend by its internal name), and a `tests` profile; the database password comes from the environment variable `POSTGRES_PASSWORD` and is never written to a file in the repository
+- [X] T003 [P] Write `backend/Dockerfile` and `frontend/Dockerfile` (multi-stage; the backend image embeds the time-zone database via Go's `time/tzdata`)
+- [X] T004 [P] Configure sqlc in `backend/sqlc.yaml` (engine postgresql, pgx/v5, `numeric` mapped to a string-safe decimal type, queries in `backend/queries`, schema from `backend/migrations`)
+- [X] T005 [P] Write `scripts/test.sh`: starts a throwaway Postgres, runs the Go tests, then the Playwright run against the composed stack, and tears everything down
+- [X] T006 [P] Create `docs/domain.md` with a section per rule (trading day, gross and net result, risk, R, the local-time rule, the price rule), each marked **unconfirmed** with an empty "Source" line (constitution VIII); and `docs/decisions.md` seeded from `research.md`
 
 ## Phase 2: Foundational (blocks every user story)
 

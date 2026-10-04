@@ -1,0 +1,72 @@
+name: tradecraft-v2
+
+# Everything is published on the loopback address only (written exception, constitution IV: no sign-in or
+# audit log yet, so nothing may be reachable beyond this computer).
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tradecraft
+      POSTGRES_USER: tradecraft
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5435}:5432"
+    volumes:
+      # PostgreSQL 18 images keep their data under /var/lib/postgresql (a versioned folder inside it).
+      - tradecraft_v2_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradecraft -d tradecraft"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://tradecraft:${POSTGRES_PASSWORD}@postgres:5432/tradecraft?sslmode=disable
+    ports:
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8081}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    environment:
+      INTERNAL_BACKEND_URL: http://backend:8080
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-3100}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Go tests against a real Postgres. Run with: docker compose --profile tests run --rm tests
+  tests:
+    profiles: ["tests"]
+    image: golang:1.26-alpine
+    working_dir: /src
+    volumes:
+      - ./backend:/src
+      - tradecraft_v2_gocache:/go
+    environment:
+      TEST_DATABASE_URL: postgres://tradecraft:${POSTGRES_PASSWORD}@postgres:5432/tradecraft?sslmode=disable
+      CGO_ENABLED: "0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["go", "test", "-tags", "timetzdata", "-count=1", "./..."]
+
+volumes:
+  tradecraft_v2_pgdata:
+  tradecraft_v2_gocache:
