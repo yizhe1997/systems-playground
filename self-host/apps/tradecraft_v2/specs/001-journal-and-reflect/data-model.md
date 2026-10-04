@@ -131,6 +131,10 @@ Nothing else about a week is stored.
 - **Trades changed after review**: for a reviewed day, the number of that account's trades with `trading_day` = the day and
   `updated_at > reviewed_at`, deleted ones included.
 
+## The month list
+
+`GET /reviews/calendar` also returns `months`: every month (YYYY-MM, on the trading day) that has a live trade or a saved daily review for the account, plus the account's current month, newest first. The Reviews screen's month name opens this list.
+
 ## Rules in the API (in this order)
 
 - Judgement: the trade exists; `planFollowed` in yes, partly, no; `label` valid_loss only when the plan answer is yes **and** the trade

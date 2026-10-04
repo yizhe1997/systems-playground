@@ -24,7 +24,7 @@ the stars and saving. The browser does no counting and no money arithmetic.
 
 **Primary Dependencies**: unchanged: Fiber, pgx, sqlc, goose, shopspring/decimal (validation only); Next.js; Playwright; axe. No new dependency is planned.
 
-**Storage**: PostgreSQL 18, the same database; migrations `00007` onward add six tables, the SQL functions and views, and two triggers (data-model.md)
+**Storage**: PostgreSQL 18, the same database; migrations `00007` onward add seven tables, the SQL functions and views, the valid-loss trigger and the version-token triggers, and recreate the `trade_detail` view with the plan answer and label (data-model.md)
 
 **Testing**: Go tests against real Postgres with hand-worked vectors for every figure and every state boundary; Playwright on the composed stack for the flows in `quickstart.md`; axe on every new screen in both modes; no mocks of the database
 
@@ -76,7 +76,7 @@ specs/001-journal-and-reflect/
 
 ```text
 backend/
-├── migrations/             # 00007_mistakes.sql, 00008_judgement.sql, 00009_reviews_and_focus.sql, 00010_stats_functions.sql, 00011_judgement_triggers.sql
+├── migrations/             # 00007_mistakes.sql, 00008_judgement.sql, 00009_reviews_and_focus.sql, 00010_stats_functions.sql, 00011_judgement_triggers.sql, 00012_trade_detail_plan.sql
 ├── queries/                # reviews.sql, judgement.sql, mistakes.sql, focus.sql, weekly.sql, counter.sql (sqlc)
 ├── internal/
 │   ├── api/                # reviews.go, day.go, judgement.go, mistakes.go, counter.go, focus.go, weekly.go, calendar.go; export.go and trades.go extended

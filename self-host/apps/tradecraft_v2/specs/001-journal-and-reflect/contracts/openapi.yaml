@@ -27,7 +27,7 @@ paths:
   /reviews/calendar:
     get:
       operationId: reviewsCalendar
-      summary: What the day picker and the week picker mark for a month
+      summary: What the day picker, the week picker and the month list mark and offer
       parameters:
         - { $ref: "#/components/parameters/AccountId" }
         - { name: month, in: query, required: true, schema: { type: string, pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$" } }
@@ -397,9 +397,10 @@ components:
         weeks: { type: array, items: { $ref: "#/components/schemas/WeekBlock" } }
     Calendar:
       type: object
-      required: [month, days, weeks]
+      required: [month, days, weeks, months]
       properties:
         month: { type: string }
+        months: { type: array, items: { type: string, pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$" }, description: "The month list: every month that has live trades or a saved review for the account, plus the current month, newest first" }
         days: { type: array, items: { type: object, required: [date, hasTrades, missing], properties: { date: { type: string, format: date }, hasTrades: { type: boolean }, missing: { type: boolean } } } }
         weeks: { type: array, items: { type: object, required: [weekStart, state], properties: { weekStart: { type: string, format: date }, state: { $ref: "#/components/schemas/WeekState" } } } }
     WeeklyDay:
