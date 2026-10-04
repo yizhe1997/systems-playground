@@ -10,42 +10,44 @@
 
 ## Money and results
 
-- [ ] CHK001 Is the rule that prices must be above zero stated in the spec, not only in the data model and research? [Gap, Spec FR-005, data-model.md]
-- [ ] CHK002 Is the rule for how a result is shown rounded (the currency's usual decimals at display only) written as a requirement, not only as a research decision? [Gap, Spec FR-012, research.md §4]
-- [ ] CHK003 Is the display of a currency whose usual decimals are not two (for example zero decimals) addressed? [Edge Case, Gap]
-- [ ] CHK004 Is it clear what happens to a stored typed result when the owner later fills in dollars per point (kept but ignored, or cleared)? [Ambiguity, Spec FR-010, US4]
-- [ ] CHK005 Is the sign convention for costs and results unambiguous (cost entered as a positive number and subtracted; loss shown negative)? [Clarity, Spec FR-005, FR-009]
-- [ ] CHK006 Are the limits on the number of decimal places accepted for prices, size, cost and dollars per point stated? [Gap, data-model.md]
-- [ ] CHK007 Is R defined for a trade with a typed result and a stop, given that dollars per point is blank and so risk cannot be worked out? [Consistency, Spec FR-010, FR-011]
-- [ ] CHK008 Is the R rounding rule consistent between the spec (two decimals shown), the data model (six decimals stored) and the preview? [Consistency, Spec Assumptions, data-model.md]
+- [x] CHK001 Is the rule that prices must be above zero stated in the spec, not only in the data model and research? [Gap, Spec FR-005, data-model.md]
+- [x] CHK002 Is the rule for how a result is shown rounded (the currency's usual decimals at display only) written as a requirement, not only as a research decision? [Gap, Spec FR-012, research.md §4]
+- [x] CHK003 Is the display of a currency whose usual decimals are not two (for example zero decimals) addressed? [Edge Case, Gap]
+- [x] CHK004 Is it clear what happens to a stored typed result when the owner later fills in dollars per point (kept but ignored, or cleared)? [Ambiguity, Spec FR-010, US4]
+- [x] CHK005 Is the sign convention for costs and results unambiguous (cost entered as a positive number and subtracted; loss shown negative)? [Clarity, Spec FR-005, FR-009]
+- [x] CHK006 Are the limits on the number of decimal places accepted for prices, size, cost and dollars per point stated? [Gap, data-model.md]
+- [x] CHK007 Is R defined for a trade with a typed result and a stop, given that dollars per point is blank and so risk cannot be worked out? [Consistency, Spec FR-010, FR-011]
+- [x] CHK008 Is the R rounding rule consistent between the spec (two decimals shown), the data model (six decimals stored) and the preview? [Consistency, Spec Assumptions, data-model.md]
 
 ## Time and the trading day
 
-- [ ] CHK009 Is "in the future" measured against a defined clock, with a stated tolerance for small differences? [Ambiguity, Spec FR-007]
-- [ ] CHK010 Is the rule for a local time that does not exist, or happens twice, when clocks change in the spec as a requirement, with its message text in the wireframe content list? [Gap, research.md §3, quickstart G6, screens.md]
-- [ ] CHK011 Is any time of day allowed as a trading-day start, including 00:00 and times before noon, and is the meaning of each clear? [Edge Case, Gap, Spec FR-013]
-- [ ] CHK012 Is it stated that a trading-day recompute also covers deleted trades and trades of archived accounts? [Completeness, data-model.md, Spec FR-013]
-- [ ] CHK013 Is the effect of changing the journal time zone on a trade's displayed time (instant unchanged, local wording changes) stated in the spec? [Clarity, Spec FR-014, US5]
-- [ ] CHK014 Are the time zones offered in Settings defined (all standard zones, or a short list)? [Gap, Spec FR-014]
-- [ ] CHK015 Is the date range filter's meaning clear when a trade's displayed exit date differs from its trading day, and does the list show which day a trade belongs to? [Conflict, Spec FR-015, FR-016, screens.md L1]
-- [ ] CHK016 Is the tie-break defined for trades with the same exit instant in the "newest first" order? [Gap, Spec FR-015]
+- [x] CHK009 Is "in the future" measured against a defined clock, with a stated tolerance for small differences? [Ambiguity, Spec FR-007]
+- [x] CHK010 Is the rule for a local time that does not exist, or happens twice, when clocks change in the spec as a requirement, with its message text in the wireframe content list? [Gap, research.md §3, quickstart G6, screens.md]
+- [x] CHK011 Is any time of day allowed as a trading-day start, including 00:00 and times before noon, and is the meaning of each clear? [Edge Case, Gap, Spec FR-013]
+- [x] CHK012 Is it stated that a trading-day recompute also covers deleted trades and trades of archived accounts? [Completeness, data-model.md, Spec FR-013]
+- [x] CHK013 Is the effect of changing the journal time zone on a trade's displayed time (instant unchanged, local wording changes) stated in the spec? [Clarity, Spec FR-014, US5]
+- [x] CHK014 Are the time zones offered in Settings defined (all standard zones, or a short list)? [Gap, Spec FR-014]
+- [x] CHK015 Is the date range filter's meaning clear when a trade's displayed exit date differs from its trading day, and does the list show which day a trade belongs to? [Conflict, Spec FR-015, FR-016, screens.md L1]
+- [x] CHK016 Is the tie-break defined for trades with the same exit instant in the "newest first" order? [Gap, Spec FR-015]
 
 ## Accounts and records
 
-- [ ] CHK017 Is the list of allowed currency codes defined or referenced, rather than "standard three-letter codes"? [Ambiguity, Spec Assumptions]
-- [ ] CHK018 Is it stated whether an existing trade of an archived account can still be edited, deleted or restored? [Gap, Spec FR-004a, FR-008]
-- [ ] CHK019 Is it stated whether editing a trade may move it to a different account, and what happens to its trading day? [Ambiguity, Spec FR-008]
-- [ ] CHK020 Is the behaviour defined when two edits to the same record are saved from two open windows (last one wins, or the second is refused)? [Coverage, Gap]
-- [ ] CHK021 Is it stated whether the account name rule ignores surrounding spaces inside the name (internal double spaces)? [Edge Case, Spec FR-002]
-- [ ] CHK022 Are the unconfirmed domain interpretations (trading day from the exit, R on the net result, time rule, price rule) each listed with a place to confirm them and add a source? [Traceability, Spec Assumptions, research.md §8]
+- [x] CHK017 Is the list of allowed currency codes defined or referenced, rather than "standard three-letter codes"? [Ambiguity, Spec Assumptions]
+- [x] CHK018 Is it stated whether an existing trade of an archived account can still be edited, deleted or restored? [Gap, Spec FR-004a, FR-008]
+- [x] CHK019 Is it stated whether editing a trade may move it to a different account, and what happens to its trading day? [Ambiguity, Spec FR-008]
+- [x] CHK020 Is the behaviour defined when two edits to the same record are saved from two open windows (last one wins, or the second is refused)? [Coverage, Gap]
+- [x] CHK021 Is it stated whether the account name rule ignores surrounding spaces inside the name (internal double spaces)? [Edge Case, Spec FR-002]
+- [x] CHK022 Are the unconfirmed domain interpretations (trading day from the exit, R on the net result, time rule, price rule) each listed with a place to confirm them and add a source? [Traceability, Spec Assumptions, research.md §8]
 
 ## Acceptance criteria quality
 
-- [ ] CHK023 Can SC-001 ("under 1 minute") be measured objectively, with a defined start and end? [Measurability, Spec SC-001]
-- [ ] CHK024 Can SC-006 ("under 10 seconds to find a day's trades") be measured objectively, or is it a judgement? [Measurability, Spec SC-006]
-- [ ] CHK025 Is there a measurable requirement for how long a screen may take to respond at the stated data size? [Gap, plan.md]
+- [x] CHK023 Can SC-001 ("under 1 minute") be measured objectively, with a defined start and end? [Measurability, Spec SC-001]
+- [x] CHK024 Can SC-006 ("under 10 seconds to find a day's trades") be measured objectively, or is it a judgement? [Measurability, Spec SC-006]
+- [x] CHK025 Is there a measurable requirement for how long a screen may take to respond at the stated data size? [Gap, plan.md]
 
-## Resolution notes (2026-10-04, not a review: the boxes stay for the reviewer)
+## Evaluation (2026-10-04, done by the agent at the reviewer's request)
+
+Every item was checked against the current spec, plan, contract and screen text, and ticked where the criterion is met.
 
 Each finding was answered in the spec, data model, contract, tasks or wireframes. CHK001 prices above zero: FR-005. CHK002 and CHK003 display rounding and zero-decimal currencies: FR-012. CHK004 typed result discarded on save: FR-010. CHK005 sign convention: FR-009. CHK006 at most 8 decimal places: FR-005. CHK007 and CHK008 R with a typed result, shown to 2 and kept to 6 decimals: FR-011. CHK009 current time plus one minute: FR-007. CHK010 nonexistent and repeated local times: FR-014a and the L2 messages. CHK011 start time 00:01 to 23:59: FR-001. CHK012 recompute covers deleted and archived-account trades: FR-013. CHK013 and CHK014 zone changes and a searchable list of all zones: FR-014. CHK015 trading-day column on the list: FR-016. CHK016 tie-break: FR-015. CHK017 ISO 4217 currencies: Assumptions. CHK018 trades of archived accounts: FR-004a. CHK019 moving a trade to another account: FR-008. CHK020 out-of-date saves: FR-022. CHK021 spaces inside names: FR-002. CHK022 unconfirmed rules and who confirms: Assumptions. CHK023 to CHK025: SC-001, SC-006, SC-008.
 

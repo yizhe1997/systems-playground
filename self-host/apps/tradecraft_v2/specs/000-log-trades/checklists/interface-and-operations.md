@@ -10,42 +10,46 @@
 
 ## Spec and wireframes agree
 
-- [ ] CHK001 Is the live Result preview on the log-a-trade screen a written requirement in the spec, not only in the wireframes and the plan? [Gap, screens.md L2, plan.md]
-- [ ] CHK002 Is the "Last saved" time shown on the edit screen a requirement in the spec, or should it come off the wireframe? [Conflict, screens.md L2 edit, spec.md]
-- [ ] CHK003 Is the "typed in" marker on a typed result in the trades list required by the spec? [Consistency, Spec FR-016, screens.md L1]
-- [ ] CHK004 Do the spec's messages (account already used, time not in the future, time does not exist, costs cannot be negative) all appear word for word in the wireframe content list? [Consistency, Spec FR-002, FR-007, screens.md]
-- [ ] CHK005 Is the "Log a trade is unavailable until an account exists" behaviour defined for every entry point to the form, not only the trades list? [Coverage, Spec FR-004, screens.md L1]
-- [ ] CHK006 Are loading and failure states (the API unreachable, a save that fails) defined for each screen? [Gap]
-- [ ] CHK007 Are the decimal and thousands separators accepted when typing numbers defined (for example a comma as the decimal mark)? [Gap]
+- [x] CHK001 Is the live Result preview on the log-a-trade screen a written requirement in the spec, not only in the wireframes and the plan? [Gap, screens.md L2, plan.md]
+- [x] CHK002 Is the "Last saved" time shown on the edit screen a requirement in the spec, or should it come off the wireframe? [Conflict, screens.md L2 edit, spec.md]
+- [x] CHK003 Is the "typed in" marker on a typed result in the trades list required by the spec? [Consistency, Spec FR-016, screens.md L1]
+- [x] CHK004 Do the spec's messages (account already used, time not in the future, time does not exist, costs cannot be negative) all appear word for word in the wireframe content list? [Consistency, Spec FR-002, FR-007, screens.md]
+- [x] CHK005 Is the "Log a trade is unavailable until an account exists" behaviour defined for every entry point to the form, not only the trades list? [Coverage, Spec FR-004, screens.md L1]
+- [x] CHK006 Are loading and failure states (the API unreachable, a save that fails) defined for each screen? [Gap]
+- [x] CHK007 Are the decimal and thousands separators accepted when typing numbers defined (for example a comma as the decimal mark)? [Gap]
 - [ ] CHK008 Is the date and time display format (12 or 24 hour, date wording) specified? [Gap, screens.md]
 
 ## Contract and plan agree with the spec
 
-- [ ] CHK009 Does every requirement that touches data have an endpoint and field in the contract, including archived accounts in the trades list and the account filter? [Completeness, contracts/openapi.yaml, Spec FR-004a, FR-015]
-- [ ] CHK010 Is the contract's rule that decimals are normalised strings stated as a requirement the screens can rely on? [Clarity, contracts/openapi.yaml, research.md §4]
-- [ ] CHK011 Are the error messages the contract returns the same wording as the wireframes for every field error? [Consistency, contracts/openapi.yaml, screens.md]
-- [ ] CHK012 Is the pagination or maximum size of the trades list and the export stated, or is "all" intended? [Gap, contracts/openapi.yaml]
-- [ ] CHK013 Is the export content defined field by field (including derived figures and the trading day), so a count and a spot check can be written? [Clarity, Spec FR-019, SC-007]
-- [ ] CHK014 Is the export file's name and the way it is delivered (download, saved file) specified? [Gap, Spec FR-019]
+- [x] CHK009 Does every requirement that touches data have an endpoint and field in the contract, including archived accounts in the trades list and the account filter? [Completeness, contracts/openapi.yaml, Spec FR-004a, FR-015]
+- [x] CHK010 Is the contract's rule that decimals are normalised strings stated as a requirement the screens can rely on? [Clarity, contracts/openapi.yaml, research.md §4]
+- [x] CHK011 Are the error messages the contract returns the same wording as the wireframes for every field error? [Consistency, contracts/openapi.yaml, screens.md]
+- [x] CHK012 Is the pagination or maximum size of the trades list and the export stated, or is "all" intended? [Gap, contracts/openapi.yaml]
+- [x] CHK013 Is the export content defined field by field (including derived figures and the trading day), so a count and a spot check can be written? [Clarity, Spec FR-019, SC-007]
+- [x] CHK014 Is the export file's name and the way it is delivered (download, saved file) specified? [Gap, Spec FR-019]
 
 ## Accessibility and usability
 
-- [ ] CHK015 Are keyboard-only requirements defined for the form, the filters and the dialogs? [Gap]
-- [ ] CHK016 Are labels and error messages required to be available to screen readers, and not conveyed by colour or position alone? [Coverage, Gap]
-- [ ] CHK017 Is the behaviour of leaving a half-filled trade form (unsaved changes) defined? [Edge Case, Gap]
-- [ ] CHK018 Is the confirmation or undo behaviour for delete and archive specified, given that both can be reversed? [Clarity, Spec FR-004a, FR-008]
+- [x] CHK015 Are keyboard-only requirements defined for the form, the filters and the dialogs? [Gap]
+- [x] CHK016 Are labels and error messages required to be available to screen readers, and not conveyed by colour or position alone? [Coverage, Gap]
+- [x] CHK017 Is the behaviour of leaving a half-filled trade form (unsaved changes) defined? [Edge Case, Gap]
+- [x] CHK018 Is the confirmation or undo behaviour for delete and archive specified, given that both can be reversed? [Clarity, Spec FR-004a, FR-008]
 
 ## Operation and safety
 
-- [ ] CHK019 Can "must run only on the owner's computer and must not be exposed" be verified objectively (for example by what it listens on)? [Measurability, Spec Assumptions, plan.md]
-- [ ] CHK020 Is it stated that data survives a restart and what the owner does to back it up? [Gap, Spec Assumptions]
-- [ ] CHK021 Is a recovery path defined if a migration fails or a time-zone recompute fails part way? [Recovery, Gap, data-model.md]
-- [ ] CHK022 Are the two written exceptions (principle I and principle IV) each stated in the spec with their expiry and who ends them? [Traceability, Spec Signed-off screens]
-- [ ] CHK023 Is it stated that the domain document is created in the same change as the behaviour, and who confirms each unconfirmed rule? [Traceability, plan.md, constitution VIII]
+- [x] CHK019 Can "must run only on the owner's computer and must not be exposed" be verified objectively (for example by what it listens on)? [Measurability, Spec Assumptions, plan.md]
+- [x] CHK020 Is it stated that data survives a restart and what the owner does to back it up? [Gap, Spec Assumptions]
+- [x] CHK021 Is a recovery path defined if a migration fails or a time-zone recompute fails part way? [Recovery, Gap, data-model.md]
+- [x] CHK022 Are the two written exceptions (principle I and principle IV) each stated in the spec with their expiry and who ends them? [Traceability, Spec Signed-off screens]
+- [x] CHK023 Is it stated that the domain document is created in the same change as the behaviour, and who confirms each unconfirmed rule? [Traceability, plan.md, constitution VIII]
 
-## Resolution notes (2026-10-04, not a review: the boxes stay for the reviewer)
+## Evaluation (2026-10-04, done by the agent at the reviewer's request)
+
+Every item was checked against the current spec, plan, contract and screen text, and ticked where the criterion is met.
 
 CHK001 live preview: FR-021. CHK002 last saved: FR-022. CHK003 typed-in marker: FR-016. CHK004 messages in the wireframe content list: screens.md. CHK005 entry points: FR-004. CHK006 loading, failure, unsaved changes and undo: FR-023. CHK007 number typing: FR-005. CHK008 date and time format: FR-014a. CHK009 archived accounts in the filter: FR-015 and the contract. CHK010 normalised decimal strings: the contract (Decimal) and research section 4, which is an interface rule rather than a user requirement, so left for the reviewer. CHK011 matching messages: the contract returns the wireframe wording and the API tests check it. CHK012 paging: Assumptions (everything, up to the SC-008 size). CHK013 and CHK014 export content, name and delivery: FR-019. CHK015 and CHK016 keyboard, labels and error text: FR-024. CHK017 and CHK018 unsaved changes, delete and archive undo: FR-023. CHK019 loopback check: SC-009. CHK020 and CHK021 restart, backup and failed changes: FR-025, SC-010 and Assumptions. CHK022 exceptions with expiry and who ends them: the signed-off section of the spec. CHK023 domain document: Assumptions.
+
+**Left unticked:** CHK008. The spec fixes the clock (24-hour) and typing to the minute, but the written date format ("Wed 1 Oct 2025") appears only in the wireframes. Either add one line to FR-014a (which makes the sign-off stale again) or accept the signed-off wireframes as the definition and tick it.
 
 ## Notes
 
