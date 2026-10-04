@@ -6,6 +6,7 @@ import "@fontsource/ibm-plex-sans/600.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@/styles/tokens.css";
 import "@/styles/app.css";
+import "@/styles/reviews.css";
 import { Nav } from "@/components/Nav";
 import { NoticeProvider } from "@/components/Notice";
 
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <NoticeProvider>
           <div className="shell">
             <aside className="sidebar">
-              <div className="brand">App name</div>
+              <div className="brand">Tradecraft</div>
               <Nav />
             </aside>
             <main className="main">{children}</main>

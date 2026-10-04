@@ -81,3 +81,81 @@ Prices must be above zero. Sizes, costs and dollars per point are decimals with 
 - **Status:** unconfirmed (a price of zero or below, such as the 2020 oil futures price, is refused for now).
 - Confirmed by owner on:
 - Source:
+
+# Feature 001: reviews, judging and focus
+
+Every rule below is defined once, in the SQL of `backend/migrations/00007` to `00011`, and used by the day, the week and
+the mistake counter alike. All are **unconfirmed** interpretations until the owner confirms them.
+
+## Week and month
+
+A week runs Monday to Sunday and a month is the calendar month, both taken on the **trading day** (never on the exit
+timestamp). A week is listed in the Reviews screen under the month its Sunday falls in. The mistake counter counts a week
+whole in the week column, and in the month column only the days of that week that fall in the month.
+
+Worked example: Wed 1 Oct 2025 is in the week of Mon 29 Sep to Sun 5 Oct, listed under October.
+
+- **Status:** unconfirmed (Monday weeks; a week under the month of its Sunday).
+- Confirmed by owner on:
+- Source:
+
+## Today
+
+"Today" belongs to the account: the trading day of the current moment (`account_today`). For an account whose trading day
+starts at 17:00, today is already tomorrow at 17:30.
+
+- **Status:** unconfirmed.
+- Confirmed by owner on:
+- Source:
+
+## Daily and weekly states
+
+A day with live trades and no saved review is **Missing** once the day has ended and **today** on the current trading day
+(never Missing). A saved review is **Draft**; one with a reviewed time is **Reviewed**. A saved review keeps its state even if
+its day later has no trades. A day with no trades and no review has no state. A week is **Missing** when it has ended, a day
+has a live trade, and it has no reviewed mark; the current week is never Missing; a week with a mark is **Reviewed**.
+Changing the time zone or an account's day start moves trades to other days but leaves reviews on the date they were written.
+
+- **Status:** unconfirmed.
+- Confirmed by owner on:
+- Source:
+
+## Plan followed, wins and losses
+
+A **win** has a net result above zero, a **loss** below zero; a break-even trade is neither and cannot be a valid loss.
+**Plan followed X of Y**: X trades answered Yes of Y live trades; Partly never counts as followed; trades with no answer are
+"not judged yet" and shown beside the others so the parts add up to Y.
+**Valid loss**: the label is only possible when the plan answer is Yes and the trade is a loss; a plan answer other than Yes,
+or an edit that stops the trade being a loss, clears it.
+**Win rate k of n**: k wins of n live trades; the percentage is 100 k / n rounded half up to a whole percent, absent
+(a dash, "no trades") when n is zero.
+
+Worked example (the sample day, 1 Oct 2025): W +300.00 (plan Yes), L1 -125.00 (Yes, valid loss), L2 -130.00 (No, mistake,
+tag Chased entry). Net +45.00; plan followed 2 of 3 (1 not followed, 0 partly); mistakes 1; valid losses 1 of 2 losing
+trades; win rate 1 of 3 (33%).
+
+- **Status:** unconfirmed.
+- Confirmed by owner on:
+- Source:
+
+## Mistakes and stop lines
+
+The mistake count is the number of **records**: each tag on a live trade and each whole-day record, each once. The same mistake
+tagged on a trade and also recorded for its day is two records. A trade labelled "mistake" with no tag adds nothing to a count.
+A stop line (1 to 999) belongs to one period, a week or a month; its status is read from that period for the week or month being
+viewed: STOP TRADING when the count has reached the line, otherwise the count only. A retired mistake appears only when it has a
+count in the period.
+
+- **Status:** unconfirmed.
+- Confirmed by owner on:
+- Source:
+
+## Yesterday's focus
+
+The "yesterday" line of a daily review is the nearest earlier review **of the same account** whose "what will I focus on next
+session" answer is not empty, labelled with its own date. The week and month focus belong to the owner (all accounts), decided
+by the review's trading day.
+
+- **Status:** unconfirmed.
+- Confirmed by owner on:
+- Source:

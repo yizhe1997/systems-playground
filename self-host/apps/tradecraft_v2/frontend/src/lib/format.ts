@@ -110,3 +110,51 @@ export function screenTime(local: string): string {
   const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/.exec(local.trim());
   return m ? `${dayLabel(m[1])} ${m[2]}` : local;
 }
+
+// ---------- feature 001: display styles for reviews ----------
+
+/** Wednesday 1 October 2025 */
+export function longDay(day: string): string {
+  const p = parts(new Date(day + "T00:00:00Z"), "UTC", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return `${p.weekday} ${p.day} ${p.month} ${p.year}`;
+}
+
+/** 29 Sep to 5 Oct, for a week given by its first and last day. */
+export function weekRange(start: string, end: string): string {
+  const f = (d: string) => {
+    const p = parts(new Date(d + "T00:00:00Z"), "UTC", { day: "numeric", month: "short" });
+    return `${p.day} ${p.month}`;
+  };
+  return `${f(start)} to ${f(end)}`;
+}
+
+/** October 2025, for "2025-10". */
+export function monthName(month: string, withYear = true): string {
+  const p = parts(new Date(month + "-01T00:00:00Z"), "UTC", { month: "long", year: "numeric" });
+  return withYear ? `${p.month} ${p.year}` : (p.month ?? "");
+}
+
+/** 10:14 for an instant in the journal zone. */
+export function clock(iso: string, zone: string): string {
+  const p = parts(new Date(iso), zone, { hour: "2-digit", minute: "2-digit" });
+  return `${p.hour}:${p.minute}`;
+}
+
+/** "1 trade" or "3 trades". */
+export function count(n: number, one: string, many = one + "s"): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/** The account's Penpot-style summary of the plan line: "Plan followed 2 of 3". */
+export function planLine(p: { followed: number; of: number }): string {
+  return `Plan followed ${p.followed} of ${p.of}`;
+}
+
+/** The detail under it: "1 not followed · 0 partly", plus "· 1 not judged yet" when there are unjudged trades. */
+export function planDetail(p: { notFollowed: number; partly: number; notJudged: number }): string {
+  const base = `${p.notFollowed} not followed · ${p.partly} partly`;
+  return p.notJudged > 0 ? `${base} · ${p.notJudged} not judged yet` : base;
+}
+
+/** The year-month of a date: "2025-10". */
+export const monthOfDay = (day: string) => day.slice(0, 7);
