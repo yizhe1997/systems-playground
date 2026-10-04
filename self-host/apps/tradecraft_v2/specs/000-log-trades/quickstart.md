@@ -28,7 +28,7 @@ Expected: every test passes, including the vectors below and the browser scenari
 
 ## Scenarios (API, with curl; amounts are strings)
 
-Create an account first (name "Funded 50K", currency USD, trading-day start "17:00"), then:
+Create an account first (name "Funded 50K", currency USD, trading-day start "17:00"), then (compare amounts as decimals; trailing zeros do not matter):
 
 | # | Do | Expect |
 |---|---|---|

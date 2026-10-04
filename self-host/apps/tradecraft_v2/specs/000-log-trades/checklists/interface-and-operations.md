@@ -17,7 +17,7 @@
 - [x] CHK005 Is the "Log a trade is unavailable until an account exists" behaviour defined for every entry point to the form, not only the trades list? [Coverage, Spec FR-004, screens.md L1]
 - [x] CHK006 Are loading and failure states (the API unreachable, a save that fails) defined for each screen? [Gap]
 - [x] CHK007 Are the decimal and thousands separators accepted when typing numbers defined (for example a comma as the decimal mark)? [Gap]
-- [ ] CHK008 Is the date and time display format (12 or 24 hour, date wording) specified? [Gap, screens.md]
+- [x] CHK008 Is the date and time display format (12 or 24 hour, date wording) specified? [Gap, screens.md]
 
 ## Contract and plan agree with the spec
 
@@ -49,7 +49,7 @@ Every item was checked against the current spec, plan, contract and screen text,
 
 CHK001 live preview: FR-021. CHK002 last saved: FR-022. CHK003 typed-in marker: FR-016. CHK004 messages in the wireframe content list: screens.md. CHK005 entry points: FR-004. CHK006 loading, failure, unsaved changes and undo: FR-023. CHK007 number typing: FR-005. CHK008 date and time format: FR-014a. CHK009 archived accounts in the filter: FR-015 and the contract. CHK010 normalised decimal strings: the contract (Decimal) and research section 4, which is an interface rule rather than a user requirement, so left for the reviewer. CHK011 matching messages: the contract returns the wireframe wording and the API tests check it. CHK012 paging: Assumptions (everything, up to the SC-008 size). CHK013 and CHK014 export content, name and delivery: FR-019. CHK015 and CHK016 keyboard, labels and error text: FR-024. CHK017 and CHK018 unsaved changes, delete and archive undo: FR-023. CHK019 loopback check: SC-009. CHK020 and CHK021 restart, backup and failed changes: FR-025, SC-010 and Assumptions. CHK022 exceptions with expiry and who ends them: the signed-off section of the spec. CHK023 domain document: Assumptions.
 
-**Left unticked:** CHK008. The spec fixes the clock (24-hour) and typing to the minute, but the written date format ("Wed 1 Oct 2025") appears only in the wireframes. Either add one line to FR-014a (which makes the sign-off stale again) or accept the signed-off wireframes as the definition and tick it.
+**CHK008** was settled on 2026-10-04: FR-014a now fixes the date style (Wed 1 Oct 2025) and the 24-hour clock. **CHK010** was settled the same day: the contract promises exact decimal strings only.
 
 ## Notes
 

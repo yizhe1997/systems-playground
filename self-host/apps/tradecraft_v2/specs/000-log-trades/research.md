@@ -59,7 +59,7 @@ is enough. **Unconfirmed domain interpretation**, to be written into the domain 
 - **Names and text**: account name 1 to 80 characters, unique ignoring case and surrounding spaces, kept even when
   the account is archived; instrument 1 to 40 characters as typed, not unique; thesis up to 5,000 characters.
 - **Display**: a result is shown rounded to the currency's usual decimals only when displayed; stored values keep full precision.
-- **Decimal strings in the API** are normalised: trailing zeros are dropped but at least two decimals are kept ("95.40", "100.00", R "0.2385").
+- **Decimal strings in the API** are exact. Trailing zeros carry no meaning, so clients compare values as decimals and never depend on how many zeros there are (decided 2026-10-04: the earlier promise to tidy them was dropped).
 
 ## 5. Web tier and API shape
 
