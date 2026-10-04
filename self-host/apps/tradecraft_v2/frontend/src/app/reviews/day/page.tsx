@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { ApiFailure } from "@/lib/api";
-import { getAccounts, getDay, getReviewsMonth, getSettings } from "@/lib/data";
+import { getAccounts, getDay, getMistakes, getReviewsMonth, getSettings } from "@/lib/data";
 import { one, resolveAccount } from "@/lib/reviewsContext";
 import { count, dateTime, dayLabel, longDay, zoneName } from "@/lib/format";
 import { AccountSwitcher } from "@/components/AccountSwitcher";
 import { CouldNotLoad } from "@/components/Notice";
+import { DayMistakes } from "@/components/DayMistakes";
 import { DayNav } from "@/components/DayNav";
 import { DayTradesTable } from "@/components/DayTradesTable";
 import { FocusCard } from "@/components/FocusCard";
@@ -27,10 +28,10 @@ export default async function DailyReviewPage({ searchParams }: { searchParams: 
   if (!account) return <NoAccount title="Daily review" />;
 
   let date = one(sp.date);
-  let review;
+  let review, mistakes;
   try {
     if (!date) date = (await getReviewsMonth(account.id)).today;
-    review = await getDay(account.id, date);
+    [review, mistakes] = await Promise.all([getDay(account.id, date), getMistakes(false)]);
   } catch (e) {
     if (e instanceof ApiFailure && (e.status === 404 || e.status === 422)) notFound();
     return <CouldNotLoad />;
@@ -84,6 +85,8 @@ export default async function DailyReviewPage({ searchParams }: { searchParams: 
           <a className="btn" href="/trades/new">Add a trade</a>
         </div>
       )}
+
+      <DayMistakes review={review} mistakes={mistakes} />
 
       <ReviewForm key={review.updatedAt ?? "new"} review={review} zone={zone} />
     </>

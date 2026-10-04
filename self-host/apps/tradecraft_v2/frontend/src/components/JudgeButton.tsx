@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Judgement } from "@/lib/types";
+import type { Judgement, Mistake } from "@/lib/types";
 import { call } from "@/lib/browserApi";
 import { clock, dayLabel, money, plain, profitClass } from "@/lib/format";
 import { Drawer } from "@/components/Drawer";
@@ -36,6 +36,8 @@ function JudgeDrawer({ tradeId, accountName, zone, onClose }: { tradeId: string;
   const [loadFailed, setLoadFailed] = useState(false);
   const [plan, setPlan] = useState<Plan>(null);
   const [label, setLabel] = useState<Label>(null);
+  const [mistakes, setMistakes] = useState<Mistake[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [conflict, setConflict] = useState<string | null>(null);
@@ -45,17 +47,22 @@ function JudgeDrawer({ tradeId, accountName, zone, onClose }: { tradeId: string;
   const [tries, setTries] = useState(0);
   useEffect(() => {
     let live = true;
-    call<Judgement>("GET", `/trades/${tradeId}/judgement`).then((r) => {
+    Promise.all([call<Judgement>("GET", `/trades/${tradeId}/judgement`), call<Mistake[]>("GET", "/mistakes?includeRetired=true")]).then(([r, m]) => {
       if (!live) return;
-      if (!r.ok) return setLoadFailed(true);
+      if (!r.ok || !m.ok) return setLoadFailed(true);
       setJ(r.data);
       setPlan(r.data.planFollowed);
       setLabel(r.data.label);
+      setTags(r.data.mistakeIds);
+      setMistakes(m.data);
     });
     return () => { live = false; };
   }, [tradeId, tries]);
 
-  const dirty = j !== null && (plan !== j.planFollowed || label !== j.label);
+  const sameTags = j !== null && [...tags].sort().join() === [...j.mistakeIds].sort().join();
+  const dirty = j !== null && (plan !== j.planFollowed || label !== j.label || !sameTags);
+  // tags belong to a judgement labelled Mistake; a retired mistake is offered only where it is already tagged
+  const offered = mistakes.filter((m) => !m.retired || j?.mistakeIds.includes(m.id));
   const validLossReason = j === null ? null : !j.isLoss ? NOT_A_LOSS : plan !== "yes" ? NOT_FOLLOWED : null;
 
   const choosePlan = (p: Plan) => {
@@ -69,7 +76,7 @@ function JudgeDrawer({ tradeId, accountName, zone, onClose }: { tradeId: string;
     setFailure(null);
     setConflict(null);
     setErrors({});
-    const r = await call<Judgement>("PUT", `/trades/${tradeId}/judgement`, { planFollowed: plan, label, mistakeIds: j.mistakeIds, expectedUpdatedAt: j.updatedAt });
+    const r = await call<Judgement>("PUT", `/trades/${tradeId}/judgement`, { planFollowed: plan, label, mistakeIds: label === "mistake" ? tags : [], expectedUpdatedAt: j.updatedAt });
     setSaving(false);
     if (r.ok) {
       onClose();
@@ -146,6 +153,23 @@ function JudgeDrawer({ tradeId, accountName, zone, onClose }: { tradeId: string;
                 <span className="reason">It {j.isWin ? "made money" : "broke even"}, but I was off plan. It will show as {j.isWin ? "a profitable mistake, not a clean win" : "a mistake"}.</span>
               </span>
             </label>
+          )}
+
+          {label === "mistake" && (
+            <fieldset className="field">
+              <legend className="section">Which mistakes?</legend>
+              <p className="helper">Pick every one that applies. Each counts once in the Mistakes counter.</p>
+              <div className="judge-tags">
+                {offered.map((m) => (
+                  <label key={m.id} className="judge-option">
+                    <input type="checkbox" checked={tags.includes(m.id)} onChange={(e) => setTags(e.target.checked ? [...tags, m.id] : tags.filter((x) => x !== m.id))} />
+                    <span>{m.name}{m.retired && <span className="reason">Retired</span>}</span>
+                  </label>
+                ))}
+              </div>
+              {tags.length === 0 && <p className="helper">Nothing tagged yet. Labelled Mistake, not tagged: it adds nothing to the counter.</p>}
+              {errors.mistakeIds && <p className="field-error">! {errors.mistakeIds}</p>}
+            </fieldset>
           )}
 
           <div className="field">

@@ -71,8 +71,8 @@ func reset(t *testing.T) {
 	if _, err := pool.Exec(context.Background(),
 		`TRUNCATE trade, account, focus CASCADE;
 		 UPDATE journal_settings SET time_zone = 'America/Chicago';
-		 DELETE FROM mistake WHERE name NOT IN ('Chased entry', 'Moved stop', 'Oversized', 'Ignored checklist', 'Traded outside plan');
-		 UPDATE mistake SET stop_line = NULL, stop_period = NULL, retired_at = NULL`); err != nil {
+		 TRUNCATE mistake CASCADE;
+		 INSERT INTO mistake (name) VALUES ('Chased entry'), ('Moved stop'), ('Oversized'), ('Ignored checklist'), ('Traded outside plan')`); err != nil {
 		t.Fatal(err)
 	}
 }

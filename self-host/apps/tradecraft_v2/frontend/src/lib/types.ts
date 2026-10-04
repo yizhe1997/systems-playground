@@ -184,3 +184,19 @@ export type Judgement = {
   validLoss: { available: boolean; reason: string | null };
   trade: DayTrade;
 };
+
+export type Mistake = { id: string; name: string; stopLine: number | null; stopPeriod: "week" | "month" | null; retired: boolean; updatedAt: string };
+export type CounterCell = { onTrades: number; onDays: number; total: number };
+export type CounterRow = {
+  mistakeId: string;
+  name: string;
+  retired: boolean;
+  accounts: { accountId: string; name: string; count: number }[];
+  week: CounterCell;
+  month: CounterCell;
+  stopLine: number | null;
+  stopPeriod: "week" | "month" | null;
+  status: "stop" | "count_only";
+  progress: string | null;
+};
+export type Counter = { period: "week" | "month"; periodStart: string; periodEnd: string; rows: CounterRow[] };

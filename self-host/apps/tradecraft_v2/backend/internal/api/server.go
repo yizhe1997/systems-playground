@@ -59,6 +59,15 @@ func New(pool *pgxpool.Pool, now func() time.Time) *fiber.App {
 	app.Get("/reviews/day", s.getDailyReview)
 	app.Put("/reviews/day", s.saveDailyReview)
 
+	app.Put("/reviews/day-mistakes", s.setDayMistakes)
+
+	app.Get("/mistakes", s.listMistakes)
+	app.Post("/mistakes", s.addMistake)
+	app.Get("/mistakes/counter", s.mistakeCounter) // before /mistakes/:id
+	app.Put("/mistakes/:id", s.updateMistake)
+	app.Post("/mistakes/:id/retire", s.retireMistake)
+	app.Post("/mistakes/:id/restore", s.restoreMistake)
+
 	app.Get("/export", s.export)
 	return app
 }

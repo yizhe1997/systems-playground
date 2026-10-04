@@ -98,3 +98,45 @@ func (q *Queries) MistakeBreakdown(ctx context.Context, accountID string, from, 
 	}
 	return out, rows.Err()
 }
+
+// Bounds are the week (Monday to Sunday) and the month that contain a day, as the database decides them.
+type Bounds struct{ WeekStart, WeekEnd, MonthStart, MonthEnd time.Time }
+
+func (q *Queries) PeriodBounds(ctx context.Context, day time.Time) (Bounds, error) {
+	var b Bounds
+	err := q.db.QueryRow(ctx, `
+		SELECT week_start($1::date), week_start($1::date) + 6,
+		       date_trunc('month', $1::date)::date, (date_trunc('month', $1::date) + interval '1 month - 1 day')::date`, day).
+		Scan(&b.WeekStart, &b.WeekEnd, &b.MonthStart, &b.MonthEnd)
+	return b, err
+}
+
+// CounterCount is how many records of one mistake one account has over a range.
+type CounterCount struct {
+	MistakeID   string
+	AccountID   string
+	AccountName string
+	OnTrades    int32
+	OnDays      int32
+}
+
+// CounterCounts reads mistake_counts over a range for one account, or all accounts when accountID is nil.
+func (q *Queries) CounterCounts(ctx context.Context, from, to time.Time, accountID *string) ([]CounterCount, error) {
+	rows, err := q.db.Query(ctx, `
+		SELECT c.mistake_id::text, c.account_id::text, a.name, c.on_trades, c.on_days
+		  FROM mistake_counts($1::date, $2::date, $3::uuid) c JOIN account a ON a.id = c.account_id
+		 ORDER BY a.name`, from, to, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []CounterCount
+	for rows.Next() {
+		var c CounterCount
+		if err := rows.Scan(&c.MistakeID, &c.AccountID, &c.AccountName, &c.OnTrades, &c.OnDays); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}

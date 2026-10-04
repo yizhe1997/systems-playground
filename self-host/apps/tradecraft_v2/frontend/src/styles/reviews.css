@@ -81,3 +81,10 @@
 .judge-option input { margin-top: 3px; }
 .judge-option-off { border-style: dashed; color: var(--text-3); cursor: not-allowed; }
 .judge-option-off input { cursor: not-allowed; }
+.manage-list { list-style: none; margin: var(--space-md) 0; padding: 0; }
+.manage-list li { display: flex; align-items: center; gap: var(--space-md); padding: 8px 0; border-top: 1px solid var(--border); min-height: 48px; }
+.manage-list li:first-child { border-top: 0; }
+.manage-name { font-weight: 600; }
+.judge-tags { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+.judge-tags .judge-option { padding: 6px 12px; }
+.day-records { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; margin: var(--space-sm) 0; }
