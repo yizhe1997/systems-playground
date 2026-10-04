@@ -51,6 +51,8 @@ func New(pool *pgxpool.Pool, now func() time.Time) *fiber.App {
 	app.Put("/trades/:id", s.updateTrade)
 	app.Delete("/trades/:id", s.deleteTrade)
 	app.Post("/trades/:id/restore", s.restoreTrade)
+	app.Get("/trades/:id/judgement", s.getJudgement)
+	app.Put("/trades/:id/judgement", s.saveJudgement)
 
 	app.Get("/reviews", s.listReviews)
 	app.Get("/reviews/calendar", s.reviewsCalendar)

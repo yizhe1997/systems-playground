@@ -125,6 +125,8 @@ type TradeDetail struct {
 	TradingDay      *time.Time `json:"trading_day"`
 	Deleted         bool       `json:"deleted"`
 	UpdatedAt       time.Time  `json:"updated_at"`
+	PlanFollowed    *string    `json:"plan_followed"`
+	Label           *string    `json:"label"`
 }
 
 type TradeJudgement struct {

@@ -37,6 +37,8 @@ export type Trade = {
   reasons: Record<string, string>;
   deleted: boolean;
   updatedAt: string;
+  planFollowed: "yes" | "partly" | "no" | null;
+  label: "valid_loss" | "mistake" | null;
 };
 
 export type Preview = {
@@ -169,4 +171,16 @@ export type Calendar = {
   days: { date: string; hasTrades: boolean; missing: boolean }[];
   weeks: { weekStart: string; state: WeekState }[];
   months: string[];
+};
+
+export type Judgement = {
+  tradeId: string;
+  planFollowed: "yes" | "partly" | "no" | null;
+  label: "valid_loss" | "mistake" | null;
+  mistakeIds: string[];
+  updatedAt: string | null;
+  isLoss: boolean;
+  isWin: boolean;
+  validLoss: { available: boolean; reason: string | null };
+  trade: DayTrade;
 };

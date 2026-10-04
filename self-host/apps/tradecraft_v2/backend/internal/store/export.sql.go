@@ -10,7 +10,7 @@ import (
 )
 
 const exportTrades = `-- name: ExportTrades :many
-SELECT id, account_id, account_name, account_currency, instrument, direction, size, entry_price, exit_price, entry_at, exit_at, dollars_per_point, cost, stop_price, typed_result, thesis, gross_result, net_result, risk, r_multiple, trading_day, deleted, updated_at FROM trade_detail ORDER BY exit_at, id
+SELECT id, account_id, account_name, account_currency, instrument, direction, size, entry_price, exit_price, entry_at, exit_at, dollars_per_point, cost, stop_price, typed_result, thesis, gross_result, net_result, risk, r_multiple, trading_day, deleted, updated_at, plan_followed, label FROM trade_detail ORDER BY exit_at, id
 `
 
 // Everything, deleted trades included (the deleted flag is a column). Oldest exit first.
@@ -47,6 +47,8 @@ func (q *Queries) ExportTrades(ctx context.Context) ([]TradeDetail, error) {
 			&i.TradingDay,
 			&i.Deleted,
 			&i.UpdatedAt,
+			&i.PlanFollowed,
+			&i.Label,
 		); err != nil {
 			return nil, err
 		}

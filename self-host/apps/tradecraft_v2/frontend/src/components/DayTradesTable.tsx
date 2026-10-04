@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { DayTrade, Stats } from "@/lib/types";
+import { JudgeButton } from "@/components/JudgeButton";
 import { clock, count, money, plain, profitClass } from "@/lib/format";
 
 const PLAN: Record<string, string> = { yes: "Yes", partly: "Partly", no: "No" };
 
 /** The day's trades with the result and the judgement side by side ("The result is the outcome; the judgement is what counts."). */
-export function DayTradesTable({ trades, stats, zone, zoneLabel }: { trades: DayTrade[]; stats: Stats; zone: string; zoneLabel: string }) {
+export function DayTradesTable({ trades, stats, zone, zoneLabel, accountName }: { trades: DayTrade[]; stats: Stats; zone: string; zoneLabel: string; accountName: string }) {
   return (
     <section className="card section-card" aria-labelledby="trades-title">
       <div className="section-head">
@@ -24,6 +25,7 @@ export function DayTradesTable({ trades, stats, zone, zoneLabel }: { trades: Day
               <th scope="col">Followed plan</th>
               <th scope="col">Judgement</th>
               <th scope="col">Mistakes</th>
+              <th scope="col"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -45,6 +47,7 @@ export function DayTradesTable({ trades, stats, zone, zoneLabel }: { trades: Day
                   )}
                 </td>
                 <td>{t.judgement.mistakes.length > 0 ? t.judgement.mistakes.join(", ") : <span className="helper">—</span>}</td>
+                <td><JudgeButton tradeId={t.id} accountName={accountName} zone={zone} label={`${t.instrument} ${t.direction === "long" ? "Long" : "Short"} at ${clock(t.exitAt, zone)}`} /></td>
               </tr>
             ))}
           </tbody>

@@ -12,6 +12,18 @@ function ResultCell({ t }: { t: Trade }) {
   );
 }
 
+const PLAN: Record<string, string> = { yes: "Followed", partly: "Partly", no: "Not followed" };
+
+/** The plan answer from the daily review beside the result, so the result never stands alone (principle I). */
+function PlanCell({ t }: { t: Trade }) {
+  return (
+    <>
+      {t.planFollowed ? PLAN[t.planFollowed] : "Not judged yet"}
+      {t.label && <span className="reason">{t.label === "mistake" ? "Mistake" : "Valid loss"}</span>}
+    </>
+  );
+}
+
 function RCell({ t }: { t: Trade }) {
   if (t.rMultiple !== null) return <>{rValue(t.rMultiple)}</>;
   const reason = t.dollarsPerPoint === null ? "no dollars per point" : (t.reasons.rMultiple ?? "");
@@ -37,6 +49,7 @@ export function TradesTable({ trades, zone, deletedView }: { trades: Trade[]; zo
               <th scope="col">Direction</th>
               <th scope="col">Size</th>
               <th scope="col">Net result</th>
+              <th scope="col">Plan</th>
               <th scope="col">R</th>
               <th scope="col"><span className="sr-only">Actions</span></th>
             </tr>
@@ -56,6 +69,7 @@ export function TradesTable({ trades, zone, deletedView }: { trades: Trade[]; zo
                   <td>{t.direction === "long" ? "Long" : "Short"}</td>
                   <td className="num">{plain(t.size)}</td>
                   <td className="num tall"><ResultCell t={t} /></td>
+                  <td className="tall"><PlanCell t={t} /></td>
                   <td className="num tall"><RCell t={t} /></td>
                   <td className="actions">
                     {deletedView ? (
@@ -74,7 +88,7 @@ export function TradesTable({ trades, zone, deletedView }: { trades: Trade[]; zo
           </tbody>
         </table>
       </div>
-      <p className="helper table-foot">Each result is in its own account&apos;s currency. This list has no totals.</p>
+      <p className="helper table-foot">Each result is in its own account&apos;s currency. This list has no totals. The plan answer comes from the daily review.</p>
     </div>
     </RowActions>
   );

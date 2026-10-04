@@ -73,3 +73,11 @@
 .drawer::backdrop { background: var(--dim); }
 .drawer-body { padding: var(--card-pad); display: flex; flex-direction: column; gap: var(--space-md); }
 .drawer-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-md); }
+
+.judge-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-md); }
+.judge-strip .stat-value { font-size: 18px; }
+.judge-options { display: flex; flex-direction: column; gap: var(--space-sm); }
+.judge-option { display: flex; gap: var(--space-sm); align-items: flex-start; border: 1px solid var(--outline); border-radius: var(--r-button); padding: 10px 12px; cursor: pointer; }
+.judge-option input { margin-top: 3px; }
+.judge-option-off { border-style: dashed; color: var(--text-3); cursor: not-allowed; }
+.judge-option-off input { cursor: not-allowed; }

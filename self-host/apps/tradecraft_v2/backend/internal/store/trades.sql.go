@@ -38,7 +38,7 @@ func (q *Queries) CountTrades(ctx context.Context, arg CountTradesParams) (int64
 }
 
 const getTrade = `-- name: GetTrade :one
-SELECT id, account_id, account_name, account_currency, instrument, direction, size, entry_price, exit_price, entry_at, exit_at, dollars_per_point, cost, stop_price, typed_result, thesis, gross_result, net_result, risk, r_multiple, trading_day, deleted, updated_at FROM trade_detail WHERE id = $1::uuid
+SELECT id, account_id, account_name, account_currency, instrument, direction, size, entry_price, exit_price, entry_at, exit_at, dollars_per_point, cost, stop_price, typed_result, thesis, gross_result, net_result, risk, r_multiple, trading_day, deleted, updated_at, plan_followed, label FROM trade_detail WHERE id = $1::uuid
 `
 
 func (q *Queries) GetTrade(ctx context.Context, id string) (TradeDetail, error) {
@@ -68,6 +68,8 @@ func (q *Queries) GetTrade(ctx context.Context, id string) (TradeDetail, error) 
 		&i.TradingDay,
 		&i.Deleted,
 		&i.UpdatedAt,
+		&i.PlanFollowed,
+		&i.Label,
 	)
 	return i, err
 }
@@ -121,7 +123,7 @@ func (q *Queries) InsertTrade(ctx context.Context, arg InsertTradeParams) (strin
 }
 
 const listTrades = `-- name: ListTrades :many
-SELECT id, account_id, account_name, account_currency, instrument, direction, size, entry_price, exit_price, entry_at, exit_at, dollars_per_point, cost, stop_price, typed_result, thesis, gross_result, net_result, risk, r_multiple, trading_day, deleted, updated_at FROM trade_detail
+SELECT id, account_id, account_name, account_currency, instrument, direction, size, entry_price, exit_price, entry_at, exit_at, dollars_per_point, cost, stop_price, typed_result, thesis, gross_result, net_result, risk, r_multiple, trading_day, deleted, updated_at, plan_followed, label FROM trade_detail
  WHERE deleted = $1::boolean
    AND ($2::uuid IS NULL OR account_id = $2::uuid)
    AND ($3::date IS NULL OR trading_day >= $3::date)
@@ -179,6 +181,8 @@ func (q *Queries) ListTrades(ctx context.Context, arg ListTradesParams) ([]Trade
 			&i.TradingDay,
 			&i.Deleted,
 			&i.UpdatedAt,
+			&i.PlanFollowed,
+			&i.Label,
 		); err != nil {
 			return nil, err
 		}

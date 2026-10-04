@@ -58,6 +58,8 @@ type tradeJSON struct {
 	Reasons         map[string]string `json:"reasons"`
 	Deleted         bool              `json:"deleted"`
 	UpdatedAt       string            `json:"updatedAt"`
+	PlanFollowed    *string           `json:"planFollowed"` // the daily review's plan answer; null until judged (feature 001)
+	Label           *string           `json:"label"`
 }
 
 // riskReason says why risk (and so R) is a dash, in the words the screens use.
@@ -85,6 +87,7 @@ func toTrade(r store.TradeDetail, loc *time.Location) tradeJSON {
 		GrossResult: outDecimalPtr(r.GrossResult), NetResult: outDecimalPtr(r.NetResult),
 		Risk: outDecimalPtr(r.Risk), RMultiple: outDecimalPtr(r.RMultiple),
 		Reasons: map[string]string{}, Deleted: r.Deleted, UpdatedAt: fmtTime(r.UpdatedAt),
+		PlanFollowed: r.PlanFollowed, Label: r.Label,
 	}
 	if r.TradingDay != nil {
 		t.TradingDay = r.TradingDay.Format("2006-01-02")

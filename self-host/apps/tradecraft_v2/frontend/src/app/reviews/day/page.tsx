@@ -76,7 +76,7 @@ export default async function DailyReviewPage({ searchParams }: { searchParams: 
       <NumbersStrip stats={review.stats} />
 
       {review.trades.length > 0 ? (
-        <DayTradesTable trades={review.trades} stats={review.stats} zone={zone} zoneLabel={zoneName(zone)} />
+        <DayTradesTable trades={review.trades} stats={review.stats} zone={zone} zoneLabel={zoneName(zone)} accountName={review.accountName} />
       ) : (
         <div className="card empty section-card">
           <h2 className="section">No trades on {dayLabel(review.date, false)} for {review.accountName}.</h2>

@@ -258,6 +258,8 @@ components:
         label: { type: [string, "null"], enum: [valid_loss, mistake, null] }
         mistakeIds: { type: array, items: { type: string, format: uuid } }
         updatedAt: { type: [string, "null"], format: date-time, description: "null until the first save" }
+        isLoss: { type: boolean, description: "net result below zero" }
+        isWin: { type: boolean, description: "net result above zero" }
         validLoss:
           type: object
           required: [available]
