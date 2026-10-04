@@ -139,6 +139,14 @@ stars, status chips, the judge drawer, collapsible week blocks, pickers) are bui
 Quiet Outcome Rule holds (profit and loss tint on the net-result text only; stop-line status and "Missing" are carried by words, not
 colour). The owner has further feel changes in mind for after this feature; they are not part of this plan.
 
+## 13a. Outcomes of the requirements checklists (2026-10-04)
+
+Evaluating the two checklists changed the spec (definitions, FR-005 to FR-018, FR-021a, FR-023, FR-025, new FR-027 to FR-030, SC-008) and
+three owner decisions, recorded in the spec's clarifications: marking reviewed requires nothing; leaving unsaved asks first; clearing a
+focus and retiring a mistake show a 10-second Undo. Restoring a retired mistake is `POST /mistakes/{id}/restore`. The stop line is limited to
+1 to 999 and belongs to one period; its status is read from that period for the viewed week or month. Reviews stay on the date they were written
+when the time zone or an account's day start moves trades.
+
 ## 14. Defaults the owner may overrule at the plan gate
 
 **Approved by the owner on 2026-10-04: yes to all eight (a to h), including the Plan column on the Trades list.**

@@ -10,43 +10,43 @@
 
 ## Judging a trade
 
-- [ ] CHK001 Are "winning trade", "losing trade" and a trade that breaks even defined (by the sign of the net result), and is it stated what a break-even trade can be labelled? [Gap, Spec FR-009, research.md §4]
-- [ ] CHK002 Is it stated what happens to a trade's plan answer, label and tags when the trade is soft-deleted and later restored? [Gap, Spec FR-002, US2]
-- [ ] CHK003 Is it stated that a valid-loss label is cleared when an edit to the trade makes it no longer a loss, and is the owner told when that happens? [Gap, Spec FR-009, data-model.md]
-- [ ] CHK004 Is it clear whether a trade labelled "Mistake" must carry at least one mistake tag, and which of the two the "Mistakes" figure counts? [Ambiguity, Spec FR-009, FR-013, FR-015, research.md §14a]
-- [ ] CHK005 Is the "Plan followed X of Y" figure defined for trades that have no plan answer yet, so the parts add up to the whole? [Gap, Spec FR-008, research.md §14b]
-- [ ] CHK006 Is it stated whether a day can be marked reviewed while some of its trades are not judged, and whether any answer or grade is required to mark it? [Gap, Spec FR-006, FR-007]
-- [ ] CHK007 Is it clear whether a mistake tagged on a trade and the same mistake recorded for that trade's day are two records or one? [Ambiguity, Spec FR-014, FR-015]
+- [x] CHK001 Are "winning trade", "losing trade" and a trade that breaks even defined (by the sign of the net result), and is it stated what a break-even trade can be labelled? [Gap, Spec FR-009, research.md §4] → Spec Definitions and FR-009: above, below or exactly zero; a break-even trade can carry a plan answer, tags and the mistake label, not valid loss.
+- [x] CHK002 Is it stated what happens to a trade's plan answer, label and tags when the trade is soft-deleted and later restored? [Gap, Spec FR-002, US2] → FR-009: a trade keeps its plan answer, label and tags through soft delete and restore.
+- [x] CHK003 Is it stated that a valid-loss label is cleared when an edit to the trade makes it no longer a loss, and is the owner told when that happens? [Gap, Spec FR-009, data-model.md] → FR-009: an edit that makes the trade no longer a loss clears the label (the database trigger) and the trade shows Not judged yet; screens.md addendum has the wording.
+- [x] CHK004 Is it clear whether a trade labelled "Mistake" must carry at least one mistake tag, and which of the two the "Mistakes" figure counts? [Ambiguity, Spec FR-009, FR-013, FR-015, research.md §14a] → FR-015 and Definitions: counts are tags; a trade labelled mistake with no tag shows Mistake, not tagged and adds nothing.
+- [x] CHK005 Is the "Plan followed X of Y" figure defined for trades that have no plan answer yet, so the parts add up to the whole? [Gap, Spec FR-008, research.md §14b] → FR-008 and screens.md addendum: the plan line adds how many are not judged yet.
+- [x] CHK006 Is it stated whether a day can be marked reviewed while some of its trades are not judged, and whether any answer or grade is required to mark it? [Gap, Spec FR-006, FR-007] → Owner decision 2026-10-04 (clarifications) and FR-006: marking reviewed requires nothing; unjudged trades are noted under the title.
+- [x] CHK007 Is it clear whether a mistake tagged on a trade and the same mistake recorded for that trade's day are two records or one? [Ambiguity, Spec FR-014, FR-015] → FR-015: two records, both counted.
 
 ## Figures and statistics
 
-- [ ] CHK008 Is every statistic shown (net result, plan followed, mistakes, valid losses, win rate) given a written definition and its sample size, as FR-023 requires, in one place? [Traceability, Spec FR-023, data-model.md]
-- [ ] CHK009 Is the win rate's percentage rounding rule (half up, whole percent) and its dash case (no trades) stated as a requirement rather than only in the data model? [Gap, Spec FR-023, data-model.md]
-- [ ] CHK010 Is the net result of a day or week defined for a day whose trades include a deleted one, and is it clear deleted trades never count? [Clarity, Spec FR-004, FR-021]
-- [ ] CHK011 Are all figures of a day, of a week and in the mistake counter required to come from one definition, so a day and its week cannot disagree? [Consistency, Spec FR-004, FR-021, FR-015]
-- [ ] CHK012 Is the dash-and-reason requirement given a reason text for each figure that can be unavailable (net result, win rate, risk on a trade)? [Coverage, Spec FR-012, SC-004, screens.md]
-- [ ] CHK013 Are money figures required to be in the account's currency, and is it stated that a weekly or daily total never mixes currencies (one account per review)? [Consistency, Spec FR-024, Assumptions]
+- [x] CHK008 Is every statistic shown (net result, plan followed, mistakes, valid losses, win rate) given a written definition and its sample size, as FR-023 requires, in one place? [Traceability, Spec FR-023, data-model.md] → Spec Definitions section (one place), mirrored in data-model.md and, at implement, docs/domain.md.
+- [x] CHK009 Is the win rate's percentage rounding rule (half up, whole percent) and its dash case (no trades) stated as a requirement rather than only in the data model? [Gap, Spec FR-023, data-model.md] → Definitions: whole percent, half up, dash with the reason no trades.
+- [x] CHK010 Is the net result of a day or week defined for a day whose trades include a deleted one, and is it clear deleted trades never count? [Clarity, Spec FR-004, FR-021] → FR-023: a soft-deleted trade never counts in any figure.
+- [x] CHK011 Are all figures of a day, of a week and in the mistake counter required to come from one definition, so a day and its week cannot disagree? [Consistency, Spec FR-004, FR-021, FR-015] → FR-023: one definition for a day, a week and the counter.
+- [x] CHK012 Is the dash-and-reason requirement given a reason text for each figure that can be unavailable (net result, win rate, risk on a trade)? [Coverage, Spec FR-012, SC-004, screens.md] → Definitions: net result and win rate show a dash with the reason no trades; a trade's risk keeps its 000 reasons.
+- [x] CHK013 Are money figures required to be in the account's currency, and is it stated that a weekly or daily total never mixes currencies (one account per review)? [Consistency, Spec FR-024, Assumptions] → FR-024 and Assumptions: one account per review, so a total never mixes currencies.
 
 ## Mistakes and stop lines
 
-- [ ] CHK014 Does the stop line belong to a period of its own (per week or per month), and is it consistent with FR-016's "the count in the chosen period"? [Conflict, Spec FR-016, screens.md S3, data-model.md]
-- [ ] CHK015 Is the status of a past or future period defined, for a mistake that reached its line then (STOP TRADING for last week, or the count only)? [Gap, Spec FR-016]
-- [ ] CHK016 Is it stated what the counter shows for a retired mistake that has a count in the period and for one that has a stop line? [Edge Case, Gap, Spec FR-013]
-- [ ] CHK017 Is renaming a mistake to the name of another (or of a retired) one defined, and is adding a retired name's again defined? [Gap, Spec FR-013, research.md §14d]
-- [ ] CHK018 Is the counting rule for a week that crosses two months stated (a week is under the month of its Sunday in the list, but the mistake counter counts by trading day)? [Ambiguity, Spec FR-015, FR-026, Assumptions]
-- [ ] CHK019 Is the limit on a mistake's name length and on the stop line (an upper bound) stated? [Gap, Spec FR-013, FR-016]
+- [x] CHK014 Does the stop line belong to a period of its own (per week or per month), and is it consistent with FR-016's "the count in the chosen period"? [Conflict, Spec FR-016, screens.md S3, data-model.md] → FR-016 now says a stop line belongs to one period and its status is read from it, matching the signed-off S3 wireframe.
+- [x] CHK015 Is the status of a past or future period defined, for a mistake that reached its line then (STOP TRADING for last week, or the count only)? [Gap, Spec FR-016] → FR-016: status is read for the viewed week or month, so a past period shows what happened then.
+- [x] CHK016 Is it stated what the counter shows for a retired mistake that has a count in the period and for one that has a stop line? [Edge Case, Gap, Spec FR-013] → FR-015: a retired mistake appears only when it has a count in the period; its stop line still applies.
+- [x] CHK017 Is renaming a mistake to the name of another (or of a retired) one defined, and is adding a retired name's again defined? [Gap, Spec FR-013, research.md §14d] → FR-013: renaming to a used name (retired included) is refused with the account-style message; adding a retired name restores it.
+- [x] CHK018 Is the counting rule for a week that crosses two months stated (a week is under the month of its Sunday in the list, but the mistake counter counts by trading day)? [Ambiguity, Spec FR-015, FR-026, Assumptions] → FR-015: a week that crosses two months counts whole in the week column, and in the month column only its days in that month.
+- [x] CHK019 Is the limit on a mistake's name length and on the stop line (an upper bound) stated? [Gap, Spec FR-013, FR-016] → FR-013 and FR-016: names 1 to 60 characters; stop line 1 to 999.
 
 ## States, periods and time
 
-- [ ] CHK020 Is "today" defined per account (the trading day of the current instant, which for an account with an evening start is already tomorrow) rather than by calendar date? [Ambiguity, Spec FR-007a, Assumptions]
-- [ ] CHK021 Are the daily states Missing, Draft, Reviewed and today defined for a day whose only trades were later deleted, or whose trades moved to another day? [Edge Case, Gap, Spec FR-007a, Edge Cases]
-- [ ] CHK022 Is it stated what happens to reviews when the journal time zone or an account's trading-day start changes and trades move to other trading days (the review stays on its old day, which may then have no trades)? [Gap, Spec Edge Cases, 000 FR-013]
-- [ ] CHK023 Is the weekly review's Missing state defined consistently with the daily one (week ended, a day with trades, no reviewed mark) and is there no way to undo "reviewed"? [Consistency, Spec FR-021a]
-- [ ] CHK024 Is the week (Monday to Sunday) and the month (calendar) stated as requirements, taken on the trading day, with their sources flagged as unconfirmed in the domain document? [Traceability, Spec Assumptions, plan.md]
+- [x] CHK020 Is "today" defined per account (the trading day of the current instant, which for an account with an evening start is already tomorrow) rather than by calendar date? [Ambiguity, Spec FR-007a, Assumptions] → FR-007a: today belongs to the account's trading day.
+- [x] CHK021 Are the daily states Missing, Draft, Reviewed and today defined for a day whose only trades were later deleted, or whose trades moved to another day? [Edge Case, Gap, Spec FR-007a, Edge Cases] → FR-007a: states follow live trades now on the day; a saved review keeps its state with no trades.
+- [x] CHK022 Is it stated what happens to reviews when the journal time zone or an account's trading-day start changes and trades move to other trading days (the review stays on its old day, which may then have no trades)? [Gap, Spec Edge Cases, 000 FR-013] → FR-007a: reviews stay on the date they were written; trades move; a day that gains trades without a review becomes Missing or today.
+- [x] CHK023 Is the weekly review's Missing state defined consistently with the daily one (week ended, a day with trades, no reviewed mark) and is there no way to undo "reviewed"? [Consistency, Spec FR-021a] → FR-021a: Missing defined as for days; no way to remove a reviewed mark.
+- [x] CHK024 Is the week (Monday to Sunday) and the month (calendar) stated as requirements, taken on the trading day, with their sources flagged as unconfirmed in the domain document? [Traceability, Spec Assumptions, plan.md] → Definitions: week and month stated, flagged unconfirmed; the domain document entries are a task at implement (plan.md).
 
 ## The focus
 
-- [ ] CHK025 Is "the nearest earlier focus" defined when the previous day's review has an empty answer to the third question (skip it, or show nothing)? [Ambiguity, Spec FR-005, US1]
-- [ ] CHK026 Is the 280-character limit counted in a stated unit (characters as the owner sees them), and is the "N over" figure exact? [Clarity, Spec FR-017]
-- [ ] CHK027 Is it stated which date decides the week and month of a daily review (its trading day), and that the focus is shared by all accounts? [Clarity, Spec FR-018, SC-007]
-- [ ] CHK028 Is it stated what happens when a week's focus is cleared (the card says none is written) and whether the clear can be undone? [Edge Case, Gap, Spec FR-017, FR-018]
+- [x] CHK025 Is "the nearest earlier focus" defined when the previous day's review has an empty answer to the third question (skip it, or show nothing)? [Ambiguity, Spec FR-005, US1] → FR-005: an earlier review with an empty answer is skipped.
+- [x] CHK026 Is the 280-character limit counted in a stated unit (characters as the owner sees them), and is the "N over" figure exact? [Clarity, Spec FR-017] → FR-017: characters as the owner sees them; the count is exact.
+- [x] CHK027 Is it stated which date decides the week and month of a daily review (its trading day), and that the focus is shared by all accounts? [Clarity, Spec FR-018, SC-007] → FR-018: decided by the review's trading day; shared by all accounts.
+- [x] CHK028 Is it stated what happens when a week's focus is cleared (the card says none is written) and whether the clear can be undone? [Edge Case, Gap, Spec FR-017, FR-018] → Owner decision 2026-10-04 and FR-017: clearing shows Focus cleared with a 10-second Undo.

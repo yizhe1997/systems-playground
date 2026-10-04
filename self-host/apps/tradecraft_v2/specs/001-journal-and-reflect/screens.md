@@ -1,10 +1,10 @@
 # Wireframes: Journal and Reflect
 
 **Feature**: `001-journal-and-reflect`
-**Status**: signed-off 2026-10-03, signed off again 2026-10-04. Greyscale wireframes: structure, wording, states and behaviour. The look is not part of this sign-off.
+**Status**: signed-off 2026-10-03, signed off again 2026-10-04 (twice: after the v1 dependencies were removed, and after the requirements checklists). Greyscale wireframes: structure, wording, states and behaviour. The look is not part of this sign-off.
 **Penpot**: file `Tradecraft_v2`, one page per screen (`S0 Reviews` to `S5 Weekly review`, plus a `Wireframe kit` page). Images exported to [wireframes/](wireframes/).
 **Signed off**: 2026-10-03
-**spec-sha256**: a4a303b37294c5a4e08ee872e9a84d5ab199cf3b78f8f17074bff2f3416bfe7f
+**spec-sha256**: 0bee1f844680764b742bbb4eeeea73174562a3c8096d181dd12da3d18b73b9fd
 
 All sample data is made up: account "Funded 50K", Wednesday 1 October 2025, NQ and ES trades.
 
@@ -136,6 +136,29 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Numbers | The week in numbers · Net result +$85 (Plan followed on 7 of 9 trades) · Plan followed 7 of 9 (2 not followed · 0 partly) · Mistakes 3 (Moved stop x2, Chased entry x1) · Valid losses 2 (of 4 losing trades) · Win rate 5 of 9 (56% of 9 trades) |
 | Actions | Mark as reviewed · Weekly reviews save only this mark and its time. The focus is saved from its own dialog. |
 
+## Content added after sign-off (not drawn)
+
+Wording for states that were accepted as not drawn, and for new refusals, written at the plan stage (2026-10-04). They follow the structure of the signed-off screens; they are drawn in Penpot at the next session.
+
+| Where | Text |
+|---|---|
+| S3 Rename a mistake (dialog) | Rename mistake · Name · Save · Cancel · ! A mistake named Moved stop already exists. Names are not case sensitive. |
+| S3 Retire a mistake | Retire Moved stop? · It stops appearing in new tags. Past trades keep it, so history and counts stay correct. · Retire · Cancel. After retiring: Mistake retired. · Undo (10 seconds). A retired mistake appears in the counter only when it has a count in the period, marked Retired. |
+| S3 Add a mistake that was retired | The retired mistake comes back with its stop line; no extra message. |
+| S1 Today row and today's review | In S0 the row for the current trading day reads Today instead of Missing or Draft; its review is the same as a Draft. |
+| S1 Unjudged trades note | N trades are not judged yet. (under the title, when above zero; "1 trade is not judged yet." for one) |
+| S1 Day not happened yet | ! This day has not happened yet. Mark as reviewed is unavailable. |
+| S1 Plan line | Plan followed 1 of 3 (1 not followed · 0 partly · 1 not judged yet) |
+| S1, S5 Plan answer change | If a valid-loss label is cleared because the plan answer changed or the trade is no longer a loss: the trade shows Not judged yet. |
+| S1 Trades changed | 1 trade changed after you marked this review as reviewed on Wed 1 Oct at 18:40. (singular), N trades (plural) |
+| S1 Leave | Leave without saving? / Your changes will be lost. / Keep editing · Leave (as on the trade form) |
+| S4 Cleared | Focus cleared. · Undo (10 seconds). Too long, one over: ! Too long: 1 character over. Shorten it to save. |
+| S4, S1, S2 Out of date | ! This review was changed elsewhere. Reload to see the latest version. · Reload (also "This focus", "This judgement", "This mistake") |
+| S2 Valid loss unavailable, not a loss | Not available: this trade is not a loss. |
+| S3 Stop line editor | Stop line is a whole number from 1 to 999. (error: Stop line must be 1 or more. / Stop line must be 999 or less.) |
+| S0, S1, S5 No account | Create an account first. / Every review belongs to an account. / New account |
+| Trades list (000 L1) | New column "Plan" beside Net result: Followed · Partly · Not followed · Not judged yet, with "Mistake" or "Valid loss" underneath when labelled. Footnote adds: The plan answer comes from the daily review. |
+
 ## Constitution check
 
 - [x] Every money figure has process information beside it (S0 rows, S1 numbers and table, S2 result strip, S5 numbers)
@@ -161,6 +184,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | 2026-10-03 | Grades | Five stars better, for mental and technical | Stars with a "1: drifted, 5: followed fully" line; S5 shows "4 of 5" |
 | 2026-10-03 | Win rate | Unsure; asked what the reference product does | It has no minimum, so none here; the win rate is a count ("1 of 3") |
 | 2026-10-04 | Re-sign-off | Signed off after the v1 dependencies were removed from the spec | Hash and notes updated |
+| 2026-10-04 | Checklists | Mark as reviewed requires nothing; leaving unsaved asks first; Undo for clearing a focus and retiring a mistake; yes to the Plan column and the seven plan defaults | Spec, screens addendum and plan updated; signed off a third time |
 | 2026-10-03 | Trade form | Yes to the suggested split | Thesis is written when logging; the rest of the judging stays in the review (S2 shows the thesis read-only). The trade form is not redrawn here; it is feature `000`'s, and the thesis field is already in it |
 | 2026-10-03 | Habits and mistakes | They are the same thing | One shared list; day-level and trade-level records; the counter shows the split |
 | 2026-10-03 | Reviewed state | No need to lock | Never locked; "Edited" time shown |
@@ -181,6 +205,6 @@ Known limits of this wireframe set: the trade form (Log or Edit trade) is featur
 ## Sign-off
 
 - **Signed off by**: owner
-- **Date**: 2026-10-04 (first signed off 2026-10-03)
-- **Spec hash**: a4a303b37294c5a4e08ee872e9a84d5ab199cf3b78f8f17074bff2f3416bfe7f
-- **Notes**: Re-signed after the spec stopped depending on Tradecraft v1 (accounts and trades come from feature `000`; no open trades; local use only, no sign-in or audit log yet; one entry and one exit per trade). Known gap: the S2 button reads "Edit stop, entries, costs and thesis" and should read "Edit trade", to be fixed in Penpot at the next session (Penpot was unreachable). Accepted exceptions, not drawn and handled in plan: (1) the trade form, which is feature `000`'s and already has the thesis field; (2) the rename and retire dialogs for mistakes; (3) where export lives (spec says exportable; proposed home is Settings); (4) the state for today (a Draft row without the tag).
+- **Date**: 2026-10-04 (first signed off 2026-10-03; third sign-off after the checklists)
+- **Spec hash**: 0bee1f844680764b742bbb4eeeea73174562a3c8096d181dd12da3d18b73b9fd
+- **Notes**: Third sign-off 2026-10-04, after the requirements checklists changed the spec (definitions, the owner's three decisions, FR-027 to FR-030, SC-008); the wording of states that were not drawn is in the section Content added after sign-off, to be drawn in Penpot at the next session. Earlier: re-signed after the spec stopped depending on Tradecraft v1 (accounts and trades come from feature `000`; no open trades; local use only, no sign-in or audit log yet; one entry and one exit per trade). Known gap: the S2 button reads "Edit stop, entries, costs and thesis" and should read "Edit trade", to be fixed in Penpot at the next session (Penpot was unreachable). Accepted exceptions, not drawn and handled in plan: (1) the trade form, which is feature `000`'s and already has the thesis field; (2) the rename and retire dialogs for mistakes; (3) where export lives (spec says exportable; proposed home is Settings); (4) the state for today (a Draft row without the tag).

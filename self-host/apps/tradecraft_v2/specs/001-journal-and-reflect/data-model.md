@@ -12,9 +12,9 @@ random UUIDs; times are `timestamptz`; days are `date`. Migrations continue the 
 |---|---|---|
 | id | uuid | primary key |
 | name | text | 1 to 60 characters after trimming, runs of spaces collapsed to one; unique ignoring case and surrounding spaces, **including retired ones** (same index and CHECK pattern as `account.name`) |
-| stop_line | integer | optional; at least 1 (CHECK) |
+| stop_line | integer | optional; 1 to 999 (CHECK) |
 | stop_period | text | `week` or `month`; present exactly when `stop_line` is present (CHECK) |
-| retired_at | timestamptz | null while in use; set by Retire, cleared by adding the same name again |
+| retired_at | timestamptz | null while in use; set by Retire, cleared by Undo (restore) or by adding the same name again |
 | created_at, updated_at | timestamptz | `updated_at` is set on every update (the `000` trigger) and is the version token |
 
 Seeded by the migration: Chased entry, Moved stop, Oversized, Ignored checklist, Traded outside plan.
@@ -64,7 +64,9 @@ One record per account, day and mistake: "once for the day".
 | edited_at | timestamptz | set to now when the row is saved while `reviewed_at` is set |
 | created_at, updated_at | timestamptz | `updated_at` is the version token |
 
-A row exists once anything has been saved. The state is derived (below), not stored.
+A row exists once anything has been saved ("Save draft" and "Mark as reviewed" both save answers and grades together). The state is derived
+(below), not stored. A saved review keeps its state even when its day later has no live trades (it is listed in the Reviews screen because a row
+exists); a reviewed day cannot be marked for a day that has not happened yet.
 
 ### focus
 
@@ -104,6 +106,10 @@ Nothing else about a week is stored.
 
 - **Plan followed X of Y**: X = live trades answered `yes`; Y = all live trades of the day or week. The detail adds `not followed` (answer
   `no`), `partly` (answer `partly`, never counted in X), and `not judged yet` (no answer) when above zero.
+- **Counter status**: for a viewed week or month, a mistake with a stop line is `stop` when the count in the stop line's own period (the week or
+  the month that contains the viewed date) has reached the line, otherwise `count_only`; a mistake without one is `count_only`. A retired mistake
+  appears only when it has a count in the viewed period. A week that crosses two months counts whole in the week column and, in the month
+  column, only its days that fall in that month.
 - **Mistakes n**: the number of mistake tags on live trades in the range plus the day-level records in the range, each once; the
   breakdown lists each mistake with its count.
 - **Valid losses n (of m losing trades)**: trades labelled `valid_loss`; m = live trades with a net result below zero.
@@ -134,8 +140,11 @@ Nothing else about a week is stored.
   opened but not marked reviewed ("This day has not happened yet."); grades 1 to 5 or null; answers up to 2,000 characters.
 - Focus: up to 280 characters, counted as Unicode code points; over the limit is refused with "Too long: N characters over. Shorten it
   to save." where N is exact; an empty text is a clear, not a save.
-- Mistake: a name of 1 to 60 characters, unique ignoring case; stop line a whole number of 1 or more with a period, or both absent,
-  otherwise "Stop line must be 1 or more."
+- Mistake: a name of 1 to 60 characters, unique ignoring case (retired included); renaming to a name already used is refused with "A mistake
+  named X already exists. Names are not case sensitive."; adding a name that matches a retired mistake restores it; a stop line is a whole
+  number from 1 to 999 with a period, or both absent, otherwise "Stop line must be 1 or more." or "Stop line must be 999 or less."
+- Focus: clearing deletes the row; the 10-second Undo is the web tier sending the same text again, so the API needs no undo of its own.
+- Mistake retire: Undo is `POST /mistakes/{id}/restore`.
 
 ## Relationships
 

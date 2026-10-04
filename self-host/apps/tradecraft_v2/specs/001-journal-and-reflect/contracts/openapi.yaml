@@ -116,6 +116,14 @@ paths:
       responses:
         "200": { description: Retired, content: { application/json: { schema: { $ref: "#/components/schemas/Mistake" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+  /mistakes/{id}/restore:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: restoreMistake
+      summary: Undo a retire (the Undo notice); the stop line and every record come back unchanged
+      responses:
+        "200": { description: Restored, content: { application/json: { schema: { $ref: "#/components/schemas/Mistake" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
   /mistakes/counter:
     get:
       operationId: mistakeCounter
@@ -238,7 +246,7 @@ components:
       required: [name]
       properties:
         name: { type: string, minLength: 1, maxLength: 60 }
-        stopLine: { type: [integer, "null"], description: "A whole number of 1 or more, with stopPeriod; both null removes the stop line" }
+        stopLine: { type: [integer, "null"], minimum: 1, maximum: 999, description: "A whole number from 1 to 999, with stopPeriod; both null removes the stop line" }
         stopPeriod: { type: [string, "null"], enum: [week, month, null] }
         expectedUpdatedAt: { type: [string, "null"], format: date-time }
     Judgement:
