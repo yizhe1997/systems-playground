@@ -57,9 +57,6 @@ test("capture the 001 screens", async ({ page }) => {
   await shot(page, "s0-reviews-month");
   await page.getByRole("link", { name: /Missing/ }).first().click();
   await shot(page, "s0-reviews-filter-missing");
-  await page.goto(reviewsUrl(funded.id));
-  await page.getByRole("button", { name: /October 2025/ }).click();
-  await shot(page, "s0-reviews-month-list");
   await page.goto("/reviews?account=" + practice.id + "&month=2024-01");
   await shot(page, "s0-reviews-nothing-yet");
 

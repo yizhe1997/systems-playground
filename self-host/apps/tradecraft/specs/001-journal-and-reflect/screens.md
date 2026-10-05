@@ -30,7 +30,7 @@ They serve every user story in `spec.md`: S1 and S2 serve stories 1 and 2, S3 se
 1. **Evening:** Reviews (S0) → Review this day → Daily review (S1) → Judge a trade (S2) for each trade → write the three answers and grades → Mark as reviewed.
 2. **Morning:** Reviews (S0) → open today's day, or the next one: the top of the daily review (S1) shows yesterday's focus plus the week's and month's.
 3. **Set the longer focus:** Daily review (S1) or weekly review (S5) focus card, or the month band in Reviews (S0) → Write one / Edit → Write a focus (S4).
-4. **Look back:** Reviews (S0) → step months with the arrows, pick a month, press Today, or "Jump to date" → open a week to see its days → open the day. From any daily review (S1) the previous and next day buttons step one day, and the middle button opens a day picker that marks days with trades and days with a missing review.
+4. **Look back:** Reviews (S0) → "Jump to date" (the date field opens on today; its calendar has its own Today and Clear) → open a week to see its days → open the day. From any daily review (S1) the previous and next day buttons step one day, and the middle button opens a day picker that marks days with trades and days with a missing review.
 5. **Watch a habit:** Mistakes (S3) → Stop line → editor.
 6. **End of week:** Reviews (S0) → Open weekly review (S5) → open any day from it → Mark as reviewed. To plan ahead, step to next week (S5) and write its focus there.
 
@@ -40,7 +40,7 @@ Every word the owner will read, as drawn. Money is shown in the account's curren
 
 ### Navigation (all screens)
 
-TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
+TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings, each with an icon (in the built app and the Hex reskin frames: a checked clipboard, candlesticks, a warning triangle, a wallet, a cog; in the greyscale wireframes: a blank grey square).
 
 ### S0 Reviews
 
@@ -48,12 +48,11 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 |---|---|
 | Title | Reviews |
 | Subtitle | Every day and week, with what is still missing. |
-| Account switcher | Account: Funded 50K |
+| Account switcher | Account (label above) · Funded 50K v · on the filter row, left of the date field |
 | Filters | All, Missing 2, Draft 1, Reviewed 4 |
-| Month navigation | < October 2025 v > (one month at a time; the name opens a month list) · Today · Jump to date |
-| Month card (top, on its own) | This month (October) · Grade every trade, not just the day. · Edit (empty: No focus for this month yet. · Write one) · Shown on every daily and weekly review this month. |
+| Jump to date | Jump to date (label above) · a date field showing today's date until another day is chosen (10/01/2025); its calendar has Clear and Today. Choosing a day opens that day's month with its week open. There are no month arrows, month list or Today button. |
+| Month card (top, on its own) | This month (October 2025) · Grade every trade, not just the day. · Edit (empty: No focus for this month yet. · Write one) · Shown on every daily and weekly review this month. |
 | Week block (collapsible, newest first) | Week of 29 Sep to 5 Oct · This week · summary (1 of 3 days reviewed · 1 draft · 1 missing) · status Missing / Reviewed · Open weekly review. Open shows its days as rows; the current week is open, the others closed. A week is listed under the month it ends in. |
-| Older months | < Earlier: September 2025 |
 | Day row | Wed 1 Oct · 3 trades · +$45 · Plan followed 2 of 3 · 1 mistake · Draft · Open |
 | Day row (missing) | Mon 29 Sep · 4 trades · +$120 · Plan followed 3 of 4 · 1 mistake · Missing · Review this day |
 | Week row | Week of 29 Sep to 5 Oct · weekly review · Gathers the days once they are reviewed · Missing · Open weekly review |
@@ -251,3 +250,4 @@ updated in Penpot and re-exported; the others are small enough that the drawn fr
 - **Parked**: the lines "No trades on Thu 2 Oct." repeat the "No trades" chip (signed-off wording); empty future weeks on Reviews take a full
   card each; the wider design and feel changes the owner asked to deal with after 001 (nothing started).
 - **Not exercised**: no phone layout (out of scope); the wide-screen scale is judged by eye only.
+| 2026-10-06 | S0, all | Owner (looks pass): the month arrows, month list and Today button are not needed because the date field's calendar covers them; the date field shows today by default; the account chooser moves next to it; the sidebar gets icons | Done in the app and in the Penpot frames (S0 redrawn; the older-month frame is now "an older month (jumped to a date)"; the wireframes carry blank grey icon squares, the Hex reskin frames the real icons). The account chooser on the daily and weekly reviews stays in the page head for now. |

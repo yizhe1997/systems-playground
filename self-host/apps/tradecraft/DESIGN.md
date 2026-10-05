@@ -212,7 +212,7 @@ Small, quiet corners: 3px for buttons, 6px for cards and fields, pill only for t
 The sidebar brand is the horizontal lockup of the T-in-a-C symbol and the uppercase wordmark, in the small cut (124 px wide, never below 120 px). The symbol takes the accent colour (violet `#473982` in light, soft violet `#9e91d6` at night, the two colours of the logo guidelines) and the wordmark the ink colour. Use the files in `design/logo/` (see `design/logo/GUIDELINES.md` for clear space, minimum sizes and the don'ts); never retype the wordmark. The favicon, tab icon and app icon are `frontend/src/app/icon.svg`, `favicon.ico` and `apple-icon.png`.
 
 ### Navigation
-- Sidebar on Bone Mist; items 36px high, 3px radius; the active item is Card White with a 3px Twilight Plum bar at its left edge and 600 weight.
+- Sidebar on Bone Mist; each item has an 18px line icon from lucide-react (stroke 1.75, drawn in the item's text colour: Reviews a checked clipboard, Trades candlesticks, Mistakes a warning triangle, Accounts a wallet, Settings a cog); items 36px high, 3px radius; the active item is Card White with a 3px Twilight Plum bar at its left edge and 600 weight.
 
 ### Tables
 - 48px rows, hairline rules, sentence-case 12px column headers in Storm Mauve, figures in tabular numerals. A figure that cannot be worked out shows an em dash with a Plum Ash reason beneath.

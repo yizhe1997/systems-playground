@@ -7,29 +7,28 @@ async function trade(accountId: string, entry: string, exit: string) {
   expect(r.status, JSON.stringify(r.data)).toBe(201);
 }
 
-test("step months, open the month list, Today and Jump to date; weeks collapse and open", async ({ page }) => {
+test("Jump to date shows today until another day is chosen, then opens the week that holds it; weeks collapse and open", async ({ page }) => {
   const s = await sampleDay("Look");
   await trade(s.id, "2025-09-10T09:00", "2025-09-10T09:30");
   await page.goto(reviewsUrl(s.id));
 
-  // the arrows
-  await expect(page.getByRole("button", { name: /October 2025/ })).toBeVisible();
-  await page.getByRole("link", { name: "Earlier: September 2025" }).click();
-  await expect(page).toHaveURL(/month=2025-09/);
-  await expect(page.getByText("Week of 8 Sep to 14 Sep")).toBeVisible();
-  await page.getByRole("link", { name: "Later: October 2025" }).click();
-  await expect(page).toHaveURL(/month=2025-10/);
+  // the date field opens on the account's today, and the month heading says which month is listed
+  const today = (await api("GET", `/reviews?accountId=${s.id}`)).data.today as string;
+  await expect(page.getByLabel("Jump to date")).toHaveValue(today);
+  await expect(page.getByText("This month (October 2025)")).toBeVisible();
+  // the old month arrows, month list and Today button are gone: the date field covers them
+  await expect(page.getByRole("link", { name: /^Earlier:/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Today" })).toHaveCount(0);
 
-  // the month list offers the months that have trades or reviews, plus the current month
-  await page.getByRole("button", { name: /October 2025/ }).click();
-  const list = page.getByRole("listbox", { name: "Months" });
-  await expect(list.getByRole("option", { name: "September 2025" })).toBeVisible();
-  await list.getByRole("option", { name: "September 2025" }).click();
-  await expect(page).toHaveURL(/month=2025-09/);
+  // a day in another month opens that month with the week holding it open
+  await page.getByLabel("Jump to date").fill("2025-09-10");
+  await expect(page).toHaveURL(/month=2025-09&open=2025-09-10/);
+  await expect(page.getByLabel("Jump to date")).toHaveValue("2025-09-10");
+  await expect(page.getByText("This month (September 2025)")).toBeVisible();
+  await expect(page.locator("details.week", { hasText: "Week of 8 Sep to 14 Sep" })).toHaveAttribute("open", "");
 
-  // Today goes to the current month with the current week open
-  await page.getByRole("link", { name: "Today" }).click();
-  await expect(page).not.toHaveURL(/month=2025/);
+  // the current month with the current week open, when no day is chosen
+  await page.goto(`/reviews?account=${s.id}`);
   await expect(page.locator("details.week[open]")).toHaveCount(1);
 
   // Jump to date opens the week that holds it

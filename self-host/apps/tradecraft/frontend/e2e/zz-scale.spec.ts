@@ -93,7 +93,7 @@ test("the review screens on 5,000 trades: Reviews, a day, a week, the counter, a
 
   const reviews = await open(`/reviews?account=${a}&month=${month}`, () => expect(page.getByRole("heading", { name: "Reviews" })).toBeVisible());
   const changeMonth = await timed(async () => {
-    await page.getByRole("link", { name: /^Earlier:/ }).click();
+    await page.getByLabel("Jump to date").fill("2025-05-15");
     await expect(page).toHaveURL(/month=2025-05/);
     await expect(page.locator("details.week").first()).toBeVisible();
   });

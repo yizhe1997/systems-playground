@@ -6,7 +6,7 @@ import type { WeekBlock as WeekT } from "@/lib/types";
 import { AccountSwitcher } from "@/components/AccountSwitcher";
 import { CouldNotLoad } from "@/components/Notice";
 import { FocusButton } from "@/components/FocusDialog";
-import { MonthNav } from "@/components/MonthNav";
+import { JumpToDate } from "@/components/JumpToDate";
 import { NoAccount } from "@/components/NoAccount";
 import { WeekBlock } from "@/components/WeekBlock";
 
@@ -57,7 +57,6 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
           <h1 className="title">Reviews</h1>
           <p className="subtitle">Every day and week, with what is still missing.</p>
         </div>
-        <AccountSwitcher accounts={accounts} current={account.id} />
       </div>
 
       <div className="bar">
@@ -68,13 +67,16 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
             </Link>
           ))}
         </div>
-        <MonthNav account={account.id} month={data.month} previousMonth={data.previousMonth} nextMonth={data.nextMonth} months={cal.months} />
+        <div className="bar-group bar-fields">
+          <AccountSwitcher accounts={accounts} current={account.id} />
+          <JumpToDate account={account.id} value={jumpTo || data.today} />
+        </div>
       </div>
 
       <section className="card focus-card" aria-label={`Focus for ${monthName(data.month, false)}`}>
         <div className="focus-line">
           <div>
-            <div className="label">This month ({monthName(data.month, false)})</div>
+            <div className="label">This month ({monthName(data.month)})</div>
             {data.monthFocus.body ? <div className="focus-text">{data.monthFocus.body}</div> : <div className="focus-text helper">No focus for this month yet.</div>}
             <p className="helper">Shown on every daily and weekly review this month.</p>
           </div>

@@ -36,10 +36,11 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 .logo-word { fill: var(--ink); }
 .nav { display: flex; flex-direction: column; gap: var(--space-xs); }
 .nav a {
-  display: flex; align-items: center; height: var(--field); padding: 0 var(--space-md);
+  display: flex; align-items: center; gap: 10px; height: var(--field); padding: 0 var(--space-md);
   border-radius: var(--r-button); color: var(--text-2); text-decoration: none; border-left: 3px solid transparent;
 }
 .nav a:hover { color: var(--ink); }
+.nav a svg { flex-shrink: 0; }
 .nav a[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 600; border-left-color: var(--accent); }
 /* the content column is centred in the area beside the sidebar, so a wide screen has equal space on both sides */
 .main { padding: var(--space-lg) var(--space-xl) var(--space-xl); max-width: calc(var(--content-max) + 2 * var(--space-xl)); width: 100%; margin-inline: auto; }

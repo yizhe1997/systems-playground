@@ -110,3 +110,4 @@ a.week-row:hover { background: var(--bone-mist); }
 .page-head .bar-group { align-items: flex-end; }
 /* a row action reads as an action, not as data */
 .manage-list .btn-quiet, .trade-grid .btn-quiet { text-decoration: underline; text-underline-offset: 3px; }
+.bar-fields { align-items: flex-end; gap: var(--space-md); }

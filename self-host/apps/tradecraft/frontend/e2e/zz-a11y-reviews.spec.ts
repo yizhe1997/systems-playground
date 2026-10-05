@@ -30,15 +30,12 @@ for (const scheme of ["light", "dark"] as const) {
   test.describe(`${scheme} mode`, () => {
     test.use({ colorScheme: scheme });
 
-    test("S0 Reviews: weeks, the month list, the filters and the empty state", async ({ page }) => {
+    test("S0 Reviews: weeks, the filters and the empty state", async ({ page }) => {
       const s = await setup();
       await page.goto(reviewsUrl(s.id));
       await expect(page.getByRole("heading", { name: "Reviews" })).toBeVisible();
       await page.locator("details.week", { hasText: "Week of 29 Sep to 5 Oct" }).locator("summary").click();
       await clean(page, "S0 filled");
-      await page.getByRole("button", { name: /October 2025/ }).click();
-      await expect(page.getByRole("listbox", { name: "Months" })).toBeVisible();
-      await clean(page, "S0 month list");
       const empty = await api("POST", "/accounts", { name: uniq("A11yEmpty"), currency: "USD" });
       await page.goto(reviewsUrl(empty.data.id));
       await clean(page, "S0 empty");
