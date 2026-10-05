@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Judgement, Mistake } from "@/lib/types";
 import { call } from "@/lib/browserApi";
@@ -22,10 +22,13 @@ const sentence = (reason: string) => (reason === "no stop recorded" ? "No stop r
 /** The Judge button of a trade in the daily review, and the drawer it opens (screen S2). */
 export function JudgeButton({ tradeId, label, accountName, zone }: { tradeId: string; label: string; accountName: string; zone: string }) {
   const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
+  // the drawer is unmounted on close, so the browser cannot return focus to the button by itself
+  const close = () => { setOpen(false); setTimeout(() => button.current?.focus(), 0); };
   return (
     <>
-      <button type="button" className="btn" onClick={() => setOpen(true)} aria-label={`Judge ${label}`}>Judge</button>
-      {open && <JudgeDrawer tradeId={tradeId} accountName={accountName} zone={zone} onClose={() => setOpen(false)} />}
+      <button ref={button} type="button" className="btn" onClick={() => setOpen(true)} aria-label={`Judge ${label}`}>Judge</button>
+      {open && <JudgeDrawer tradeId={tradeId} accountName={accountName} zone={zone} onClose={close} />}
     </>
   );
 }

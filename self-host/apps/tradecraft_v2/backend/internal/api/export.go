@@ -6,15 +6,65 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type exportJSON struct {
-	ExportedAt string        `json:"exportedAt"`
-	Settings   settingsJSON  `json:"settings"`
-	Accounts   []accountJSON `json:"accounts"`
-	Trades     []tradeJSON   `json:"trades"`
+// exportTradeJSON is a trade as feature 000 exports it, plus what feature 001 records about it.
+type exportTradeJSON struct {
+	tradeJSON
+	Judgement struct {
+		PlanFollowed *string  `json:"planFollowed"`
+		Label        *string  `json:"label"`
+		Mistakes     []string `json:"mistakes"`
+	} `json:"judgement"`
 }
 
-// export answers everything as one document: settings, every account (archived marked) and every trade
-// (deleted marked). Money stays as exact decimal strings.
+type exportReviewJSON struct {
+	AccountID      string  `json:"accountId"`
+	AccountName    string  `json:"accountName"`
+	Date           string  `json:"date"`
+	DidWell        string  `json:"didWell"`
+	CouldImprove   string  `json:"couldImprove"`
+	NextFocus      string  `json:"nextFocus"`
+	MentalGrade    *int    `json:"mentalGrade"`
+	TechnicalGrade *int    `json:"technicalGrade"`
+	ReviewedAt     *string `json:"reviewedAt"`
+	EditedAt       *string `json:"editedAt"`
+}
+
+type exportFocusJSON struct {
+	Period      string `json:"period"`
+	PeriodStart string `json:"periodStart"`
+	Body        string `json:"body"`
+}
+
+type exportMarkJSON struct {
+	AccountID   string `json:"accountId"`
+	AccountName string `json:"accountName"`
+	WeekStart   string `json:"weekStart"`
+	ReviewedAt  string `json:"reviewedAt"`
+}
+
+type exportDayMistakeJSON struct {
+	AccountID   string `json:"accountId"`
+	AccountName string `json:"accountName"`
+	Date        string `json:"date"`
+	MistakeID   string `json:"mistakeId"`
+	Mistake     string `json:"mistake"`
+}
+
+type exportJSON struct {
+	ExportedAt  string                 `json:"exportedAt"`
+	Settings    settingsJSON           `json:"settings"`
+	Accounts    []accountJSON          `json:"accounts"`
+	Trades      []exportTradeJSON      `json:"trades"`
+	Mistakes    []mistakeJSON          `json:"mistakes"`
+	DailyReview []exportReviewJSON     `json:"dailyReviews"`
+	Focuses     []exportFocusJSON      `json:"focuses"`
+	WeeklyMarks []exportMarkJSON       `json:"weeklyMarks"`
+	DayMistakes []exportDayMistakeJSON `json:"dayMistakes"`
+}
+
+// export answers everything as one document: settings, every account (archived marked), every trade (deleted marked)
+// with its judgement, the mistake list (retired ones too, with stop lines), the daily reviews, the focuses, the
+// weekly reviewed marks and the whole-day mistake records. Money stays as exact decimal strings.
 func (s *Server) export(c *fiber.Ctx) error {
 	ctx := c.Context()
 	st, err := s.q.GetSettings(ctx)
@@ -33,13 +83,70 @@ func (s *Server) export(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	out := exportJSON{ExportedAt: fmtTime(s.now()), Settings: settingsJSON{TimeZone: st.TimeZone},
-		Accounts: make([]accountJSON, 0, len(accts)), Trades: make([]tradeJSON, 0, len(trades))}
+	tags, err := s.q.ExportTradeMistakes(ctx)
+	if err != nil {
+		return err
+	}
+	byTrade := map[string][]string{}
+	for _, t := range tags {
+		byTrade[t.TradeID] = append(byTrade[t.TradeID], t.Mistake)
+	}
+	mistakes, err := s.q.ListMistakes(ctx, true)
+	if err != nil {
+		return err
+	}
+	reviews, err := s.q.ExportDailyReviews(ctx)
+	if err != nil {
+		return err
+	}
+	focuses, err := s.q.ExportFocuses(ctx)
+	if err != nil {
+		return err
+	}
+	marks, err := s.q.ExportWeeklyMarks(ctx)
+	if err != nil {
+		return err
+	}
+	dayMistakes, err := s.q.ExportDayMistakes(ctx)
+	if err != nil {
+		return err
+	}
+
+	out := exportJSON{
+		ExportedAt: fmtTime(s.now()), Settings: settingsJSON{TimeZone: st.TimeZone},
+		Accounts: make([]accountJSON, 0, len(accts)), Trades: make([]exportTradeJSON, 0, len(trades)),
+		Mistakes: make([]mistakeJSON, 0, len(mistakes)), DailyReview: []exportReviewJSON{}, Focuses: []exportFocusJSON{},
+		WeeklyMarks: []exportMarkJSON{}, DayMistakes: []exportDayMistakeJSON{},
+	}
 	for _, a := range accts {
 		out.Accounts = append(out.Accounts, toAccount(a.ID, a.Name, a.Currency, a.TradingDayStart, a.Archived, a.UpdatedAt))
 	}
 	for _, t := range trades {
-		out.Trades = append(out.Trades, toTrade(t, loc))
+		e := exportTradeJSON{tradeJSON: toTrade(t, loc)}
+		e.Judgement.PlanFollowed, e.Judgement.Label, e.Judgement.Mistakes = t.PlanFollowed, t.Label, byTrade[t.ID]
+		if e.Judgement.Mistakes == nil {
+			e.Judgement.Mistakes = []string{}
+		}
+		out.Trades = append(out.Trades, e)
+	}
+	for _, m := range mistakes {
+		out.Mistakes = append(out.Mistakes, toMistake(m.ID, m.Name, m.StopLine, m.StopPeriod, m.Retired, m.UpdatedAt))
+	}
+	for _, r := range reviews {
+		out.DailyReview = append(out.DailyReview, exportReviewJSON{
+			AccountID: r.AccountID, AccountName: r.AccountName, Date: dayText(r.TradingDay), DidWell: r.DidWell, CouldImprove: r.CouldImprove,
+			NextFocus: r.NextFocus, MentalGrade: intPtr(r.MentalGrade), TechnicalGrade: intPtr(r.TechnicalGrade),
+			ReviewedAt: timePtr(r.ReviewedAt), EditedAt: timePtr(r.EditedAt),
+		})
+	}
+	for _, f := range focuses {
+		out.Focuses = append(out.Focuses, exportFocusJSON{Period: f.Period, PeriodStart: dayText(f.PeriodStart), Body: f.Body})
+	}
+	for _, m := range marks {
+		out.WeeklyMarks = append(out.WeeklyMarks, exportMarkJSON{AccountID: m.AccountID, AccountName: m.AccountName, WeekStart: dayText(m.WeekStart), ReviewedAt: fmtTime(m.ReviewedAt)})
+	}
+	for _, d := range dayMistakes {
+		out.DayMistakes = append(out.DayMistakes, exportDayMistakeJSON{AccountID: d.AccountID, AccountName: d.AccountName, Date: dayText(d.TradingDay), MistakeID: d.MistakeID, Mistake: d.Mistake})
 	}
 	return c.JSON(out)
 }

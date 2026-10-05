@@ -84,3 +84,39 @@ test("the whole journal of 5,000 trades, unfiltered, opens its first page and pa
   expect.soft(open, "open the whole list").toBeLessThan(1000);
   expect.soft(older, "next page").toBeLessThan(1000);
 });
+
+// SC-008 for feature 001, in the browser, on the same 5,000 trades: the review screens open and save in under a second.
+test("the review screens on 5,000 trades: Reviews, a day, a week, the counter, a review and a judgement", async ({ page }) => {
+  const a = accounts[0].id;
+  const month = "2025-06";
+  const open = async (url: string, ready: () => Promise<void>) => timed(async () => { await page.goto(url); await ready(); });
+
+  const reviews = await open(`/reviews?account=${a}&month=${month}`, () => expect(page.getByRole("heading", { name: "Reviews" })).toBeVisible());
+  const changeMonth = await timed(async () => {
+    await page.getByRole("link", { name: /^Earlier:/ }).click();
+    await expect(page).toHaveURL(/month=2025-05/);
+    await expect(page.locator("details.week").first()).toBeVisible();
+  });
+  const days = await api("GET", `/reviews?accountId=${a}&month=${month}`);
+  const day = days.data.weeks.flatMap((w: any) => w.days).find((d: any) => d.trades > 0).date as string;
+  const dayOpen = await open(`/reviews/day?account=${a}&date=${day}`, () => expect(page.getByRole("heading", { name: "Daily review" })).toBeVisible());
+  const week = await open(`/reviews/week?account=${a}&date=${day}`, () => expect(page.getByRole("heading", { name: "Weekly review" })).toBeVisible());
+  const counter = await open(`/mistakes?period=month&date=${day}`, () => expect(page.getByRole("heading", { name: "Mistakes", exact: true })).toBeVisible());
+
+  await page.goto(`/reviews/day?account=${a}&date=${day}`);
+  await page.getByLabel("What did I do well today?").fill("Waited for the retest.");
+  const saveReview = await timed(async () => {
+    await page.getByRole("button", { name: "Save draft" }).click();
+    await expect(page.getByText(/Last saved/)).toBeVisible();
+  });
+  await page.getByRole("button", { name: /^Judge / }).first().click();
+  const drawer = page.getByRole("dialog");
+  await drawer.getByLabel("Yes").check();
+  const saveJudgement = await timed(async () => {
+    await drawer.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(drawer).toBeHidden();
+  });
+
+  console.log(`SC-008 reviews: Reviews ${reviews} ms, change month ${changeMonth} ms, a day ${dayOpen} ms, a week ${week} ms, the counter ${counter} ms, save a review ${saveReview} ms, save a judgement ${saveJudgement} ms`);
+  for (const [name, ms] of Object.entries({ reviews, changeMonth, dayOpen, week, counter, saveReview, saveJudgement })) expect.soft(ms, name).toBeLessThan(1000);
+});

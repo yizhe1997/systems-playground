@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Focus } from "@/lib/types";
 import { call } from "@/lib/browserApi";
@@ -17,12 +17,14 @@ const MAX = 280;
  */
 export function FocusButton({ date, period, written, only }: { date: string; period: Period; written: boolean; only?: Period }) {
   const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
+  const close = () => { setOpen(false); setTimeout(() => button.current?.focus(), 0); }; // the dialog is unmounted on close
   return (
     <>
-      <button type="button" className="btn-quiet" onClick={() => setOpen(true)} aria-label={`${written ? "Edit" : "Write"} the focus for the ${period}`}>
+      <button ref={button} type="button" className="btn-quiet" onClick={() => setOpen(true)} aria-label={`${written ? "Edit" : "Write"} the focus for the ${period}`}>
         {written ? "Edit" : "Write one"}
       </button>
-      {open && <FocusDialog date={date} start={period} only={only} onClose={() => setOpen(false)} />}
+      {open && <FocusDialog date={date} start={period} only={only} onClose={close} />}
     </>
   );
 }

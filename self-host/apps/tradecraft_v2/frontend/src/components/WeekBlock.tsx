@@ -36,16 +36,16 @@ function DayRow({ day, account }: { day: DayRowT; account: string }) {
 /** One week of the month, collapsible, with its days as rows. The current week (and one jumped to) starts open. */
 export function WeekBlock({ week, account, open }: { week: WeekT; account: string; open: boolean }) {
   const s = week.summary;
-  const summary = [`${s.reviewed} of ${s.daysWithTrades} ${s.daysWithTrades === 1 ? "day" : "days"} reviewed`, `${s.draft} draft`, `${s.missing} missing`].join(" · ");
+  const summary = s.daysWithTrades === 0 && s.draft === 0 ? "No days to review yet" : [`${s.reviewed} of ${s.daysWithTrades} ${s.daysWithTrades === 1 ? "day" : "days"} reviewed`, `${s.draft} draft`, `${s.missing} missing`].join(" · ");
   return (
-    <details className="card week" open={open}>
+    <div className="card week-card">
+    <details className="week" open={open}>
       <summary>
         <span className="week-title">
           Week of {weekRange(week.weekStart, week.weekEnd)}
           {week.current && <span className="chip">This week</span>}
         </span>
         <span className="week-chip"><StatusChip state={week.state} /></span>
-        <Link className="btn week-open" href={`/reviews/week?account=${account}&date=${week.weekStart}`}>Open weekly review</Link>
         <span className="helper week-sum">{summary}</span>
       </summary>
       <div className="days">
@@ -53,5 +53,8 @@ export function WeekBlock({ week, account, open }: { week: WeekT; account: strin
         {week.days.map((d) => <DayRow key={d.date} day={d} account={account} />)}
       </div>
     </details>
+    {/* outside the summary: a link inside it would be a control nested in a control */}
+    <Link className="btn week-open" href={`/reviews/week?account=${account}&date=${week.weekStart}`}>Open weekly review</Link>
+    </div>
   );
 }

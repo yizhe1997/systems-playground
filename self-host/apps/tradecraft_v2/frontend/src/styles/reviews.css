@@ -23,8 +23,9 @@
 .focus-line .label { margin-bottom: 2px; font-weight: 600; }
 .focus-text { font-size: 15px; }
 .weeks { display: flex; flex-direction: column; gap: var(--space-md); }
-.week { padding: 0; }
-.week > summary { list-style: none; display: grid; grid-template-columns: 24px 1fr auto auto; grid-template-areas: "tog title chip open" "tog sum chip open"; column-gap: var(--space-md); row-gap: 2px; align-items: center; padding: 14px var(--card-pad); cursor: pointer; }
+.week-card { padding: 0; position: relative; }
+.week-open { position: absolute; right: var(--card-pad); top: 18px; }
+.week > summary { list-style: none; display: grid; grid-template-columns: 24px 1fr auto; grid-template-areas: "tog title chip" "tog sum chip"; padding-right: 220px; column-gap: var(--space-md); row-gap: 2px; align-items: center; padding-top: 14px; padding-bottom: 14px; padding-left: var(--card-pad); cursor: pointer; }
 .week > summary::-webkit-details-marker { display: none; }
 .week > summary::before { content: ">"; font-weight: 600; grid-area: tog; }
 .week[open] > summary::before { content: "v"; }
@@ -106,3 +107,6 @@ a.week-row:hover { background: var(--bone-mist); }
 .week-row-head .dow { font-size: 12px; color: var(--text-3); padding: 4px 0; }
 .week-row .cal-out { color: var(--text-3); }
 .week-mark { font-size: 12px; color: var(--text-2); }
+.page-head .bar-group { align-items: flex-end; }
+/* a row action reads as an action, not as data */
+.manage-list .btn-quiet, .trade-grid .btn-quiet { text-decoration: underline; text-underline-offset: 3px; }

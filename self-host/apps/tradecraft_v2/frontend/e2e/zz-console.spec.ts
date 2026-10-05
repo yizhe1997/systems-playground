@@ -27,3 +27,28 @@ test("no console errors or failed requests across the five screens and the main 
   await page.waitForLoadState("networkidle");
   expect(problems).toEqual([]);
 });
+
+// The same for the review screens of feature 001: no console error, no failed request (the dead weekly-review link is gone).
+test("no console errors or failed requests across Reviews, a day, a week, Mistakes and their dialogs", async ({ page }) => {
+  const problems: string[] = [];
+  page.on("console", (m) => {
+    if (m.type() === "error") problems.push(`console: ${m.text()}`);
+  });
+  page.on("pageerror", (e) => problems.push(`pageerror: ${e.message}`));
+  page.on("response", (r) => {
+    if (r.status() >= 400 && !r.url().includes("/_next/image")) problems.push(`${r.status()} ${r.url()}`);
+  });
+  const { sampleDay, reviewsUrl, dayUrl } = await import("./helpers_reviews");
+  const s = await sampleDay("Console1");
+  for (const url of [reviewsUrl(s.id), dayUrl(s.id), `/reviews/week?account=${s.id}&date=2025-10-01`, "/mistakes", "/mistakes?period=month&date=2025-10-01"]) {
+    await page.goto(url);
+    await page.waitForLoadState("networkidle");
+  }
+  await page.goto(dayUrl(s.id));
+  await page.getByRole("button", { name: /^Judge NQ Long at 10:31/ }).click();
+  await page.getByRole("dialog").getByLabel("Yes").check();
+  await page.getByRole("dialog").getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.waitForLoadState("networkidle");
+  expect(problems).toEqual([]);
+});

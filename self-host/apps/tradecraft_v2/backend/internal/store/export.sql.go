@@ -7,7 +7,169 @@ package store
 
 import (
 	"context"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const exportDailyReviews = `-- name: ExportDailyReviews :many
+SELECT r.account_id, a.name AS account_name, r.trading_day, r.did_well, r.could_improve, r.next_focus,
+       r.mental_grade, r.technical_grade, r.reviewed_at, r.edited_at, r.updated_at
+  FROM daily_review r JOIN account a ON a.id = r.account_id
+ ORDER BY r.trading_day, a.name
+`
+
+type ExportDailyReviewsRow struct {
+	AccountID      string      `json:"account_id"`
+	AccountName    string      `json:"account_name"`
+	TradingDay     time.Time   `json:"trading_day"`
+	DidWell        string      `json:"did_well"`
+	CouldImprove   string      `json:"could_improve"`
+	NextFocus      string      `json:"next_focus"`
+	MentalGrade    pgtype.Int2 `json:"mental_grade"`
+	TechnicalGrade pgtype.Int2 `json:"technical_grade"`
+	ReviewedAt     *time.Time  `json:"reviewed_at"`
+	EditedAt       *time.Time  `json:"edited_at"`
+	UpdatedAt      time.Time   `json:"updated_at"`
+}
+
+func (q *Queries) ExportDailyReviews(ctx context.Context) ([]ExportDailyReviewsRow, error) {
+	rows, err := q.db.Query(ctx, exportDailyReviews)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExportDailyReviewsRow
+	for rows.Next() {
+		var i ExportDailyReviewsRow
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.AccountName,
+			&i.TradingDay,
+			&i.DidWell,
+			&i.CouldImprove,
+			&i.NextFocus,
+			&i.MentalGrade,
+			&i.TechnicalGrade,
+			&i.ReviewedAt,
+			&i.EditedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const exportDayMistakes = `-- name: ExportDayMistakes :many
+SELECT dm.account_id, a.name AS account_name, dm.trading_day, m.id AS mistake_id, m.name AS mistake
+  FROM day_mistake dm JOIN account a ON a.id = dm.account_id JOIN mistake m ON m.id = dm.mistake_id
+ ORDER BY dm.trading_day, a.name, m.name
+`
+
+type ExportDayMistakesRow struct {
+	AccountID   string    `json:"account_id"`
+	AccountName string    `json:"account_name"`
+	TradingDay  time.Time `json:"trading_day"`
+	MistakeID   string    `json:"mistake_id"`
+	Mistake     string    `json:"mistake"`
+}
+
+func (q *Queries) ExportDayMistakes(ctx context.Context) ([]ExportDayMistakesRow, error) {
+	rows, err := q.db.Query(ctx, exportDayMistakes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExportDayMistakesRow
+	for rows.Next() {
+		var i ExportDayMistakesRow
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.AccountName,
+			&i.TradingDay,
+			&i.MistakeID,
+			&i.Mistake,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const exportFocuses = `-- name: ExportFocuses :many
+SELECT period, period_start, body, updated_at FROM focus ORDER BY period, period_start
+`
+
+type ExportFocusesRow struct {
+	Period      string    `json:"period"`
+	PeriodStart time.Time `json:"period_start"`
+	Body        string    `json:"body"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+func (q *Queries) ExportFocuses(ctx context.Context) ([]ExportFocusesRow, error) {
+	rows, err := q.db.Query(ctx, exportFocuses)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExportFocusesRow
+	for rows.Next() {
+		var i ExportFocusesRow
+		if err := rows.Scan(
+			&i.Period,
+			&i.PeriodStart,
+			&i.Body,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const exportTradeMistakes = `-- name: ExportTradeMistakes :many
+SELECT tm.trade_id, m.name AS mistake FROM trade_mistake tm JOIN mistake m ON m.id = tm.mistake_id ORDER BY tm.trade_id, m.name
+`
+
+type ExportTradeMistakesRow struct {
+	TradeID string `json:"trade_id"`
+	Mistake string `json:"mistake"`
+}
+
+// The mistake names tagged on each trade, deleted trades included.
+func (q *Queries) ExportTradeMistakes(ctx context.Context) ([]ExportTradeMistakesRow, error) {
+	rows, err := q.db.Query(ctx, exportTradeMistakes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExportTradeMistakesRow
+	for rows.Next() {
+		var i ExportTradeMistakesRow
+		if err := rows.Scan(&i.TradeID, &i.Mistake); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const exportTrades = `-- name: ExportTrades :many
 SELECT id, account_id, account_name, account_currency, instrument, direction, size, entry_price, exit_price, entry_at, exit_at, dollars_per_point, cost, stop_price, typed_result, thesis, gross_result, net_result, risk, r_multiple, trading_day, deleted, updated_at, plan_followed, label FROM trade_detail ORDER BY exit_at, id
@@ -49,6 +211,44 @@ func (q *Queries) ExportTrades(ctx context.Context) ([]TradeDetail, error) {
 			&i.UpdatedAt,
 			&i.PlanFollowed,
 			&i.Label,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const exportWeeklyMarks = `-- name: ExportWeeklyMarks :many
+SELECT w.account_id, a.name AS account_name, w.week_start, w.reviewed_at
+  FROM weekly_review_mark w JOIN account a ON a.id = w.account_id
+ ORDER BY w.week_start, a.name
+`
+
+type ExportWeeklyMarksRow struct {
+	AccountID   string    `json:"account_id"`
+	AccountName string    `json:"account_name"`
+	WeekStart   time.Time `json:"week_start"`
+	ReviewedAt  time.Time `json:"reviewed_at"`
+}
+
+func (q *Queries) ExportWeeklyMarks(ctx context.Context) ([]ExportWeeklyMarksRow, error) {
+	rows, err := q.db.Query(ctx, exportWeeklyMarks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExportWeeklyMarksRow
+	for rows.Next() {
+		var i ExportWeeklyMarksRow
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.AccountName,
+			&i.WeekStart,
+			&i.ReviewedAt,
 		); err != nil {
 			return nil, err
 		}

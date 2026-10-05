@@ -90,7 +90,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 | Plan question | Did you follow your plan? · Yes, Partly, No |
 | Decision (losses only) | What was this decision? · Only for losing trades. · Valid loss: I followed my rules. No change needed. (unavailable, dashed, with "Not available: you answered that the plan was not followed." unless the plan answer is Yes) · Mistake: I broke my rules. Tag what I did wrong below. |
 | Win flagged | This win was a mistake / It made money, but I was off plan. It will show as a profitable mistake, not a clean win. |
-| Mistakes | Mistakes on this trade · Chased entry, Moved stop, Oversized, Ignored checklist, Traded outside plan, + New mistake |
+| Mistakes | Which mistakes? · Pick every one that applies. Each counts once in the Mistakes counter. · Chased entry, Moved stop, Oversized, Ignored checklist, Traded outside plan (checkboxes, shown once the decision is Mistake; a retired mistake already on the trade stays, marked Retired) · Nothing tagged yet. Labelled Mistake, not tagged: it adds nothing to the counter. · New mistakes are added on the Mistakes screen (Penpot frame shows a "See Mistakes" pill in its place) |
 | Thesis | Why I took it (thesis) · read-only text · Written when you logged the trade. Shown here to read, not edit. |
 | Actions | Save · Cancel · Edit trade in the trade form. |
 
@@ -211,3 +211,22 @@ Known limits of this wireframe set: the trade form (Log or Edit trade) is featur
 - **Date**: 2026-10-04 (first signed off 2026-10-03; third sign-off after the checklists)
 - **Spec hash**: 0bee1f844680764b742bbb4eeeea73174562a3c8096d181dd12da3d18b73b9fd
 - **Notes**: Third sign-off 2026-10-04, after the requirements checklists changed the spec (definitions, the owner's three decisions, FR-027 to FR-030, SC-008); the wording of states that were not drawn is in the section Content added after sign-off, and those states were drawn in Penpot on 2026-10-04. Earlier: re-signed after the spec stopped depending on Tradecraft v1 (accounts and trades come from feature `000`; no open trades; local use only, no sign-in or audit log yet; one entry and one exit per trade). The S2 link text ("Edit trade in the trade form.") was corrected in Penpot on 2026-10-04. Accepted exceptions at sign-off, since resolved: (1) the trade form is feature `000`'s and already has the thesis field; (2) the rename and retire dialogs for mistakes were drawn on 2026-10-04; (3) export stays on the existing Export button of the Trades screen (plan default approved 2026-10-04); (4) the Today row was drawn on 2026-10-04.
+
+## Differences found while building (2026-10-05)
+
+Wording and small structure that changed from the signed-off frames during the build. The structure of each screen is as signed
+off; these are the exceptions, recorded here so the frames and the screens stay in step (principle V). The S2 frames were
+updated in Penpot and re-exported; the others are small enough that the drawn frame still shows the right structure.
+
+| Screen | Built as | Drawn as |
+|---|---|---|
+| S2 tags | "Which mistakes?" checkboxes, only once the decision is Mistake; no "+ New mistake" in the drawer | "Mistakes on this trade" chips with "+ New mistake" (frame now reads Which mistakes? with a "See Mistakes" pill) |
+| S1 whole-day mistakes | A "Mistakes for the whole day" card: recorded ones as chips with a remove button, a chooser and "+ Add a mistake"; saved at once, apart from the review | Chips and "+ Add a mistake" (the same, saved with its own card) |
+| S3 table | Rows are the mistakes with a count in the viewed period or a stop line; the heads read "This week"/"This month" for the current period and "Week"/"Month" for another one; each row has a "Stop line" button | Heads This week, This month |
+| S3 list | "Manage the list" lists every mistake in use with Stop line, Rename and Retire; a retired mistake in the counter carries a "Retired" chip | Add, Rename, Retire |
+| S3 empty state | "No mistakes tagged this week yet." for the current period, "No mistakes tagged in this week." (or month) for another | No mistakes tagged this week yet. |
+| S4 from Reviews | The month card opens the dialog with the Month tab only (no tabs) | Tabs Week and Month |
+| S4 focus dialog | Leaving with changes asks "Leave without saving?"; Clear this focus shows "Focus cleared." with Undo for 10 seconds | (as written in the table above) |
+| S5 mark | After marking, the button is replaced by "Reviewed <Wed 1 Oct 18:40>" and the helper line stays; a week that has not started shows the button unavailable with "This week has not started yet." | Mark as reviewed |
+| S5 days | A day with a review shows its answers in two columns; a day with nothing is one line with its status chip | Day cells |
+| Reviews week row | "Open weekly review" is a separate link on the row, outside the collapsible summary (keyboard and screen reader order) | Button on the row |

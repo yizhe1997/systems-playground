@@ -93,7 +93,10 @@ A week runs Monday to Sunday and a month is the calendar month, both taken on th
 timestamp). A week is listed in the Reviews screen under the month its Sunday falls in. The mistake counter counts a week
 whole in the week column, and in the month column only the days of that week that fall in the month.
 
-Worked example: Wed 1 Oct 2025 is in the week of Mon 29 Sep to Sun 5 Oct, listed under October.
+Worked example: Wed 1 Oct 2025 is in the week of Mon 29 Sep to Sun 5 Oct, listed under October. That week crosses two months:
+a trade on Tue 30 Sep and one on Wed 1 Oct both count in the week column of the mistake counter (2), while the month column
+counts 1 for September (30 Sep) and 1 for October (1 Oct). The week's focus is found by its Monday, 29 Sep; the month focus
+shown with it is the month of its Sunday, October.
 
 - **Status:** unconfirmed (Monday weeks; a week under the month of its Sunday).
 - Confirmed by owner on:
@@ -103,6 +106,10 @@ Worked example: Wed 1 Oct 2025 is in the week of Mon 29 Sep to Sun 5 Oct, listed
 
 "Today" belongs to the account: the trading day of the current moment (`account_today`). For an account whose trading day
 starts at 17:00, today is already tomorrow at 17:30.
+
+Worked example (a 17:00 account): a trade that exits at 17:10 on Tue 30 Sep belongs to Wed 1 Oct; one that exits at 16:50
+belongs to Tue 30 Sep. The sample day of Wed 1 Oct 2025 uses a 17:00 account, so its three trades (exits at 09:58, 10:31, 10:52)
+all belong to 1 Oct. The database clock decides what "today" is, so tests that need the current week read it from the database.
 
 - **Status:** unconfirmed.
 - Confirmed by owner on:
@@ -145,6 +152,35 @@ tagged on a trade and also recorded for its day is two records. A trade labelled
 A stop line (1 to 999) belongs to one period, a week or a month; its status is read from that period for the week or month being
 viewed: STOP TRADING when the count has reached the line, otherwise the count only. A retired mistake appears only when it has a
 count in the period.
+
+Worked example: Moved stop has a stop line of 2 per week. L1 and L2 of the sample day are both tagged Moved stop: the week of
+29 Sep shows "2 of 2 this week" and STOP TRADING; with one tag it shows "1 of 2 this week" and the count only; the week of 22 Sep
+shows "0 of 2 this week". With the same mistake also recorded for the whole day (a day record) the count is 3, split "2 on trades
+. 1 on the day".
+
+- **Status:** unconfirmed.
+- Confirmed by owner on:
+- Source:
+
+## Focus (week and month)
+
+A focus is a sentence of up to 280 **characters** (counted as characters, not bytes), one for a week and one for a month,
+written by the owner and shown on every account's reviews in the period. An empty text clears it. The week is identified by its
+Monday and the month by its first day; a daily review shows the focus of the week and month of its trading day.
+
+- **Status:** unconfirmed.
+- Confirmed by owner on:
+- Source:
+
+## Weekly review
+
+A weekly review is read from the seven days of one account's week and stores only one thing: a **reviewed mark** with its time.
+Its figures come from the same SQL as a day, over the whole week, so a missing day's trades count in it and the week equals the
+sum of its days. Marking again changes nothing and no mark can be removed. A week that has not started cannot be marked.
+Day statuses in a week: Missing, Draft, Reviewed, Today, No trades (a day with nothing), Not yet (after today).
+
+Worked example (the sample week of 29 Sep to 5 Oct 2025 with one extra +20.00 trade on Mon 29 Sep and a review saved for Wed
+1 Oct): Mon missing, Tue none, Wed reviewed, Thu draft if a review was saved, Fri to Sun none; 4 trades, net +65.00.
 
 - **Status:** unconfirmed.
 - Confirmed by owner on:

@@ -36,12 +36,12 @@ function Day({ d, account, currency }: { d: WeeklyDay; account: string; currency
         <span className="day-date">{label}</span>
         <StatusChip state={d.status} />
         <span className={`day-net ${profitClass(d.netResult)}`}>{net}</span>
-        <span className="helper">{count(d.trades, "trade")} · {planLine(d.planFollowed)}</span>
+        <span className="helper">{d.trades > 0 ? `${count(d.trades, "trade")} · ${planLine(d.planFollowed)}` : "no trades"}</span>
         <span className="spacer" />
         <Link className="btn" href={open} aria-label={`${needsReview ? "Review" : "Open"} ${longDay(d.date)}`}>{needsReview ? "Review this day" : "Open"}</Link>
       </div>
       {d.status === "missing" ? (
-        <p className="helper">No review for {label}. Its {count(d.trades, "trade")} ({net}, plan followed {d.planFollowed.followed} of {d.planFollowed.of}) are included in the totals below.</p>
+        <p className="helper">No review for {label}. Its {count(d.trades, "trade")} ({net}, plan followed {d.planFollowed.followed} of {d.planFollowed.of}) {d.trades === 1 ? "is" : "are"} included in the totals below.</p>
       ) : (
         d.answers && (
           <dl className="wk-answers">

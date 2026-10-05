@@ -19,14 +19,14 @@ test("the week as its seven days, the numbers with the missing day counted, the 
 
   // from Reviews: Open weekly review (the link works)
   await page.goto(reviewsUrl(a.id, "2024-03"));
-  await page.locator("details.week", { hasText: "Week of 11 Mar to 17 Mar" }).getByRole("link", { name: "Open weekly review" }).click();
+  await page.locator(".week-card", { hasText: "Week of 11 Mar to 17 Mar" }).getByRole("link", { name: "Open weekly review" }).click();
   await expect(page).toHaveURL(/\/reviews\/week\?.*date=2024-03-11/);
   await expect(page.getByRole("heading", { name: "Weekly review" })).toBeVisible();
   await expect(page.getByText("Week of 11 Mar to 17 Mar 2024 ·")).toBeVisible();
 
   await page.goto(weekUrl(a.id));
   // the days: the missing Monday is named and counted; a reviewed day shows what was written; empty days are one line
-  await expect(page.getByText("No review for Mon 11 Mar. Its 1 trade (+$20.00, plan followed 0 of 1) are included in the totals below.")).toBeVisible();
+  await expect(page.getByText("No review for Mon 11 Mar. Its 1 trade (+$20.00, plan followed 0 of 1) is included in the totals below.")).toBeVisible();
   await expect(page.getByText("Waited for the retest")).toBeVisible();
   await expect(page.getByText("Mental 4 of 5 · Technical — of 5")).toBeVisible();
   await expect(page.getByText("No trades on Tue 12 Mar.")).toBeVisible();
