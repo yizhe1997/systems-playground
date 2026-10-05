@@ -230,6 +230,7 @@ updated in Penpot and re-exported; the others are small enough that the drawn fr
 | S5 mark | After marking, the button is replaced by "Reviewed <Wed 1 Oct 18:40>" and the helper line stays; a week that has not started shows the button unavailable with "This week has not started yet." | Mark as reviewed |
 | S5 days | A day with a review shows its answers in two columns; a day with nothing is one line with its status chip | Day cells |
 | Reviews week row | "Open weekly review" is a separate link on the row, outside the collapsible summary (keyboard and screen reader order) | Button on the row |
+| Sidebar brand | In the app and in the Hex reskin frames: the real logo (colour on light, soft violet on night). In the greyscale wireframes: a grey box and the title TRADECRAFT, since wireframes carry no brand | TRADECRAFT as plain text |
 
 ## Visual review
 
