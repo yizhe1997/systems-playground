@@ -69,7 +69,7 @@ specs/000-log-trades/
 └── tasks.md             # next step: /speckit-tasks (not created here)
 ```
 
-### Source Code (under `self-host/apps/tradecraft_v2`)
+### Source Code (under `self-host/apps/tradecraft`)
 
 ```text
 backend/

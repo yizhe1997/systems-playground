@@ -72,7 +72,7 @@ specs/001-journal-and-reflect/
 └── tasks.md             # next step: /speckit-tasks (not created here)
 ```
 
-### Source Code (under `self-host/apps/tradecraft_v2`, added to what `000` built)
+### Source Code (under `self-host/apps/tradecraft`, added to what `000` built)
 
 ```text
 backend/

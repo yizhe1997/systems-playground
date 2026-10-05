@@ -22,7 +22,7 @@
         "127.0.0.1"
       ],
       "port": 4173,
-      "cwd": "self-host/apps/tradecraft_v2/docs/visual-direction"
+      "cwd": "self-host/apps/tradecraft/docs/visual-direction"
     }
   ]
 }

@@ -11,7 +11,7 @@ description: "Task list for 001-journal-and-reflect (daily review, judging, mist
 
 **Tests**: included, because the constitution requires tests with the feature (domain logic and API against a real Postgres, the interface in a real browser). Test-first is not required.
 
-**Organization**: grouped by user story in the order of the spec's priorities (US1 and US2 are P1, US3 and US4 P2, US5 P3). Paths are under `self-host/apps/tradecraft_v2`. Migrations continue `000`'s numbering (`00007` onward).
+**Organization**: grouped by user story in the order of the spec's priorities (US1 and US2 are P1, US3 and US4 P2, US5 P3). Paths are under `self-host/apps/tradecraft`. Migrations continue `000`'s numbering (`00007` onward).
 
 ## Gates before and around implementation
 

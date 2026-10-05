@@ -89,7 +89,7 @@ To change the extension, edit the source folder and reinstall with `--force`.
   launcher, so run it through its Python environment:
   `"$APPDATA/uv/tools/specify-cli/Scripts/python.exe" -c "from specify_cli import main; import sys; sys.argv=['specify']+sys.argv[1:]; main()" <args>`
 - The step commands (`/speckit-specify` and the rest) are Claude Code skills in `.claude/skills/`. They
-  are available in a Claude session started inside `tradecraft_v2`, or one working on files under it.
+  are available in a Claude session started inside `tradecraft`, or one working on files under it.
 - Each step is run one at a time and reviewed before the next. The agent may stop and ask questions.
 - Git: everything stays on the branch `tradecraft_v2`. There are no per-feature branches. Feature folders
   are still numbered (`specs/001-...`). Nothing is pushed without your say-so.

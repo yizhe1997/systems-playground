@@ -6,7 +6,7 @@ How to prove the feature works end to end once it is built. This is a run guide,
 ## Prerequisites
 
 - Docker with Compose. Nothing else is needed on the machine: Go, Node and Postgres all run in containers.
-- Run everything from `self-host/apps/tradecraft_v2`.
+- Run everything from `self-host/apps/tradecraft`.
 - The stack listens on the loopback address only (the written local-only exception). Do not expose it.
 
 ## Start the stack

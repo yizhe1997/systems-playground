@@ -11,7 +11,7 @@ description: "Task list for 000-log-trades (accounts and closed trades)"
 
 **Tests**: included, because the constitution requires tests to be added with the feature (domain logic and API against a real Postgres, the interface in a real browser). Test-first is not required.
 
-**Organization**: grouped by user story, in the order of the spec's priorities. Paths are under `self-host/apps/tradecraft_v2`.
+**Organization**: grouped by user story, in the order of the spec's priorities. Paths are under `self-host/apps/tradecraft`.
 
 ## Gates before and around implementation
 
