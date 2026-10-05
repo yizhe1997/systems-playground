@@ -1,15 +1,13 @@
 import Link from "next/link";
 import { getAccounts, getCounter, getMistakes } from "@/lib/data";
 import { one } from "@/lib/reviewsContext";
-import { monthName, weekRange } from "@/lib/format";
+import { isoWeekOf, monthName, weekRange } from "@/lib/format";
 import type { CounterCell, CounterRow, Mistake } from "@/lib/types";
-import { CounterFilter } from "@/components/CounterFilter";
+import { CounterControls } from "@/components/CounterControls";
 import { CouldNotLoad } from "@/components/Notice";
 import { AddMistake, MistakeActions } from "@/components/MistakeDialogs";
 
 export const dynamic = "force-dynamic";
-
-const shift = (day: string, n: number) => new Date(Date.parse(day + "T00:00:00Z") + n * 86_400_000).toISOString().slice(0, 10);
 
 function Cell({ cell }: { cell: CounterCell }) {
   return (
@@ -58,9 +56,8 @@ export default async function MistakesPage({ searchParams }: { searchParams: Pro
       <div className="page-head">
         <div>
           <h1 className="title">Mistakes</h1>
-          <p className="subtitle">How often each mistake showed up, and the line you set for each. {account ? `${names.get(account)}.` : "Across all accounts."}</p>
+          <p className="subtitle">How often each mistake showed up, and the line you set for each. {account ? `${names.get(account)}.` : "Across all accounts."} {period === "week" ? `Week of ${rangeText} ${counter.periodEnd.slice(0, 4)}.` : `${rangeText}.`}</p>
         </div>
-        <CounterFilter accounts={accounts} current={account} period={period} date={date} />
       </div>
 
       <div className="bar">
@@ -68,12 +65,7 @@ export default async function MistakesPage({ searchParams }: { searchParams: Pro
           <Link className="pill" href={href(date || undefined, "week")} aria-current={period === "week" ? "true" : undefined}>Week</Link>
           <Link className="pill" href={href(date || undefined, "month")} aria-current={period === "month" ? "true" : undefined}>Month</Link>
         </div>
-        <div className="bar-group">
-          <Link className="btn" href={href(shift(counter.periodStart, -1))} aria-label={`Earlier ${period}`}>&lt;</Link>
-          <span className="month-name" aria-live="polite">{rangeText} {period === "week" ? counter.periodEnd.slice(0, 4) : ""}</span>
-          <Link className="btn" href={href(shift(counter.periodEnd, 1))} aria-label={`Later ${period}`}>&gt;</Link>
-          <Link className="btn" href={href(undefined)}>Today</Link>
-        </div>
+        <CounterControls accounts={accounts} account={account} period={period} value={period === "week" ? isoWeekOf(counter.periodStart) : counter.periodStart.slice(0, 7)} />
       </div>
 
       {nothingTagged ? (

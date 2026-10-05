@@ -98,7 +98,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings, each with an icon (in
 | Element | Text |
 |---|---|
 | Title | Mistakes · How often each mistake showed up, and the line you set for each. Across all accounts. |
-| Period and filter | Week, Month, 29 Sep to 5 Oct 2025, All accounts |
+| Period and filter | Week, Month (pills) · Account (label above) · All accounts v · Week or Month (label above) with the browser's own week or month field, showing the viewed period (Week 40, 2025). The range is spelled out in the subtitle: Week of 29 Sep to 5 Oct 2025. There are no arrows or Today button. |
 | Table | Mistake (with the accounts it was on, for example Funded 3 · Practice 1), This week, This month (each count with its split, for example 3 on trades · 1 on the day), Stop line, Status · Stop line (button) · Each record counts once, whether it was tagged on a trade or recorded for the whole day. |
 | Statuses | STOP TRADING: 4 of 4 this week · 5 of 6 this month · 2 of 3 this month · Count only (no "near the line" status) |
 | Stop line cells | 4 per week · 6 per month · 3 per month · none set |
@@ -251,3 +251,4 @@ updated in Penpot and re-exported; the others are small enough that the drawn fr
   card each; the wider design and feel changes the owner asked to deal with after 001 (nothing started).
 - **Not exercised**: no phone layout (out of scope); the wide-screen scale is judged by eye only.
 | 2026-10-06 | S0, all | Owner (looks pass): the month arrows, month list and Today button are not needed because the date field's calendar covers them; the date field shows today by default; the account chooser moves next to it; the sidebar gets icons | Done in the app and in the Penpot frames (S0 redrawn; the older-month frame is now "an older month (jumped to a date)"; the wireframes carry blank grey icon squares, the Hex reskin frames the real icons). The account chooser on the daily and weekly reviews stays in the page head for now. |
+| 2026-10-06 | S3 | Owner (looks pass): use the same kind of date field as Reviews instead of the arrows and Today; the account chooser goes beside it | Done in the app: the browser's own week and month fields (type=week and type=month, so no library), the account chooser beside them. The Penpot frames of S3 are updated separately. |

@@ -97,3 +97,26 @@ test("nothing tagged yet", async ({ page }) => {
   await expect(page.getByText("Tag them while you judge a trade in your daily review.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Manage the list" })).toBeVisible();
 });
+
+test("the counter's period is picked with the browser's own week and month fields, beside the account chooser", async ({ page }) => {
+  await page.goto("/mistakes?period=week&date=2025-10-01");
+  // the field shows the week that holds the date (Mon 29 Sep 2025 is in ISO week 40), and the subtitle spells the range out
+  await expect(page.getByLabel("Week", { exact: true })).toHaveValue("2025-W40");
+  await expect(page.getByText("Week of 29 Sep to 5 Oct 2025.")).toBeVisible();
+  await expect(page.getByLabel("Account")).toBeVisible();
+  // the old arrows and Today button are gone
+  await expect(page.getByRole("link", { name: "Today" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Earlier week" })).toHaveCount(0);
+
+  // choosing another week opens it (a week at the turn of the year belongs to the other ISO year)
+  await page.getByLabel("Week", { exact: true }).fill("2026-W01");
+  await expect(page).toHaveURL(/period=week&date=2025-12-29/);
+  await expect(page.getByText("Week of 29 Dec to 4 Jan 2026.")).toBeVisible();
+
+  // the same for a month
+  await page.getByRole("link", { name: "Month", exact: true }).click();
+  await expect(page.getByLabel("Month", { exact: true })).toHaveValue("2025-12");
+  await page.getByLabel("Month", { exact: true }).fill("2025-09");
+  await expect(page).toHaveURL(/period=month&date=2025-09-01/);
+  await expect(page.getByText("September 2025.")).toBeVisible();
+});

@@ -158,3 +158,19 @@ export function planDetail(p: { notFollowed: number; partly: number; notJudged: 
 
 /** The year-month of a date: "2025-10". */
 export const monthOfDay = (day: string) => day.slice(0, 7);
+
+/** The ISO week text of a Monday (the value of an <input type="week">): 2026-W41. Weeks start on Monday, like the journal's. */
+export function isoWeekOf(monday: string): string {
+  const thu = new Date(Date.parse(monday + "T00:00:00Z") + 3 * 86_400_000);
+  const jan1 = Date.UTC(thu.getUTCFullYear(), 0, 1);
+  const week = Math.floor((thu.getTime() - jan1) / (7 * 86_400_000)) + 1;
+  return `${thu.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+/** The Monday (YYYY-MM-DD) of an ISO week text such as 2026-W41. */
+export function mondayOfIsoWeek(text: string): string {
+  const [y, w] = text.split("-W").map(Number);
+  const jan4 = new Date(Date.UTC(y, 0, 4));
+  const week1Monday = jan4.getTime() - ((jan4.getUTCDay() + 6) % 7) * 86_400_000;
+  return new Date(week1Monday + (w - 1) * 7 * 86_400_000).toISOString().slice(0, 10);
+}
