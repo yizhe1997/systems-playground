@@ -223,6 +223,23 @@ func (q *Queries) GetDailyReview(ctx context.Context, arg GetDailyReviewParams) 
 	return i, err
 }
 
+const markWeek = `-- name: MarkWeek :exec
+INSERT INTO weekly_review_mark (account_id, week_start)
+VALUES ($1::uuid, $2::date)
+ON CONFLICT DO NOTHING
+`
+
+type MarkWeekParams struct {
+	AccountID string    `json:"account_id"`
+	WeekStart time.Time `json:"week_start"`
+}
+
+// Marking a week reviewed again changes nothing (the first time stays).
+func (q *Queries) MarkWeek(ctx context.Context, arg MarkWeekParams) error {
+	_, err := q.db.Exec(ctx, markWeek, arg.AccountID, arg.WeekStart)
+	return err
+}
+
 const monthsWithActivity = `-- name: MonthsWithActivity :many
 SELECT to_char(x.trading_day, 'YYYY-MM')::text AS month
   FROM (SELECT trading_day FROM trade WHERE account_id = $1::uuid AND deleted_at IS NULL
@@ -246,6 +263,55 @@ func (q *Queries) MonthsWithActivity(ctx context.Context, accountID string) ([]s
 			return nil, err
 		}
 		items = append(items, month)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const reviewsInRange = `-- name: ReviewsInRange :many
+SELECT trading_day, did_well, could_improve, next_focus, mental_grade, technical_grade
+  FROM daily_review
+ WHERE account_id = $1::uuid AND trading_day BETWEEN $2::date AND $3::date
+`
+
+type ReviewsInRangeParams struct {
+	AccountID string    `json:"account_id"`
+	FromDay   time.Time `json:"from_day"`
+	ToDay     time.Time `json:"to_day"`
+}
+
+type ReviewsInRangeRow struct {
+	TradingDay     time.Time   `json:"trading_day"`
+	DidWell        string      `json:"did_well"`
+	CouldImprove   string      `json:"could_improve"`
+	NextFocus      string      `json:"next_focus"`
+	MentalGrade    pgtype.Int2 `json:"mental_grade"`
+	TechnicalGrade pgtype.Int2 `json:"technical_grade"`
+}
+
+// The saved daily reviews of an account over a range (the weekly review reads them, never copies them).
+func (q *Queries) ReviewsInRange(ctx context.Context, arg ReviewsInRangeParams) ([]ReviewsInRangeRow, error) {
+	rows, err := q.db.Query(ctx, reviewsInRange, arg.AccountID, arg.FromDay, arg.ToDay)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReviewsInRangeRow
+	for rows.Next() {
+		var i ReviewsInRangeRow
+		if err := rows.Scan(
+			&i.TradingDay,
+			&i.DidWell,
+			&i.CouldImprove,
+			&i.NextFocus,
+			&i.MentalGrade,
+			&i.TechnicalGrade,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

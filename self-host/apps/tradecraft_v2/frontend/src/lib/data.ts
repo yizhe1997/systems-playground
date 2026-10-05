@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { Account, Calendar, Counter, Mistake, DailyReview, ReviewsMonth, Trade } from "./types";
+import type { Account, Calendar, Counter, Mistake, DailyReview, ReviewsMonth, Trade, WeeklyReview } from "./types";
 
 export const getSettings = () => api<{ timeZone: string }>("/settings");
 export const getAccounts = (includeArchived = false) => api<Account[]>(`/accounts?includeArchived=${includeArchived}`);
@@ -13,3 +13,4 @@ export const getDay = (accountId: string, date: string) => api<DailyReview>(`/re
 export const getCalendar = (accountId: string, month: string) => api<Calendar>(`/reviews/calendar?${q({ accountId, month })}`);
 export const getMistakes = (includeRetired = false) => api<Mistake[]>(`/mistakes?includeRetired=${includeRetired}`);
 export const getCounter = (period: string, date?: string, accountId?: string) => api<Counter>(`/mistakes/counter?${q({ period, date, accountId })}`);
+export const getWeekly = (accountId: string, date: string) => api<WeeklyReview>(`/weekly?${q({ accountId, date })}`);

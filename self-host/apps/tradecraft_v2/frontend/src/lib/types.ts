@@ -200,3 +200,29 @@ export type CounterRow = {
   progress: string | null;
 };
 export type Counter = { period: "week" | "month"; periodStart: string; periodEnd: string; rows: CounterRow[] };
+
+export type WeeklyDay = {
+  date: string;
+  status: "missing" | "draft" | "reviewed" | "no_trades" | "not_yet" | "today";
+  trades: number;
+  netResult: string | null;
+  planFollowed: PlanFollowed;
+  answers: { didWell: string; couldImprove: string; nextFocus: string } | null;
+  mentalGrade: number | null;
+  technicalGrade: number | null;
+};
+export type WeeklyReview = {
+  accountId: string;
+  accountName: string;
+  currency: string;
+  today: string;
+  weekStart: string;
+  weekEnd: string;
+  state: WeekState;
+  reviewedAt: string | null;
+  previousWeek: string;
+  nextWeek: string;
+  focus: { week: Focus; month: Focus };
+  days: WeeklyDay[];
+  stats: Stats;
+};

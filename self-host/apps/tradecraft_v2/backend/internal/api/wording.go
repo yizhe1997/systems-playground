@@ -7,6 +7,7 @@ const (
 	msgPlanNotFollowed = "Not available: you answered that the plan was not followed."
 	msgNotALoss        = "Not available: this trade is not a loss."
 	msgDayNotYet       = "This day has not happened yet."
+	msgWeekNotYet      = "This week has not started yet."
 	msgStopLineMin     = "Stop line must be 1 or more."
 	msgStopLineMax     = "Stop line must be 999 or less."
 	msgNoTrades        = "no trades"

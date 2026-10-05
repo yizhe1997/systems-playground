@@ -88,3 +88,21 @@
 .judge-tags { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
 .judge-tags .judge-option { padding: 6px 12px; }
 .day-records { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; margin: var(--space-sm) 0; }
+
+.wk-day { padding: 12px 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: var(--space-sm); }
+.wk-day:first-of-type { border-top: 0; }
+.wk-day-empty { flex-direction: row; align-items: center; gap: var(--space-md); padding: 8px 0; }
+.wk-day-head { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
+.wk-answers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm) var(--space-lg); margin: 0; }
+@media (max-width: 1100px) { .wk-answers { grid-template-columns: 1fr; } }
+.wk-answers dt { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.wk-answers dd { margin: 0; white-space: pre-wrap; }
+.week-picker { width: 380px; }
+.week-rows { display: flex; flex-direction: column; gap: 2px; }
+.week-row { display: grid; grid-template-columns: repeat(7, 1fr) 76px; align-items: center; text-align: center; height: 36px; border-radius: var(--r-button); color: var(--ink); text-decoration: none; font-variant-numeric: tabular-nums; }
+a.week-row:hover { background: var(--bone-mist); }
+.week-row[aria-current="true"] { outline: 2px solid var(--accent); }
+.week-row-head { height: auto; }
+.week-row-head .dow { font-size: 12px; color: var(--text-3); padding: 4px 0; }
+.week-row .cal-out { color: var(--text-3); }
+.week-mark { font-size: 12px; color: var(--text-2); }

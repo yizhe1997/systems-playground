@@ -93,3 +93,15 @@ SELECT to_char(x.trading_day, 'YYYY-MM')::text AS month
         SELECT trading_day FROM daily_review WHERE account_id = sqlc.arg(account_id)::uuid) x
  GROUP BY 1
  ORDER BY 1 DESC;
+
+-- The saved daily reviews of an account over a range (the weekly review reads them, never copies them).
+-- name: ReviewsInRange :many
+SELECT trading_day, did_well, could_improve, next_focus, mental_grade, technical_grade
+  FROM daily_review
+ WHERE account_id = sqlc.arg(account_id)::uuid AND trading_day BETWEEN sqlc.arg(from_day)::date AND sqlc.arg(to_day)::date;
+
+-- Marking a week reviewed again changes nothing (the first time stays).
+-- name: MarkWeek :exec
+INSERT INTO weekly_review_mark (account_id, week_start)
+VALUES (sqlc.arg(account_id)::uuid, sqlc.arg(week_start)::date)
+ON CONFLICT DO NOTHING;

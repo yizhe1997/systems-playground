@@ -4,6 +4,8 @@ const LABELS: Record<string, string> = {
   missing: "Missing",
   today: "Today",
   not_reviewed: "Not reviewed",
+  no_trades: "No trades",
+  not_yet: "Not yet",
 };
 
 /** A status in words (never colour alone). Missing is dashed, as drawn. */

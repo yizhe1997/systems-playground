@@ -59,6 +59,9 @@ func New(pool *pgxpool.Pool, now func() time.Time) *fiber.App {
 	app.Get("/reviews/day", s.getDailyReview)
 	app.Put("/reviews/day", s.saveDailyReview)
 
+	app.Get("/weekly", s.getWeekly)
+	app.Post("/weekly/mark", s.markWeek)
+
 	app.Get("/focus", s.getFocus)
 	app.Put("/focus", s.saveFocus)
 
