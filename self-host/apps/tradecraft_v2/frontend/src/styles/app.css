@@ -181,3 +181,4 @@ dialog.dialog::backdrop { background: var(--dim); }
 /* ---------- pager ---------- */
 .pager { display: flex; align-items: center; gap: var(--space-md); margin-top: var(--space-md); }
 .pager .spacer { flex: 1; }
+.btn-off { border-style: dashed; }

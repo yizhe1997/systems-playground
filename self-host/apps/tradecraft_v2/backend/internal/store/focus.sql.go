@@ -10,6 +10,26 @@ import (
 	"time"
 )
 
+const clearFocus = `-- name: ClearFocus :execrows
+DELETE FROM focus
+ WHERE period = $1::text AND period_start = $2::date
+   AND ($3::timestamptz IS NULL OR updated_at = $3::timestamptz)
+`
+
+type ClearFocusParams struct {
+	Period            string     `json:"period"`
+	PeriodStart       time.Time  `json:"period_start"`
+	ExpectedUpdatedAt *time.Time `json:"expected_updated_at"`
+}
+
+func (q *Queries) ClearFocus(ctx context.Context, arg ClearFocusParams) (int64, error) {
+	result, err := q.db.Exec(ctx, clearFocus, arg.Period, arg.PeriodStart, arg.ExpectedUpdatedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const dayMistakes = `-- name: DayMistakes :many
 SELECT m.id, m.name
   FROM day_mistake dm JOIN mistake m ON m.id = dm.mistake_id
@@ -67,4 +87,33 @@ func (q *Queries) GetFocus(ctx context.Context, arg GetFocusParams) (GetFocusRow
 	var i GetFocusRow
 	err := row.Scan(&i.Body, &i.UpdatedAt)
 	return i, err
+}
+
+const saveFocus = `-- name: SaveFocus :one
+INSERT INTO focus (period, period_start, body)
+VALUES ($1::text, $2::date, $3::text)
+ON CONFLICT (period, period_start) DO UPDATE SET body = EXCLUDED.body
+ WHERE focus.updated_at = $4::timestamptz
+RETURNING updated_at
+`
+
+type SaveFocusParams struct {
+	Period            string     `json:"period"`
+	PeriodStart       time.Time  `json:"period_start"`
+	Body              string     `json:"body"`
+	ExpectedUpdatedAt *time.Time `json:"expected_updated_at"`
+}
+
+// Creates the focus of a period, or replaces it when the caller's version token matches (a missing token never matches
+// an existing row): no row back means "changed elsewhere".
+func (q *Queries) SaveFocus(ctx context.Context, arg SaveFocusParams) (time.Time, error) {
+	row := q.db.QueryRow(ctx, saveFocus,
+		arg.Period,
+		arg.PeriodStart,
+		arg.Body,
+		arg.ExpectedUpdatedAt,
+	)
+	var updated_at time.Time
+	err := row.Scan(&updated_at)
+	return updated_at, err
 }

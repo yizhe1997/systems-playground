@@ -5,6 +5,7 @@ import { monthName } from "@/lib/format";
 import type { WeekBlock as WeekT } from "@/lib/types";
 import { AccountSwitcher } from "@/components/AccountSwitcher";
 import { CouldNotLoad } from "@/components/Notice";
+import { FocusButton } from "@/components/FocusDialog";
 import { MonthNav } from "@/components/MonthNav";
 import { NoAccount } from "@/components/NoAccount";
 import { WeekBlock } from "@/components/WeekBlock";
@@ -77,6 +78,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
             {data.monthFocus.body ? <div className="focus-text">{data.monthFocus.body}</div> : <div className="focus-text helper">No focus for this month yet.</div>}
             <p className="helper">Shown on every daily and weekly review this month.</p>
           </div>
+          <FocusButton date={data.monthFocus.periodStart} period="month" written={data.monthFocus.body !== null} only="month" />
         </div>
       </section>
 
