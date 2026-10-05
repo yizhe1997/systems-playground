@@ -230,3 +230,23 @@ updated in Penpot and re-exported; the others are small enough that the drawn fr
 | S5 mark | After marking, the button is replaced by "Reviewed <Wed 1 Oct 18:40>" and the helper line stays; a week that has not started shows the button unavailable with "This week has not started yet." | Mark as reviewed |
 | S5 days | A day with a review shows its answers in two columns; a day with nothing is one line with its status chip | Day cells |
 | Reviews week row | "Open weekly review" is a separate link on the row, outside the collapsible summary (keyboard and screen reader order) | Button on the row |
+
+## Visual review
+
+**Date**: 2026-10-05. **Approved by the owner**: yes, the look of feature 001 as built (choice "Approve").
+
+- **Screenshots**: `built/` holds every state of S0 to S5 in light and night at 1440 x 900, and in light and night on a 2560 x 1440 window
+  (`-wide`), 80 images, captured by `frontend/e2e/zz-screens-reviews.spec.ts` on a fresh stack.
+- **Compared with the wireframes**: structure, content, wording and states match, apart from the differences recorded above under
+  "Differences found while building". The S2 frames were updated in Penpot to the built wording; the other differences are small and were
+  recorded here only.
+- **Checks run**: axe WCAG 2 A and AA (4.5:1 contrast) in light and night on every screen and dialog; keyboard-only checks; the impeccable design
+  detector (no findings); a design critique run by one reviewer in one context, not by two isolated agents as the critique command asks, because
+  this session was not allowed to start sub-agents; the process-beside-money check (SC-003, SC-004); timings (SC-008).
+- **Fixed during the review**: "Open weekly review" moved out of the collapsible summary (a control inside a control); focus returns to the
+  button after a drawer or dialog closes; row actions underlined so they read as actions; "no trades" instead of "0 trades · Plan followed 0
+  of 0" on an empty day of the weekly review; "No days to review yet" instead of "0 of 0 days reviewed"; "is included" for one trade; the status
+  chip lines up with the account chooser.
+- **Parked**: the lines "No trades on Thu 2 Oct." repeat the "No trades" chip (signed-off wording); empty future weeks on Reviews take a full
+  card each; the wider design and feel changes the owner asked to deal with after 001 (nothing started).
+- **Not exercised**: no phone layout (out of scope); the wide-screen scale is judged by eye only.
