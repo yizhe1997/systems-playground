@@ -64,7 +64,7 @@ Filled in after implementation (constitution principle V).
 
 - **Date**:
 - **Visual direction**: see `docs/visual-direction.md`
-- **Built screenshots**: `built/` (local, git-ignored, never committed)
+- **Built screenshots**: not stored in the repository
 - **Wireframe match**:
 - **Design checks run**: critique, audit
 - **Fixed**:

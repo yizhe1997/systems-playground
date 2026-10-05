@@ -1,15 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { api, makeAccount } from "./helpers";
 import { dayUrl, reviewsUrl } from "./helpers_reviews";
 
-// Not a check: it captures the built screens of feature 001 for the visual review (specs/001-journal-and-reflect/built/).
+// Not a check: it captures the built screens of feature 001 for the visual review (a folder outside the repository, see CAPTURE_DIR).
 // Run on a fresh stack:  CAPTURE_SCREENS=light npx playwright test e2e/zz-screens-reviews.spec.ts   (and =dark)
 // SCALE=wide captures the same screens on a 2560 x 1440 window, where the wide-screen scale steps apply.
 const scheme = process.env.CAPTURE_SCREENS;
 const wide = process.env.SCALE === "wide";
-const out = path.resolve(__dirname, "../../specs/001-journal-and-reflect/built");
+const out = process.env.CAPTURE_DIR ?? path.join(tmpdir(), "tradecraft-built", "001-journal-and-reflect"); // outside the repository: screenshots are never committed
 
 test.skip(!scheme, "set CAPTURE_SCREENS=light or dark to capture the built screens");
 test.use({ colorScheme: scheme === "dark" ? "dark" : "light", viewport: wide ? { width: 2560, height: 1440 } : { width: 1440, height: 900 } });

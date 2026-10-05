@@ -28,7 +28,7 @@ We keep structure, look and result apart, because they are different decisions w
 |---|---|---|---|---|
 | **Wireframes** | Per feature, after specify, signed off before plan | You | Structure, layout, content and wording, states, behaviour. Greyscale. **No brand, colour or type choices** | Design-tool pages (Penpot today), `specs/NNN/screens.md`; no images in the repository |
 | **Visual direction** | Once per project, checked before the first implement (you can decide it earlier or later, but code cannot start without it) | You, with references you provide | Palette, type, density, component feel, tone. Never assumed from an earlier project | `DESIGN.md`, `PRODUCT.md`, `docs/visual-direction.md` |
-| **Visual review** | Per feature, after implement | You | The built screens, in a real browser, against the wireframes and the visual direction | Local `built/` screenshots (git-ignored), a "Visual review" section in `screens.md` |
+| **Visual review** | Per feature, after implement | You | The built screens, in a real browser, against the wireframes and the visual direction | Screenshots kept outside the repository, a "Visual review" section in `screens.md` |
 
 Where Impeccable (the frontend design skill) is used:
 - **Visual direction:** its `init` command writes `PRODUCT.md` and its `document` command writes `DESIGN.md`.
@@ -107,7 +107,7 @@ To change the extension, edit the source folder and reinstall with `--force`.
 | Research and your reactions | [`research/`](../research/00-README.md) |
 | Wireframes | Penpot file `Tradecraft_v2` (one page per screen, plus a wireframe kit page), `specs/NNN-name/screens.md`; wireframe images are not stored in the repository |
 | Visual direction | `docs/visual-direction.md`, `DESIGN.md`, `PRODUCT.md` |
-| Built-screen screenshots | `specs/NNN-name/built/`, local only (git-ignored, never committed) |
+| Built-screen screenshots | Not stored in the repository (the capture specs write to `CAPTURE_DIR`, by default the system temp folder) |
 | Domain rules, with sources | `docs/domain.md` (to be carried over from v1) |
 | Security review and gates | `docs/security-review.md` (to be carried over from v1) |
 | Dated decisions | `research/12-owner-decisions.md`, then `docs/decisions.md` |

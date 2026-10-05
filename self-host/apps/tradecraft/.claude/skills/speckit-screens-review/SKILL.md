@@ -30,7 +30,7 @@ $ARGUMENTS
    (empty, filled, error, boundary), and open the app in the browser tool. Do not use mocks.
 
 3. **Capture every state.** For each screen and state in `screens.md`, take a screenshot and save it
-   in `FEATURE_DIR/built/`, named like its wireframe frame. That folder is local and git-ignored: the screenshots are shown to the owner in the review and are never committed.
+   in a folder outside the repository (the capture specs write to `CAPTURE_DIR`, by default `tradecraft-built` in the system temp folder), named like its wireframe frame. The screenshots are shown to the owner in the review and are never stored in the repository.
 
 4. **Compare with the wireframes.** For each state, state plainly whether structure, content, wording,
    states and behaviour match the signed-off wireframe. Any difference is either a defect (fix it) or

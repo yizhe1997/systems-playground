@@ -1,13 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { api, fillTrade, makeAccount, makeTrade, tradeA, tradesFor } from "./helpers";
 
-// Not a check: it captures the built screens for the visual review (specs/000-log-trades/built/).
+// Not a check: it captures the built screens for the visual review (a folder outside the repository, see CAPTURE_DIR).
 // Run on a fresh stack:  CAPTURE_SCREENS=light npx playwright test e2e/zz-screens.spec.ts   (and =dark)
 // The first two screens need an empty journal, so run it on one.
 const scheme = process.env.CAPTURE_SCREENS;
-const out = path.resolve(__dirname, "../../specs/000-log-trades/built");
+const out = process.env.CAPTURE_DIR ?? path.join(tmpdir(), "tradecraft-built", "000-log-trades"); // outside the repository: screenshots are never committed
 
 test.skip(!scheme, "set CAPTURE_SCREENS=light or dark to capture the built screens");
 test.use({ colorScheme: scheme === "dark" ? "dark" : "light" });

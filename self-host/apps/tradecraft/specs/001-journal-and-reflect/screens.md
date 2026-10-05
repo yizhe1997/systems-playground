@@ -236,7 +236,7 @@ updated in Penpot and re-exported; the others are small enough that the drawn fr
 
 **Date**: 2026-10-05. **Approved by the owner**: yes, the look of feature 001 as built (choice "Approve").
 
-- **Screenshots**: `built/` holds every state of S0 to S5 in light and night at 1440 x 900, and in light and night on a 2560 x 1440 window
+- **Screenshots**: every state of S0 to S5 was captured (not stored in the repository) in light and night at 1440 x 900, and in light and night on a 2560 x 1440 window
   (`-wide`), 80 images, captured by `frontend/e2e/zz-screens-reviews.spec.ts` on a fresh stack.
 - **Compared with the wireframes**: structure, content, wording and states match, apart from the differences recorded above under
   "Differences found while building". The S2 frames were updated in Penpot to the built wording; the other differences are small and were

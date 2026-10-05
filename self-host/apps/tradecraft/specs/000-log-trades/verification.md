@@ -21,7 +21,7 @@ Everything below was run, not assumed. Failures and gaps are listed first.
 7. **Port 3100 is taken on this computer** by something inside WSL, so the local stack publishes the web tier on 3101
    (`.env`, not committed). The documented default is still 3100.
 8. **Not done yet:** the owner's decision on the look (T062), and the design critique and audit that go with it.
-   The built screens for it are in `built/`.
+   The built screens for it were captured for the review (not stored in the repository).
 9. The two written constitution exceptions still stand (principle I: no process information beside money until `001`;
    principle IV: no sign-in or audit log, local use only).
 
@@ -70,7 +70,7 @@ clocks go back uses its first occurrence.
 ### Browser run (quickstart steps 1 to 7)
 
 Steps 1 to 6 are the Playwright specs `us1` to `us6`. Step 7, comparing every screen with `wireframes/`, is the visual
-review: 23 states in both modes are saved in `built/` (names match the wireframes, `-light` and `-dark`). Compared by eye
+review: 23 states in both modes were captured (not stored in the repository; names matched the wireframes, `-light` and `-dark`). Compared by eye
 with the approved Hex skins: layout, copy, states and the filled Long segment match; the gaps are items 2 and 3 above.
 The "could not save" and "changed elsewhere" states were produced by simulating the failure in the browser; "could not
 load" was captured with the API container really stopped.
