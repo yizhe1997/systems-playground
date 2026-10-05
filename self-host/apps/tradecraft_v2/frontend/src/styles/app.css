@@ -30,7 +30,10 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 /* ---------- layout ---------- */
 .shell { display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); min-height: calc(100vh / var(--z)); }
 .sidebar { background: var(--bone-mist); padding: var(--space-lg) var(--space-sm); }
-.brand { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); padding: 0 var(--space-md) var(--space-lg); }
+.brand { padding: 0 var(--space-md) var(--space-lg); }
+.logo { display: block; width: 124px; height: auto; } /* the small cut of the horizontal lockup; 120 px wide is its minimum */
+.logo-mark { fill: var(--accent); }
+.logo-word { fill: var(--ink); }
 .nav { display: flex; flex-direction: column; gap: var(--space-xs); }
 .nav a {
   display: flex; align-items: center; height: var(--field); padding: 0 var(--space-md);

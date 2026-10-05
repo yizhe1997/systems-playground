@@ -34,7 +34,7 @@ A results dashboard cannot truthfully claim to put process before profit, and a 
 
 ## Brand Commitments
 
-Name: Tradecraft (v2). No logo, palette, type or look is inherited from Tradecraft v1; the look is decided in the visual-direction step with the owner.
+Name: Tradecraft (v2). The look is the one decided in the visual-direction step with the owner. One exception, decided by the owner on 2026-10-05: the logo (the T held inside a C, with its uppercase wordmark) made for Tradecraft v1 is brought over and used in v2. Its files are in `design/logo/` with its guidelines. Nothing else of v1's look is inherited.
 
 ## Evidence on Hand
 

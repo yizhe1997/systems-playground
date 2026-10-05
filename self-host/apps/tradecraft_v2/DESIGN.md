@@ -207,6 +207,10 @@ Small, quiet corners: 3px for buttons, 6px for cards and fields, pill only for t
 ### Inputs / Fields
 - 36px high, Card White, 1px border, 6px radius, 12px side padding. Focus: plum border and a 3px 15% halo. Error: 2px Ink border plus a written message marked "!" below, never colour alone.
 
+### Logo
+
+The sidebar brand is the horizontal lockup of the T-in-a-C symbol and the uppercase wordmark, in the small cut (124 px wide, never below 120 px). The symbol takes the accent colour (violet `#473982` in light, soft violet `#9e91d6` at night, the two colours of the logo guidelines) and the wordmark the ink colour. Use the files in `design/logo/` (see `design/logo/GUIDELINES.md` for clear space, minimum sizes and the don'ts); never retype the wordmark. The favicon, tab icon and app icon are `frontend/src/app/icon.svg`, `favicon.ico` and `apple-icon.png`.
+
 ### Navigation
 - Sidebar on Bone Mist; items 36px high, 3px radius; the active item is Card White with a 3px Twilight Plum bar at its left edge and 600 weight.
 
