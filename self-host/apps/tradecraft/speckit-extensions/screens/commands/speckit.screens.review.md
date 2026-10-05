@@ -25,7 +25,7 @@ $ARGUMENTS
    (empty, filled, error, boundary), and open the app in the browser tool. Do not use mocks.
 
 3. **Capture every state.** For each screen and state in `screens.md`, take a screenshot and save it
-   under `FEATURE_DIR/built/` with the same name as its wireframe.
+   in `FEATURE_DIR/built/`, named like its wireframe frame. That folder is local and git-ignored: the screenshots are shown to the owner in the review and are never committed.
 
 4. **Compare with the wireframes.** For each state, state plainly whether structure, content, wording,
    states and behaviour match the signed-off wireframe. Any difference is either a defect (fix it) or

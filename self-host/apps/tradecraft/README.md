@@ -51,7 +51,7 @@ The Export button on the Trades screen also downloads everything (accounts and e
 
 ## Where things are
 
-- `specs/000-log-trades/`: spec, wireframes (`wireframes/`), plan, tasks, verification notes, and the built screens (`built/`).
+- `specs/000-log-trades/`: spec, screen list (`screens.md`), plan, tasks and verification notes. The wireframes live in the design tool, not in the repository.
 - `docs/domain.md`: every trading rule in words with worked examples; each is marked unconfirmed until you confirm it.
 - `docs/decisions.md`: dated decisions made while building.
 - `backend/`: Go API (Fiber, pgx, sqlc, goose). The rules that decide numbers are SQL functions in `backend/migrations/`.

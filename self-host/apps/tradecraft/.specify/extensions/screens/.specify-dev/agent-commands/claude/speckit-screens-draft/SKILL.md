@@ -64,8 +64,7 @@ $ARGUMENTS
    - Apply the constitution while drawing: any screen that shows a money figure shows process
      information beside it (principle I); a figure that cannot be computed shows a dash and a reason
      (principle III).
-   - Export each frame and look at it before showing it to the owner. Save the images under
-     `FEATURE_DIR/wireframes/`.
+   - Export each frame and look at it before showing it to the owner, but wireframes live only in the design tool (Penpot today; any tool that has an MCP or an API so an AI can manage the frames will do). Do not save images of them in the repository; `screens.md` names the frames.
 
    Penpot quirks learned on this project:
    - The Penpot plugin tab must be open and connected. If a call fails with a tunnel or connection

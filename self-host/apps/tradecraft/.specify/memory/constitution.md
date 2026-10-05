@@ -98,7 +98,7 @@ Check: the domain document and the decision log are updated in the same change a
 
 ## Technology and Domain Constraints
 
-- **Stack**: Go with Fiber and Postgres for the API, Next.js for the web tier, Penpot for design,
+- **Stack**: Go with Fiber and Postgres for the API, Next.js for the web tier, a design tool with an MCP or API for design (Penpot today),
   Docker Compose for running everything. Changing the stack needs a recorded decision.
 - **Testing**: domain logic and APIs MUST be tested against a real Postgres. The interface MUST be
   verified in a real browser on the composed stack. Tests are added together with the feature;

@@ -40,8 +40,7 @@ $ARGUMENTS
      meaning. If any frame carries a look, strip it back or list it as a gap.
    - Constitution check: each screen showing a money figure shows process information beside it
      (principle I); a figure that cannot be computed shows a dash and a reason (principle III).
-   - The Penpot frames named in `screens.md` exist, and the images in `FEATURE_DIR/wireframes/` are
-     current (export again if a frame changed).
+   - The design-tool frames named in `screens.md` exist and match `screens.md` (no images are stored in the repository).
    - Answers from clarify that change a screen are reflected in it.
 
 5. **Ask for sign-off.** Show the owner the final frames and the gap report. Use AskUserQuestion with

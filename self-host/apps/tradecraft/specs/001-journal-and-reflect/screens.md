@@ -2,7 +2,7 @@
 
 **Feature**: `001-journal-and-reflect`
 **Status**: signed-off 2026-10-03, signed off again 2026-10-04 (twice: after the v1 dependencies were removed, and after the requirements checklists). Greyscale wireframes: structure, wording, states and behaviour. The look is not part of this sign-off.
-**Penpot**: file `Tradecraft_v2`, one page per screen (`S0 Reviews` to `S5 Weekly review`, plus a `Wireframe kit` page). Images exported to [wireframes/](wireframes/).
+**Penpot**: file `Tradecraft_v2`, one page per screen (`S0 Reviews` to `S5 Weekly review`, plus a `Wireframe kit` page). The wireframes live only in Penpot; no images are stored in the repository.
 **Signed off**: 2026-10-03
 **spec-sha256**: 0bee1f844680764b742bbb4eeeea73174562a3c8096d181dd12da3d18b73b9fd
 
@@ -16,12 +16,12 @@ They serve every user story in `spec.md`: S1 and S2 serve stories 1 and 2, S3 se
 
 | ID | Screen | Serves | States drawn | Image |
 |---|---|---|---|---|
-| S0 | Reviews: one month at a time, with the month focus on top and collapsible weeks, per account | US1, FR-003 | opens on today (current month, current week open); stepped back to an older month; nothing to review yet | [opens on today](wireframes/s0-reviews-opens-on-today.png), [older month](wireframes/s0-reviews-stepped-back-to-an-older-month.png), [empty](wireframes/s0-reviews-nothing-to-review-yet.png) |
-| S1 | Daily review (one account, one day) | US1, US2, US4, FR-003 to FR-012, FR-018 | filled (draft); empty day; nothing earlier to show; reviewed but trades changed; no week or month focus yet; day picker open | [filled](wireframes/s1-daily-review-filled-draft.png), [empty day](wireframes/s1-daily-review-empty-day.png), [nothing earlier](wireframes/s1-daily-review-nothing-earlier-to-show-top-of-screen.png), [trades changed](wireframes/s1-daily-review-reviewed-but-trades-changed-top-of-screen.png), [no focus](wireframes/s1-daily-review-no-week-or-month-focus-yet-top-of-screen.png), [day picker](wireframes/s1-daily-review-day-picker-open-top-of-screen.png) |
-| S2 | Judge a trade (drawer opened from the Judge button) | US2, US3, FR-008, FR-009, FR-013 | a loss labelled mistake; a win flagged as a mistake | [loss](wireframes/s2-judge-a-trade-a-loss-labelled-mistake.png), [win](wireframes/s2-judge-a-trade-a-win-flagged-as-a-mistake.png) |
-| S3 | Mistakes: counter, stop lines, list management | US3, FR-013 to FR-016 | counter this week; stop line editor (with an error); nothing tagged yet | [counter](wireframes/s3-mistakes-counter-this-week.png), [editor](wireframes/s3-mistakes-stop-line-editor.png), [empty](wireframes/s3-mistakes-nothing-tagged-yet.png) |
-| S4 | Write a focus (week or month), a dialog | US4, FR-017, FR-018 | week; month; nothing written yet; too long | [week](wireframes/s4-set-a-focus-week.png), [month](wireframes/s4-set-a-focus-month.png), [empty](wireframes/s4-set-a-focus-nothing-written-yet.png), [too long](wireframes/s4-set-a-focus-too-long.png) |
-| S5 | Weekly review (one account, one week) | US5, FR-019 to FR-021 | filled (draft); no focus yet (week and month); week picker open | [filled](wireframes/s5-weekly-review-filled-draft.png), [no focus](wireframes/s5-weekly-review-no-focus-yet-top-of-screen.png), [week picker](wireframes/s5-weekly-review-week-picker-open-top-of-screen.png) |
+| S0 | Reviews: one month at a time, with the month focus on top and collapsible weeks, per account | US1, FR-003 | opens on today (current month, current week open); stepped back to an older month; nothing to review yet | opens on today, older month, empty |
+| S1 | Daily review (one account, one day) | US1, US2, US4, FR-003 to FR-012, FR-018 | filled (draft); empty day; nothing earlier to show; reviewed but trades changed; no week or month focus yet; day picker open | filled, empty day, nothing earlier, trades changed, no focus, day picker |
+| S2 | Judge a trade (drawer opened from the Judge button) | US2, US3, FR-008, FR-009, FR-013 | a loss labelled mistake; a win flagged as a mistake | loss, win |
+| S3 | Mistakes: counter, stop lines, list management | US3, FR-013 to FR-016 | counter this week; stop line editor (with an error); nothing tagged yet | counter, editor, empty |
+| S4 | Write a focus (week or month), a dialog | US4, FR-017, FR-018 | week; month; nothing written yet; too long | week, month, empty, too long |
+| S5 | Weekly review (one account, one week) | US5, FR-019 to FR-021 | filled (draft); no focus yet (week and month); week picker open | filled, no focus, week picker |
 
 **How S4 is reached** (it is a dialog, not a page): the "Write one" or "Edit" button on the week and month lines of the focus card in S1; the same buttons on the focus card in S5 (week and month); the "Month focus" band under each month heading in S0 (Edit, or Write one when empty). The week's focus is reached by opening the week row, which opens S5.
 
@@ -138,7 +138,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings.
 
 ## Content added after sign-off (not drawn)
 
-Wording for states that were accepted as not drawn, and for new refusals, written at the plan stage (2026-10-04). They follow the structure of the signed-off screens. On 2026-10-04 the following were drawn in Penpot and exported to [wireframes/](wireframes/): S0 Reviews: today row, S0 Reviews: no account yet, S1 Daily review: trades not judged yet, S1 Daily review: day not happened yet, S3 Mistakes: rename a mistake, S3 Mistakes: rename, name already used, S3 Mistakes: retire a mistake. The Undo and failure notices are drawn once, on the trades list of feature 000, as before. All frames of S0 to S5 now carry the shared sidebar (TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings).
+Wording for states that were accepted as not drawn, and for new refusals, written at the plan stage (2026-10-04). They follow the structure of the signed-off screens. On 2026-10-04 the following were drawn in Penpot and exported from Penpot (not stored in the repository): S0 Reviews: today row, S0 Reviews: no account yet, S1 Daily review: trades not judged yet, S1 Daily review: day not happened yet, S3 Mistakes: rename a mistake, S3 Mistakes: rename, name already used, S3 Mistakes: retire a mistake. The Undo and failure notices are drawn once, on the trades list of feature 000, as before. All frames of S0 to S5 now carry the shared sidebar (TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings).
 
 | Where | Text |
 |---|---|

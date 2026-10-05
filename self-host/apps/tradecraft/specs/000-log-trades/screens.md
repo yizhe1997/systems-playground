@@ -2,7 +2,7 @@
 
 **Feature**: `000-log-trades`
 **Status**: signed-off 2026-10-04 (again, after the requirements checklist review). Greyscale wireframes: structure, wording, states and behaviour. The look is not part of this sign-off.
-**Penpot**: file `Tradecraft_v2`, pages `L1 Trades list`, `L2 Log a trade`, `L3 Accounts`, `L4 Account dialog`, `L5 Settings` (L for log-trades, so they do not clash with the 001 pages). Images in [wireframes/](wireframes/).
+**Penpot**: file `Tradecraft_v2`, pages `L1 Trades list`, `L2 Log a trade`, `L3 Accounts`, `L4 Account dialog`, `L5 Settings` (L for log-trades, so they do not clash with the 001 pages). Images in the Penpot frames.
 **Signed off**: 2026-10-04 (structure and wording only; the look is decided elsewhere)
 **spec-sha256**: e7fad36a909ebe36f735228fd9a50c455da2fa3794d4b80d752dcc47dac8a5ad
 
@@ -16,11 +16,11 @@ They serve every user story in `spec.md`: L1 serves stories 2 and 3 (see and cor
 
 | ID | Screen | Serves | States drawn | Image |
 |---|---|---|---|---|
-| L1 | Trades list (the home screen) | US1, US2, US3, FR-004, FR-015 to FR-019, FR-023 | filled; no accounts yet; no trades at all; filters match nothing; showing deleted; could not load; trade deleted (undo) | [filled](wireframes/l1-trades-list-filled.png), [no accounts](wireframes/l1-trades-list-no-accounts-yet.png), [none at all](wireframes/l1-trades-list-no-trades-at-all.png), [no match](wireframes/l1-trades-list-filters-match-nothing.png), [deleted](wireframes/l1-trades-list-showing-deleted.png), [could not load](wireframes/l1-trades-list-could-not-load.png), [undo](wireframes/l1-trades-list-trade-deleted-undo.png) |
-| L2 | Log or edit a trade | US1, US3, US4, US5, FR-005 to FR-012, FR-020 to FR-023 | new; filled with the result computed; dollars per point blank (typed result); validation errors; edit; could not save; changed elsewhere; leave without saving | [new](wireframes/l2-log-a-trade-new.png), [filled](wireframes/l2-log-a-trade-filled-result-computed.png), [typed result](wireframes/l2-log-a-trade-dollars-per-point-blank.png), [errors](wireframes/l2-log-a-trade-validation-errors.png), [edit](wireframes/l2-edit-a-trade.png), [could not save](wireframes/l2-log-a-trade-could-not-save.png), [changed elsewhere](wireframes/l2-edit-a-trade-changed-elsewhere.png), [leave](wireframes/l2-log-a-trade-leave-without-saving.png) |
-| L3 | Accounts list | US1, US6, FR-003, FR-004, FR-004a | list; showing archived; none yet | [list](wireframes/l3-accounts-list.png), [archived](wireframes/l3-accounts-showing-archived.png), [none yet](wireframes/l3-accounts-none-yet.png) |
-| L4 | Account dialog (new or edit) | US1, US5, US6, FR-001 to FR-004a | new; edit; name already used; start time 00:00 refused | [new](wireframes/l4-account-dialog-new.png), [edit](wireframes/l4-account-dialog-edit.png), [name used](wireframes/l4-account-dialog-name-already-used.png), [00:00](wireframes/l4-account-dialog-start-time-00-00.png) |
-| L5 | Settings (time zone) | US5, FR-014 | time zone | [time zone](wireframes/l5-settings-time-zone.png) |
+| L1 | Trades list (the home screen) | US1, US2, US3, FR-004, FR-015 to FR-019, FR-023 | filled; no accounts yet; no trades at all; filters match nothing; showing deleted; could not load; trade deleted (undo) | filled, no accounts, none at all, no match, deleted, could not load, undo |
+| L2 | Log or edit a trade | US1, US3, US4, US5, FR-005 to FR-012, FR-020 to FR-023 | new; filled with the result computed; dollars per point blank (typed result); validation errors; edit; could not save; changed elsewhere; leave without saving | new, filled, typed result, errors, edit, could not save, changed elsewhere, leave |
+| L3 | Accounts list | US1, US6, FR-003, FR-004, FR-004a | list; showing archived; none yet | list, archived, none yet |
+| L4 | Account dialog (new or edit) | US1, US5, US6, FR-001 to FR-004a | new; edit; name already used; start time 00:00 refused | new, edit, name used, 00:00 |
+| L5 | Settings (time zone) | US5, FR-014 | time zone | time zone |
 
 ## Flows
 
@@ -152,7 +152,7 @@ Left for the sign-off step: the principle I exception (process information besid
 ## Visual review
 
 **Status**: findings recorded 2026-10-04. The owner chose "approve, fix 1 and 4 first"; both were fixed the same day (below); the owner then approved the look.
-**Built screens**: [built/](built/), 23 states in light and night, named like their wireframes (`-light.png`, `-dark.png`), captured in real Chromium on the composed stack with sample data (`frontend/e2e/zz-screens.spec.ts`). "Could not load" was captured with the API container really stopped; "could not save" and "changed elsewhere" by simulating the failure in the browser.
+**Built screens** (local, git-ignored, not in the repository; regenerate with `zz-screens`): 23 states in light and night, named like their wireframes (`-light.png`, `-dark.png`), captured in real Chromium on the composed stack with sample data (`frontend/e2e/zz-screens.spec.ts`). "Could not load" was captured with the API container really stopped; "could not save" and "changed elsewhere" by simulating the failure in the browser.
 **Checks run**: comparison with each wireframe and with the approved Hex skins; axe (WCAG 2 A and AA, including 4.5:1 text contrast) on five screens and their states in both modes, no violations; Impeccable detector on `frontend/src`, no findings; the Impeccable critique, run inline in one context (⚠️ DEGRADED: single-context, because this session does not spawn sub-agents), so its heuristic scoring is lighter than a full run.
 
 **Matches the wireframes**: structure, wording, every state and behaviour on L1 to L5 (empty, filled, error, deleted, undo, leave prompt, conflict, typed result, name already used, start 00:00). Dashes always carry a reason; the list shows no totals.
