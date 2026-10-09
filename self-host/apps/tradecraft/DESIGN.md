@@ -211,6 +211,10 @@ Small, quiet corners: 3px for buttons, 6px for cards and fields, pill only for t
 
 The sidebar brand is the horizontal lockup of the T-in-a-C symbol and the uppercase wordmark, in the small cut (124 px wide, never below 120 px). The symbol takes the accent colour (violet `#473982` in light, soft violet `#9e91d6` at night, the two colours of the logo guidelines) and the wordmark the ink colour. Use the files in `design/logo/` (see `design/logo/GUIDELINES.md` for clear space, minimum sizes and the don'ts); never retype the wordmark. The favicon, tab icon and app icon are `frontend/src/app/icon.svg`, `favicon.ico` and `apple-icon.png`.
 
+### Date range and collapsible
+
+The Trades date range is a field-shaped button (calendar icon and the range, for example 1 Oct 2025 – 31 Oct 2025) that opens a two-month calendar in a card-like popover: Monday weeks, month and year dropdowns, range ends in Ink with Parchment text, the days between in Bone Mist, today underlined. The weeks of Reviews are cards with a header (title, summary, status chip, Open weekly review) and a 36px outlined icon button with up-and-down chevrons that shows or hides the days. Both are Base UI parts styled in `src/styles/ui.css`; no brand colour fill.
+
 ### Navigation
 - Sidebar on Bone Mist; each item has an 18px line icon from lucide-react (stroke 1.75, drawn in the item's text colour: Reviews a checked clipboard, Trades candlesticks, Mistakes a warning triangle, Accounts a wallet, Settings a cog); items 36px high, 3px radius; the active item is Card White with a 3px Twilight Plum bar at its left edge and 600 weight.
 

@@ -53,7 +53,7 @@ test("capture the 001 screens", async ({ page }) => {
 
   // S0
   await page.goto(reviewsUrl(funded.id));
-  await page.locator("details.week", { hasText: "Week of 29 Sep to 5 Oct" }).locator("summary").click();
+  await page.locator(".week", { hasText: "Week of 29 Sep to 5 Oct" }).getByRole("button", { name: /^Show or hide the days/ }).click();
   await shot(page, "s0-reviews-month");
   await page.getByRole("link", { name: /Missing/ }).first().click();
   await shot(page, "s0-reviews-filter-missing");

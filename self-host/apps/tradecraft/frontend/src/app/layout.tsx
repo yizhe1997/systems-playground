@@ -7,6 +7,7 @@ import "@fontsource/ibm-plex-mono/400.css";
 import "@/styles/tokens.css";
 import "@/styles/app.css";
 import "@/styles/reviews.css";
+import "@/styles/ui.css";
 import { Logo } from "@/components/Logo";
 import { Nav } from "@/components/Nav";
 import { NoticeProvider } from "@/components/Notice";

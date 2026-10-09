@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Account } from "@/lib/types";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
 
 type Values = { account: string; from: string; to: string; deleted: boolean };
 
-export function TradeFilters(props: Values & { accounts: Account[] }) {
+export function TradeFilters(props: Values & { accounts: Account[]; monthFrom: string; monthTo: string }) {
   const { accounts } = props;
   const router = useRouter();
   // What is shown is kept here, not only in the address: a navigation takes a moment, and two quick edits in a
@@ -45,14 +46,7 @@ export function TradeFilters(props: Values & { accounts: Account[] }) {
           ))}
         </select>
       </div>
-      <div className="field">
-        <label className="label" htmlFor="f-from">From</label>
-        <input id="f-from" type="date" className="field-input" value={from} onChange={(e) => go({ from: e.target.value })} />
-      </div>
-      <div className="field">
-        <label className="label" htmlFor="f-to">To</label>
-        <input id="f-to" type="date" className="field-input" value={to} onChange={(e) => go({ to: e.target.value })} />
-      </div>
+      <DateRangeFilter from={from} to={to} monthFrom={props.monthFrom} monthTo={props.monthTo} onApply={(f, t) => go({ from: f, to: t })} />
       <Link className="btn-quiet" href={`/trades?from=&to=${deleted ? "&deleted=1" : ""}`}>
         Clear filters
       </Link>

@@ -23,16 +23,13 @@
 .focus-line .label { margin-bottom: 2px; font-weight: 600; }
 .focus-text { font-size: 15px; }
 .weeks { display: flex; flex-direction: column; gap: var(--space-md); }
-.week-card { padding: 0; position: relative; }
-.week-open { position: absolute; right: var(--card-pad); top: 18px; }
-.week > summary { list-style: none; display: grid; grid-template-columns: 24px 1fr auto; grid-template-areas: "tog title chip" "tog sum chip"; padding-right: 220px; column-gap: var(--space-md); row-gap: 2px; align-items: center; padding-top: 14px; padding-bottom: 14px; padding-left: var(--card-pad); cursor: pointer; }
-.week > summary::-webkit-details-marker { display: none; }
-.week > summary::before { content: ">"; font-weight: 600; grid-area: tog; }
-.week[open] > summary::before { content: "v"; }
-.week-title { grid-area: title; font-weight: 600; font-size: 15px; display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap; }
-.week-sum { grid-area: sum; }
-.week-chip { grid-area: chip; justify-self: end; }
-.week-open { grid-area: open; }
+.week-card { padding: 0; }
+.week-head { display: flex; align-items: center; gap: var(--space-md); padding: 14px var(--card-pad); }
+.week-main { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.week-title { font-weight: 600; font-size: 15px; display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap; }
+.week-trigger { display: inline-flex; align-items: center; justify-content: center; width: var(--field); height: var(--field); border: 1px solid var(--border); border-radius: var(--r-button); background: transparent; color: var(--text-2); cursor: pointer; }
+.week-trigger:hover { border-color: var(--outline); color: var(--ink); }
+.week-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .week .days { border-top: 1px solid var(--border); }
 .day-row { display: grid; grid-template-columns: 24px 200px 1fr 130px 170px; gap: var(--space-md); align-items: center; min-height: 72px; padding: 8px var(--card-pad); border-top: 1px solid var(--border); }
 .day-row:first-child { border-top: 0; }

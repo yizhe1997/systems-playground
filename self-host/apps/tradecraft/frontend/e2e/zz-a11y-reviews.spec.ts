@@ -34,7 +34,7 @@ for (const scheme of ["light", "dark"] as const) {
       const s = await setup();
       await page.goto(reviewsUrl(s.id));
       await expect(page.getByRole("heading", { name: "Reviews" })).toBeVisible();
-      await page.locator("details.week", { hasText: "Week of 29 Sep to 5 Oct" }).locator("summary").click();
+      await page.locator(".week", { hasText: "Week of 29 Sep to 5 Oct" }).getByRole("button", { name: /^Show or hide the days/ }).click();
       await clean(page, "S0 filled");
       const empty = await api("POST", "/accounts", { name: uniq("A11yEmpty"), currency: "USD" });
       await page.goto(reviewsUrl(empty.data.id));
@@ -149,12 +149,12 @@ test("keyboard only: stars, the drawer, dialogs, the collapsible weeks and the p
 
   // the weeks of Reviews open and close from the keyboard
   await page.goto(reviewsUrl(s.id));
-  const week = page.locator("details.week", { hasText: "Week of 29 Sep to 5 Oct" });
-  await week.locator("summary").focus();
+  const week = page.locator(".week", { hasText: "Week of 29 Sep to 5 Oct" });
+  await week.getByRole("button", { name: /^Show or hide the days/ }).focus();
   await page.keyboard.press("Enter");
-  await expect(week).toHaveAttribute("open", "");
+  await expect(week).toHaveAttribute("data-open");
   await page.keyboard.press("Enter");
-  await expect(week).not.toHaveAttribute("open", "");
+  await expect(week).not.toHaveAttribute("data-open");
 
   // the week picker of the weekly review
   await page.goto(`/reviews/week?account=${s.id}&date=2025-10-01`);
@@ -168,8 +168,8 @@ test("keyboard only: stars, the drawer, dialogs, the collapsible weeks and the p
 test("no status is carried by colour alone: every state and label is also written", async ({ page }) => {
   const s = await setup();
   await page.goto(reviewsUrl(s.id));
-  const week = page.locator("details.week", { hasText: "Week of 29 Sep to 5 Oct" });
-  await week.locator("summary").click();
+  const week = page.locator(".week", { hasText: "Week of 29 Sep to 5 Oct" });
+  await week.getByRole("button", { name: /^Show or hide the days/ }).click();
   await expect(week.locator(".chip", { hasText: "Missing" }).first()).toBeVisible();
   await page.goto(dayUrl(s.id));
   for (const word of ["Mistake", "Not judged yet"]) await expect(page.locator("table.trade-grid").getByText(word).first()).toBeVisible();

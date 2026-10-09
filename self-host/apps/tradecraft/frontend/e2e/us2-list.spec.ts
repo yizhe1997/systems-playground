@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { api, makeAccount, makeTrade, tradeA, tradesFor, uniq } from "./helpers";
+import { api, makeAccount, makeTrade, pickRange, tradeA, tradesFor, uniq } from "./helpers";
 
 async function twoAccountsWithTrades() {
   const a = await makeAccount(uniq("Alpha"));
@@ -20,11 +20,12 @@ test("filter by account and by date range; Clear filters; newest first", async (
   await expect(rows.nth(0)).toContainText("AA2"); // newest exit first
   await expect(rows.nth(1)).toContainText("AA1");
 
-  await page.getByLabel("From").fill("2025-10-02");
+  await pickRange(page, "2025-10-02", "2025-10-05");
+  await expect(page.getByLabel("Date range")).toHaveText("2 Oct 2025 – 5 Oct 2025");
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText("AA2");
 
-  await page.getByLabel("To").fill("2025-10-02");
+  await pickRange(page, "2025-10-02", "2025-10-02"); // one day: the same day clicked twice
   await expect(page.getByText("No trades for these filters.")).toBeVisible();
   await expect(page.getByText("Try another account or a wider date range.")).toBeVisible();
   await page.getByRole("link", { name: "Clear filters" }).last().click();
@@ -39,8 +40,7 @@ test("a given day is reachable in three actions (SC-006)", async ({ page }) => {
   const { a } = await twoAccountsWithTrades();
   await page.goto(`/accounts`); // start somewhere else
   await page.getByRole("link", { name: "Trades" }).click(); // 1
-  await page.getByLabel("From").fill("2025-10-03"); // 2
-  await page.getByLabel("To").fill("2025-10-03"); // 3
+  await pickRange(page, "2025-10-03", "2025-10-03"); // 2: set the range (the account is already All accounts)
   await expect(page.locator("tbody tr")).not.toHaveCount(0);
   await expect(page.locator("tbody tr").first()).toContainText("Fri 3 Oct");
   void a;
@@ -67,11 +67,11 @@ test("Export downloads one file named with the date, and its count equals the sc
 
 test("a fresh month shows the current month by default", async ({ page }) => {
   await page.goto("/trades");
-  const from = await page.getByLabel("From").inputValue();
-  const to = await page.getByLabel("To").inputValue();
-  expect(from).toMatch(/^\d{4}-\d{2}-01$/);
-  expect(to).toMatch(/^\d{4}-\d{2}-(28|29|30|31)$/);
-  expect(from.slice(0, 7)).toBe(to.slice(0, 7));
+  // the range button reads "1 Oct 2026 – 31 Oct 2026": the first to the last day of one month
+  const text = await page.getByLabel("Date range").innerText();
+  const m = text.match(/^1 (\w{3}) (\d{4}) – (28|29|30|31) (\w{3}) (\d{4})$/);
+  expect(m, text).not.toBeNull();
+  expect([m![1], m![2]]).toEqual([m![4], m![5]]);
 });
 
 test("long lists are paged at 200: Showing x to y of n, Newer and Older", async ({ page }) => {
@@ -96,7 +96,7 @@ test("long lists are paged at 200: Showing x to y of n, Newer and Older", async 
 
   // changing a filter starts again at the first page
   await page.getByRole("link", { name: "Older" }).click();
-  await page.getByLabel("From").fill("2025-08-10");
+  await pickRange(page, "2025-08-10", "2025-08-31");
   await expect(page).not.toHaveURL(/page=/);
   // a short list shows no pager
   await page.goto(`/trades?account=${acct.id}&from=2025-08-27&to=2025-08-28`);

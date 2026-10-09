@@ -83,3 +83,23 @@ export async function fillTrade(
 
 /** The result preview card, for assertions on its text. */
 export const preview = (page: Page) => page.getByRole("region", { name: "Result preview" });
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`;
+
+/** Sets the Trades date range through the calendar: open it, show the month of each end, click the two days. */
+export async function pickRange(page: Page, from: string, to: string) {
+  const pop = page.locator(".range-popup");
+  // the button may be clicked before the page has hydrated, so click until the calendar is open
+  await expect(async () => {
+    if (!(await pop.isVisible())) await page.getByLabel("Date range").click();
+    await expect(pop).toBeVisible({ timeout: 1500 });
+  }).toPass();
+  for (const day of [from, to]) {
+    const [y, m, d] = day.split("-").map(Number);
+    await pop.getByLabel("Choose the Year").first().selectOption(String(y));
+    await pop.getByLabel("Choose the Month").first().selectOption(String(m - 1));
+    await pop.getByRole("button", { name: new RegExp(`, ${MONTHS[m - 1]} ${ordinal(d)}, ${y}`) }).first().click();
+  }
+  await expect(pop).toBeHidden();
+}

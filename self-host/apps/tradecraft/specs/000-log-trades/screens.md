@@ -47,7 +47,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings (the same sidebar on e
 |---|---|
 | Title and subtitle | Trades · Your closed trades, newest first. |
 | Actions | Log a trade · Export |
-| Filters | Account (All accounts) · From (1 Oct 2025) · To (31 Oct 2025) · Clear filters · Show deleted (switch) |
+| Filters | Account (All accounts) · Date range (1 Oct 2025 – 31 Oct 2025; one button that opens a two-month calendar in a popover: click the first day, then the last, or the same day twice for one day; This month and All dates below the calendar) · Clear filters · Show deleted (switch) |
 | Columns | Exit time · Trading day · Account · Instrument · Direction · Size · Net result · **Plan** · R · Edit · Delete. The Plan column (added 2026-10-04 by feature 001, FR-027, owner approved; it ends the principle I exception) shows Followed, Partly, Not followed or Not judged yet, with Mistake or Valid loss underneath when the trade is labelled so. The trading day can differ from the exit date when the account has a start time (a Tue 17:30 exit with a 17:00 start is on Wed). |
 | Result cell | -$125.00; a typed result adds "typed in" underneath |
 | R cell | -0.50 R, or a dash with a reason underneath: "no stop recorded", "no dollars per point" |

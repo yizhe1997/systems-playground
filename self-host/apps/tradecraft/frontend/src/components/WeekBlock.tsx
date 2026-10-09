@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { Collapsible } from "@base-ui/react/collapsible";
+import { ChevronsUpDown } from "lucide-react";
 import type { DayRow as DayRowT, WeekBlock as WeekT } from "@/lib/types";
 import { count, longDay, money, planLine, profitClass, weekRange, dayLabel } from "@/lib/format";
 import { StatusChip } from "@/components/StatusChip";
@@ -37,24 +41,28 @@ function DayRow({ day, account }: { day: DayRowT; account: string }) {
 export function WeekBlock({ week, account, open }: { week: WeekT; account: string; open: boolean }) {
   const s = week.summary;
   const summary = s.daysWithTrades === 0 && s.draft === 0 ? "No days to review yet" : [`${s.reviewed} of ${s.daysWithTrades} ${s.daysWithTrades === 1 ? "day" : "days"} reviewed`, `${s.draft} draft`, `${s.missing} missing`].join(" · ");
+  const range = weekRange(week.weekStart, week.weekEnd);
+  // the basic collapsible of shadcn/ui (Base UI's Collapsible): a header with a button that shows or hides the panel
   return (
-    <div className="card week-card">
-    <details className="week" open={open}>
-      <summary>
-        <span className="week-title">
-          Week of {weekRange(week.weekStart, week.weekEnd)}
-          {week.current && <span className="chip">This week</span>}
-        </span>
-        <span className="week-chip"><StatusChip state={week.state} /></span>
-        <span className="helper week-sum">{summary}</span>
-      </summary>
-      <div className="days">
+    <Collapsible.Root className="card week-card week" defaultOpen={open}>
+      <div className="week-head">
+        <div className="week-main">
+          <span className="week-title">
+            Week of {range}
+            {week.current && <span className="chip">This week</span>}
+          </span>
+          <span className="helper week-sum">{summary}</span>
+        </div>
+        <StatusChip state={week.state} />
+        <Link className="btn" href={`/reviews/week?account=${account}&date=${week.weekStart}`}>Open weekly review</Link>
+        <Collapsible.Trigger className="week-trigger" aria-label={`Show or hide the days of the week of ${range}`}>
+          <ChevronsUpDown size={16} strokeWidth={1.75} aria-hidden="true" />
+        </Collapsible.Trigger>
+      </div>
+      <Collapsible.Panel className="days">
         {week.days.length === 0 && <p className="helper" style={{ padding: "14px var(--card-pad)" }}>No days to review in this week yet.</p>}
         {week.days.map((d) => <DayRow key={d.date} day={d} account={account} />)}
-      </div>
-    </details>
-    {/* outside the summary: a link inside it would be a control nested in a control */}
-    <Link className="btn week-open" href={`/reviews/week?account=${account}&date=${week.weekStart}`}>Open weekly review</Link>
-    </div>
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }

@@ -114,7 +114,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <Head canLog={canLog} />
-      <TradeFilters accounts={accounts} account={account} from={from} to={to} deleted={deleted} />
+      <TradeFilters accounts={accounts} account={account} from={from} to={to} deleted={deleted} monthFrom={month.from} monthTo={month.to} />
       {deleted && !problem && (
         <p className="banner" role="status">
           <span><strong>Showing deleted trades.</strong> They are hidden everywhere else until restored.</span>

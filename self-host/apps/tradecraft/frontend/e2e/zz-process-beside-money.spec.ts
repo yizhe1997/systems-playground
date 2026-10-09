@@ -16,8 +16,8 @@ for (const scheme of ["light", "dark"] as const) {
 
       // Reviews: each day row with a money figure also says how many of its trades followed the plan
       await page.goto(reviewsUrl(s.id));
-      const week = page.locator("details.week", { hasText: "Week of 29 Sep to 5 Oct" });
-      if (!(await week.evaluate((d: HTMLDetailsElement) => d.open))) await week.locator("summary").click();
+      const week = page.locator(".week", { hasText: "Week of 29 Sep to 5 Oct" });
+      if ((await week.getAttribute("data-open")) === null) await week.getByRole("button", { name: /^Show or hide the days/ }).click();
       await expect(week.locator(".day-row").first()).toBeVisible();
       for (const row of await week.locator(".day-row").all()) {
         if ((await row.innerText()).includes("$")) await expect(row).toContainText(/Plan followed \d+ of \d+/);

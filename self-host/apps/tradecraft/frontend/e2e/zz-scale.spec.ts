@@ -95,7 +95,7 @@ test("the review screens on 5,000 trades: Reviews, a day, a week, the counter, a
   const changeMonth = await timed(async () => {
     await page.getByLabel("Jump to date").fill("2025-05-15");
     await expect(page).toHaveURL(/month=2025-05/);
-    await expect(page.locator("details.week").first()).toBeVisible();
+    await expect(page.locator(".week").first()).toBeVisible();
   });
   const days = await api("GET", `/reviews?accountId=${a}&month=${month}`);
   const day = days.data.weeks.flatMap((w: any) => w.days).find((d: any) => d.trades > 0).date as string;

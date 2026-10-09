@@ -92,9 +92,11 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         </div>
       ) : (
         <div className="weeks">
-          {visible.map((w) => (
-            <WeekBlock key={w.weekStart} week={w} account={account.id} open={filter !== "all" || w.current || (jumpTo !== "" && jumpTo >= w.weekStart && jumpTo <= w.weekEnd)} />
-          ))}
+          {visible.map((w) => {
+            const isOpen = filter !== "all" || w.current || (jumpTo !== "" && jumpTo >= w.weekStart && jumpTo <= w.weekEnd);
+            // the key includes the open state, so a week asked to open (a filter, a jumped-to day) is mounted again open
+            return <WeekBlock key={`${w.weekStart}-${isOpen}`} week={w} account={account.id} open={isOpen} />;
+          })}
         </div>
       )}
       <p className="helper" style={{ marginTop: 16 }}>

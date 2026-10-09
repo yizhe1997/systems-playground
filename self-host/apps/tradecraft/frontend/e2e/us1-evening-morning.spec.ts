@@ -18,7 +18,7 @@ test("the evening: find the day, read the figures, answer, grade and mark it rev
   await page.goto(reviewsUrl(s.id));
   // the week of 29 Sep to 5 Oct is under October, with the day Missing
   await expect(page.getByText("Week of 29 Sep to 5 Oct")).toBeVisible();
-  await page.getByText("Week of 29 Sep to 5 Oct").click(); // collapsed (not the current week): open it
+  await page.getByRole("button", { name: "Show or hide the days of the week of 29 Sep to 5 Oct" }).click(); // collapsed (not the current week): open it
   await expect(page.getByText("Missing").first()).toBeVisible();
   await page.getByRole("link", { name: /Review Wednesday 1 October 2025/ }).click();
 
@@ -140,7 +140,7 @@ test("the account switcher opens the first active account by name, keeps the acc
   await select.selectOption({ value: a.id });
   await expect(page).toHaveURL(new RegExp(`account=${a.id}`));
   await page.goto(reviewsUrl(a.id));
-  await page.getByText("Week of 29 Sep to 5 Oct").click();
+  await page.getByRole("button", { name: "Show or hide the days of the week of 29 Sep to 5 Oct" }).click();
   await page.getByRole("link", { name: /Review Wednesday 1 October 2025/ }).click();
   await expect(page).toHaveURL(new RegExp(`account=${a.id}`)); // kept on the way to a day
   await expect(page.getByLabel("Account", { exact: true })).toHaveValue(a.id);

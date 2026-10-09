@@ -25,24 +25,24 @@ test("Jump to date shows today until another day is chosen, then opens the week 
   await expect(page).toHaveURL(/month=2025-09&open=2025-09-10/);
   await expect(page.getByLabel("Jump to date")).toHaveValue("2025-09-10");
   await expect(page.getByText("This month (September 2025)")).toBeVisible();
-  await expect(page.locator("details.week", { hasText: "Week of 8 Sep to 14 Sep" })).toHaveAttribute("open", "");
+  await expect(page.locator(".week", { hasText: "Week of 8 Sep to 14 Sep" })).toHaveAttribute("data-open");
 
   // the current month with the current week open, when no day is chosen
   await page.goto(`/reviews?account=${s.id}`);
-  await expect(page.locator("details.week[open]")).toHaveCount(1);
+  await expect(page.locator(".week[data-open]")).toHaveCount(1);
 
   // Jump to date opens the week that holds it
   await page.goto(reviewsUrl(s.id));
   await page.getByLabel("Jump to date").fill("2025-10-01");
   await expect(page).toHaveURL(/open=2025-10-01/);
-  const week = page.locator("details.week", { hasText: "Week of 29 Sep to 5 Oct" });
-  await expect(week).toHaveAttribute("open", "");
+  const week = page.locator(".week", { hasText: "Week of 29 Sep to 5 Oct" });
+  await expect(week).toHaveAttribute("data-open");
   await expect(week.getByText("Wed 1 Oct")).toBeVisible();
   // collapse and open
-  await week.locator("summary").click();
-  await expect(week).not.toHaveAttribute("open", "");
-  await week.locator("summary").click();
-  await expect(week).toHaveAttribute("open", "");
+  await week.getByRole("button", { name: /^Show or hide the days/ }).click();
+  await expect(week).not.toHaveAttribute("data-open");
+  await week.getByRole("button", { name: /^Show or hide the days/ }).click();
+  await expect(week).toHaveAttribute("data-open");
   await expect(week.getByText("3 trades")).toBeVisible();
   await expect(week.getByText("+$45.00")).toBeVisible();
   await expect(week.getByText("Plan followed 0 of 3")).toBeVisible(); // the money figure always has the plan figure beside it
