@@ -167,8 +167,10 @@ Warm parchment and bone-mist surfaces, violet-black ink, one plum accent, and tw
 - **Section** (600, 16px, 1.3): card and section headings.
 - **Body** (400, 14px, 1.45): everything readable; never below 14px except labels and helper lines.
 - **Label** (500, 12px, 1.3): field labels, table column headers (sentence case, not uppercase), tags.
-- **Figure** (600, 14px, tabular numerals): money, sizes, R.
-- **Helper** (400, 12px in Plum Ash): reasons under a dash ("no stop recorded"), formulas under a preview figure, footnotes.
+- **Figure** (600, 14px, tabular numerals): money, sizes, R. In a stat card the figure is **20px**; the statement of a focus and the title of a week are **16px**; an empty-state heading is **20px**.
+- **Scale** (changed 2026-10-10 from eight near-identical sizes to six): 12, 13, 14, 16, 20, 24. 12 is only for short labels, table heads, tags and captions; 13 for helper sentences; 14 body and controls; 16 section titles, the focus statement and week titles; 20 figures and empty-state headings; 24 the page title. No 11, 15, 18, 22 or 26.
+- **Weights:** only 400, 500 and 600 are loaded, so bold is 600 everywhere (`strong` included). Grade stars are line icons (lucide), not text glyphs, so they do not fall back to another font.
+- **Helper** (400, 13px in Plum Ash): reasons under a dash ("no stop recorded"), formulas under a preview figure, footnotes.
 
 ### Named Rules
 **The No Display Rule.** There is no hero or display type in the app. Nothing larger than the 24px title.

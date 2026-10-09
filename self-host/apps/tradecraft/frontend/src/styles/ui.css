@@ -19,7 +19,7 @@
   --rdp-today-color: var(--ink);
   font-family: var(--font-sans); font-size: 13px; color: var(--ink);
 }
-.range-popup .rdp-today:not(.rdp-selected) .rdp-day_button { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.range-popup .rdp-today:not(.rdp-selected) .rdp-day_button { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .range-popup .rdp-dropdown { background: var(--card); color: var(--ink); }
 .range-popup .rdp-chevron { fill: var(--ink); }
 .range-popup .rdp-weekday { color: var(--text-3); }
