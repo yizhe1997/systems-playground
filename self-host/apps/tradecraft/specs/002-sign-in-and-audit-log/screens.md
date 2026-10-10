@@ -1,10 +1,10 @@
 # Wireframes: Sign-in and Audit Log
 
 **Feature**: `002-sign-in-and-audit-log`
-**Status**: draft
+**Status**: signed-off
 **Penpot**: file `Tradecraft_v2`, pages `A1 Sign in`, `A2 Access`, `A3 Confirm it's you`, `A4 Audit log`, `A5 Sidebar` (A for access). The frames live only in Penpot; no images are stored in the repository.
-**Signed off**: not yet (structure and wording only; the look is decided elsewhere)
-**spec-sha256**: <!-- filled in at sign-off -->
+**Signed off**: 2026-10-10 (structure and wording only; the look is decided elsewhere)
+**spec-sha256**: d805ef6f393a97c056908ff260d54e2387a9f7372349acca368ac989613ac66a
 
 ## Why these screens
 
@@ -114,9 +114,9 @@ None open. Answered on 2026-10-10 (see `spec.md` Clarifications): 10-minute step
 ## Sign-off
 
 - **Signed off by**: owner
-- **Date**:
-- **Spec hash**:
-- **Notes**:
+- **Date**: 2026-10-10
+- **Spec hash**: d805ef6f393a97c056908ff260d54e2387a9f7372349acca368ac989613ac66a
+- **Notes**: Signed off on the owner's instruction ("sign off, then go to plan") after clarify closed the four open questions. Checked before signing: every user story but US4 has a screen (US4, the local-only session, has none by design); every requirement that touches the interface is covered (FR-001 to FR-003, FR-009 to FR-013, FR-018, FR-022, FR-023); no TODO, TBD or placeholder text in the content list; empty, error, refused, session-ended, no-match and step-up states are drawn; no money figure appears on these screens. The existing S and L frames are not redrawn here; they gain the Audit log item and the signed-in block at implementation.
 
 ## Visual review
 

@@ -190,3 +190,9 @@ The greyscale wireframes of this feature are listed in [screens.md](screens.md) 
 
 The four open questions raised by the draft were answered on 2026-10-10 and are recorded under Clarifications above; none remains open.
 
+## Signed-off screens
+
+The screens in `screens.md` were signed off by the owner on 2026-10-10. Plan, tasks and implementation MUST honour them. Any change to an interface covered here MUST update `screens.md` and its Penpot frames in the same change (constitution principle V).
+
+Accepted at sign-off (not drawn, to be handled in plan): user story 4 (the local-only session for tests) has no screen by design; the existing screens S0 to S5 and L1 to L5 are not redrawn and gain the Audit log item and the signed-in block when this feature is built.
+
