@@ -10,13 +10,13 @@ the app on the network: every port stays on `127.0.0.1`.
 Generate each secret once and put it in `.env`. Do not paste them into chat or a file that is tracked.
 
 ```bash
-openssl rand -base64 48   # run twice: one for SESSION_SECRET, one for SERVICE_TOKEN_SECRET
+openssl rand -base64 48   # run twice: one for NEXTAUTH_SECRET, one for SERVICE_TOKEN_SECRET
 ```
 
 | Variable | Used by | Value |
 |---|---|---|
-| `PUBLIC_ORIGIN` | web | the address you open the app at, for example `http://127.0.0.1:3100` (no trailing slash) |
-| `SESSION_SECRET` | web | at least 32 bytes, as generated above |
+| `NEXTAUTH_URL` | web | the address you open the app at, for example `http://127.0.0.1:3100` (3101 in your setup; no trailing slash) |
+| `NEXTAUTH_SECRET` | web | at least 32 bytes, as generated above |
 | `SERVICE_TOKEN_SECRET` | web and API | at least 32 bytes, different from the one above |
 | `OWNER_BOOTSTRAP_EMAIL` | API | your own Google email; becomes the first identity |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | web | from section 2; leave empty until you have them |
@@ -29,7 +29,7 @@ openssl rand -base64 48   # run twice: one for SESSION_SECRET, one for SERVICE_T
 
 1. In the Google Cloud console, create or pick a project, and set up the OAuth consent screen (external, testing is fine for one user; add your own Google account as a test user).
 2. Create credentials, **OAuth client ID**, type **Web application**.
-3. Under **Authorized redirect URIs** add exactly `<PUBLIC_ORIGIN>/auth/google/callback` (for example `http://127.0.0.1:3100/auth/google/callback`). Google accepts plain http for `localhost` and `127.0.0.1`.
+3. Under **Authorized redirect URIs** add **both** of these, exactly (with your `NEXTAUTH_URL`): `<NEXTAUTH_URL>/api/auth/callback/google` (the sign-in) and `<NEXTAUTH_URL>/api/auth/callback/google-confirm` (the "Confirm it's you" step). Google accepts plain http for `localhost` and `127.0.0.1`.
 4. Copy the client id and secret into `.env` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 5. Restart the stack: `docker compose up -d --build`.
 
@@ -40,7 +40,7 @@ What is sent to Google: only the client id, the redirect address, the one-time c
 This is the one step the automated checks cannot do for you (research section 18). Record the date and the result in
 `verification.md`.
 
-1. Open `PUBLIC_ORIGIN`. You land on the sign-in screen with no sidebar.
+1. Open `NEXTAUTH_URL`. You land on the sign-in screen with no sidebar.
 2. Continue with Google and choose the account whose email is `OWNER_BOOTSTRAP_EMAIL`. You arrive on Reviews; the sidebar shows your email and Sign out.
 3. Sign out. Open `/trades`: you are sent to the sign-in screen.
 4. Continue with Google and choose **another** Google account: you see only "You can't sign in with that account." Open Audit log after signing in again: a "Sign-in refused" entry names that address.
@@ -90,7 +90,7 @@ non-zero with a plain message, then with the key absent and expects them to star
 DEV_SESSION_SECRET=... node frontend/scripts/dev-mint-session.mjs owner@example.com
 ```
 
-The script prints a `Cookie:` line. Set that `tradecraft_session` cookie for `PUBLIC_ORIGIN` in the browser. Remove
+The script prints a `Cookie:` line (a `next-auth.session-token` cookie). Set it for `NEXTAUTH_URL` in the browser. Remove
 `DEV_SESSION_SECRET` (or set `TRADECRAFT_ENV=production`) when you are done; with it present the production start refuses.
 
 To call the API directly from a script (`seed-sample.sh`, `check-persistence.sh`), they take a token from

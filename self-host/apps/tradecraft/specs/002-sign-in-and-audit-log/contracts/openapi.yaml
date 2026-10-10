@@ -44,7 +44,13 @@ paths:
     post:
       operationId: internalSignOut
       summary: End the identity's sessions now (every session issued before this moment stops counting)
-      description: Sets sessions_valid_after on the identity and records sign_out (best effort).
+      description: Called by NextAuth's signOut event with a system token. Sets sessions_valid_after on the identity and records sign_out (best effort).
+      security: [{ systemToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [email], properties: { email: { type: string } } }
       responses:
         "204": { description: Signed out }
         "401": { $ref: "#/components/responses/NotSignedIn" }
@@ -53,18 +59,21 @@ paths:
       operationId: internalStepUp
       summary: Accept a fresh Google confirmation for the signed-in identity
       description: >
-        The web tier sends the subject of the Google account that has just authenticated. It must equal the subject stored on
-        the signed-in identity; otherwise 403 and nothing is recorded as confirmed. Records step_up_confirmed (best effort).
+        Called by the web tier's signIn callback for the `google-confirm` provider, with a system token. `email` is the identity
+        of the current session (read by the web tier from the cookie) and `providerSub` is the subject of the Google account
+        that has just authenticated. It must equal the subject stored on that identity; otherwise 403 and nothing is
+        recorded as confirmed. Records step_up_confirmed (best effort).
+      security: [{ systemToken: [] }]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [providerSub]
-              properties: { providerSub: { type: string, minLength: 1, maxLength: 255 } }
+              required: [email, providerSub]
+              properties: { email: { type: string }, providerSub: { type: string, minLength: 1, maxLength: 255 } }
       responses:
-        "200": { description: Confirmed, content: { application/json: { schema: { type: object, required: [stepUpAt], properties: { stepUpAt: { type: integer, format: int64, description: unix milliseconds } } } } } }
+        "200": { description: Confirmed, content: { application/json: { schema: { $ref: "#/components/schemas/SessionTimes" } } } }
         "401": { $ref: "#/components/responses/NotSignedIn" }
         "403": { description: "Not the account that is signed in", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /identities:
@@ -165,7 +174,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Same signing, role `system`, sub `system`; accepted only by /internal/sign-in.
+      description: Same signing, role `system`, sub `system`; accepted only by the /internal/* routes, which only web-tier server code calls.
   parameters:
     Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
   responses:

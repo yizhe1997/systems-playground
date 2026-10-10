@@ -83,17 +83,17 @@ and the actions made with it are recorded under the identity it names (US4 scena
 
 ## Session (not stored)
 
-An eight-hour proof. It lives in the cookie, and its validity is decided on each request by the API from the identity row.
+An eight-hour proof. It lives in NextAuth's encrypted session cookie, and its validity is decided on each request by the API
+from the identity row. NextAuth's own cookie expiry slides, so the fixed limit is the `sessionAt` claim, not the cookie.
 
 | Claim | Meaning |
 |---|---|
-| `sub` | the identity's email (normalised) |
-| `session_at` | unix milliseconds of the sign-in, **given by the API** |
-| `step_up_at` | unix milliseconds of the last Google confirmation, given by the API; equals `session_at` right after sign-in |
-| `exp` | `session_at` + 8 h, in seconds; never moved |
+| `email` | the identity's email (normalised) |
+| `sessionAt` | unix milliseconds of the sign-in or confirmation, **given by the API** |
+| `stepUpAt` | unix milliseconds of the last Google confirmation, given by the API; equals `sessionAt` (a confirmation is a fresh sign-in, research 2) |
 
-Valid when: signature good (production key, or development key when configured), `exp` in the future, identity active, now
-minus `session_at` under 8 h, and `session_at >= identity.sessions_valid_after`.
+Valid when: decrypts with `NEXTAUTH_SECRET` (or `DEV_SESSION_SECRET` when configured), now minus `sessionAt` is under 8 h,
+the identity is active, and `sessionAt >= identity.sessions_valid_after`.
 
 ## Service token (not stored)
 
@@ -106,7 +106,7 @@ Signed by the web tier for one request; HS256, `SERVICE_TOKEN_SECRET`.
 | `sub` | the identity's email; `system` for the `system` role |
 | `jti` | random, used once |
 | `iat`, `exp` | now and now + 60 s (the API accepts at most 120 s and 10 s of skew) |
-| `session_at`, `step_up_at` | copied from the session; the API re-checks them against the database |
+| `session_at`, `step_up_at` | copied from the session's `sessionAt` and `stepUpAt`; the API re-checks them against the database |
 
 ## Where each new thing is shown
 

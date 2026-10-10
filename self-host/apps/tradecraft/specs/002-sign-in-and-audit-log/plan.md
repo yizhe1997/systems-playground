@@ -7,7 +7,7 @@
 ## Summary
 
 Make Tradecraft a signed-in app for its one owner and record who did what. The web tier signs the owner in with Google
-(authorization code with PKCE, written for this app with `jose`), keeps an eight-hour signed cookie, and signs a 60-second service
+through NextAuth (as v1 did), checks a fixed eight-hour limit from its own `sessionAt` claim, and signs a 60-second service
 token for every call to the API. The API refuses every route but `/health` without that token, re-checks on each request that the
 identity is active and the session still counts, and keeps the identity list (Access, with step-up for changes and a rule that the
 last active identity can never be disabled) and one append-only audit log that is written in the same transaction as the change it
@@ -15,8 +15,8 @@ records. The owner reads the log in a new Audit log screen and manages identitie
 session for tests and for working on screens; the app refuses to start in production when its key is present.
 
 Tradecraft v1's decisions (ADR 002, security review) and its identity and audit queries are the reference the owner allowed.
-**What is reused and why is in [research.md](research.md) section 1.** One deliberate difference: v1 used NextAuth; this plan
-writes the Google flow directly (research section 2), which is the first item for the owner at this gate.
+**What is reused and why is in [research.md](research.md) section 1.** The owner chose NextAuth on 2026-10-10 (research
+section 2); the step-up confirmation uses a second provider id so the callback can tell it from a sign-in.
 
 This feature changes no trading rule, figure, review or existing screen apart from the sidebar's signed-in block and Audit log
 item and the Access card in Settings (FR-025). It does not expose the app beyond this computer (principle IV).
@@ -25,11 +25,11 @@ item and the Access card in Settings (FR-025). It does not expose the app beyond
 
 **Language/Version**: Go 1.26 and TypeScript (Next.js 16.3, React 19), as pinned in `000`
 
-**Primary Dependencies**: Go: unchanged (Fiber, pgx, sqlc, goose, shopspring/decimal); the service token is verified with the standard library (`crypto/hmac`), as v1 did. Web: **`jose` 6.x added** (signing and verifying the session cookie and the service token, and checking Google's ID token); no other change. No NextAuth, no password library.
+**Primary Dependencies**: Go: unchanged (Fiber, pgx, sqlc, goose, shopspring/decimal); the service token is verified with the standard library (`crypto/hmac`), as v1 did. Web: **`next-auth` 4.24 added** (Google sign-in and the session cookie) and **`jose` 5.x** (signs the service token, as v1 pinned); no other change. No password library.
 
 **Storage**: PostgreSQL 18, the same database; one migration (`00013_identity_and_audit.sql`): `identity`, `audit_entry`, their triggers and indexes ([data-model.md](data-model.md))
 
-**Testing**: Go tests against real Postgres (gate, identities, audit, concurrency, immutability, timing); Playwright on the composed stack with a minted session for the flows in [quickstart.md](quickstart.md) and for every existing spec (SC-009); unit-style Playwright specs for the Google checks; shell checks for the production refusal and for secrets. The real Google round trip is manual (research 18) and said so.
+**Testing**: Go tests against real Postgres (gate, sign-in and step-up decisions, identities, audit, concurrency, immutability, timing); Playwright on the composed stack with a minted session for the flows in [quickstart.md](quickstart.md) and for every existing spec (SC-009); unit-style Playwright specs for the session helper; shell checks for the production refusal and for secrets. The real Google round trip is manual (research 18) and said so.
 
 **Target Platform**: Linux containers under Docker Compose on the owner's computer; desktop browser; loopback only
 
@@ -50,7 +50,7 @@ item and the Access card in Settings (FR-025). It does not expose the app beyond
 | I Process over outcome | Met (not applicable) | No screen of this feature shows a money figure (screens.md constitution check). The audit "About" names a trade by instrument, direction and time only, never amounts |
 | II Owner in charge, agents draft | Met, and prepares for it | Every write is the owner's action through the one API. The audit entry carries `actor_kind` and an identity, so a scoped agent token later is recorded in the same table without changing its shape (FR-026). No agent access is built here |
 | III Honest numbers | Met | No figure. A "Last sign-in" that has not happened and a log entry with no field change show a dash |
-| IV Security gates | **Met, and ends `000`'s written exception** | This feature *is* the gates: single owner, email allow-list, service token between web tier and API, audit log, step-up for identity changes, same-origin on changes. Auth code gets local review passes after implementation and again after any material change (tasks), recorded in `docs/security-review.md`. Secrets only in the environment. **Nothing is exposed beyond loopback**; the exposure gate (CI proven on GitHub) is untouched and `docs/security-review.md` lists what to re-check before it (cookie `Secure`, `PUBLIC_ORIGIN`, rate limiting of refusals) |
+| IV Security gates | **Met, and ends `000`'s written exception** | This feature *is* the gates: single owner, email allow-list, service token between web tier and API, audit log, step-up for identity changes, same-origin on changes. Auth code gets local review passes after implementation and again after any material change (tasks), recorded in `docs/security-review.md`. Secrets only in the environment. **Nothing is exposed beyond loopback**; the exposure gate (CI proven on GitHub) is untouched and `docs/security-review.md` lists what to re-check before it (cookie `Secure`, `NEXTAUTH_URL`, rate limiting of refusals) |
 | V Design before code | Met | Screens signed off 2026-10-10; visual direction approved for the project 2026-10-04; new components use the existing tokens and parts; visual review after implementation. US4 has no screen by design. Existing frames S and L gain the sidebar block and Audit log item in Penpot in the same change |
 | VI One small slice | Met | Only the gate, the identities and the log. Out: other roles, passwords, sharing, rate limiting, agents themselves, any exposure (spec) |
 | VII Own your data | Met | The export gains identities and audit entries (never the provider subject, FR-019). Google is the one third party; its three calls and the disclosure are listed (research 17) |
@@ -124,10 +124,9 @@ frontend/
 │   ├── instrumentation.ts               # start-up refusals
 │   ├── proxy.ts                         # page redirect and /api 401 when there is no session
 │   ├── lib/
-│   │   ├── authConfig.ts                # environment, key set (production key; development key only when configured)
-│   │   ├── session.ts                   # sign, verify, read from cookies, step-up re-issue
+│   │   ├── authOptions.ts               # NextAuth options: two Google providers, callbacks, signOut event, custom jwt.decode (production key; development key only when configured)
+│   │   ├── session.ts                   # read the session from cookies; absolute 8 h from sessionAt; step-up freshness
 │   │   ├── serviceToken.ts              # signs the 60 s token from the session
-│   │   ├── google.ts                    # authorize URL, code exchange, ID token checks (key set injectable)
 │   │   ├── sameOrigin.ts                # isSameOrigin (v1's logic)
 │   │   ├── api.ts                       # signs a token per call; 401 becomes redirect to /sign-in?reason=ended
 │   │   ├── browserApi.ts                # 401 becomes a move to /sign-in?reason=ended; step_up_required surfaced
@@ -137,9 +136,7 @@ frontend/
 │   │   ├── sign-in/page.tsx             # A1
 │   │   ├── audit/page.tsx               # A4
 │   │   ├── settings/page.tsx            # + Access card (A2)
-│   │   ├── auth/google/route.ts         # start
-│   │   ├── auth/google/callback/route.ts# finish (sign-in and step-up)
-│   │   ├── auth/sign-out/route.ts
+│   │   ├── api/auth/[...nextauth]/route.ts  # NextAuth handler (sign-in, confirmation, sign-out)
 │   │   └── api/[...path]/route.ts       # allow-list, same origin, JSON only, step-up check, signed token
 │   └── components/
 │       ├── Nav.tsx                      # + Audit log item
@@ -151,7 +148,7 @@ frontend/
 │   ├── global-setup.ts                  # mints the cookie once, storageState for the context
 │   ├── helpers.ts                       # api() signs a service token; owner email constant
 │   ├── us1-sign-in.spec.ts              # gate, redirect, refused, ended, sign-out, disabled
-│   ├── us1-google.spec.ts               # unit-style checks of lib/google.ts and the redirect to Google
+│   ├── us1-google.spec.ts               # redirect to Google carries the right parameters (both providers); session helper checks
 │   ├── us2-audit.spec.ts                # one entry per kind, log screen, filters
 │   ├── us3-access.spec.ts               # add, duplicate, last active, step-up dialog
 │   ├── zz-a11y-auth.spec.ts             # axe on A1 to A5, both modes
@@ -170,7 +167,7 @@ docs/
 ```
 
 **Structure Decision**: the two existing services stay as they are. The gate lives in one new Go package (`auth`) and one
-middleware; the web tier gains `lib/session.ts`, `lib/google.ts` and three route handlers. No new service, no session table, no
+middleware; the web tier gains `authOptions.ts`, `lib/session.ts` and the NextAuth route. No new service, no session table, no
 new container.
 
 ## Build order
@@ -178,7 +175,7 @@ new container.
 The order keeps the app working and its whole check suite green at each step, because the gate changes every request.
 
 1. **Foundation (US1 and US4 groundwork)**: migration; `auth` package; `New(pool, now, secret)` with the gate; `inTx` and `recordAudit`; test harness (token helper, identity in `TestMain`, audit reset); the minting module and `dev-mint-session.mjs`; `global-setup.ts` and `helpers.ts`; `scripts/test.sh` secrets. At the end of this step every existing Go and Playwright test passes with the gate on (SC-009). US4 is P3 but its script is needed here, because every browser test needs it.
-2. **US1**: `lib/session.ts`, `lib/serviceToken.ts`, `proxy.ts`, `api.ts`, the `/api` pass-through, `google.ts` and the two `/auth/google` routes, sign-out, `/sign-in`, layout and the signed-in block, start-up refusals, bootstrap.
+2. **US1**: `authOptions.ts` and the NextAuth route, `lib/session.ts`, `lib/serviceToken.ts`, `proxy.ts`, `api.ts`, the `/api` pass-through, `/sign-in`, layout and the signed-in block, start-up refusals, bootstrap.
 3. **US2**: entries in the seven change handlers and the export; `/audit` and `/audit/kinds`; the Audit log screen.
 4. **US3**: identity routes and rules; the Access card and the step-up dialog.
 5. **Close**: a11y spec for A1 to A5; secret and refusal checks; `docs/security-review.md` and `docs/decisions.md`; Penpot S and L frames updated with the sidebar block and Audit log item; the two local review passes on the auth code (principle IV) with findings fixed or recorded; the owner's manual Google check (quickstart 3); visual review.
@@ -189,15 +186,17 @@ No constitution violation to justify. Three things that are more than the minimu
 
 | Choice | Why | Simpler alternative rejected because |
 |---|---|---|
-| `jose` added for a hand-written flow | One library for every signed value; the flow is shorter than NextAuth's configuration plus its work-arounds | The standard library can sign HS256 but verifying Google's RS256 keys by hand is the kind of code review would rather not carry |
+| A second Google provider id (`google-confirm`) | Lets the `signIn` callback tell a step-up confirmation from a sign-in without reading the request, and keeps the old session when a different account is chosen | One provider plus a request wrapper to detect the mode is more glue and touches NextAuth's cookie names |
+| `sessionAt` checked by us on top of NextAuth's cookie expiry | NextAuth v4's `maxAge` slides; FR-005 needs a fixed limit (v1 hit the same thing) | Trusting `maxAge` alone would extend the session with activity |
 | Two cookie keys (production and development) | Makes "refuse to start when the development secret is present" true (FR-020, SC-008) | One key would make the script's secret the production secret |
 | Database trigger for append-only, besides having no route | The log is the evidence; a bug in a future handler must not be able to rewrite it | "No route edits it" alone is a promise about code, not a property of the data |
 
 ## Items for the owner at this gate
 
-1. **NextAuth or the hand-written flow** (research 2). I recommend the hand-written one for the reasons there; switching later costs only the web tier's sign-in files.
-2. **Sign-out ends every session of that identity**, not only the browser's (research 3). With one owner this is the safer reading of "ends the session immediately".
-3. **`TRADECRAFT_ENV` defaults to `production`** (research 7), so the apps fail closed; local work and tests set it explicitly.
-4. **A trade is named by its exit time** in the log (research 10).
-5. **The real Google round trip is manual** and needs your OAuth client (quickstart 2 and 3); everything else is automated.
-6. **Nothing in the app gets exposed by this feature.** Refused-sign-in rate limiting waits for the exposure gate (research 19).
+Settled by the owner on 2026-10-10: NextAuth (research 2); sign-out ends every session of that identity (research 3); the log
+names a trade by its exit time (research 10); `TRADECRAFT_ENV` defaults to `production` (research 7).
+
+Still open:
+1. **A step-up confirmation starts a new 8 hours** as well as a new 10-minute window (research 2, "Interpretation to record"). The spec says a session ends 8 hours after sign-in; I read a confirmation as a sign-in. Say if the 8 hours should instead be counted from the first sign-in.
+2. **The real Google round trip is manual** and needs your OAuth client with two redirect addresses (quickstart 2 and 3); everything else is automated.
+3. **Nothing in the app gets exposed by this feature.** Refused-sign-in rate limiting waits for the exposure gate (research 19).
