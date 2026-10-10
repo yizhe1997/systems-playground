@@ -103,8 +103,7 @@ export function AccessCard({ identities, zone, stepUpAt, stepUpFailed }: { ident
   };
 
   const chip = (f: Filter, label: string) => (
-    <button key={f} type="button" className="btn-quiet" aria-pressed={filter === f} onClick={() => setFilter(f)}
-      style={filter === f ? { fontWeight: 600, textDecoration: "underline" } : undefined}>
+    <button key={f} type="button" className={`chip filter-chip${filter === f ? " chip-solid" : ""}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>
       {label} {counts[f]}
     </button>
   );
@@ -137,8 +136,8 @@ export function AccessCard({ identities, zone, stepUpAt, stepUpFailed }: { ident
             {shown.map((i) => (
               <tr key={i.id}>
                 <td>{i.email}</td>
-                <td className="datetime">{dateTime(i.addedAt, zone, true)}</td>
-                <td className="datetime">{i.lastSignInAt ? dateTime(i.lastSignInAt, zone, true) : "—"}</td>
+                <td>{dateTime(i.addedAt, zone, true)}</td>
+                <td>{i.lastSignInAt ? dateTime(i.lastSignInAt, zone, true) : "—"}</td>
                 <td>{i.active ? "Active" : "Disabled"}</td>
                 <td>
                   <button type="button" className="btn-quiet" disabled={busy}
@@ -169,7 +168,7 @@ export function AccessCard({ identities, zone, stepUpAt, stepUpFailed }: { ident
               <input id="access-email" type="email" className="field-input" placeholder="name@example.com" autoComplete="off" spellCheck={false}
                 value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }}
                 aria-invalid={error ? true : undefined} aria-describedby={error ? "access-email-err" : "access-email-help"} />
-              <button type="submit" className="btn" disabled={busy}>Add email</button>
+              <button type="submit" className="btn add-email" disabled={busy}>Add email</button>
             </div>
             {error && <p className="field-error" id="access-email-err">! {error}</p>}
             <p className="helper" id="access-email-help">Adding an address needs a recent sign-in.</p>

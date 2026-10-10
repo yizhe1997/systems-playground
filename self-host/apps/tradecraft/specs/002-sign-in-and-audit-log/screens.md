@@ -131,13 +131,13 @@ Recorded during the build for the visual review. None changes a signed-off word,
 
 ## Visual review
 
-Filled in after implementation (constitution principle V).
+Prepared 2026-10-10, **waiting for the owner's approval of the look** (constitution principle V).
 
-- **Date**:
-- **Visual direction**: see `docs/visual-direction.md`
-- **Built screenshots**: not stored in the repository
-- **Wireframe match**:
-- **Design checks run**: critique, audit
-- **Fixed**:
-- **Parked**:
-- **Owner's approval**:
+- **Date**: 2026-10-10 (built screens captured in light and night, on a fresh stack)
+- **Visual direction**: see `docs/visual-direction.md` (Hex, comfortable, light and night; approved 2026-10-04)
+- **Built screenshots**: not stored in the repository. Captured by `frontend/e2e/zz-screens-auth.spec.ts` to the system temp folder (`tradecraft-built/002-sign-in-and-audit-log`), one file per frame and mode: `a1-sign-in-default`, `a1-sign-in-refused`, `a1-sign-in-session-ended`, `a2-access-filled`, `a2-access-add-error`, `a2-access-already-listed`, `a3-confirm-its-you-dialog`, `a3-confirm-its-you-failed`, `a4-audit-filled`, `a4-audit-filtered`, `a4-audit-nothing-recorded-yet`, `a4-audit-no-match`, `a5-sidebar-signed-in`
+- **Wireframe match**: structure, wording and states match A1 to A5. The differences are listed under "Build notes" above (real logo and icons instead of the greyscale placeholders; Audit log paging only when there is more than one page)
+- **Design checks run**: axe (WCAG 2 A and AA including 4.5:1 contrast) on every state in both modes; the Impeccable design hook on each new component file (no deterministic issues); a manual look at every captured frame against the wireframes and `DESIGN.md`
+- **Fixed**: date cells in the Access and Audit tables were top-aligned (a grid class was applied to table cells); the "Add email" label wrapped; the filter chips looked like plain links (now the same pill chips as Reviews)
+- **Parked**: none
+- **Owner's approval**: pending

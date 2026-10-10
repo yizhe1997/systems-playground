@@ -19,7 +19,7 @@ export function AuditTable({ entries, zone }: { entries: AuditEntry[]; zone: str
           <tbody>
             {entries.map((e) => (
               <tr key={e.id}>
-                <td className="datetime">{dateTime(e.at, zone, true)}</td>
+                <td>{dateTime(e.at, zone, true)}</td>
                 <td>{e.identityEmail ?? "Not signed in"}</td>
                 <td>{e.kindLabel}</td>
                 <td>{e.subject || "—"}</td>

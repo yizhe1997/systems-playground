@@ -155,7 +155,7 @@ test("a change from another site, or not as structured data, is refused", async 
 });
 
 test("a session that ends while a trade form holds text keeps the text and the leave prompt", async ({ browser }) => {
-  const email = await newIdentity("unsaved");
+  const email = await newIdentity("keeps-text");
   const acct = await makeAccount(uniq("Unsaved"));
   const context = await contextAs(browser, email);
   const page = await context.newPage();

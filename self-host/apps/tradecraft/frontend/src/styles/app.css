@@ -200,3 +200,6 @@ dialog.dialog::backdrop { background: var(--dim); }
 .signin-brand { margin-bottom: var(--space-sm); }
 .signin-brand .logo { height: 28px; width: auto; }
 .signin-action { align-self: stretch; justify-content: center; }
+button.filter-chip { cursor: pointer; font-family: inherit; background: transparent; padding: 4px 12px; }
+button.filter-chip.chip-solid { background: var(--ink); }
+.add-email { white-space: nowrap; }
