@@ -178,3 +178,15 @@ A browser test, or the owner working on screens locally, cannot complete a real 
 - The app stays reachable on this computer only: principle IV (nothing exposed beyond localhost until CI has been proven to run on GitHub) still applies. This feature retires only the exception for having no sign-in and no audit log.
 - Tradecraft v1 (the `tradecraft` branch) has working versions of the identity list, the signed token between the web tier and the API, step-up and the audit log. The owner allowed using it as a reference; the plan records exactly what is reused and why, and v1 code is not copied unless the plan says so (constitution, Reuse).
 - Existing screens keep their wording and layout; the sidebar gains the signed-in identity and Sign out, and the sidebar gains Audit log.
+
+## Wireframes
+
+The greyscale wireframes of this feature are listed in [screens.md](screens.md) (Penpot pages `A1 Sign in` to `A5 Sidebar`). They are a draft until the owner signs them off.
+
+Open questions raised by the draft, for `/speckit-clarify`:
+
+1. Are a 10-minute step-up window and an 8-hour session right for daily use?
+2. Should a refused sign-in record the email address that was tried, or only that a refusal happened?
+3. Should creating or editing a trade, a review or a focus be audited as well, or is that too much noise?
+4. Is it acceptable for the log's "About" to name a trade as "NQ long trade of Wed 1 Oct 09:58" (instrument, direction and time, no amounts)?
+
