@@ -53,11 +53,7 @@ Callbacks and events (all in `app/api/auth/[...nextauth]/route.ts`):
 2. The cookie is an encrypted token in NextAuth's own format. The local-only script uses NextAuth's own `encode`, so it never hand-builds the format (section 7).
 3. v4 is in maintenance (security fixes, no features). It declares Next 16 in its peer range and ran on Next 16.3 in v1. If it ever stops receiving fixes, replacing it touches only the web tier's sign-in files; the API and the log do not change.
 
-**Interpretation to record**: a step-up confirmation is a fresh Google sign-in, so it starts a new 8 hours as well as a new
-10-minute window. Ordinary activity never extends the session (FR-005); re-authenticating does. The spec says "a session ends 8
-hours after sign-in"; a confirmation is a sign-in in that sense. If the owner wants the 8 hours kept from the first sign-in, the
-`signIn` callback can carry the old `sessionAt` forward; not done, because it needs the old cookie in the callback and adds
-glue for little.
+**Settled by the owner (2026-10-10)**: a step-up confirmation is a fresh Google sign-in, so it starts a new 8 hours as well as a new 10-minute window. Ordinary activity never extends the session (FR-005); re-authenticating does. Spec FR-005 and its Clarifications say so, and the screens were re-signed on the same day. The old `sessionAt` is not carried over: that would need the old cookie inside NextAuth's callback, for no gain.
 
 **Alternatives weighed**: the same flow written directly with `jose` (the previous version of this plan; fewer moving parts
 and a cleaner fixed session, but the owner preferred the library most people use and have reviewed); Auth.js v5 (still a

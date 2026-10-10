@@ -102,7 +102,7 @@ Signed by the web tier for one request; HS256, `SERVICE_TOKEN_SECRET`.
 | Claim | Meaning |
 |---|---|
 | `aud` | `tradecraft-api` |
-| `role` | `owner` (every ordinary request) or `system` (only `POST /internal/sign-in`, before a session exists) |
+| `role` | `owner` (every ordinary request) or `system` (only the `/internal/*` routes that the web tier's own code calls: `sign-in` before a session exists, `sign-out` and `step-up`) |
 | `sub` | the identity's email; `system` for the `system` role |
 | `jti` | random, used once |
 | `iat`, `exp` | now and now + 60 s (the API accepts at most 120 s and 10 s of skew) |

@@ -8,7 +8,7 @@ The web tier (Next.js) is the only thing the browser talks to. This lists what i
 | Path | Needs a session | What |
 |---|---|---|
 | `/sign-in` | no | Screen A1. Query `reason=refused` (or NextAuth's own `error=...`) shows "You can't sign in with that account."; `reason=ended` shows "Your session ended. Sign in again."; `next` is where to go after signing in (a single-slash path, else `/reviews`). No sidebar. A request that already has a good session is sent to `next` |
-| `/audit` | yes | Screen A4. Query `identity`, `kind`, `from`, `to`, `offset` (same paging as `/trades`) |
+| `/audit` | yes | Screen A4. Query `identity`, `kind`, `from`, `to`, `page`. Paged like `/trades` ("Showing x to y of n", Newer and Older, `?page=`); the page size is 50 and the web tier turns `page` into the API's `offset` |
 | `/settings` | yes | Gains the Access card (A2). Query `stepup=failed` opens the dialog's failed state (A3) |
 | every other existing page | yes | Unchanged, plus the sidebar's Audit log item and signed-in block (A5) |
 

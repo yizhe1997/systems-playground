@@ -2,7 +2,7 @@
 
 **Feature**: `002-sign-in-and-audit-log` | **Date**: 2026-10-10 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `specs/002-sign-in-and-audit-log/spec.md` (screens signed off 2026-10-10; spec hash `d805ef6f…c66a`)
+**Input**: Feature specification from `specs/002-sign-in-and-audit-log/spec.md` (screens signed off 2026-10-10; spec hash `c5cf17cc…8bf6`, re-signed after FR-005 was clarified)
 
 ## Summary
 
@@ -112,8 +112,13 @@ backend/
 └── tests/
     ├── main_test.go                     # secret, test identity, token helper; reset truncates audit under replica role
     ├── gate_test.go                     # every route but /health is 401; token rules; replay
-    ├── identities_test.go               # add, normalise, pin, disable, enable, last active (100 concurrent), bootstrap, recovery
-    ├── audit_test.go                    # one entry per kind, no figures, rollback, immutability, filters, paging, 10,000-entry timing
+    ├── signin_test.go, signout_test.go  # sign-in decision, pin, refusals, sign-out ends sessions, 8 h limit
+    ├── stepup_test.go                   # same subject accepted, different refused, new times
+    ├── identities_test.go               # add, normalise, disable, enable, last active (100 concurrent), bootstrap, recovery
+    ├── audit_test.go                    # one entry per kind, no figures, repeat is a no-op
+    ├── audit_integrity_test.go          # immutability, rollback when the entry cannot be written
+    ├── audit_list_test.go               # filters, paging, 10,000-entry timing
+    ├── no_session_route_test.go         # no route creates a session without the Google step
     └── (existing tests: unchanged assertions, requests now carry a token)
 
 frontend/
@@ -151,6 +156,7 @@ frontend/
 │   ├── us1-google.spec.ts               # redirect to Google carries the right parameters (both providers); session helper checks
 │   ├── us2-audit.spec.ts                # one entry per kind, log screen, filters
 │   ├── us3-access.spec.ts               # add, duplicate, last active, step-up dialog
+│   ├── us4-minted-session.spec.ts       # the minted cookie signs in as the chosen identity; no path creates a session
 │   ├── zz-a11y-auth.spec.ts             # axe on A1 to A5, both modes
 │   └── (existing specs: unchanged)
 scripts/
@@ -174,7 +180,7 @@ new container.
 
 The order keeps the app working and its whole check suite green at each step, because the gate changes every request.
 
-1. **Foundation (US1 and US4 groundwork)**: migration; `auth` package; `New(pool, now, secret)` with the gate; `inTx` and `recordAudit`; test harness (token helper, identity in `TestMain`, audit reset); the minting module and `dev-mint-session.mjs`; `global-setup.ts` and `helpers.ts`; `scripts/test.sh` secrets. At the end of this step every existing Go and Playwright test passes with the gate on (SC-009). US4 is P3 but its script is needed here, because every browser test needs it.
+1. **Foundation (US1 and US4 groundwork)**: migration; `auth` package; `New(pool, now, secret)` with the gate; `inTx` and `recordAudit`; test harness (token helper, identity in `TestMain`, audit reset); the web tier's session reader, service-token signing and allow-listed pass-through; the minting module and `dev-mint-session.mjs`; `global-setup.ts` and `helpers.ts`; `scripts/test.sh` secrets. At the end of this step every existing Go and Playwright test passes with the gate on (SC-009). US4 is P3 but its script is needed here, because every browser test needs it.
 2. **US1**: `authOptions.ts` and the NextAuth route, `lib/session.ts`, `lib/serviceToken.ts`, `proxy.ts`, `api.ts`, the `/api` pass-through, `/sign-in`, layout and the signed-in block, start-up refusals, bootstrap.
 3. **US2**: entries in the seven change handlers and the export; `/audit` and `/audit/kinds`; the Audit log screen.
 4. **US3**: identity routes and rules; the Access card and the step-up dialog.
@@ -194,9 +200,9 @@ No constitution violation to justify. Three things that are more than the minimu
 ## Items for the owner at this gate
 
 Settled by the owner on 2026-10-10: NextAuth (research 2); sign-out ends every session of that identity (research 3); the log
-names a trade by its exit time (research 10); `TRADECRAFT_ENV` defaults to `production` (research 7).
+names a trade by its exit time (research 10); `TRADECRAFT_ENV` defaults to `production` (research 7); a Google re-confirmation
+starts a new 8 hours (research 2; spec FR-005 clarified and the screens re-signed the same day).
 
 Still open:
-1. **A step-up confirmation starts a new 8 hours** as well as a new 10-minute window (research 2, "Interpretation to record"). The spec says a session ends 8 hours after sign-in; I read a confirmation as a sign-in. Say if the 8 hours should instead be counted from the first sign-in.
-2. **The real Google round trip is manual** and needs your OAuth client with two redirect addresses (quickstart 2 and 3); everything else is automated.
-3. **Nothing in the app gets exposed by this feature.** Refused-sign-in rate limiting waits for the exposure gate (research 19).
+1. **The real Google round trip is manual** and needs your OAuth client with two redirect addresses (quickstart 2 and 3); everything else is automated.
+2. **Nothing in the app gets exposed by this feature.** Refused-sign-in rate limiting waits for the exposure gate (research 19).

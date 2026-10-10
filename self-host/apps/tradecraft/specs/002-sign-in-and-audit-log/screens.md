@@ -4,7 +4,7 @@
 **Status**: signed-off
 **Penpot**: file `Tradecraft_v2`, pages `A1 Sign in`, `A2 Access`, `A3 Confirm it's you`, `A4 Audit log`, `A5 Sidebar` (A for access). The frames live only in Penpot; no images are stored in the repository.
 **Signed off**: 2026-10-10 (structure and wording only; the look is decided elsewhere)
-**spec-sha256**: d805ef6f393a97c056908ff260d54e2387a9f7372349acca368ac989613ac66a
+**spec-sha256**: c5cf17cc17f91001ba69045d86432c524b7afab91df7aeebe4cd5e6428518bf6
 
 ## Why these screens
 
@@ -106,6 +106,7 @@ Every word the owner will read. Times are in the journal time zone. No placehold
 |---|---|---|---|
 | 2026-10-10 | Screen list | Draw A1 to A5 as proposed; Access is a card in Settings, not its own page | Done |
 | 2026-10-10 | A1 to A5 | Yes to all the proposals, including the answers to the four open questions | Open questions closed; the wireframes are unchanged |
+| 2026-10-10 | Spec FR-005 | A Google re-confirmation restarts the 8 hours; re-run the sign-off | Spec clarified, hash updated; the wireframes are unchanged |
 
 ## Open questions for clarify
 
@@ -115,8 +116,8 @@ None open. Answered on 2026-10-10 (see `spec.md` Clarifications): 10-minute step
 
 - **Signed off by**: owner
 - **Date**: 2026-10-10
-- **Spec hash**: d805ef6f393a97c056908ff260d54e2387a9f7372349acca368ac989613ac66a
-- **Notes**: Signed off on the owner's instruction ("sign off, then go to plan") after clarify closed the four open questions. Checked before signing: every user story but US4 has a screen (US4, the local-only session, has none by design); every requirement that touches the interface is covered (FR-001 to FR-003, FR-009 to FR-013, FR-018, FR-022, FR-023); no TODO, TBD or placeholder text in the content list; empty, error, refused, session-ended, no-match and step-up states are drawn; no money figure appears on these screens. The existing S and L frames are not redrawn here; they gain the Audit log item and the signed-in block at implementation.
+- **Spec hash**: c5cf17cc17f91001ba69045d86432c524b7afab91df7aeebe4cd5e6428518bf6
+- **Notes**: Signed off on the owner's instruction ("sign off, then go to plan") after clarify closed the four open questions. Checked before signing: every user story but US4 has a screen (US4, the local-only session, has none by design); every requirement that touches the interface is covered (FR-001 to FR-003, FR-009 to FR-013, FR-018, FR-022, FR-023); no TODO, TBD or placeholder text in the content list; empty, error, refused, session-ended, no-match and step-up states are drawn; no money figure appears on these screens. The existing S and L frames are not redrawn here; they gain the Audit log item and the signed-in block at implementation. **Re-signed 2026-10-10** on the owner's instruction after `spec.md` FR-005 and its Clarifications gained one line (a Google re-confirmation starts a new eight hours); re-checked against the clarified spec: no screen, state or wording changed, A3 already says "more than 10 minutes ago".
 
 ## Visual review
 

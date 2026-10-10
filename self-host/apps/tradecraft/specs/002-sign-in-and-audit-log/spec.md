@@ -24,6 +24,7 @@ This feature does **not** put the app on the internet. Principle IV still says n
 - Q: Should a refused sign-in record the email address that was tried? → A: Yes. The attempted address is recorded and shown only to the signed-in owner in the Audit log; the refusal screen itself still says nothing about why.
 - Q: Should creating or editing a trade, a review or a focus also be audited? → A: No. Only the sensitive actions listed in FR-015 are audited, to keep the log readable; later features add kinds as they need.
 - Q: May the log's "About" name a trade as "NQ long trade of Wed 1 Oct 09:58"? → A: Yes: instrument, direction and time, never amounts, notes or review text.
+- Q: Does a Google re-confirmation (step-up) restart the eight hours? → A: Yes. A confirmation is a fresh Google sign-in, so it starts a new eight hours and a new 10-minute window; ordinary activity never extends a session.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -128,7 +129,7 @@ A browser test, or the owner working on screens locally, cannot complete a real 
 - **FR-002**: The sign-in screen MUST offer a single "Continue with Google" action. There is no password, no password reset and no other sign-in method.
 - **FR-003**: Only emails on the allow-list, verified by Google, MUST be able to sign in; email comparison MUST ignore letter case and surrounding spaces; every refusal, whatever the reason, MUST show the same short message and MUST NOT reveal whether the address is on the list.
 - **FR-004**: On an identity's first sign-in, the system MUST store the provider's stable account identifier against it and MUST refuse any later sign-in for that identity that presents a different identifier.
-- **FR-005**: A session MUST last eight hours from sign-in, fixed and not extended by activity; the owner MUST be able to sign out, which ends the session immediately.
+- **FR-005**: A session MUST last eight hours from sign-in, fixed and not extended by activity; a fresh Google confirmation (FR-012) is a sign-in and starts a new eight hours; the owner MUST be able to sign out, which ends the session immediately.
 - **FR-006**: On every request, the system MUST re-check that the session's identity is still active; a disabled identity MUST lose access on its very next request.
 - **FR-007**: Changes MUST be accepted only from the app's own pages (same-origin) and only as structured data; a change request from elsewhere MUST be refused.
 - **FR-008**: The API MUST accept only requests that carry short-lived proof, signed by the web tier, of which identity they are made for; requests that are unsigned, expired, replayed or meant for another audience MUST be refused.
@@ -193,6 +194,8 @@ The four open questions raised by the draft were answered on 2026-10-10 and are 
 ## Signed-off screens
 
 The screens in `screens.md` were signed off by the owner on 2026-10-10. Plan, tasks and implementation MUST honour them. Any change to an interface covered here MUST update `screens.md` and its Penpot frames in the same change (constitution principle V).
+
+Re-signed on 2026-10-10 after FR-005 was clarified (a Google re-confirmation starts a new eight hours); the screens did not change.
 
 Accepted at sign-off (not drawn, to be handled in plan): user story 4 (the local-only session for tests) has no screen by design; the existing screens S0 to S5 and L1 to L5 are not redrawn and gain the Audit log item and the signed-in block when this feature is built.
 
