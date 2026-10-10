@@ -67,7 +67,9 @@ export function isFreshStepUp(stepUpAt: number, now = Date.now()): boolean {
 
 /** A page address to return to: a single-slash path of this site, else Reviews. */
 export function safeNext(next: string | null | undefined): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/reviews";
+  // Browsers drop tabs and line breaks inside an address, so "/<tab>/evil.example" would become "//evil.example":
+  // refuse any control character and any backslash anywhere, not only at the start.
+  if (!next || !next.startsWith("/") || next.startsWith("//") || /[\u0000-\u001f\u007f\\]/.test(next)) return "/reviews";
   if (next.startsWith("/sign-in") || next.startsWith("/api/auth")) return "/reviews";
   return next;
 }

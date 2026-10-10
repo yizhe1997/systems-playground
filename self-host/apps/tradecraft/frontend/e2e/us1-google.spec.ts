@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { mintSession } from "../scripts/session-mint.mjs";
-import { sessionFromToken } from "../src/lib/session";
+import { safeNext, sessionFromToken } from "../src/lib/session";
 
 const UNSIGNED = { cookies: [], origins: [] };
 
@@ -74,6 +74,12 @@ test.describe("the session reader", () => {
     expect(await sessionFromToken(good.slice(0, -6) + "xxxxxx")).toBeNull();
     expect(await sessionFromToken("not-a-cookie")).toBeNull();
     expect(await sessionFromToken(undefined)).toBeNull();
+  });
+
+  test("the page to return to is a path of this site and nothing else", async () => {
+    expect(safeNext("/trades?from=2025-10-01")).toBe("/trades?from=2025-10-01");
+    const bad = ["//evil.example", "https://evil.example", "/\\evil.example", "/\t/evil.example", "/\n/evil.example", "evil", "", null, undefined, "/sign-in", "/api/auth/signout"];
+    for (const b of bad) expect(safeNext(b as string | null | undefined), JSON.stringify(b)).toBe("/reviews");
   });
 
   test("a session is eight hours from sessionAt and no longer", async () => {

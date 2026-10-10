@@ -119,6 +119,16 @@ None open. Answered on 2026-10-10 (see `spec.md` Clarifications): 10-minute step
 - **Spec hash**: c5cf17cc17f91001ba69045d86432c524b7afab91df7aeebe4cd5e6428518bf6
 - **Notes**: Signed off on the owner's instruction ("sign off, then go to plan") after clarify closed the four open questions. Checked before signing: every user story but US4 has a screen (US4, the local-only session, has none by design); every requirement that touches the interface is covered (FR-001 to FR-003, FR-009 to FR-013, FR-018, FR-022, FR-023); no TODO, TBD or placeholder text in the content list; empty, error, refused, session-ended, no-match and step-up states are drawn; no money figure appears on these screens. The existing S and L frames are not redrawn here; they gain the Audit log item and the signed-in block at implementation. **Re-signed 2026-10-10** on the owner's instruction after `spec.md` FR-005 and its Clarifications gained one line (a Google re-confirmation starts a new eight hours); re-checked against the clarified spec: no screen, state or wording changed, A3 already says "more than 10 minutes ago".
 
+## Build notes (what the built screens do differently from the wireframes)
+
+Recorded during the build for the visual review. None changes a signed-off word, state or flow.
+
+- **Sign out and the sidebar icons:** the built Sign out control is a quiet button with a small exit icon, and the Audit log item has a scroll icon; the greyscale frames show text and a blank square, as agreed.
+- **Paging of the Audit log:** a log of one page shows "Showing 1 to n of n" without Newer and Older (the same rule as the Trades list); the two buttons appear when there is more than one page of 50.
+- **Sign-in screen:** the built screen shows the real logo where the greyscale frame shows the grey box and the title, per the standing rule that only reskin frames carry the real brand.
+- **Settings:** the Access card sits below Time zone in the built Settings screen; the greyscale Settings frame (L5) is unchanged and the card is drawn on A2.
+- **Existing frames:** S0 to S5 and L1 to L5 in Penpot now carry the Audit log item and the signed-in block in the sidebar (updated 2026-10-10).
+
 ## Visual review
 
 Filled in after implementation (constitution principle V).
