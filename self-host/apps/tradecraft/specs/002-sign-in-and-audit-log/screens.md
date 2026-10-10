@@ -131,7 +131,7 @@ Recorded during the build for the visual review. None changes a signed-off word,
 
 ## Visual review
 
-Prepared 2026-10-10, **waiting for the owner's approval of the look** (constitution principle V).
+Done 2026-10-10. **The owner approved the look the same day** (constitution principle V).
 
 - **Date**: 2026-10-10 (built screens captured in light and night, on a fresh stack)
 - **Visual direction**: see `docs/visual-direction.md` (Hex, comfortable, light and night; approved 2026-10-04)
@@ -140,4 +140,4 @@ Prepared 2026-10-10, **waiting for the owner's approval of the look** (constitut
 - **Design checks run**: axe (WCAG 2 A and AA including 4.5:1 contrast) on every state in both modes; the Impeccable design hook on each new component file (no deterministic issues); a manual look at every captured frame against the wireframes and `DESIGN.md`
 - **Fixed**: date cells in the Access and Audit tables were top-aligned (a grid class was applied to table cells); the "Add email" label wrapped; the filter chips looked like plain links (now the same pill chips as Reviews)
 - **Parked**: none
-- **Owner's approval**: pending
+- **Owner's approval**: approved 2026-10-10 ("Approve", after seeing the built sign-in, Access, Confirm it's you and Audit log screens in light and night)
