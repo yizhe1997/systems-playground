@@ -1,0 +1,226 @@
+openapi: 3.1.0
+info:
+  title: Tradecraft v2 API, feature 002 (sign-in and audit log)
+  version: 0.1.0
+  description: >
+    Additions to the API of features 000 and 001, and one change that applies to all of it: **every route except
+    GET /health now requires a signed service token** (bearerAuth) naming the identity the call is made for. The routes of 000 and
+    001 are otherwise unchanged. A call without a valid token, with an expired, replayed or wrong-audience token, or for an
+    identity that is disabled or whose session has ended is answered 401 with the same body whatever the reason. Routes that
+    change identities also require a step-up (a Google confirmation within the last 10 minutes), answered 403 step_up_required
+    when it is missing. The API is called by the web tier, never by the browser; the browser reaches only the allow-listed paths
+    of the web tier (web-routes.md). Errors keep the 000 shape (code, message, fields[]).
+servers:
+  - url: http://127.0.0.1:8081
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: Liveness and database reachability. The only route that needs no token (unchanged)
+      security: []
+      responses:
+        "200": { description: ok }
+  /internal/sign-in:
+    post:
+      operationId: internalSignIn
+      summary: Decide a sign-in after Google has authenticated someone (called by the web tier only, with a system token)
+      description: >
+        The web tier has already checked Google's ID token. This decides whether that Google account may be the owner: the
+        email (case and spaces ignored) must belong to an active identity and Google must have verified it; the provider's
+        subject is stored on the first accepted sign-in and must match on every later one. Records sign_in or sign_in_refused
+        (best effort). Every refusal is the same 403 body.
+      security: [{ systemToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignInDecision" }
+      responses:
+        "200": { description: Accepted, content: { application/json: { schema: { $ref: "#/components/schemas/SessionTimes" } } } }
+        "403": { description: "Refused (always the same body, code `refused`)", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /internal/sign-out:
+    post:
+      operationId: internalSignOut
+      summary: End the identity's sessions now (every session issued before this moment stops counting)
+      description: Sets sessions_valid_after on the identity and records sign_out (best effort).
+      responses:
+        "204": { description: Signed out }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+  /internal/step-up:
+    post:
+      operationId: internalStepUp
+      summary: Accept a fresh Google confirmation for the signed-in identity
+      description: >
+        The web tier sends the subject of the Google account that has just authenticated. It must equal the subject stored on
+        the signed-in identity; otherwise 403 and nothing is recorded as confirmed. Records step_up_confirmed (best effort).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [providerSub]
+              properties: { providerSub: { type: string, minLength: 1, maxLength: 255 } }
+      responses:
+        "200": { description: Confirmed, content: { application/json: { schema: { type: object, required: [stepUpAt], properties: { stepUpAt: { type: integer, format: int64, description: unix milliseconds } } } } } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { description: "Not the account that is signed in", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /identities:
+    get:
+      operationId: listIdentities
+      summary: The Access list (screen A2), oldest first
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string, enum: [all, active, disabled], default: all } }
+      responses:
+        "200": { description: Identities with counts for the filter chips, content: { application/json: { schema: { $ref: "#/components/schemas/IdentityList" } } } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+    post:
+      operationId: addIdentity
+      summary: Add an email that counts as the owner (needs a step-up)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [email], properties: { email: { type: string } } }
+      responses:
+        "201": { description: Added, active, never signed in, content: { application/json: { schema: { $ref: "#/components/schemas/Identity" } } } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/StepUpRequired" }
+        "409": { description: "That address is already on the list (enable it instead); code already_listed", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { description: "Not an email address", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /identities/{id}/disable:
+    post:
+      operationId: disableIdentity
+      summary: Disable an identity (needs a step-up). Its sessions stop at their next request
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: Disabled, content: { application/json: { schema: { $ref: "#/components/schemas/Identity" } } } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/StepUpRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "It is the last active identity; code last_active_identity. Nothing changed", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /identities/{id}/enable:
+    post:
+      operationId: enableIdentity
+      summary: Enable a disabled identity again (needs a step-up). The same row, with its history
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: Enabled, content: { application/json: { schema: { $ref: "#/components/schemas/Identity" } } } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/StepUpRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /audit:
+    get:
+      operationId: listAudit
+      summary: The Audit log (screen A4), newest first, paged like the Trades list
+      description: The total number of matches is in the X-Total-Count header. There is no route that creates, edits or deletes an entry.
+      parameters:
+        - { name: identity, in: query, required: false, description: "An identity id, or `none` for entries with no signed-in identity (refused sign-ins)", schema: { type: string } }
+        - { name: kind, in: query, required: false, schema: { type: string } }
+        - { name: from, in: query, required: false, description: "First day, in the journal time zone", schema: { type: string, format: date } }
+        - { name: to, in: query, required: false, description: "Last day, inclusive", schema: { type: string, format: date } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: One page of entries
+          headers:
+            X-Total-Count: { schema: { type: integer } }
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/AuditEntry" } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /audit/kinds:
+    get:
+      operationId: listAuditKinds
+      summary: The kinds the log can hold, with the words the screen shows (for the "What" filter)
+      responses:
+        "200": { description: Kinds, content: { application/json: { schema: { type: array, items: { type: object, required: [kind, label], properties: { kind: { type: string }, label: { type: string } } } } } } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+  /export:
+    get:
+      operationId: export
+      summary: Everything as one JSON document (unchanged), now also with identities and audit entries
+      description: >
+        Gains `identities` (id, email, provider, addedAt, lastSignInAt, disabledAt; never the provider subject) and
+        `auditEntries` (id, at, actorKind, identity email or null, kind, subject, changedFields). Writes an export_downloaded
+        entry first; if that cannot be written the export is refused and nothing is returned.
+      responses:
+        "200": { description: The export }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        HS256, signed by the web tier with SERVICE_TOKEN_SECRET. Claims: aud `tradecraft-api`, role `owner`, sub (the identity's
+        email), jti (random, used once), iat, exp (60 s; at most 120 s accepted, 10 s of clock skew), session_at and
+        step_up_at (unix milliseconds, as given by the API at sign-in and step-up).
+    systemToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Same signing, role `system`, sub `system`; accepted only by /internal/sign-in.
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    NotSignedIn: { description: "Not signed in (the same body whatever the reason); code `unauthorized`", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    StepUpRequired: { description: "A Google confirmation within the last 10 minutes is needed; code `step_up_required`. Nothing changed", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    NotFound: { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Invalid: { description: One or more fields are invalid, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        fields: { type: array, items: { type: object, required: [field, message], properties: { field: { type: string }, message: { type: string } } } }
+    SignInDecision:
+      type: object
+      required: [email, providerSub, emailVerified]
+      properties:
+        email: { type: string, description: "As Google sent it; the API normalises" }
+        providerSub: { type: string, minLength: 1, maxLength: 255 }
+        emailVerified: { type: boolean }
+    SessionTimes:
+      type: object
+      required: [email, sessionAt, stepUpAt]
+      properties:
+        email: { type: string, description: "The identity's normalised email, for the cookie's sub" }
+        sessionAt: { type: integer, format: int64, description: unix milliseconds (the API's database clock) }
+        stepUpAt: { type: integer, format: int64, description: "equal to sessionAt at sign-in" }
+    Identity:
+      type: object
+      required: [id, email, provider, addedAt, lastSignInAt, disabledAt, active]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        provider: { type: string, enum: [google] }
+        addedAt: { type: string, format: date-time }
+        lastSignInAt: { type: [string, "null"], format: date-time }
+        disabledAt: { type: [string, "null"], format: date-time }
+        active: { type: boolean }
+    IdentityList:
+      type: object
+      required: [identities, counts]
+      properties:
+        identities: { type: array, items: { $ref: "#/components/schemas/Identity" } }
+        counts: { type: object, required: [all, active, disabled], properties: { all: { type: integer }, active: { type: integer }, disabled: { type: integer } } }
+    AuditEntry:
+      type: object
+      required: [id, at, actorKind, identityEmail, kind, kindLabel, subject, changedFields]
+      properties:
+        id: { type: string, format: uuid }
+        at: { type: string, format: date-time }
+        actorKind: { type: string, enum: [owner, agent, system] }
+        identityEmail: { type: [string, "null"], description: "null for entries with no signed-in identity; the screen says Not signed in" }
+        kind: { type: string }
+        kindLabel: { type: string }
+        subject: { type: string }
+        changedFields: { type: array, items: { type: string } }
