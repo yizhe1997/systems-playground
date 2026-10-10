@@ -31,3 +31,7 @@ UPDATE account SET archived_at = COALESCE(archived_at, now()) WHERE id = sqlc.ar
 
 -- name: RestoreAccount :one
 UPDATE account SET archived_at = NULL WHERE id = sqlc.arg(id)::uuid RETURNING id;
+
+-- name: AccountForAudit :one
+SELECT name, (archived_at IS NOT NULL)::boolean AS archived
+  FROM account WHERE id = sqlc.arg(id)::uuid FOR UPDATE;

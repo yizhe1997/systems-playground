@@ -365,18 +365,37 @@ func (s *Server) setDeleted(c *fiber.Ctx, del bool) error {
 	if err != nil {
 		return err
 	}
-	if del {
-		_, err = s.q.SoftDeleteTrade(c.Context(), id)
-	} else {
-		_, err = s.q.RestoreTrade(c.Context(), id)
-	}
-	if errors.Is(err, pgx.ErrNoRows) {
-		return notFound("trade")
-	}
+	ctx := c.Context()
+	loc, err := s.journalLocation(ctx)
 	if err != nil {
 		return err
 	}
-	loc, err := s.journalLocation(c.Context())
+	actor, by := actorOf(c)
+	// the change and its audit entry are one transaction; a repeat that changes nothing records nothing
+	err = s.inTx(ctx, func(q *store.Queries) error {
+		cur, err := q.TradeForAudit(ctx, id)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return notFound("trade")
+		}
+		if err != nil {
+			return err
+		}
+		if cur.Deleted == del {
+			return nil
+		}
+		kind := "trade_restored"
+		if del {
+			kind = "trade_deleted"
+			_, err = q.SoftDeleteTrade(ctx, id)
+		} else {
+			_, err = q.RestoreTrade(ctx, id)
+		}
+		if err != nil {
+			return err
+		}
+		return recordAudit(ctx, q, auditEvent{Actor: actor, IdentityID: by, Kind: kind,
+			Subject: tradeSubject(cur.Instrument, cur.Direction, cur.ExitAt, loc), Fields: []string{"status"}})
+	})
 	if err != nil {
 		return err
 	}

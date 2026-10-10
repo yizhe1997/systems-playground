@@ -26,6 +26,17 @@ func (q *Queries) GetSettings(ctx context.Context) (GetSettingsRow, error) {
 	return i, err
 }
 
+const settingsForUpdate = `-- name: SettingsForUpdate :one
+SELECT time_zone FROM journal_settings WHERE id = 1 FOR UPDATE
+`
+
+func (q *Queries) SettingsForUpdate(ctx context.Context) (string, error) {
+	row := q.db.QueryRow(ctx, settingsForUpdate)
+	var time_zone string
+	err := row.Scan(&time_zone)
+	return time_zone, err
+}
+
 const updateSettings = `-- name: UpdateSettings :one
 UPDATE journal_settings SET time_zone = $1::text WHERE id = 1
 RETURNING time_zone, updated_at

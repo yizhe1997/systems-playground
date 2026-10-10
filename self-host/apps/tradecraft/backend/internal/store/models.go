@@ -20,6 +20,16 @@ type Account struct {
 	UpdatedAt       time.Time   `json:"updated_at"`
 }
 
+type AuditEntry struct {
+	ID            string    `json:"id"`
+	At            time.Time `json:"at"`
+	ActorKind     string    `json:"actor_kind"`
+	IdentityID    *string   `json:"identity_id"`
+	Kind          string    `json:"kind"`
+	Subject       string    `json:"subject"`
+	ChangedFields []string  `json:"changed_fields"`
+}
+
 type DailyReview struct {
 	AccountID      string      `json:"account_id"`
 	TradingDay     time.Time   `json:"trading_day"`
@@ -46,6 +56,17 @@ type Focu struct {
 	Body        string    `json:"body"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type Identity struct {
+	ID                 string     `json:"id"`
+	Email              string     `json:"email"`
+	Provider           string     `json:"provider"`
+	ProviderSub        *string    `json:"provider_sub"`
+	AddedAt            time.Time  `json:"added_at"`
+	LastSignInAt       *time.Time `json:"last_sign_in_at"`
+	DisabledAt         *time.Time `json:"disabled_at"`
+	SessionsValidAfter time.Time  `json:"sessions_valid_after"`
 }
 
 type JournalSetting struct {

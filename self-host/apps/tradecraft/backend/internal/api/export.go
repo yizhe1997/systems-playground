@@ -60,6 +60,28 @@ type exportJSON struct {
 	Focuses     []exportFocusJSON      `json:"focuses"`
 	WeeklyMarks []exportMarkJSON       `json:"weeklyMarks"`
 	DayMistakes []exportDayMistakeJSON `json:"dayMistakes"`
+	Identities  []exportIdentityJSON   `json:"identities"`
+	AuditEntries []exportAuditJSON     `json:"auditEntries"`
+}
+
+// exportIdentityJSON is an identity without the provider's account identifier (FR-019).
+type exportIdentityJSON struct {
+	ID           string  `json:"id"`
+	Email        string  `json:"email"`
+	Provider     string  `json:"provider"`
+	AddedAt      string  `json:"addedAt"`
+	LastSignInAt *string `json:"lastSignInAt"`
+	DisabledAt   *string `json:"disabledAt"`
+}
+
+type exportAuditJSON struct {
+	ID            string   `json:"id"`
+	At            string   `json:"at"`
+	ActorKind     string   `json:"actorKind"`
+	IdentityEmail *string  `json:"identityEmail"`
+	Kind          string   `json:"kind"`
+	Subject       string   `json:"subject"`
+	ChangedFields []string `json:"changedFields"`
 }
 
 // export answers everything as one document: settings, every account (archived marked), every trade (deleted marked)
@@ -67,6 +89,11 @@ type exportJSON struct {
 // weekly reviewed marks and the whole-day mistake records. Money stays as exact decimal strings.
 func (s *Server) export(c *fiber.Ctx) error {
 	ctx := c.Context()
+	// the entry is written first: an export that cannot be recorded is not made (FR-015, FR-016)
+	actor, by := actorOf(c)
+	if err := recordAudit(ctx, s.q, auditEvent{Actor: actor, IdentityID: by, Kind: "export_downloaded", Subject: "Full export"}); err != nil {
+		return err
+	}
 	st, err := s.q.GetSettings(ctx)
 	if err != nil {
 		return err
@@ -112,7 +139,17 @@ func (s *Server) export(c *fiber.Ctx) error {
 		return err
 	}
 
+	identities, err := s.q.ExportIdentities(ctx)
+	if err != nil {
+		return err
+	}
+	entries, err := s.q.ExportAuditEntries(ctx)
+	if err != nil {
+		return err
+	}
+
 	out := exportJSON{
+		Identities: []exportIdentityJSON{}, AuditEntries: []exportAuditJSON{},
 		ExportedAt: fmtTime(s.now()), Settings: settingsJSON{TimeZone: st.TimeZone},
 		Accounts: make([]accountJSON, 0, len(accts)), Trades: make([]exportTradeJSON, 0, len(trades)),
 		Mistakes: make([]mistakeJSON, 0, len(mistakes)), DailyReview: []exportReviewJSON{}, Focuses: []exportFocusJSON{},
@@ -147,6 +184,18 @@ func (s *Server) export(c *fiber.Ctx) error {
 	}
 	for _, d := range dayMistakes {
 		out.DayMistakes = append(out.DayMistakes, exportDayMistakeJSON{AccountID: d.AccountID, AccountName: d.AccountName, Date: dayText(d.TradingDay), MistakeID: d.MistakeID, Mistake: d.Mistake})
+	}
+	for _, i := range identities {
+		out.Identities = append(out.Identities, exportIdentityJSON{ID: i.ID, Email: i.Email, Provider: i.Provider,
+			AddedAt: fmtTime(i.AddedAt), LastSignInAt: timePtr(i.LastSignInAt), DisabledAt: timePtr(i.DisabledAt)})
+	}
+	for _, e := range entries {
+		fields := e.ChangedFields
+		if fields == nil {
+			fields = []string{}
+		}
+		out.AuditEntries = append(out.AuditEntries, exportAuditJSON{ID: e.ID, At: fmtTime(e.At), ActorKind: e.ActorKind,
+			IdentityEmail: e.IdentityEmail, Kind: e.Kind, Subject: e.Subject, ChangedFields: fields})
 	}
 	return c.JSON(out)
 }

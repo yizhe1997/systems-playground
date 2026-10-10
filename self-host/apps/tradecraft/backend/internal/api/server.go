@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"tradecraft/internal/auth"
 	"tradecraft/internal/store"
 )
 
@@ -18,20 +19,41 @@ type Server struct {
 	pool *pgxpool.Pool
 	q    *store.Queries
 	now  func() time.Time
+	gate *auth.Gate
 }
 
-// New builds the app. now may be nil (the real clock); tests pass their own to pin the future-time check.
-func New(pool *pgxpool.Pool, now func() time.Time) *fiber.App {
+// New builds the app. now may be nil (the real clock); tests pass their own to pin the future-time check. secret
+// is the service token secret shared with the web tier: every route except GET /health refuses a request that does
+// not carry a token signed with it (constitution IV; the token's own times are wall time, not now).
+func New(pool *pgxpool.Pool, now func() time.Time, secret string) *fiber.App {
 	if now == nil {
 		now = time.Now
 	}
-	s := &Server{pool: pool, q: store.New(pool), now: now}
+	q := store.New(pool)
+	s := &Server{pool: pool, q: q, now: now, gate: auth.NewGate(secret, q, nil)}
 	app := fiber.New(fiber.Config{
 		ErrorHandler:          errorHandler,
 		DisableStartupMessage: true,
 		BodyLimit:             1 << 20,
 	})
-	app.Get("/health", s.health)
+	app.Get("/health", s.health) // the one open route; registered first so nothing below can gate it
+
+	// Called by web-tier code only, with a system token: sign-in decisions, sign-out, step-up confirmations.
+	internal := app.Group("/internal", s.gate.System())
+	internal.Post("/sign-in", s.internalSignIn)
+	internal.Post("/sign-out", s.internalSignOut)
+	internal.Post("/step-up", s.internalStepUp)
+
+	// Everything else needs a signed token for an identity that is active and whose session still counts. Unknown
+	// addresses are refused the same way, so the gate also hides which routes exist.
+	app.Use(s.gate.Owner())
+
+	app.Get("/identities", s.listIdentities)
+	app.Post("/identities", s.gate.RequireStepUp(), s.addIdentity)
+	app.Post("/identities/:id/disable", s.gate.RequireStepUp(), s.disableIdentity)
+	app.Post("/identities/:id/enable", s.gate.RequireStepUp(), s.enableIdentity)
+	app.Get("/audit", s.listAudit)
+	app.Get("/audit/kinds", s.listAuditKinds)
 
 	app.Get("/currencies", s.listCurrencies)
 	app.Get("/settings", s.getSettings)
@@ -76,6 +98,20 @@ func New(pool *pgxpool.Pool, now func() time.Time) *fiber.App {
 
 	app.Get("/export", s.export)
 	return app
+}
+
+// inTx runs fn in one transaction: a change and its audit entry succeed or fail together (FR-016). An error from fn
+// rolls everything back and is returned as it is.
+func (s *Server) inTx(ctx context.Context, fn func(q *store.Queries) error) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }() // a no-op after Commit
+	if err := fn(s.q.WithTx(tx)); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func (s *Server) health(c *fiber.Ctx) error {

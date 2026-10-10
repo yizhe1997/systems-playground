@@ -45,3 +45,7 @@ ON CONFLICT DO NOTHING;
 -- Mistakes already recorded for a day (a retired one stays when it is already there).
 -- name: DayMistakeIDs :many
 SELECT mistake_id FROM day_mistake WHERE account_id = sqlc.arg(account_id)::uuid AND trading_day = sqlc.arg(day)::date;
+
+-- name: MistakeForAudit :one
+SELECT name, (retired_at IS NOT NULL)::boolean AS retired
+  FROM mistake WHERE id = sqlc.arg(id)::uuid FOR UPDATE;

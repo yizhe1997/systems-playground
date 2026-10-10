@@ -182,6 +182,23 @@ func (q *Queries) MistakeByName(ctx context.Context, name string) (MistakeByName
 	return i, err
 }
 
+const mistakeForAudit = `-- name: MistakeForAudit :one
+SELECT name, (retired_at IS NOT NULL)::boolean AS retired
+  FROM mistake WHERE id = $1::uuid FOR UPDATE
+`
+
+type MistakeForAuditRow struct {
+	Name    string `json:"name"`
+	Retired bool   `json:"retired"`
+}
+
+func (q *Queries) MistakeForAudit(ctx context.Context, id string) (MistakeForAuditRow, error) {
+	row := q.db.QueryRow(ctx, mistakeForAudit, id)
+	var i MistakeForAuditRow
+	err := row.Scan(&i.Name, &i.Retired)
+	return i, err
+}
+
 const setMistakeRetired = `-- name: SetMistakeRetired :one
 UPDATE mistake
    SET retired_at = CASE WHEN $1::boolean THEN COALESCE(retired_at, now()) ELSE NULL END

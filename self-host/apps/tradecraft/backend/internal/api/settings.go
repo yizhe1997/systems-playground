@@ -7,6 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgconn"
+
+	"tradecraft/internal/store"
 )
 
 type settingsJSON struct {
@@ -36,13 +38,31 @@ func (s *Server) updateSettings(c *fiber.Ctx) error {
 	if _, err := time.LoadLocation(zone); err != nil {
 		return bad
 	}
-	st, err := s.q.UpdateSettings(c.Context(), zone)
-	if err != nil {
-		var pe *pgconn.PgError
-		if errors.As(err, &pe) && pe.Code == "22023" { // the database does not know that zone either
-			return bad
+	ctx := c.Context()
+	actor, by := actorOf(c)
+	result := zone
+	err := s.inTx(ctx, func(q *store.Queries) error {
+		cur, err := q.SettingsForUpdate(ctx)
+		if err != nil {
+			return err
 		}
+		if cur == zone { // nothing changes, so nothing is recorded
+			return nil
+		}
+		st, err := q.UpdateSettings(ctx, zone)
+		if err != nil {
+			var pe *pgconn.PgError
+			if errors.As(err, &pe) && pe.Code == "22023" { // the database does not know that zone either
+				return bad
+			}
+			return err
+		}
+		result = st.TimeZone
+		return recordAudit(ctx, q, auditEvent{Actor: actor, IdentityID: by, Kind: "settings_changed",
+			Subject: "Journal settings", Fields: []string{"time zone"}})
+	})
+	if err != nil {
 		return err
 	}
-	return c.JSON(settingsJSON{TimeZone: st.TimeZone})
+	return c.JSON(settingsJSON{TimeZone: result})
 }

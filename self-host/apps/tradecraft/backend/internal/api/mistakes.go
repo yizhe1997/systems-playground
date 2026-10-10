@@ -181,9 +181,29 @@ func (s *Server) setRetired(c *fiber.Ctx, retire bool) error {
 	if err != nil {
 		return err
 	}
-	if _, err = s.q.SetMistakeRetired(c.Context(), store.SetMistakeRetiredParams{ID: id, Retire: retire}); errors.Is(err, pgx.ErrNoRows) {
-		return notFound("mistake")
-	} else if err != nil {
+	ctx := c.Context()
+	actor, by := actorOf(c)
+	err = s.inTx(ctx, func(q *store.Queries) error {
+		cur, err := q.MistakeForAudit(ctx, id)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return notFound("mistake")
+		}
+		if err != nil {
+			return err
+		}
+		if cur.Retired == retire {
+			return nil
+		}
+		if _, err := q.SetMistakeRetired(ctx, store.SetMistakeRetiredParams{ID: id, Retire: retire}); err != nil {
+			return err
+		}
+		kind := "mistake_restored"
+		if retire {
+			kind = "mistake_retired"
+		}
+		return recordAudit(ctx, q, auditEvent{Actor: actor, IdentityID: by, Kind: kind, Subject: cur.Name, Fields: []string{"status"}})
+	})
+	if err != nil {
 		return err
 	}
 	m, err := s.loadMistake(c.Context(), id)

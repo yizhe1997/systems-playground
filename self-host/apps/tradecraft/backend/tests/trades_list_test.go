@@ -142,6 +142,7 @@ func TestListPaging(t *testing.T) {
 func header(t *testing.T, query string) string {
 	t.Helper()
 	req := httptest.NewRequest("GET", "/trades?"+query, nil)
+	req.Header.Set("Authorization", "Bearer "+ownerToken())
 	res, err := app.Test(req, -1)
 	if err != nil {
 		t.Fatal(err)

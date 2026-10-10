@@ -77,3 +77,8 @@ SELECT COALESCE(n.gross::text, '')::text AS gross_result,
                              (SELECT trading_day_start FROM account WHERE id = sqlc.narg(account_id)::uuid))
        END)::text, '')::text AS trading_day
   FROM n, r;
+
+-- What the audit entry needs about a trade, and whether the state is about to flip. Locks the row for the transaction.
+-- name: TradeForAudit :one
+SELECT instrument, direction, exit_at, (deleted_at IS NOT NULL)::boolean AS deleted
+  FROM trade WHERE id = sqlc.arg(id)::uuid FOR UPDATE;

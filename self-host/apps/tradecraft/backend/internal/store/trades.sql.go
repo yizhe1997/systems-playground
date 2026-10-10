@@ -288,6 +288,31 @@ func (q *Queries) SoftDeleteTrade(ctx context.Context, id string) (string, error
 	return id_2, err
 }
 
+const tradeForAudit = `-- name: TradeForAudit :one
+SELECT instrument, direction, exit_at, (deleted_at IS NOT NULL)::boolean AS deleted
+  FROM trade WHERE id = $1::uuid FOR UPDATE
+`
+
+type TradeForAuditRow struct {
+	Instrument string    `json:"instrument"`
+	Direction  string    `json:"direction"`
+	ExitAt     time.Time `json:"exit_at"`
+	Deleted    bool      `json:"deleted"`
+}
+
+// What the audit entry needs about a trade, and whether the state is about to flip. Locks the row for the transaction.
+func (q *Queries) TradeForAudit(ctx context.Context, id string) (TradeForAuditRow, error) {
+	row := q.db.QueryRow(ctx, tradeForAudit, id)
+	var i TradeForAuditRow
+	err := row.Scan(
+		&i.Instrument,
+		&i.Direction,
+		&i.ExitAt,
+		&i.Deleted,
+	)
+	return i, err
+}
+
 const updateTrade = `-- name: UpdateTrade :one
 UPDATE trade
    SET account_id = $1::uuid,

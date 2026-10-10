@@ -185,14 +185,31 @@ func (s *Server) setArchived(c *fiber.Ctx, archive bool) error {
 	if err != nil {
 		return err
 	}
-	if archive {
-		_, err = s.q.ArchiveAccount(c.Context(), id)
-	} else {
-		_, err = s.q.RestoreAccount(c.Context(), id)
-	}
-	if errors.Is(err, pgx.ErrNoRows) {
-		return notFound("account")
-	}
+	ctx := c.Context()
+	actor, by := actorOf(c)
+	err = s.inTx(ctx, func(q *store.Queries) error {
+		cur, err := q.AccountForAudit(ctx, id)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return notFound("account")
+		}
+		if err != nil {
+			return err
+		}
+		if cur.Archived == archive {
+			return nil
+		}
+		kind := "account_restored"
+		if archive {
+			kind = "account_archived"
+			_, err = q.ArchiveAccount(ctx, id)
+		} else {
+			_, err = q.RestoreAccount(ctx, id)
+		}
+		if err != nil {
+			return err
+		}
+		return recordAudit(ctx, q, auditEvent{Actor: actor, IdentityID: by, Kind: kind, Subject: cur.Name, Fields: []string{"status"}})
+	})
 	if err != nil {
 		return err
 	}

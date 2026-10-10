@@ -10,6 +10,23 @@ import (
 	"time"
 )
 
+const accountForAudit = `-- name: AccountForAudit :one
+SELECT name, (archived_at IS NOT NULL)::boolean AS archived
+  FROM account WHERE id = $1::uuid FOR UPDATE
+`
+
+type AccountForAuditRow struct {
+	Name     string `json:"name"`
+	Archived bool   `json:"archived"`
+}
+
+func (q *Queries) AccountForAudit(ctx context.Context, id string) (AccountForAuditRow, error) {
+	row := q.db.QueryRow(ctx, accountForAudit, id)
+	var i AccountForAuditRow
+	err := row.Scan(&i.Name, &i.Archived)
+	return i, err
+}
+
 const archiveAccount = `-- name: ArchiveAccount :one
 UPDATE account SET archived_at = COALESCE(archived_at, now()) WHERE id = $1::uuid RETURNING id
 `
