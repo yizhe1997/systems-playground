@@ -43,6 +43,10 @@ Sign-in is Google only, for the email addresses you allow. Steps and settings ar
    `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Until then the sign-in button answers with the refusal screen.
 3. Settings, Access: add other addresses (a recent Google confirmation is asked for first). Audit log in the sidebar shows who did what.
 
+Open the app at exactly the `NEXTAUTH_URL` address (host and port): the sign-in sets a cookie for that host, and finishing the
+flow on another one (`127.0.0.1` instead of `localhost`) fails with "State cookie was missing" in the web tier's log and the
+refusal screen. Google's redirect addresses are exact too, and can take a few minutes to take effect after you add one.
+
 For local work and tests there is a way in without Google: set `TRADECRAFT_ENV=local` and a long random `DEV_SESSION_SECRET` in
 `.env`, restart, and run `node frontend/scripts/dev-mint-session.mjs you@example.com` to get a cookie. Both services **refuse to
 start** if `DEV_SESSION_SECRET` is set while `TRADECRAFT_ENV` is `production` (the default), so remove it when you are done.

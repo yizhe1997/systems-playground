@@ -13,7 +13,26 @@ exercised. Last run: 2026-10-10 on the composed stack (`./scripts/test.sh`, fres
 | Data identical after a stop and start (SC-010 of 000) | **Pass** (92 accounts, 5,324 trades) |
 | `scripts/check-dev-secret-refused.sh` (SC-008): both services refuse in production with the development secret, and start without it | **Pass** (after a defect it found, see "Found while verifying") |
 | Accessibility (axe, WCAG 2 A and AA, contrast 4.5:1) on A1 to A5 in light and night | **Pass** |
-| The real Google round trip with the owner's client | **Not exercised.** Manual, by the owner (task T062). Until it is recorded here the feature is not done |
+| The real Google round trip with the owner's client | **Pass, reported by the owner on 2026-10-11** (see "The manual Google check" below). Not exercised: the refusal with a second Google account, the step-up confirmation through Google, and the timing of SC-002 |
+
+## The manual Google check (T062)
+
+Done by the owner on 2026-10-11 against the running dev stack (`docker compose up --build -d --wait`, web at
+`http://localhost:3101`, Google client "general" of project `sunlit-alloy-458006-q2`).
+
+- **Setup:** the redirect address `http://localhost:3101/api/auth/callback/google-confirm` was added to the client (the
+  sign-in address for `localhost:3101` was already registered from the old app). `NEXTAUTH_URL` in `.env` was `http://localhost:8081`
+  (the API's port) and was corrected to `http://localhost:3101`.
+- **Result:** signing in with the owner's Google account worked. The owner reported it in one line ("its worked"); no timing
+  was taken, so SC-002 (under 30 seconds) is not measured.
+- **A first attempt failed** with `/sign-in?...&error=OAuthCallback` and the refusal text. The web tier's log said
+  `OAUTH_CALLBACK_ERROR State cookie was missing`: the browser came back to the callback without the cookie NextAuth sets when
+  the flow starts, which happens when the flow is started on one address and finished on another (for example
+  `127.0.0.1` and `localhost`) or from a cookie left over from before the restart. The next attempt worked. The cause was not
+  isolated further. The README now says to open the app at exactly the `NEXTAUTH_URL` address.
+- **Not exercised by hand:** signing in with a second Google account (the refusal), and a step-up confirmation through Google.
+  Both are covered up to the Google redirect by the automated checks; the decisions behind them are covered by the Go tests.
+  If the owner tries them, add the result here.
 
 ## The one failure, and what is known about it
 
