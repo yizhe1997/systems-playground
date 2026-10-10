@@ -18,7 +18,12 @@ This feature does **not** put the app on the internet. Principle IV still says n
 
 ## Clarifications
 
-None yet. Defaults chosen where the description was silent are in Assumptions; `/speckit-clarify` may ask about them before the plan.
+### Session 2026-10-10
+
+- Q: Are a 10-minute step-up window and an 8-hour session right for daily use? → A: Yes. A sign-in older than 10 minutes asks for a fresh Google confirmation before an identity change; a session ends 8 hours after sign-in (a fixed limit, not extended by activity).
+- Q: Should a refused sign-in record the email address that was tried? → A: Yes. The attempted address is recorded and shown only to the signed-in owner in the Audit log; the refusal screen itself still says nothing about why.
+- Q: Should creating or editing a trade, a review or a focus also be audited? → A: No. Only the sensitive actions listed in FR-015 are audited, to keep the log readable; later features add kinds as they need.
+- Q: May the log's "About" name a trade as "NQ long trade of Wed 1 Oct 09:58"? → A: Yes: instrument, direction and time, never amounts, notes or review text.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -123,14 +128,14 @@ A browser test, or the owner working on screens locally, cannot complete a real 
 - **FR-002**: The sign-in screen MUST offer a single "Continue with Google" action. There is no password, no password reset and no other sign-in method.
 - **FR-003**: Only emails on the allow-list, verified by Google, MUST be able to sign in; email comparison MUST ignore letter case and surrounding spaces; every refusal, whatever the reason, MUST show the same short message and MUST NOT reveal whether the address is on the list.
 - **FR-004**: On an identity's first sign-in, the system MUST store the provider's stable account identifier against it and MUST refuse any later sign-in for that identity that presents a different identifier.
-- **FR-005**: A session MUST last at most eight hours; the owner MUST be able to sign out, which ends the session immediately.
+- **FR-005**: A session MUST last eight hours from sign-in, fixed and not extended by activity; the owner MUST be able to sign out, which ends the session immediately.
 - **FR-006**: On every request, the system MUST re-check that the session's identity is still active; a disabled identity MUST lose access on its very next request.
 - **FR-007**: Changes MUST be accepted only from the app's own pages (same-origin) and only as structured data; a change request from elsewhere MUST be refused.
 - **FR-008**: The API MUST accept only requests that carry short-lived proof, signed by the web tier, of which identity they are made for; requests that are unsigned, expired, replayed or meant for another audience MUST be refused.
 - **FR-009**: The Access list in Settings MUST show each identity's email, when it was added, when it last signed in and whether it is active or disabled, with a filter All, Active, Disabled.
 - **FR-010**: The owner MUST be able to add an identity by email, disable an identity and enable it again; no identity is ever deleted; an email can belong to only one identity, disabled ones included.
 - **FR-011**: The last active identity MUST never be disabled, including when two requests race; the refusal MUST say why in plain words.
-- **FR-012**: Adding, disabling and enabling an identity MUST require a step-up: if the owner's sign-in is older than the step-up window, they MUST confirm with Google again before the change is made.
+- **FR-012**: Adding, disabling and enabling an identity MUST require a step-up: if the owner's sign-in or last confirmation is older than the step-up window of 10 minutes, they MUST confirm with Google again before the change is made.
 - **FR-013**: If no identity exists at start, the system MUST create the first one from the owner's own configuration; it MUST NOT be possible to create or list identities without a signed-in session.
 - **FR-014**: The system MUST keep one append-only audit log. Each entry MUST hold the moment, the identity, the kind of action, a subject (as text), and the names of the fields that changed (never their values, and never money figures, notes or review text).
 - **FR-015**: These actions MUST each add exactly one entry: sign-in, sign-out, a refused sign-in (with the attempted email), step-up confirmed, identity added, identity disabled, identity enabled, export downloaded, trade deleted, trade restored, account archived, account restored, settings changed, mistake retired, mistake restored.
@@ -171,10 +176,10 @@ A browser test, or the owner working on screens locally, cannot complete a real 
 
 - The owner supplies a Google sign-in client (id and secret) that allows this computer's address as a redirect; this feature documents how and keeps the values only in the environment. Without it the real Google step cannot be exercised, and only the local-only session can be used.
 - Google is the only provider, now and for this feature; the identity record names its provider so another could be added later without reshaping it.
-- The step-up window is 10 minutes and the session is eight hours (the v1 values); both are settings of the app, not of the owner's day.
+- The step-up window is 10 minutes and the session is eight hours (the v1 values, confirmed by the owner on 2026-10-10); both are settings of the app, not of the owner's day.
 - Audit entries are kept for ever (the log is append-only); no purge. They hold no IP address or browser details.
-- The audited list in FR-015 is the owner's list of sensitive actions; creating or editing trades, reviews and focuses is not audited one by one, to keep the log readable. Later features add kinds as they need.
-- The attempted email of a refused sign-in is recorded, because it is the main signal of someone trying to get in; it is shown only to the signed-in owner in the Audit log.
+- The audited list in FR-015 is the owner's list of sensitive actions (confirmed 2026-10-10); creating or editing trades, reviews and focuses is not audited one by one, to keep the log readable. Later features add kinds as they need.
+- The attempted email of a refused sign-in is recorded (confirmed 2026-10-10), because it is the main signal of someone trying to get in; it is shown only to the signed-in owner in the Audit log.
 - The app stays reachable on this computer only: principle IV (nothing exposed beyond localhost until CI has been proven to run on GitHub) still applies. This feature retires only the exception for having no sign-in and no audit log.
 - Tradecraft v1 (the `tradecraft` branch) has working versions of the identity list, the signed token between the web tier and the API, step-up and the audit log. The owner allowed using it as a reference; the plan records exactly what is reused and why, and v1 code is not copied unless the plan says so (constitution, Reuse).
 - Existing screens keep their wording and layout; the sidebar gains the signed-in identity and Sign out, and the sidebar gains Audit log.
@@ -183,10 +188,5 @@ A browser test, or the owner working on screens locally, cannot complete a real 
 
 The greyscale wireframes of this feature are listed in [screens.md](screens.md) (Penpot pages `A1 Sign in` to `A5 Sidebar`). They are a draft until the owner signs them off.
 
-Open questions raised by the draft, for `/speckit-clarify`:
-
-1. Are a 10-minute step-up window and an 8-hour session right for daily use?
-2. Should a refused sign-in record the email address that was tried, or only that a refusal happened?
-3. Should creating or editing a trade, a review or a focus be audited as well, or is that too much noise?
-4. Is it acceptable for the log's "About" to name a trade as "NQ long trade of Wed 1 Oct 09:58" (instrument, direction and time, no amounts)?
+The four open questions raised by the draft were answered on 2026-10-10 and are recorded under Clarifications above; none remains open.
 

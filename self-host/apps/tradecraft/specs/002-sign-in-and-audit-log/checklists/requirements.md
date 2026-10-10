@@ -32,4 +32,5 @@
 ## Notes
 
 - Validated 2026-10-10 on the first pass. No clarification markers: the description was specific, and the defaults chosen where it was silent (step-up window 10 minutes, session eight hours, no purge of the log, no IP addresses recorded, the audited list in FR-015) are written in Assumptions for `/speckit-clarify` to confirm.
+- Clarify 2026-10-10: the four defaults were confirmed by the owner and recorded in the spec's Clarifications; the checklist was re-checked and all items still pass.
 - A few words in the spec name security mechanisms ("same-origin", "signed by the web tier", "provider's stable account identifier"). They are the gates the constitution (principle IV) already requires, stated as behaviour to test, not as a design; the plan decides how.

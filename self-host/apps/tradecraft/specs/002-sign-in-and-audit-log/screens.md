@@ -105,13 +105,11 @@ Every word the owner will read. Times are in the journal time zone. No placehold
 | Date | Screen | Owner's reaction | What changed |
 |---|---|---|---|
 | 2026-10-10 | Screen list | Draw A1 to A5 as proposed; Access is a card in Settings, not its own page | Done |
+| 2026-10-10 | A1 to A5 | Yes to all the proposals, including the answers to the four open questions | Open questions closed; the wireframes are unchanged |
 
 ## Open questions for clarify
 
-1. The step-up window is 10 minutes and the session is 8 hours (v1's values). Are those right for daily use?
-2. Should a refused sign-in record the email that was tried (useful to see someone trying) or only that a refusal happened?
-3. The audited list is the owner's list of sensitive actions. Should creating or editing a trade, a review or a focus also be audited, or is that too much noise?
-4. The audit log's "About" shows the address, file name or short text of the thing acted on. Is it acceptable that it can show a trade as "NQ long trade of Wed 1 Oct 09:58" (instrument, direction and time, no amounts)?
+None open. Answered on 2026-10-10 (see `spec.md` Clarifications): 10-minute step-up and 8-hour session are right; a refused sign-in records the attempted email; only the FR-015 actions are audited; the log may name a trade by instrument, direction and time.
 
 ## Sign-off
 
