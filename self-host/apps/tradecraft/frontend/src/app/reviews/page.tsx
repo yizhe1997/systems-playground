@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import Link from "next/link";
 import { getAccounts, getCalendar, getReviewsMonth } from "@/lib/data";
 import { one, resolveAccount } from "@/lib/reviewsContext";
@@ -19,7 +20,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   let accounts;
   try {
     accounts = await getAccounts(true);
-  } catch {
+  } catch (err) {
+    unstable_rethrow(err);
     return <CouldNotLoad />;
   }
   const account = resolveAccount(accounts, one(sp.account));
@@ -29,7 +31,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   try {
     data = await getReviewsMonth(account.id, one(sp.month) || undefined);
     cal = await getCalendar(account.id, data.month);
-  } catch {
+  } catch (err) {
+    unstable_rethrow(err);
     return <CouldNotLoad />;
   }
   const filter = (FILTERS as readonly string[]).includes(one(sp.filter)) ? one(sp.filter) : "all";

@@ -17,6 +17,10 @@ export async function call<T>(method: string, path: string, body?: unknown): Pro
     return { ok: false, status: 0, unreachable: true, error: { code: "unreachable", message: "Could not reach the journal." } };
   }
   const data = await res.json().catch(() => null);
+  if (res.status === 401 && typeof window !== "undefined") {
+    // the session ended or the identity was disabled: the sign-in screen says so (an unsaved form is still guarded)
+    window.location.assign("/sign-in?reason=ended");
+  }
   if (!res.ok) {
     const unreachable = res.status === 502 || res.status === 0;
     return { ok: false, status: res.status, unreachable, error: data ?? { code: "error", message: "Something went wrong." } };

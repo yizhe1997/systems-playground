@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { redirect } from "next/navigation";
 import { getAccounts, getSettings } from "@/lib/data";
 import { zoneName } from "@/lib/format";
@@ -10,7 +11,8 @@ export default async function NewTradePage() {
   let accounts, settings;
   try {
     [accounts, settings] = await Promise.all([getAccounts(false), getSettings()]);
-  } catch {
+  } catch (err) {
+    unstable_rethrow(err);
     return <CouldNotLoad />;
   }
   // a trade needs an active account; the direct address of this page goes to Accounts until there is one

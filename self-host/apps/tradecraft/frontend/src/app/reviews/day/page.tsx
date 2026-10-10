@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { notFound } from "next/navigation";
 import { ApiFailure } from "@/lib/api";
 import { getAccounts, getDay, getMistakes, getReviewsMonth, getSettings } from "@/lib/data";
@@ -21,7 +22,8 @@ export default async function DailyReviewPage({ searchParams }: { searchParams: 
   let accounts, settings;
   try {
     [accounts, settings] = await Promise.all([getAccounts(true), getSettings()]);
-  } catch {
+  } catch (err) {
+    unstable_rethrow(err);
     return <CouldNotLoad />;
   }
   const account = resolveAccount(accounts, one(sp.account));
@@ -33,6 +35,7 @@ export default async function DailyReviewPage({ searchParams }: { searchParams: 
     if (!date) date = (await getReviewsMonth(account.id)).today;
     [review, mistakes] = await Promise.all([getDay(account.id, date), getMistakes(false)]);
   } catch (e) {
+    unstable_rethrow(e);
     if (e instanceof ApiFailure && (e.status === 404 || e.status === 422)) notFound();
     return <CouldNotLoad />;
   }

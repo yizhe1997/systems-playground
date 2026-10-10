@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { api, apiPaged, ApiFailure } from "@/lib/api";
@@ -40,7 +41,8 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   try {
     const [settings, accounts] = await Promise.all([getSettings(), getAccounts(true)]);
     data = { settings, accounts };
-  } catch {
+  } catch (err) {
+    unstable_rethrow(err);
     return (
       <>
         <Head canLog={false} exportable={false} />
@@ -88,6 +90,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
     ({ data: trades, total } = await apiPaged<Trade>(`/trades?${q}`));
     if (trades.length === 0 && !deleted) anyTrades = (await apiPaged<Trade>("/trades?limit=1")).total > 0;
   } catch (e) {
+    unstable_rethrow(e);
     if (e instanceof ApiFailure && e.status === 422) {
       problem = e.body?.fields?.[0]?.message ?? e.message;
     } else {

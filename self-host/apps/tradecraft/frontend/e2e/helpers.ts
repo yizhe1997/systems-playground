@@ -1,12 +1,17 @@
 import { expect, type Page } from "@playwright/test";
+import { serviceToken } from "../scripts/session-mint.mjs";
+import { OWNER_EMAIL } from "./auth";
 
 // The API is reached directly only to set up data; everything under test goes through the browser.
 export const API = process.env.E2E_API_URL ?? "http://127.0.0.1:8081";
 
-export async function api<T = any>(method: string, path: string, body?: unknown): Promise<{ status: number; data: T }> {
+// With the gate on (feature 002) the API wants a signed service token, which the web tier normally adds; the secret is
+// the test stack's own, passed in the environment by scripts/test.sh. `as` makes the call as another identity.
+export async function api<T = any>(method: string, path: string, body?: unknown, as: string = OWNER_EMAIL): Promise<{ status: number; data: T }> {
+  const token = serviceToken({ sub: as, secret: process.env.SERVICE_TOKEN_SECRET });
   const res = await fetch(API + path, {
     method,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   return { status: res.status, data: (await res.json().catch(() => null)) as T };

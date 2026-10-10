@@ -10,7 +10,12 @@ PY=$(command -v python3 || command -v python)
 before=$(mktemp) after=$(mktemp)
 trap 'rm -f "$before" "$after"' EXIT
 
-export_all() { curl -fsS "$api/export" | "$PY" -c "import sys,json; d=json.load(sys.stdin); d.pop('exportedAt'); print(json.dumps(d, sort_keys=True, indent=1))" > "$1"; }
+# The API needs a signed token (feature 002): SERVICE_TOKEN_SECRET and OWNER_BOOTSTRAP_EMAIL must be in the environment.
+# Each export writes its own audit entry, so those entries are left out of the comparison.
+export_all() {
+  curl -fsS -H "Authorization: Bearer $(node scripts/service-token.mjs)" "$api/export" |
+    "$PY" -c "import sys,json; d=json.load(sys.stdin); d.pop('exportedAt'); d['auditEntries']=[e for e in d['auditEntries'] if e['kind']!='export_downloaded']; print(json.dumps(d, sort_keys=True, indent=1))" > "$1"
+}
 
 export_all "$before" || { echo "FAIL: could not read the export before"; exit 1; }
 docker compose -p "$project" stop >/dev/null 2>&1

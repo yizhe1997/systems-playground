@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import Link from "next/link";
 import { getAccounts, getCounter, getMistakes } from "@/lib/data";
 import { one } from "@/lib/reviewsContext";
@@ -32,7 +33,8 @@ export default async function MistakesPage({ searchParams }: { searchParams: Pro
   try {
     [accounts, mistakes] = await Promise.all([getAccounts(true), getMistakes(false)]);
     counter = await getCounter(period, date || undefined, accountParam || undefined);
-  } catch {
+  } catch (err) {
+    unstable_rethrow(err);
     return <CouldNotLoad />;
   }
   const account = accounts.find((a) => a.id === accountParam)?.id ?? "";

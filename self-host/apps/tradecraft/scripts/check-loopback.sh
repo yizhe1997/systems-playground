@@ -17,20 +17,27 @@ else
 fi
 if ! echo "$ports" | grep -q '127.0.0.1:'; then echo "FAIL: nothing is published on 127.0.0.1 at all"; fail=1; fi
 
+# No secret is in a tracked file or a container log: the database password and, feature 002, every sign-in secret that
+# is in the environment (never printed here, only found or not found).
+check_secret() { # $1 = name, $2 = value
+  local name="$1" value="$2"
+  if [ -z "$value" ]; then echo "skipped: no $name to look for"; return; fi
+  if git ls-files -z | xargs -0 grep -I -l -F -- "$value" 2>/dev/null | grep -q .; then
+    echo "FAIL: $name appears in a tracked file"; fail=1
+  else
+    echo "ok: $name is in no tracked file"
+  fi
+  if docker compose -p "$project" logs --no-color 2>&1 | grep -F -q -- "$value"; then
+    echo "FAIL: $name appears in a container log"; fail=1
+  else
+    echo "ok: $name is in no container log"
+  fi
+}
 pw="${POSTGRES_PASSWORD:-}"
 if [ -z "$pw" ] && [ -f .env ]; then pw=$(grep -E '^POSTGRES_PASSWORD=' .env | cut -d= -f2-); fi
-if [ -n "$pw" ]; then
-  if git ls-files -z | xargs -0 grep -I -l -F -- "$pw" 2>/dev/null | grep -q .; then
-    echo "FAIL: the database password appears in a tracked file"; fail=1
-  else
-    echo "ok: the database password is in no tracked file"
-  fi
-  if docker compose -p "$project" logs --no-color 2>&1 | grep -F -q -- "$pw"; then
-    echo "FAIL: the database password appears in a container log"; fail=1
-  else
-    echo "ok: the database password is in no container log"
-  fi
-else
-  echo "skipped: no POSTGRES_PASSWORD to look for"
-fi
+check_secret "the database password" "$pw"
+check_secret "NEXTAUTH_SECRET" "${NEXTAUTH_SECRET:-}"
+check_secret "SERVICE_TOKEN_SECRET" "${SERVICE_TOKEN_SECRET:-}"
+check_secret "DEV_SESSION_SECRET" "${DEV_SESSION_SECRET:-}"
+check_secret "GOOGLE_CLIENT_SECRET" "${GOOGLE_CLIENT_SECRET:-}"
 exit $fail

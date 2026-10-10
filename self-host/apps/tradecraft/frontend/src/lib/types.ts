@@ -226,3 +226,27 @@ export type WeeklyReview = {
   days: WeeklyDay[];
   stats: Stats;
 };
+
+// ---------- feature 002 (specs/002-sign-in-and-audit-log/contracts/openapi.yaml) ----------
+export type Identity = {
+  id: string;
+  email: string;
+  provider: "google";
+  addedAt: string;
+  lastSignInAt: string | null;
+  disabledAt: string | null;
+  active: boolean;
+};
+export type IdentityList = { identities: Identity[]; counts: { all: number; active: number; disabled: number } };
+export type AuditEntry = {
+  id: string;
+  at: string;
+  actorKind: "owner" | "agent" | "system";
+  identityEmail: string | null;
+  kind: string;
+  kindLabel: string;
+  subject: string;
+  changedFields: string[];
+};
+export type AuditKind = { kind: string; label: string };
+

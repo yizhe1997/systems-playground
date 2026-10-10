@@ -4,7 +4,8 @@
 set -eu
 api="${1:-http://127.0.0.1:8081}"
 PY=$(command -v python3 || command -v python)
-post() { curl -fsS -X POST "$api$1" -H 'content-type: application/json' -d "$2"; }
+# the API needs a signed token (feature 002): SERVICE_TOKEN_SECRET and OWNER_BOOTSTRAP_EMAIL must be in the environment
+post() { curl -fsS -X POST "$api$1" -H 'content-type: application/json' -H "Authorization: Bearer $(node "$(dirname "$0")/service-token.mjs")" -d "$2"; }
 id() { "$PY" -c "import sys,json;print(json.load(sys.stdin)['id'])"; }
 
 acct=$(post /accounts '{"name":"Funded 50K","currency":"USD","tradingDayStart":"17:00"}' | id)

@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { getAccounts, getCurrencies } from "@/lib/data";
 import { CouldNotLoad } from "@/components/Notice";
 import { AccountsView } from "@/components/AccountsTable";
@@ -10,7 +11,8 @@ export default async function AccountsPage({ searchParams }: { searchParams: Pro
   let accounts, currencies;
   try {
     [accounts, currencies] = await Promise.all([getAccounts(showArchived), getCurrencies()]);
-  } catch {
+  } catch (err) {
+    unstable_rethrow(err);
     return (
       <>
         <div className="page-head">

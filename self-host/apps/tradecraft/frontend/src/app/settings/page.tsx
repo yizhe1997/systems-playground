@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { getSettings } from "@/lib/data";
 import { CouldNotLoad } from "@/components/Notice";
 import { SettingsForm } from "@/components/SettingsForm";
@@ -8,7 +9,8 @@ export default async function SettingsPage() {
   let settings;
   try {
     settings = await getSettings();
-  } catch {
+  } catch (err) {
+    unstable_rethrow(err);
     return <CouldNotLoad />;
   }
   // every standard time zone, plus UTC which Intl lists separately on some engines

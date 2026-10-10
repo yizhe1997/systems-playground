@@ -8,6 +8,14 @@ cd "$(dirname "$0")/.."
 export POSTGRES_PASSWORD
 # a separate compose project and other host ports, so this never touches the running app or its data volume
 export POSTGRES_HOST_PORT=15435 BACKEND_HOST_PORT=18081 FRONTEND_HOST_PORT=13100
+# Fresh random secrets for every run (feature 002): they are exported to the compose stack and to Playwright, never
+# written to a file and never printed. DEV_SESSION_SECRET lets the browser tests sign in without Google, which the
+# stack accepts only because TRADECRAFT_ENV is test.
+gen() { node -e "process.stdout.write(require('crypto').randomBytes(36).toString('base64url'))"; }
+NEXTAUTH_SECRET=$(gen); SERVICE_TOKEN_SECRET=$(gen); DEV_SESSION_SECRET=$(gen)
+export NEXTAUTH_SECRET SERVICE_TOKEN_SECRET DEV_SESSION_SECRET
+export OWNER_BOOTSTRAP_EMAIL=owner@example.com NEXTAUTH_URL=http://127.0.0.1:13100 TRADECRAFT_ENV=test
+export GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET=
 compose=(docker compose -p tradecraft-v2-test)
 status=0
 "${compose[@]}" --profile tests run --rm tests || status=$?

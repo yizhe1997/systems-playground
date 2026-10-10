@@ -3,8 +3,9 @@
 A trading journal, rebuilt from a clean start. This folder holds feature `000-log-trades` (accounts and closed
 trades, usable alone as a trade log). Feature `001-journal-and-reflect` comes after it.
 
-**Local use only.** There is no sign-in and no audit log yet (a written exception to constitution principle IV).
-Everything is published on `127.0.0.1` only. Do not expose it beyond this computer.
+**Local use only.** Sign-in and an audit log exist (feature `002-sign-in-and-audit-log`), but nothing may be exposed beyond
+this computer until CI has been proven to run on GitHub (constitution principle IV). Everything is published on
+`127.0.0.1` only.
 
 ## What you need
 
@@ -14,9 +15,12 @@ needs Node on the host, see "Test".)
 ## Start
 
 ```bash
-cp .env.example .env        # then put a password after POSTGRES_PASSWORD=   (.env is never committed)
+cp .env.example .env        # then fill in the values below   (.env is never committed)
 docker compose up --build -d --wait
 ```
+
+The stack will not start until `.env` has `POSTGRES_PASSWORD`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `SERVICE_TOKEN_SECRET` and
+`OWNER_BOOTSTRAP_EMAIL` (it stops with a plain message naming the one that is missing). An existing database keeps all its data.
 
 - Web: http://127.0.0.1:3100
 - API: http://127.0.0.1:8081 (health check at `/health`; the browser never calls it, the web tier does)
@@ -25,6 +29,23 @@ If a port is taken on your machine, set `FRONTEND_HOST_PORT`, `BACKEND_HOST_PORT
 
 Stop with `docker compose stop`; start again with `docker compose start`. Your data is in the Docker volume
 `tradecraft-v2_tradecraft_v2_pgdata` and survives both. `docker compose down` keeps it; `docker compose down -v` deletes it.
+
+## Signing in
+
+Sign-in is Google only, for the email addresses you allow. Steps and settings are in
+`specs/002-sign-in-and-audit-log/quickstart.md`; in short:
+
+1. Put in `.env` a long random value for `NEXTAUTH_SECRET` and another for `SERVICE_TOKEN_SECRET`
+   (`openssl rand -base64 48`), the address you open the app at as `NEXTAUTH_URL` (for example `http://127.0.0.1:3100`), and your
+   own Google email as `OWNER_BOOTSTRAP_EMAIL` (it becomes the first identity, and is the way back in if every identity is disabled).
+2. In the Google Cloud console create an OAuth client (type Web application) with the redirect addresses
+   `<NEXTAUTH_URL>/api/auth/callback/google` and `<NEXTAUTH_URL>/api/auth/callback/google-confirm`, and put its id and secret in
+   `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Until then the sign-in button answers with the refusal screen.
+3. Settings, Access: add other addresses (a recent Google confirmation is asked for first). Audit log in the sidebar shows who did what.
+
+For local work and tests there is a way in without Google: set `TRADECRAFT_ENV=local` and a long random `DEV_SESSION_SECRET` in
+`.env`, restart, and run `node frontend/scripts/dev-mint-session.mjs you@example.com` to get a cookie. Both services **refuse to
+start** if `DEV_SESSION_SECRET` is set while `TRADECRAFT_ENV` is `production` (the default), so remove it when you are done.
 
 ## Test
 

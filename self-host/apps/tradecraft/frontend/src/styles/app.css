@@ -187,3 +187,16 @@ dialog.dialog::backdrop { background: var(--dim); }
 .pager { display: flex; align-items: center; gap: var(--space-md); margin-top: var(--space-md); }
 .pager .spacer { flex: 1; }
 .btn-off { border-style: dashed; }
+
+/* ---------- sign-in and the signed-in block (feature 002) ---------- */
+.sidebar { display: flex; flex-direction: column; }
+.sidebar .nav { flex: 1; }
+.signed-in { margin-top: var(--space-lg); padding: var(--space-md); border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: var(--space-xs); }
+.signed-in-label { color: var(--text-3); font-size: 12px; }
+.signed-in-email { color: var(--ink); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.signed-in-out { display: inline-flex; align-items: center; gap: var(--space-sm); align-self: flex-start; margin-top: var(--space-xs); padding-inline: 0; }
+.signin { min-height: calc(100vh / var(--z, 1)); display: grid; place-items: center; padding: var(--space-lg); background: var(--bone-mist); }
+.signin-card { width: min(100%, 400px); display: flex; flex-direction: column; gap: var(--space-md); padding: var(--space-xl); }
+.signin-brand { margin-bottom: var(--space-sm); }
+.signin-brand .logo { height: 28px; width: auto; }
+.signin-action { align-self: stretch; justify-content: center; }

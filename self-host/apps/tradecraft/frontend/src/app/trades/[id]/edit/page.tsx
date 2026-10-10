@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { notFound } from "next/navigation";
 import { ApiFailure } from "@/lib/api";
 import { getAccounts, getSettings, getTrade } from "@/lib/data";
@@ -13,6 +14,7 @@ export default async function EditTradePage({ params }: { params: Promise<{ id: 
   try {
     [trade, accounts, settings] = await Promise.all([getTrade(id), getAccounts(true), getSettings()]);
   } catch (e) {
+    unstable_rethrow(e);
     if (e instanceof ApiFailure && e.status === 404) notFound();
     return <CouldNotLoad />;
   }
