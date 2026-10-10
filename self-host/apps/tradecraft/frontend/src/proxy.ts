@@ -13,7 +13,12 @@ export async function proxy(req: NextRequest) {
   const session = await sessionFromToken(cookie);
 
   if (pathname === "/sign-in") {
-    if (session) return NextResponse.redirect(new URL(safeNext(req.nextUrl.searchParams.get("next")), req.url));
+    // A cookie that still looks fine here can be one the API has refused (signed out elsewhere, identity disabled):
+    // after "ended" or "refused" the sign-in screen must show, or the two would redirect to each other for ever.
+    const why = req.nextUrl.searchParams.get("reason");
+    if (session && why !== "ended" && why !== "refused") {
+      return NextResponse.redirect(new URL(safeNext(req.nextUrl.searchParams.get("next")), req.url));
+    }
     return NextResponse.next();
   }
   if (session) return NextResponse.next();

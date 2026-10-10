@@ -57,7 +57,8 @@ export const authOptions: NextAuthOptions = {
     // the production key, and the development key only when it is configured and this is not production
     decode: ({ token }) => decodeWithKeys(token),
   },
-  pages: { signIn: "/sign-in", error: "/sign-in?reason=refused" },
+  // any NextAuth error is shown on the sign-in screen as the same refusal (the screen reads ?error=)
+  pages: { signIn: "/sign-in", error: "/sign-in" },
   callbacks: {
     async signIn({ user, account, profile }) {
       const provider = account?.provider;

@@ -1,14 +1,21 @@
 import { unstable_rethrow } from "next/navigation";
-import { getSettings } from "@/lib/data";
+import { cookies } from "next/headers";
+import { getIdentities, getSettings } from "@/lib/data";
+import { readSession } from "@/lib/session";
+import { AccessCard } from "@/components/AccessCard";
 import { CouldNotLoad } from "@/components/Notice";
 import { SettingsForm } from "@/components/SettingsForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const sp = await searchParams;
+  const stepUpFailed = sp.stepup === "failed";
+  const session = await readSession(await cookies());
   let settings;
+  let identities;
   try {
-    settings = await getSettings();
+    [settings, { identities }] = await Promise.all([getSettings(), getIdentities()]);
   } catch (err) {
     unstable_rethrow(err);
     return <CouldNotLoad />;
@@ -23,7 +30,10 @@ export default async function SettingsPage() {
           <p className="subtitle">Applies to the whole journal.</p>
         </div>
       </div>
-      <SettingsForm timeZone={settings.timeZone} zones={zones} />
+      <div className="stack-md">
+        <SettingsForm timeZone={settings.timeZone} zones={zones} />
+        <AccessCard identities={identities} zone={settings.timeZone} stepUpAt={session?.stepUpAt ?? 0} stepUpFailed={stepUpFailed} />
+      </div>
     </>
   );
 }

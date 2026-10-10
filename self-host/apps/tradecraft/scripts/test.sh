@@ -15,7 +15,9 @@ gen() { node -e "process.stdout.write(require('crypto').randomBytes(36).toString
 NEXTAUTH_SECRET=$(gen); SERVICE_TOKEN_SECRET=$(gen); DEV_SESSION_SECRET=$(gen)
 export NEXTAUTH_SECRET SERVICE_TOKEN_SECRET DEV_SESSION_SECRET
 export OWNER_BOOTSTRAP_EMAIL=owner@example.com NEXTAUTH_URL=http://127.0.0.1:13100 TRADECRAFT_ENV=test
-export GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET=
+# not real credentials: enough for the sign-in screen to start the Google flow, which the browser tests intercept
+GOOGLE_CLIENT_ID=tradecraft-test-client.apps.googleusercontent.com; GOOGLE_CLIENT_SECRET=$(gen)
+export GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET
 compose=(docker compose -p tradecraft-v2-test)
 status=0
 "${compose[@]}" --profile tests run --rm tests || status=$?
