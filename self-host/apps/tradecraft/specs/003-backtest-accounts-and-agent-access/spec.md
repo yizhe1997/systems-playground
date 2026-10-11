@@ -218,10 +218,10 @@ The greyscale wireframes of this feature are listed in [screens.md](screens.md) 
 
 The questions raised by the draft were answered on 2026-10-11 and are recorded under Clarifications above: Entry time first in the Trades list, "Show backtests" off by default, and the wording "All live accounts" as drawn. None remains open.
 
-## Signed-off screens
+## Signed-off wireframes
 
-The screens in `screens.md` were signed off by the owner on 2026-10-11. Plan, tasks and implementation MUST honour them. Any change to an interface covered here MUST update `screens.md` and its Penpot frames in the same change (constitution principle V).
+The wireframes in `screens.md` were signed off by the owner on 2026-10-12 for structure, content, states and behaviour (first on 2026-10-11, recorded again after the spec was clarified on 2026-10-12). Plan, tasks and implementation MUST honour them. The look is not signed off here: it follows the project's approved visual direction and passes a visual review after implementation (constitution principle V). Any change to an interface covered here MUST update `screens.md` and its Penpot frames in the same change.
 
-Clarified on 2026-10-12, after analysis of the tasks: what counts as an audited call (FR-017, SC-005), the trade filters an agent has (FR-014), and the order of a day's trades with the entry time shown (FR-026). One existing screen changes with it (the daily review's trades table, listed in `screens.md`). The sign-off has to be recorded again for the new spec hash.
+Clarified on 2026-10-12, after analysis of the tasks: what counts as an audited call (FR-017, SC-005), the trade filters an agent has (FR-014), and the order of a day's trades with the entry time shown (FR-026). One existing screen changes with it (the daily review's trades table, listed in `screens.md`); the owner signed off on that row.
 
 Accepted at sign-off: user story 4 (a trade belongs to its entry day) has no screen of its own by design; it changes the trade form's preview line and the Audit log's name for a trade, both listed in `screens.md`. The existing frames S0 to S5, L1 to L5 and A1 to A5 are not redrawn here; L1, L2 and the account choosers are updated in Penpot in the same change as the build.
