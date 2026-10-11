@@ -65,7 +65,7 @@ The existing trigger that refuses `UPDATE`, `DELETE` and `TRUNCATE` on `audit_en
 | `agent_token_created` | Agent token created | `POST /agent/tokens` | the token's name | `name` | owner |
 | `agent_token_revoked` | Agent token revoked | `POST /agent/tokens/:id/revoke` | the token's name | `status` | owner |
 | `agent_read` | Agent read | a `tools/call` | `<tool>` or `<tool>, <account name>` | none | agent, label = token name, identity = the token's creator |
-| `agent_refused` | Agent refused | any refused request to `/mcp` | `Unknown token`, `Revoked token`, `Access off` or `Identity disabled` | none | agent (known token) or system (unknown token) |
+| `agent_refused` | Agent refused | any refused request to `/mcp` | `Unknown token`, `Revoked token`, `Access off`, `Identity disabled` or `Browser request` | none | agent (known token) or system (unknown token, or a request that carries an `Origin` header) |
 
 Entries for the first five are written in the change's own transaction (a change without its entry is not made). `agent_read` is written before the answer is returned, and the read is refused if the entry cannot be written. `agent_refused` is best effort (the caller is refused either way).
 
