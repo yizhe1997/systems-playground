@@ -34,7 +34,8 @@ function RCell({ t }: { t: Trade }) {
   );
 }
 
-export function TradesTable({ trades, zone, deletedView }: { trades: Trade[]; zone: string; deletedView: boolean }) {
+export function TradesTable({ trades, zone, deletedView, backtestIds = [] }: { trades: Trade[]; zone: string; deletedView: boolean; backtestIds?: string[] }) {
+  const backtest = new Set(backtestIds);
   return (
     <RowActions>
     <div className="card card-flush">
@@ -61,7 +62,10 @@ export function TradesTable({ trades, zone, deletedView }: { trades: Trade[]; zo
                 <tr key={t.id} className={deletedView ? "muted-row" : undefined}>
                   <td>{dateTime(t.exitAt, zone)}</td>
                   <td>{dayLabel(t.tradingDay, false)}</td>
-                  <td>{t.accountName}</td>
+                  <td>
+                    {t.accountName}
+                    {backtest.has(t.accountId) && <span className="tag">Backtest</span>}
+                  </td>
                   <td className="instrument">
                     {t.instrument}
                     {deletedView && <span className="tag tag-dashed">Deleted</span>}

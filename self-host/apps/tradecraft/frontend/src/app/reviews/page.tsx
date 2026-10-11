@@ -46,9 +46,10 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const neverAnything = cal.months.length <= 1 && nothingYet;
 
   const f = data.filters;
+  const backtest = account.kind === "backtest"; // its days are never Missing, so there is nothing to filter by
   const pills: [string, string][] = [
     ["all", "All"],
-    ["missing", `Missing ${f.missing}`],
+    ...(backtest ? [] : ([["missing", `Missing ${f.missing}`]] as [string, string][])),
     ["draft", `Draft ${f.draft}`],
     ["reviewed", `Reviewed ${f.reviewed}`],
   ];
@@ -76,6 +77,12 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         </div>
       </div>
 
+      {backtest && (
+        <p className="banner" role="status">
+          <span>Backtest account: its days are never marked Missing and nothing here changes your live figures.</span>
+        </p>
+      )}
+
       <section className="card focus-card" aria-label={`Focus for ${monthName(data.month, false)}`}>
         <div className="focus-line">
           <div>
@@ -98,7 +105,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
           {visible.map((w) => {
             const isOpen = filter !== "all" || w.current || (jumpTo !== "" && jumpTo >= w.weekStart && jumpTo <= w.weekEnd);
             // the key includes the open state, so a week asked to open (a filter, a jumped-to day) is mounted again open
-            return <WeekBlock key={`${w.weekStart}-${isOpen}`} week={w} account={account.id} open={isOpen} />;
+            return <WeekBlock key={`${w.weekStart}-${isOpen}`} week={w} account={account.id} open={isOpen} backtest={backtest} />;
           })}
         </div>
       )}

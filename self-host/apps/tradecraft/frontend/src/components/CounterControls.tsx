@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import type { Account } from "@/lib/types";
 import { mondayOfIsoWeek } from "@/lib/format";
+import { AccountOptions } from "@/components/AccountOptions";
 
 /**
  * The account chooser and the period picker of the mistake counter, side by side. The picker is the browser's own week
@@ -27,13 +28,8 @@ export function CounterControls({ accounts, account, period, value }: { accounts
           value={account}
           onChange={(e) => go(e.target.value, new URLSearchParams(window.location.search).get("date") ?? undefined)}
         >
-          <option value="">All accounts</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-              {a.archived ? " (archived)" : ""}
-            </option>
-          ))}
+          <option value="">All live accounts</option>
+          <AccountOptions accounts={accounts} />
         </select>
       </div>
       <div className="field">

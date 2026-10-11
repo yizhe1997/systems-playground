@@ -63,6 +63,7 @@ export function AccountsView({ accounts, currencies, showArchived, openNew }: { 
                 <tr>
                   <th scope="col">Name</th>
                   <th scope="col">Currency</th>
+                  <th scope="col">Kind</th>
                   <th scope="col">Trading-day start</th>
                   <th scope="col"><span className="sr-only">Actions</span></th>
                 </tr>
@@ -75,6 +76,7 @@ export function AccountsView({ accounts, currencies, showArchived, openNew }: { 
                       {a.archived && <span className="tag tag-dashed">Archived</span>}
                     </td>
                     <td>{a.currency}</td>
+                    <td>{a.kind === "backtest" ? <span className="tag">Backtest</span> : "Live"}</td>
                     <td>{a.tradingDayStart ?? "—"}</td>
                     <td className="actions">
                       {a.archived ? (
@@ -93,6 +95,7 @@ export function AccountsView({ accounts, currencies, showArchived, openNew }: { 
           </div>
           <div className="table-foot stack-md">
             {showArchived && <p className="helper">Archived accounts keep all their trades. Restore one to use it again.</p>}
+            <p className="helper">Backtest accounts are marked in every account chooser and left out of live figures until you choose them.</p>
             <p className="helper">A trade that exits at or after the start time counts to the next day. With no start time, a trade counts to the calendar date of its exit.</p>
           </div>
         </div>

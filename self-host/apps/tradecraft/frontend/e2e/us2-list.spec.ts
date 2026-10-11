@@ -51,7 +51,7 @@ test("Export downloads one file named with the date, and its count equals the sc
   const doomed = await makeTrade(a.id, { instrument: "DD1" });
   await api("DELETE", `/trades/${doomed.id}`);
 
-  await page.goto("/trades?from=&to=");
+  await page.goto("/trades?from=&to=&backtests=1"); // the export holds every account, backtests included
   const live = await page.locator("tbody tr").count();
   await page.getByText("Show deleted").click();
   await expect(page.getByText("Showing deleted trades.")).toBeVisible();

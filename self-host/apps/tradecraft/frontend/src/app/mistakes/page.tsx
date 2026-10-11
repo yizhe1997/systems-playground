@@ -58,7 +58,7 @@ export default async function MistakesPage({ searchParams }: { searchParams: Pro
       <div className="page-head">
         <div>
           <h1 className="title">Mistakes</h1>
-          <p className="subtitle">How often each mistake showed up, and the line you set for each. {account ? `${names.get(account)}.` : "Across all accounts."} {period === "week" ? `Week of ${rangeText} ${counter.periodEnd.slice(0, 4)}.` : `${rangeText}.`}</p>
+          <p className="subtitle">How often each mistake showed up, and the line you set for each. {account ? `${names.get(account)}.` : "Across all live accounts."} {period === "week" ? `Week of ${rangeText} ${counter.periodEnd.slice(0, 4)}.` : `${rangeText}.`}</p>
         </div>
       </div>
 
@@ -113,6 +113,10 @@ export default async function MistakesPage({ searchParams }: { searchParams: Pro
           </div>
           <p className="helper" style={{ marginTop: 12 }}>Each record counts once, whether it was tagged on a trade or recorded for the whole day.</p>
         </section>
+      )}
+
+      {!account && accounts.some((a) => a.kind === "backtest") && (
+        <p className="helper">Counting live accounts only. Choose a backtest account to count its mistakes on their own.</p>
       )}
 
       <section className="card section-card" aria-labelledby="manage-title">

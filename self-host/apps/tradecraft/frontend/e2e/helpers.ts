@@ -20,8 +20,8 @@ export async function api<T = any>(method: string, path: string, body?: unknown,
 /** A name that no earlier run has used, so specs never collide on the unique account name. */
 export const uniq = (prefix: string) => `${prefix} ${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
-export async function makeAccount(name: string, currency = "USD", tradingDayStart?: string): Promise<{ id: string; name: string }> {
-  const r = await api("POST", "/accounts", { name, currency, ...(tradingDayStart ? { tradingDayStart } : {}) });
+export async function makeAccount(name: string, currency = "USD", tradingDayStart?: string, kind?: "live" | "backtest"): Promise<{ id: string; name: string }> {
+  const r = await api("POST", "/accounts", { name, currency, ...(tradingDayStart ? { tradingDayStart } : {}), ...(kind ? { kind } : {}) });
   expect(r.status, JSON.stringify(r.data)).toBe(201);
   return { id: r.data.id, name };
 }

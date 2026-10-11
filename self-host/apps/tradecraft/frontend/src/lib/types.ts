@@ -9,6 +9,7 @@ export type Account = {
   currency: string;
   tradingDayStart: string | null;
   archived: boolean;
+  kind: "live" | "backtest";
   updatedAt: string;
 };
 

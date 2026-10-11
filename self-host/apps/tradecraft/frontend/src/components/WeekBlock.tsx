@@ -28,7 +28,7 @@ function DayRow({ day, account }: { day: DayRowT; account: string }) {
         </div>
       </div>
       <div>
-        <StatusChip state={day.state} />
+        {day.state ? <StatusChip state={day.state} /> : <span className="helper" aria-label="No review state">—</span>}
       </div>
       <div className="day-actions">
         <Link className="btn" href={href} aria-label={`${missing ? "Review" : "Open"} ${longDay(day.date)}`}>{missing ? "Review this day" : "Open"}</Link>
@@ -38,9 +38,11 @@ function DayRow({ day, account }: { day: DayRowT; account: string }) {
 }
 
 /** One week of the month, collapsible, with its days as rows. The current week (and one jumped to) starts open. */
-export function WeekBlock({ week, account, open }: { week: WeekT; account: string; open: boolean }) {
+export function WeekBlock({ week, account, open, backtest = false }: { week: WeekT; account: string; open: boolean; backtest?: boolean }) {
   const s = week.summary;
-  const summary = s.daysWithTrades === 0 && s.draft === 0 ? "No days to review yet" : [`${s.reviewed} of ${s.daysWithTrades} ${s.daysWithTrades === 1 ? "day" : "days"} reviewed`, `${s.draft} draft`, `${s.missing} missing`].join(" · ");
+  const parts = [`${s.reviewed} of ${s.daysWithTrades} ${s.daysWithTrades === 1 ? "day" : "days"} reviewed`, `${s.draft} draft`];
+  if (!backtest) parts.push(`${s.missing} missing`); // a backtest day is never missing
+  const summary = s.daysWithTrades === 0 && s.draft === 0 ? "No days to review yet" : parts.join(" · ");
   const range = weekRange(week.weekStart, week.weekEnd);
   // the basic collapsible of shadcn/ui (Base UI's Collapsible): a header with a button that shows or hides the panel
   return (

@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Account } from "@/lib/types";
+import { AccountOptions } from "@/components/AccountOptions";
 
 /** The account of a review screen, kept in the address so it follows the owner from Reviews to a day to a week. */
 export function AccountSwitcher({ accounts, current }: { accounts: Account[]; current: string }) {
@@ -21,12 +22,7 @@ export function AccountSwitcher({ accounts, current }: { accounts: Account[]; cu
           router.push(`${path}?${q.toString()}`);
         }}
       >
-        {accounts.map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.name}
-            {a.archived ? " (archived)" : ""}
-          </option>
-        ))}
+        <AccountOptions accounts={accounts} />
       </select>
     </div>
   );

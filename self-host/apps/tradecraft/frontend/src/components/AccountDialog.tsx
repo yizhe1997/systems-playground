@@ -29,6 +29,7 @@ function AccountForm({ account, currencies, onClose }: Omit<Props, "open">) {
   const [name, setName] = useState(account?.name ?? "");
   const [currency, setCurrency] = useState(account?.currency ?? "USD");
   const [start, setStart] = useState(account?.tradingDayStart ?? "");
+  const [kind, setKind] = useState<"live" | "backtest">(account?.kind ?? "live");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [conflict, setConflict] = useState<string | null>(null);
@@ -43,6 +44,7 @@ function AccountForm({ account, currencies, onClose }: Omit<Props, "open">) {
       name,
       currency,
       tradingDayStart: start.trim() === "" ? null : start.trim(),
+      kind,
       ...(account ? { expectedUpdatedAt: account.updatedAt } : {}),
     };
     const r = account ? await call<Account>("PUT", `/accounts/${account.id}`, body) : await call<Account>("POST", "/accounts", body);
@@ -116,6 +118,26 @@ function AccountForm({ account, currencies, onClose }: Omit<Props, "open">) {
         {err("tradingDayStart")}
         <p className="helper">Leave the start empty to use the calendar date of each exit. Example: with 17:00, a trade that exits at 17:30 counts to the next day.</p>
       </div>
+      <fieldset className="field">
+        <legend className="label">Kind</legend>
+        <div className="segment" role="radiogroup" aria-label="Kind">
+          {([["live", "Live"], ["backtest", "Backtest"]] as const).map(([v, text]) => (
+            <label key={v}>
+              <input type="radio" name="a-kind" value={v} checked={kind === v} onChange={() => { setKind(v); clear("kind"); }} />
+              <span>{text}</span>
+            </label>
+          ))}
+        </div>
+        {err("kind")}
+        <p className="helper">
+          {kind === "live"
+            ? "Counts in your reviews, trades and mistake counter."
+            : "Kept apart from live trading: its days are never Missing, and it stays out of live figures until you choose it."}
+        </p>
+        {account && kind !== account.kind && (
+          <p className="helper" role="status">Changing the kind moves this account&apos;s days and trades in or out of live figures. Nothing you typed changes.</p>
+        )}
+      </fieldset>
       {account && (
         <div className="stack-md">
           <p className="helper">Changing the start time moves this account&apos;s trades to the right trading days.</p>

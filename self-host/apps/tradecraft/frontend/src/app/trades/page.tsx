@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { api, apiPaged, ApiFailure } from "@/lib/api";
 import { getAccounts, getSettings } from "@/lib/data";
-import { currentMonth } from "@/lib/format";
+import { count, currentMonth } from "@/lib/format";
 import type { Trade } from "@/lib/types";
 import { TradeFilters } from "@/components/TradeFilters";
 import { TradesTable } from "@/components/TradesTable";
@@ -72,6 +72,8 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   const from = hasRange ? one(sp.from) : month.from;
   const to = hasRange ? one(sp.to) : month.to;
   const deleted = one(sp.deleted) === "1";
+  const backtests = one(sp.backtests) === "1";
+  const hasBacktestAccounts = accounts.some((a) => a.kind === "backtest");
   const page = Math.max(1, Number.parseInt(one(sp.page), 10) || 1);
 
   const q = new URLSearchParams();
@@ -79,6 +81,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   if (from) q.set("from", from);
   if (to) q.set("to", to);
   if (deleted) q.set("deleted", "true");
+  if (backtests) q.set("includeBacktests", "true");
 
   q.set("limit", String(PAGE_SIZE));
   q.set("offset", String((page - 1) * PAGE_SIZE));
@@ -88,7 +91,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   let anyTrades = true;
   try {
     ({ data: trades, total } = await apiPaged<Trade>(`/trades?${q}`));
-    if (trades.length === 0 && !deleted) anyTrades = (await apiPaged<Trade>("/trades?limit=1")).total > 0;
+    if (trades.length === 0 && !deleted) anyTrades = (await apiPaged<Trade>("/trades?limit=1&includeBacktests=true")).total > 0;
   } catch (e) {
     unstable_rethrow(e);
     if (e instanceof ApiFailure && e.status === 422) {
@@ -117,7 +120,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <Head canLog={canLog} />
-      <TradeFilters accounts={accounts} account={account} from={from} to={to} deleted={deleted} monthFrom={month.from} monthTo={month.to} />
+      <TradeFilters accounts={accounts} account={account} from={from} to={to} deleted={deleted} backtests={backtests} monthFrom={month.from} monthTo={month.to} />
       {deleted && !problem && (
         <p className="banner" role="status">
           <span><strong>Showing deleted trades.</strong> They are hidden everywhere else until restored.</span>
@@ -128,9 +131,18 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
           <span className="banner-title">! {problem}</span>
         </div>
       )}
-      {!problem && trades.length > 0 && <TradesTable trades={trades} zone={settings.timeZone} deletedView={deleted} />}
+      {!problem && trades.length > 0 && (
+        <TradesTable trades={trades} zone={settings.timeZone} deletedView={deleted} backtestIds={accounts.filter((a) => a.kind === "backtest").map((a) => a.id)} />
+      )}
+      {!problem && trades.length > 0 && !account && hasBacktestAccounts && (
+        <p className="helper" style={{ marginTop: 12 }}>
+          {backtests
+            ? `Showing ${count(total, "trade")}, backtests included.`
+            : `Showing ${count(total, "trade")}. Backtests are hidden; turn on Show backtests or choose a backtest account.`}
+        </p>
+      )}
       {!problem && total > PAGE_SIZE && (
-        <Pager page={page} pageSize={PAGE_SIZE} total={total} params={{ account, from, to, deleted: deleted ? "1" : "" }} />
+        <Pager page={page} pageSize={PAGE_SIZE} total={total} params={{ account, from, to, deleted: deleted ? "1" : "", backtests: backtests ? "1" : "" }} />
       )}
       {!problem && trades.length === 0 && !deleted && !anyTrades && (
         <div className="card empty">

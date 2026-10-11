@@ -8,6 +8,7 @@ import { dateTime, dayLabel, monthQuery, plain, screenTime } from "@/lib/format"
 import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
 import { FailureBanner, Waiting, useNoticeableWait } from "@/components/Notice";
 import { ResultPreview } from "@/components/ResultPreview";
+import { AccountOptions } from "@/components/AccountOptions";
 import { useTradeActions } from "@/components/TradeRowActions";
 
 const blankValues = (accounts: Account[]): TradeFormValues => ({
@@ -194,12 +195,7 @@ export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Acco
               <label className="label" htmlFor="t-account">Account</label>
               <select id="t-account" className="field-input" value={v.accountId} onChange={(e) => set("accountId", e.target.value)} {...inv("accountId", "t-account")}>
                 <option value="">Choose an account</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                    {a.archived ? " (archived)" : ""}
-                  </option>
-                ))}
+                <AccountOptions accounts={accounts} />
               </select>
               {err("accountId", "t-account")}
             </div>
