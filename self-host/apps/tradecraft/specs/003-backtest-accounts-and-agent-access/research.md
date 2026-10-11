@@ -59,9 +59,11 @@ New: one column on `account`, one on `journal_settings`, one on `audit_entry`, t
 
 **Protocol housekeeping is not an "agent call"**: `initialize`, `tools/list` and notifications are answered for a valid token without an audit row; a `tools/call` is one audit row. A refused request of any kind is one `agent_refused` row. This is my reading of FR-017 ("every call"); it keeps a client's reconnects from flooding the log.
 
+**Spike result**: to be recorded here by task T001 (adaptor or second listener; fabricated context or `app.Test`).
+
 ## 6. Tools are the existing handlers
 
-**Decision**: each tool builds a `fasthttp.RequestCtx` for the equivalent GET request, acquires a Fiber context from the app, runs the existing handler and returns its JSON body (or its error body, with `isError: true`). No tool re-implements a query or a figure. The 200-item bound is applied by capping `limit` (the list handlers already take `limit` and `offset` and answer `X-Total-Count`, which the tool puts into the result as `total`).
+**Decision**: each tool builds a `fasthttp.RequestCtx` for the equivalent GET request (initialised with `ctx.Init(&req, nil, nil)`: a bare `RequestCtx` has no server, and `Done()`, which pgx calls through `c.Context()`, would panic; fasthttp v1.51.0), acquires a Fiber context from the app (and releases it after the call), runs the existing handler and returns its JSON body (or its error body, with `isError: true`). No tool re-implements a query or a figure. The 200-item bound is applied by capping `limit` (the list handlers already take `limit` and `offset` and answer `X-Total-Count`, which the tool puts into the result as `total`).
 
 | Tool | Handler it runs | Arguments |
 |---|---|---|

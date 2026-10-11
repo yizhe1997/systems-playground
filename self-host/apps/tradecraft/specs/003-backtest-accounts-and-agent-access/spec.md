@@ -32,6 +32,12 @@ This feature does **not** put the app on the internet. Principle IV still says n
 - Q: Should "Show backtests" be off by default? → A: Yes, off.
 - Q: Is the wording "All live accounts" in the mistake counter's chooser clear? → A: Yes.
 
+### Session 2026-10-12 (analysis of the tasks)
+
+- Q: Is connecting and asking which tools exist an agent "call" that needs its own audit entry? → A: No. An audited call is a **read of the journal** (a tool call) or a **refused request**, one entry each. Connecting and listing the tools read nothing from the journal and write no entry (they are not an action on the owner's data, constitution II).
+- Q: Can an agent filter trades by direction, instrument, plan answer or label? → A: Not in this feature. Trades are read for one account, or for the live accounts with backtests on request, within a range of trading days, deleted ones only on request, with paging. More filters are a later change if paging proves painful.
+- Q: In which order are a day's trades listed? → A: By **entry** time, like the Trades list, so a day reads in the order the decisions were made.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Keep backtests apart from live trading (Priority: P1)
@@ -75,11 +81,11 @@ In Settings, a new **Agent access** card has one switch (off until the owner tur
 
 ### User Story 3 - An agent reads the journal, read-only (Priority: P2)
 
-An agent the owner has given a token connects through the Model Context Protocol (MCP) and can ask the journal questions. It can read accounts (with their kind), trades with filters (account, kind, dates, direction, instrument, plan answer, label), a day's review, a week's review, the mistakes and their counter for a week or a month, the week and month focus, and statistics for a day or a period. Every number carries what it carries on screen: money beside the plan figure for the same trade or period, a dash with its reason when a figure cannot be computed, and the sample size. The agent can write nothing. Every call is one entry in the audit log, so the owner can see exactly what was asked and when.
+An agent the owner has given a token connects through the Model Context Protocol (MCP) and can ask the journal questions. It can read accounts (with their kind), trades (one account's, or the live accounts' with backtests on request, within a range of trading days), a day's review, a week's review, the mistakes and their counter for a week or a month, the week and month focus, and statistics for a day or a period. Every number carries what it carries on screen: money beside the plan figure for the same trade or period, a dash with its reason when a figure cannot be computed, and the sample size. The agent can write nothing. Every read is one entry in the audit log, so the owner can see exactly what was asked and when.
 
 **Why this priority**: it is the point of the feature, but it needs US2 (a token) and is most useful with US1 (a backtest can be analysed on its own).
 
-**Independent Test**: with a token, call each read and compare its answer with the same figure on screen; confirm a read answers nothing it should not (no audit log, identities, tokens), that a call with no token or a revoked one is refused, and that each call left one audit entry.
+**Independent Test**: with a token, call each read and compare its answer with the same figure on screen; confirm a read answers nothing it should not (no audit log, identities, tokens), that a call with no token or a revoked one is refused, and that each read left one audit entry.
 
 **Acceptance Scenarios**:
 
@@ -88,8 +94,8 @@ An agent the owner has given a token connects through the Model Context Protocol
 3. **Given** a day or a period, **When** the agent asks for its statistics, **Then** the answer holds the same figures as the screen (net result, trades, plan followed X of Y, mistakes) and each money figure comes with the plan figure of the same scope.
 4. **Given** a figure that cannot be computed (no stop, so no R), **When** the agent asks, **Then** it gets a dash with the reason, never a zero.
 5. **Given** the agent asks for something it may not read (the audit log, the identities, the tokens, the secrets, the whole export), **When** it calls, **Then** the answer says it is not available to agents and nothing is returned.
-6. **Given** any agent call, answered or refused, **When** it happens, **Then** exactly one audit entry is written with the token's name and what kind of read it was, and never the figures or text in the answer.
-7. **Given** a token that is revoked, unknown or expired, or access switched off, **When** the agent calls, **Then** it is refused with one plain message that does not say which of those it was.
+6. **Given** any agent read, answered or refused, **When** it happens, **Then** exactly one audit entry is written with the token's name and what kind of read it was, and never the figures or text in the answer. Connecting and listing the tools write none.
+7. **Given** a token that is revoked or unknown, or access switched off, **When** the agent calls, **Then** it is refused with one plain message that does not say which of those it was.
 
 ---
 
@@ -122,7 +128,7 @@ The owner logs a trade and sees, in the trade form's preview and in every list a
 - The agent asks for more than 200 items: it gets the first 200, the total and how to continue.
 - A token is used after the switch is turned off and on again: it works again (turning access off does not revoke).
 - Two agents with two tokens read at once: each call is its own audit entry under its own token name.
-- The same question twice is two entries (every call is recorded; the log shows one row per call).
+- The same question twice is two entries (every read is recorded; the log shows one row per read).
 - A very old backtest day (years back) reads like any other; the time zone rules are the journal's.
 - The token's name is empty, very long or already used: refused with a plain message at creation.
 - A trade is entered on one day and exited days later: it is listed on the day of its entry, and a day that was already reviewed shows the new trade (its figures change); this is the cost of following the decision and the owner accepted it.
@@ -150,10 +156,10 @@ The owner logs a trade and sees, in the trade form's preview and in every list a
 - **FR-011**: A token MUST stop working when the identity that created it is disabled, and when agent access is off.
 - **FR-012**: Creating a token, revoking one, and turning agent access on or off MUST require the same recent Google confirmation as changing identities (FR-012 of feature 002), and each MUST be recorded in the audit log.
 - **FR-013**: A token MUST be read-only: nothing an agent does may create, change or delete a record.
-- **FR-014**: An agent MUST be able to read: accounts (with kind, currency, trading-day start, archived), trades with filters, a day's review, a week's review, the mistakes and their counter for a week or a month, the week and month focus, statistics for a day or a period, and the journal time zone. An agent MUST NOT be able to read the audit log, identities, tokens, the export, or any secret.
+- **FR-014**: An agent MUST be able to read: accounts (with kind, currency, trading-day start, archived), trades (for one account, or for the live accounts with backtests on request, within a range of trading days, deleted ones only on request), a day's review, a week's review, the mistakes and their counter for a week or a month, the week and month focus, statistics for a day or a period, and the journal time zone. An agent MUST NOT be able to read the audit log, identities, tokens, the export, or any secret.
 - **FR-015**: Every figure an agent reads MUST carry what it carries on screen: each money figure with the plan figure for the same trade or period, a dash and its reason when it cannot be computed, and the sample size and definition of every statistic (constitution I and III).
 - **FR-016**: A list read by an agent MUST be bounded to 200 items per call, MUST give the total, and MUST say how to continue.
-- **FR-017**: Every call by an agent, answered or refused, MUST write one audit entry: its kind (an agent read, or an agent refused), the token's name, and which read it was. It MUST NOT hold any figure, note or review text from the answer. The actor is recorded as an agent acting for the identity that made the token (FR-026 of feature 002).
+- **FR-017**: Every read an agent makes of the journal (a tool call), answered or refused, and every refused request MUST write one audit entry: its kind (an agent read, or an agent refused), the token's name, and which read it was. Connecting and asking which tools exist read nothing from the journal and write no entry. It MUST NOT hold any figure, note or review text from the answer. The actor is recorded as an agent acting for the identity that made the token (FR-026 of feature 002).
 - **FR-018**: A call with no token, an unknown or revoked token, or access switched off MUST be refused with one message that does not say which; the refusal MUST still be recorded (without a token name when none is known).
 - **FR-019**: The token's value MUST be stored only as a one-way digest, MUST NOT appear in any log, export, screenshot or error message, and the existing secret checks MUST cover it.
 - **FR-020**: The Audit log screen MUST show the new kinds with the existing filters, and its "Who" column MUST show the token's name for an agent's entries.
@@ -165,7 +171,7 @@ The owner logs a trade and sees, in the trade form's preview and in every list a
 
 - **FR-024**: The trading day of a trade MUST be read from its **entry** time, in the journal time zone. With no account start time it is the calendar date of the entry; with a start time S it is the date of the entry plus (24 hours minus S), exactly as the rule worked before but applied to the entry instead of the exit.
 - **FR-025**: When this feature arrives, every existing trade's trading day MUST be recomputed from its entry, in one step that changes no price, time, cost or result; reviews, weeks, the counter and every figure derived from the trading day MUST follow.
-- **FR-026**: The trade form's preview, the Audit log's name for a trade, and the domain document MUST say entry where they said exit for the trading day; the Trades list MUST show **Entry time** first, then Exit time, then Trading day, and MUST be ordered newest first by entry time, so the order matches the first column.
+- **FR-026**: The trade form's preview, the Audit log's name for a trade, and the domain document MUST say entry where they said exit for the trading day; the Trades list MUST show **Entry time** first, then Exit time, then Trading day, and MUST be ordered newest first by entry time, so the order matches the first column. The trades of a day in the daily review MUST be listed in entry order, with the entry time shown.
 
 ### Key Entities
 
@@ -182,7 +188,7 @@ The owner logs a trade and sees, in the trade form's preview and in every list a
 - **SC-002**: With a Backtest account holding 500 trades added, every live figure (days, weeks, counter, plan followed) is identical to the same journal without it (compared field by field).
 - **SC-003**: With access off, a fresh token is refused in 100% of calls; with it on, the same token reads; after revoke, 0 further calls succeed; after the switch is turned off, 0 calls with any token succeed.
 - **SC-004**: A token's value cannot be recovered after creation: it appears in 0 screens, API answers, exports, logs and audit entries after the one time it is shown.
-- **SC-005**: Each agent call, answered or refused, produces exactly one audit entry in 100% of tests, and none holds a figure or text from the answer.
+- **SC-005**: Each agent read, answered or refused, and each refused request produces exactly one audit entry in 100% of tests, connecting and listing the tools produce none, and none holds a figure or text from the answer.
 - **SC-006**: For every read an agent can make, the figures equal the same figures on screen for the same scope in 100% of compared cases (a check per read).
 - **SC-007**: With 5,000 trades, each read answers in under 1 second.
 - **SC-008**: An agent cannot read the audit log, identities, tokens or the export through any call (checked against the list of every read).
@@ -195,6 +201,7 @@ The owner logs a trade and sees, in the trade form's preview and in every list a
 - The owner is the only person; tokens belong to the owner's identities, and an agent acts for the identity that made its token.
 - Reading is the whole of agent access in this feature. Drafts written by an agent, Rule Replay and Edge Leak in answers, and any model call made by the app are later features.
 - There is one scope, "read the journal as in FR-014". Tokens are not limited to chosen accounts in this feature (owner's answer, 2026-10-11).
+- Tokens do not expire in this feature: a token lasts until it is revoked or access is turned off.
 - Backtests are told apart by the **account** they sit in (its kind), not by a flag on each trade. One account per backtest set is the expected way to work.
 - The agent connects through MCP over a connection to this computer only. The owner pastes the token into their agent's own configuration; the app never sees the agent's side.
 - The trading-day rule is changed here from exit to entry (the owner's decision, 2026-10-11; User Story 4). Agents and screens read the trading day the journal defines. The future prop cockpit may group by exit for its own daily-loss rule; that is its own decision.
@@ -214,5 +221,7 @@ The questions raised by the draft were answered on 2026-10-11 and are recorded u
 ## Signed-off screens
 
 The screens in `screens.md` were signed off by the owner on 2026-10-11. Plan, tasks and implementation MUST honour them. Any change to an interface covered here MUST update `screens.md` and its Penpot frames in the same change (constitution principle V).
+
+Clarified on 2026-10-12, after analysis of the tasks: what counts as an audited call (FR-017, SC-005), the trade filters an agent has (FR-014), and the order of a day's trades with the entry time shown (FR-026). One existing screen changes with it (the daily review's trades table, listed in `screens.md`). The sign-off has to be recorded again for the new spec hash.
 
 Accepted at sign-off: user story 4 (a trade belongs to its entry day) has no screen of its own by design; it changes the trade form's preview line and the Audit log's name for a trade, both listed in `screens.md`. The existing frames S0 to S5, L1 to L5 and A1 to A5 are not redrawn here; L1, L2 and the account choosers are updated in Penpot in the same change as the build.

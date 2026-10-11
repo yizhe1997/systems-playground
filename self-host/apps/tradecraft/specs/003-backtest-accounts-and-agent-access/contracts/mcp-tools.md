@@ -7,6 +7,8 @@ tool error (`isError: true`) with the route's own `{code, message, fields}`.
 
 Dates are `YYYY-MM-DD` (trading days); months `YYYY-MM`. Money is a string holding an exact decimal.
 
+An absent `limit` is 50, never "all". Each tool's description states the definition of every statistic it returns (taken from `docs/domain.md`) and the sample size it carries, so an agent reads the definition with the figure.
+
 | Tool | Reads | Arguments | Notes |
 |---|---|---|---|
 | `list_accounts` | accounts with `kind`, currency, `tradingDayStart`, `archived` | `includeArchived` (default false) | |

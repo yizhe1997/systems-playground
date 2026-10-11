@@ -129,6 +129,7 @@ Every word the owner will read. No placeholders.
 |---|---|---|
 | Trade form preview | exit read in Central Time; Funded 50K starts its trading day at 17:00 | entry read in Central Time; Funded 50K starts its trading day at 17:00 |
 | Audit log, a trade's name | NQ long trade of Wed 1 Oct 09:58 (the exit time) | the same form with the **entry** time |
+| Daily review, trades table | first column "Time" shows the exit time; trades in exit order | first column "Entry time" shows the entry time; trades in entry order (the same in the row's accessible name and the judgement dialog's heading) |
 
 ## Constitution check
 
@@ -146,12 +147,13 @@ Every word the owner will read. No placeholders.
 | 2026-10-11 | B4 Trades list | Entry time as the first time column | B4 redrawn with Entry time, Exit time, Trading day; the list is ordered by entry time (FR-026) |
 | 2026-10-11 | B4, B5 | Show backtests off by default; "All live accounts" is fine | No change |
 | 2026-10-11 | Clarify | A token reads the whole journal; one audit row per agent read (no preference) | Recorded in spec Clarifications; no frame changes |
+| 2026-10-12 | Analysis of the tasks | A day's trades follow the entry too | The daily review's trades table shows Entry time and is in entry order (listed above); to be confirmed with the re-sign-off |
 
 ## Open questions for clarify
 
 None open. Answered on 2026-10-11 (see `spec.md` Clarifications): Entry time is the first time column of the Trades list; "Show backtests" is off by default; "All live accounts" is fine; a token reads the whole journal; one audit row per agent read.
 
-Existing frames that change when this is built (principle V, updated in the same change): L1 Trades list (the Entry time column and the order), L2 Log a trade (the preview line says "entry read in ..."), and S0 to S5 for the account chooser's "(Backtest)" mark.
+Existing frames that change when this is built (principle V, updated in the same change): L1 Trades list (the Entry time column and the order), L2 Log a trade (the preview line says "entry read in ..."), the daily review's trades table (Entry time first column), and S0 to S5 for the account chooser's "(Backtest)" mark.
 
 ## Sign-off
 
