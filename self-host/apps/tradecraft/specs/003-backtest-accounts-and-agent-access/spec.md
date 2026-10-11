@@ -210,3 +210,9 @@ None. The two questions marked when this spec was written were answered on 2026-
 The greyscale wireframes of this feature are listed in [screens.md](screens.md) (Penpot pages `B1 Account form` to `B8 Audit log agents`). They are a draft until the owner signs them off.
 
 The questions raised by the draft were answered on 2026-10-11 and are recorded under Clarifications above: Entry time first in the Trades list, "Show backtests" off by default, and the wording "All live accounts" as drawn. None remains open.
+
+## Signed-off screens
+
+The screens in `screens.md` were signed off by the owner on 2026-10-11. Plan, tasks and implementation MUST honour them. Any change to an interface covered here MUST update `screens.md` and its Penpot frames in the same change (constitution principle V).
+
+Accepted at sign-off: user story 4 (a trade belongs to its entry day) has no screen of its own by design; it changes the trade form's preview line and the Audit log's name for a trade, both listed in `screens.md`. The existing frames S0 to S5, L1 to L5 and A1 to A5 are not redrawn here; L1, L2 and the account choosers are updated in Penpot in the same change as the build.
