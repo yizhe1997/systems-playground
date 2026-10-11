@@ -20,7 +20,7 @@
 - [x] All acceptance scenarios are defined
 - [x] Edge cases are identified
 - [x] Scope is clearly bounded (read only, no drafts, no Rule Replay, no import, no model calls by the app)
-- [x] Dependencies and assumptions identified (feature 002's sign-in, step-up and audit log; the trading-day rule is independent)
+- [x] Dependencies and assumptions identified (feature 002's sign-in, step-up and audit log; the trading-day change is its own story, US4)
 
 ## Feature Readiness
 
