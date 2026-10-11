@@ -20,7 +20,7 @@ reused as they are (research section 1).
 
 **Language/Version**: Go 1.26 and TypeScript (Next.js 16, React 19), as pinned
 
-**Primary Dependencies**: Go: **`github.com/modelcontextprotocol/go-sdk` v1.8.0** (the official MCP SDK) and **`github.com/gofiber/adaptor/v2`** (mounts its `net/http` handler in Fiber); nothing else new. Web: no new dependency. Plan fallback if the adaptor cannot carry the protocol: the same SDK handler on a second loopback listener (research section 5), found in task T001.
+**Primary Dependencies**: Go: **`github.com/modelcontextprotocol/go-sdk` v1.8.0** (the official MCP SDK) mounted through Fiber's own `middleware/adaptor` (already part of fiber v2, so no extra module: spike T001, 2026-10-12); nothing else new. Web: no new dependency.
 
 **Storage**: PostgreSQL 18; three migrations `00014` to `00016` ([data-model.md](data-model.md)): `account.kind`, the changed state and counter functions, the entry-based trading-day triggers with one recompute, `journal_settings.agent_access`, `agent_token`, `audit_entry.actor_label`
 
@@ -77,7 +77,7 @@ specs/003-backtest-accounts-and-agent-access/
 
 ```text
 backend/
-├── go.mod, go.sum                       # + go-sdk, + gofiber/adaptor
+├── go.mod, go.sum                       # + go-sdk (Fiber's own adaptor is already in fiber v2)
 ├── migrations/
 │   ├── 00014_account_kind.sql           # kind; day_state, week_state, mistake_counts
 │   ├── 00015_trading_day_from_entry.sql # three functions, the trigger, one recompute

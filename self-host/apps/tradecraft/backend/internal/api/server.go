@@ -20,6 +20,7 @@ type Server struct {
 	q    *store.Queries
 	now  func() time.Time
 	gate *auth.Gate
+	app  *fiber.App // the agent door runs the owner's read handlers through it (mcp.go)
 }
 
 // New builds the app. now may be nil (the real clock); tests pass their own to pin the future-time check. secret
@@ -36,6 +37,7 @@ func New(pool *pgxpool.Pool, now func() time.Time, secret string) *fiber.App {
 		DisableStartupMessage: true,
 		BodyLimit:             1 << 20,
 	})
+	s.app = app
 	app.Get("/health", s.health) // the one open route; registered first so nothing below can gate it
 
 	// Called by web-tier code only, with a system token: sign-in decisions, sign-out, step-up confirmations.
@@ -97,6 +99,10 @@ func New(pool *pgxpool.Pool, now func() time.Time, secret string) *fiber.App {
 	app.Post("/mistakes/:id/restore", s.restoreMistake)
 
 	app.Get("/export", s.export)
+
+	// SPIKE (T001): behind the owner gate for now. T031 and T032 move it before the owner gate, behind the agent
+	// token's own middleware.
+	app.Post("/mcp", s.mcpHandler())
 	return app
 }
 

@@ -40,4 +40,20 @@ check_secret "NEXTAUTH_SECRET" "${NEXTAUTH_SECRET:-}"
 check_secret "SERVICE_TOKEN_SECRET" "${SERVICE_TOKEN_SECRET:-}"
 check_secret "DEV_SESSION_SECRET" "${DEV_SESSION_SECRET:-}"
 check_secret "GOOGLE_CLIENT_SECRET" "${GOOGLE_CLIENT_SECRET:-}"
+
+# Feature 003: the agent token the Playwright specs made (they write its value outside the repository). It must be in
+# no tracked file, no container log and no Playwright output (trace, screenshot, report). Never printed.
+token_file="${TMPDIR:-/tmp}/tradecraft-e2e-agent-token.txt"
+if [ -f "$token_file" ]; then
+  token=$(tr -d '
+' < "$token_file")
+  check_secret "the e2e agent token" "$token"
+  if [ -n "$token" ] && grep -r -I -l -F -- "$token" frontend/test-results frontend/playwright-report 2>/dev/null | grep -q .; then
+    echo "FAIL: the e2e agent token appears in the Playwright output"; fail=1
+  else
+    echo "ok: the e2e agent token is in no Playwright output"
+  fi
+else
+  echo "skipped: no e2e agent token file to look for"
+fi
 exit $fail
