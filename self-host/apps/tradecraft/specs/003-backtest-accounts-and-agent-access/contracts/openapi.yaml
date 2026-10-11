@@ -1,0 +1,185 @@
+openapi: 3.1.0
+info:
+  title: Tradecraft v2 API, feature 003 (backtest accounts and agent read access)
+  version: 0.1.0
+  description: >
+    Additions and changes to the API of features 000 to 002. Every route still needs the signed service token of
+    feature 002 except GET /health and the new POST /mcp, which has its own gate (an agent token). Errors keep the 000
+    shape (code, message, fields[]). Money is a JSON string of an exact decimal. Only what changes is listed.
+servers:
+  - url: http://127.0.0.1:8081
+security:
+  - bearerAuth: []
+paths:
+  /accounts:
+    get:
+      operationId: listAccounts
+      summary: Accounts (unchanged), each now with its kind
+      responses:
+        "200": { description: Accounts, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Account" } } } } }
+    post:
+      operationId: createAccount
+      summary: Create an account; the body gains an optional `kind` (default live)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AccountInput" } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Account" } } } }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /accounts/{id}:
+    put:
+      operationId: updateAccount
+      summary: Update an account; `kind` may change. A change of kind writes an `account_kind_changed` audit entry in the same transaction and alters nothing else
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AccountInput" } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Account" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /trades:
+    get:
+      operationId: listTrades
+      summary: Trades (unchanged), now ordered by entry time and, with no accountId, live accounts only
+      parameters:
+        - { name: accountId, in: query, required: false, description: "When given, that account's trades whatever its kind", schema: { type: string, format: uuid } }
+        - { name: includeBacktests, in: query, required: false, description: "With no accountId, also list trades of backtest accounts. Default false", schema: { type: boolean, default: false } }
+        - { name: from, in: query, required: false, schema: { type: string, format: date } }
+        - { name: to, in: query, required: false, schema: { type: string, format: date } }
+        - { name: deleted, in: query, required: false, schema: { type: boolean } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 1000 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, minimum: 0 } }
+      responses:
+        "200":
+          description: Trades newest entry first; the total of the matches is in X-Total-Count
+          headers: { X-Total-Count: { schema: { type: integer } } }
+          content: { application/json: { schema: { type: array, items: { type: object } } } }
+  /mistakes/counter:
+    get:
+      operationId: mistakeCounter
+      summary: The counter (unchanged); with no accountId it counts live accounts only
+      responses:
+        "200": { description: The counter }
+  /agent:
+    get:
+      operationId: getAgentAccess
+      summary: The switch and the tokens (screen B6)
+      responses:
+        "200": { description: State, content: { application/json: { schema: { $ref: "#/components/schemas/AgentAccess" } } } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+    put:
+      operationId: setAgentAccess
+      summary: Turn agent access on or off (needs a step-up). Off refuses every token and revokes none
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [enabled], properties: { enabled: { type: boolean } } } } }
+      responses:
+        "200": { description: The new state, content: { application/json: { schema: { $ref: "#/components/schemas/AgentAccess" } } } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/StepUpRequired" }
+  /agent/tokens:
+    post:
+      operationId: createAgentToken
+      summary: Make a token (needs a step-up). Its value is in this answer and never retrievable again
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [name], properties: { name: { type: string, minLength: 1, maxLength: 60 } } } } }
+      responses:
+        "201": { description: The token and its value, content: { application/json: { schema: { $ref: "#/components/schemas/CreatedToken" } } } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/StepUpRequired" }
+        "409": { description: "That name is already used; code name_used", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /agent/tokens/{id}/revoke:
+    post:
+      operationId: revokeAgentToken
+      summary: Revoke a token (needs a step-up). Refused from its next call; stays in the list. A repeat changes and records nothing
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: The token, content: { application/json: { schema: { $ref: "#/components/schemas/AgentToken" } } } }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { $ref: "#/components/responses/StepUpRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /mcp:
+    post:
+      operationId: mcp
+      summary: The agent's door: the Model Context Protocol over HTTP (JSON-RPC, stateless). Read-only tools only
+      description: >
+        Authenticated with `Authorization: Bearer <agent token>`, not a service token. Refused with 401 (one generic body,
+        one `agent_refused` row) when the switch is off, the token is unknown or revoked, or its creator identity is
+        disabled; refused with 403 when the request carries an Origin header (a browser page). `initialize`, `tools/list`
+        and notifications are answered without an audit row; each `tools/call` writes one `agent_read` row before the
+        answer is returned. The tools are listed in mcp-tools.md.
+      security: [{ agentToken: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object } } }
+      responses:
+        "200": { description: A JSON-RPC answer }
+        "202": { description: A notification, accepted }
+        "401": { $ref: "#/components/responses/NotSignedIn" }
+        "403": { description: A request that carries an Origin header }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT, description: "The 002 service token" }
+    agentToken: { type: http, scheme: bearer, description: "An agent token, `tca_` followed by 43 characters" }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    NotSignedIn: { description: "Not signed in (one body for every cause); code unauthorized", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    StepUpRequired: { description: "A Google confirmation within the last 10 minutes is needed; code step_up_required. Nothing changed", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    NotFound: { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Conflict: { description: Changed elsewhere, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Invalid: { description: One or more fields are invalid, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        fields: { type: array, items: { type: object, required: [field, message], properties: { field: { type: string }, message: { type: string } } } }
+    Account:
+      type: object
+      required: [id, name, currency, tradingDayStart, archived, kind, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        currency: { type: string }
+        tradingDayStart: { type: [string, "null"] }
+        archived: { type: boolean }
+        kind: { type: string, enum: [live, backtest] }
+        updatedAt: { type: string, format: date-time }
+    AccountInput:
+      type: object
+      required: [name, currency]
+      properties:
+        name: { type: string }
+        currency: { type: string }
+        tradingDayStart: { type: [string, "null"] }
+        kind: { type: string, enum: [live, backtest], default: live }
+        expectedUpdatedAt: { type: [string, "null"], format: date-time }
+    AgentToken:
+      type: object
+      required: [id, name, createdAt, lastUsedAt, revokedAt, active]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        createdAt: { type: string, format: date-time }
+        lastUsedAt: { type: [string, "null"], format: date-time }
+        revokedAt: { type: [string, "null"], format: date-time }
+        active: { type: boolean }
+    AgentAccess:
+      type: object
+      required: [enabled, tokens]
+      properties:
+        enabled: { type: boolean }
+        tokens: { type: array, items: { $ref: "#/components/schemas/AgentToken" } }
+    CreatedToken:
+      type: object
+      required: [token, value]
+      properties:
+        token: { $ref: "#/components/schemas/AgentToken" }
+        value: { type: string, description: "Shown once. Not stored" }
