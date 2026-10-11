@@ -17,7 +17,7 @@ Central Time by default).
 Worked examples (journal zone America/Chicago, October, UTC−5, account start 17:00): Tue 7 Oct 17:30 gives 8 Oct; Tue 7 Oct
 16:59 gives 7 Oct; Tue 7 Oct 17:00 exactly gives 8 Oct; with no start time, Tue 7 Oct 17:30 gives 7 Oct.
 
-- **Status:** unconfirmed (trading day from the exit time, not the entry time).
+- **Status:** owner decision 2026-10-11: the trading day is to be read from the **entry** time, not the exit time. The text above describes the behaviour until feature `003-backtest-accounts-and-agent-access` is built (then this section is rewritten with entry-based examples and this note is replaced by the confirmation date).
 - Confirmed by owner on:
 - Source:
 
