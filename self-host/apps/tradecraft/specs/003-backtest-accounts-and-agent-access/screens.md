@@ -17,7 +17,7 @@ They serve US1 (backtests kept apart from live: B1 to B5), US2 (the switch and t
 | B1 | Account form (a dialog over Accounts) | US1, FR-001, FR-002 | new account Live, new account Backtest, changing the kind of an existing account | `B1 Account form: new account, Live`, `B1 Account form: new account, Backtest`, `B1 Account form: changing the kind of an account` |
 | B2 | Accounts list | US1, FR-006 | Kind column | `B2 Accounts list: Kind column` |
 | B3 | Reviews of a Backtest account (changed part of S0) | US1, FR-003 | days with Reviewed, Draft and no state | `B3 Reviews of a backtest: days are never Missing` |
-| B4 | Trades list (changed part of L1) | US1, FR-004 | Show backtests off, on | `B4 Trades list: Show backtests off`, `B4 Trades list: Show backtests on` |
+| B4 | Trades list (changed part of L1) | US1, FR-004, FR-026 | Show backtests off, on | `B4 Trades list: Show backtests off`, `B4 Trades list: Show backtests on` |
 | B5 | Mistake counter (changed part of S3) | US1, FR-004 | account chooser open | `B5 Mistakes counter: account chooser open` |
 | B6 | Settings, Agent access card | US2, FR-008 to FR-012 | off, on with no tokens, tokens listed, confirm with Google first | `B6 Agent access: off`, `B6 Agent access: on, no tokens yet`, `B6 Agent access: tokens`, `B6 Agent access: confirm with Google first` |
 | B7 | New token dialog | US2, FR-009 | name it, name missing or used, value shown once | `B7 New token: name it`, `B7 New token: name missing or used`, `B7 New token: shown once` |
@@ -71,6 +71,7 @@ Every word the owner will read. No placeholders.
 
 | Element | Text |
 |---|---|
+| Columns | Entry time · Exit time · Trading day · Account · Instrument · Direction · Size · Net result · Plan · R |
 | New switch | Show backtests |
 | Backtest rows | the account name followed by a Backtest tag |
 | Footer, off | Showing 3 trades. Backtests are hidden; turn on Show backtests or choose a backtest account. |
@@ -142,13 +143,15 @@ Every word the owner will read. No placeholders.
 |---|---|---|---|
 | 2026-10-11 | Screen list | Draw the set B1 to B8 as proposed; accounts get a Live or Backtest kind | Done |
 | 2026-10-11 | Trading day | A trade belongs to its entry day | Spec US4 and FR-024 to FR-026; wording changes listed above |
+| 2026-10-11 | B4 Trades list | Entry time as the first time column | B4 redrawn with Entry time, Exit time, Trading day; the list is ordered by entry time (FR-026) |
+| 2026-10-11 | B4, B5 | Show backtests off by default; "All live accounts" is fine | No change |
+| 2026-10-11 | Clarify | A token reads the whole journal; one audit row per agent read (no preference) | Recorded in spec Clarifications; no frame changes |
 
 ## Open questions for clarify
 
-1. **Trades list columns:** the day now follows the entry. Should the first time column be **Entry time** (with Exit time beside it), instead of Exit time only? The draft keeps Exit time first.
-2. **Show backtests:** off by default, as drawn. Right?
-3. **Chooser wording:** "All live accounts" in the mistake counter and a "Backtests" group in the choosers. Clear enough?
-4. The two questions marked in `spec.md`: whether a token can be limited to chosen accounts, and one audit row per agent read or collapsed repeats.
+None open. Answered on 2026-10-11 (see `spec.md` Clarifications): Entry time is the first time column of the Trades list; "Show backtests" is off by default; "All live accounts" is fine; a token reads the whole journal; one audit row per agent read.
+
+Existing frames that change when this is built (principle V, updated in the same change): L1 Trades list (the Entry time column and the order), L2 Log a trade (the preview line says "entry read in ..."), and S0 to S5 for the account chooser's "(Backtest)" mark.
 
 ## Sign-off
 

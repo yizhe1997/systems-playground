@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain (two are marked on purpose, for the clarify step: token scope by account; one audit row per read or collapsed)
+- [x] No [NEEDS CLARIFICATION] markers remain (the two that were marked were answered on 2026-10-11)
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,5 +31,5 @@
 
 ## Notes
 
-- The one unchecked item is deliberate: the two marked questions are for `/speckit-clarify`, which is the next step after the wireframes are drafted.
+- Clarify ran on 2026-10-11: the token reads the whole journal, one audit row per agent read, and the three wireframe questions were answered.
 - Items marked incomplete require spec updates before `/speckit-plan`.

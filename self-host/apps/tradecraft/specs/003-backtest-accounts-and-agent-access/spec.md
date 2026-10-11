@@ -26,7 +26,11 @@ This feature does **not** put the app on the internet. Principle IV still says n
 
 - Q: Should a trade belong to the day it was entered or the day it was exited? → A: The day it was **entered**. The owner chose entry (recommended) over keeping exit and over a journal setting. Only a trade that crosses the day boundary is affected (the account's trading-day start such as 17:00, or an overnight hold).
 
-Two more questions are marked below for the clarify step.
+- Q: Should a token be limited to chosen accounts (for example only the Backtest accounts), or read the whole journal? → A: The **whole journal**. One scope, "read the journal as in FR-014". Limiting a token to accounts is not part of this feature.
+- Q: Should every agent read be its own row in the Audit log, or repeats collapsed? → A: No preference; **one row per call**, as the constitution says every agent action is written. If the log gets noisy, a collapsed view is a later change to the screen, not to what is recorded.
+- Q: Should the Trades list's first time column be the entry time now that the day follows the entry? → A: Yes: **Entry time first**, then Exit time, then Trading day.
+- Q: Should "Show backtests" be off by default? → A: Yes, off.
+- Q: Is the wording "All live accounts" in the mistake counter's chooser clear? → A: Yes.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -118,7 +122,7 @@ The owner logs a trade and sees, in the trade form's preview and in every list a
 - The agent asks for more than 200 items: it gets the first 200, the total and how to continue.
 - A token is used after the switch is turned off and on again: it works again (turning access off does not revoke).
 - Two agents with two tokens read at once: each call is its own audit entry under its own token name.
-- The same question twice is two entries (every call is recorded; see the marked question on how the log shows them).
+- The same question twice is two entries (every call is recorded; the log shows one row per call).
 - A very old backtest day (years back) reads like any other; the time zone rules are the journal's.
 - The token's name is empty, very long or already used: refused with a plain message at creation.
 - A trade is entered on one day and exited days later: it is listed on the day of its entry, and a day that was already reviewed shows the new trade (its figures change); this is the cost of following the decision and the owner accepted it.
@@ -161,7 +165,7 @@ The owner logs a trade and sees, in the trade form's preview and in every list a
 
 - **FR-024**: The trading day of a trade MUST be read from its **entry** time, in the journal time zone. With no account start time it is the calendar date of the entry; with a start time S it is the date of the entry plus (24 hours minus S), exactly as the rule worked before but applied to the entry instead of the exit.
 - **FR-025**: When this feature arrives, every existing trade's trading day MUST be recomputed from its entry, in one step that changes no price, time, cost or result; reviews, weeks, the counter and every figure derived from the trading day MUST follow.
-- **FR-026**: The trade form's preview, the Audit log's name for a trade, and the domain document MUST say entry where they said exit for the trading day; the Trades list MUST keep showing both times (see the marked question on its columns).
+- **FR-026**: The trade form's preview, the Audit log's name for a trade, and the domain document MUST say entry where they said exit for the trading day; the Trades list MUST show **Entry time** first, then Exit time, then Trading day, and MUST be ordered newest first by entry time, so the order matches the first column.
 
 ### Key Entities
 
@@ -190,20 +194,19 @@ The owner logs a trade and sees, in the trade form's preview and in every list a
 
 - The owner is the only person; tokens belong to the owner's identities, and an agent acts for the identity that made its token.
 - Reading is the whole of agent access in this feature. Drafts written by an agent, Rule Replay and Edge Leak in answers, and any model call made by the app are later features.
-- There is one scope, "read the journal as in FR-014". Tokens are not limited to chosen accounts in this feature (see the marked question).
+- There is one scope, "read the journal as in FR-014". Tokens are not limited to chosen accounts in this feature (owner's answer, 2026-10-11).
 - Backtests are told apart by the **account** they sit in (its kind), not by a flag on each trade. One account per backtest set is the expected way to work.
 - The agent connects through MCP over a connection to this computer only. The owner pastes the token into their agent's own configuration; the app never sees the agent's side.
 - The trading-day rule is changed here from exit to entry (the owner's decision, 2026-10-11; User Story 4). Agents and screens read the trading day the journal defines. The future prop cockpit may group by exit for its own daily-loss rule; that is its own decision.
 - Audit entries for agent reads are kept for ever like all entries; they hold no figures, so they stay small.
 - The existing accounts, trades and reviews are untouched; every existing account becomes Live.
 
-## Open questions (for clarify)
+## Open questions
 
-- **[NEEDS CLARIFICATION: Should a token be limited to chosen accounts, for example only the Backtest accounts, or always read the whole journal?]** Assumed whole journal. Limiting is safer when an agent should see only backtests, at the cost of one more choice on the token form.
-- **[NEEDS CLARIFICATION: Should every agent read be its own row in the Audit log, or should repeated reads by one token within a short time be shown as one row with a count?]** Assumed one row per call, as the constitution says every agent action is written. A busy agent could make the log noisy; the kind filter helps, but a collapsed view would read better.
+None. The two questions marked when this spec was written were answered on 2026-10-11 (see Clarifications): a token reads the whole journal, and every agent read is its own audit row.
 
 ## Wireframes
 
 The greyscale wireframes of this feature are listed in [screens.md](screens.md) (Penpot pages `B1 Account form` to `B8 Audit log agents`). They are a draft until the owner signs them off.
 
-Open questions raised by the draft, for clarify: whether the Trades list should show the entry time as its first time column now that the day follows the entry; whether "Show backtests" should stay off by default; and the wording "All live accounts" in the mistake counter's chooser.
+The questions raised by the draft were answered on 2026-10-11 and are recorded under Clarifications above: Entry time first in the Trades list, "Show backtests" off by default, and the wording "All live accounts" as drawn. None remains open.
