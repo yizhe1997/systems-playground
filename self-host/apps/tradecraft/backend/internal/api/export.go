@@ -156,7 +156,7 @@ func (s *Server) export(c *fiber.Ctx) error {
 		WeeklyMarks: []exportMarkJSON{}, DayMistakes: []exportDayMistakeJSON{},
 	}
 	for _, a := range accts {
-		out.Accounts = append(out.Accounts, toAccount(a.ID, a.Name, a.Currency, a.TradingDayStart, a.Archived, a.UpdatedAt))
+		out.Accounts = append(out.Accounts, toAccount(a.ID, a.Name, a.Currency, a.TradingDayStart, a.Archived, a.UpdatedAt, a.Kind))
 	}
 	for _, t := range trades {
 		e := exportTradeJSON{tradeJSON: toTrade(t, loc)}

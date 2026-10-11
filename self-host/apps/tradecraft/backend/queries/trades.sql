@@ -1,7 +1,11 @@
+-- With no account chosen only Live accounts' trades are listed, unless include_backtests; an account chosen is
+-- listed whatever its kind (feature 003, FR-004).
 -- name: ListTrades :many
 SELECT * FROM trade_detail
  WHERE deleted = sqlc.arg(deleted)::boolean
    AND (sqlc.narg(account_id)::uuid IS NULL OR account_id = sqlc.narg(account_id)::uuid)
+   AND (sqlc.narg(account_id)::uuid IS NOT NULL OR sqlc.arg(include_backtests)::boolean
+        OR account_id IN (SELECT a.id FROM account a WHERE a.kind = 'live'))
    AND (sqlc.narg(from_day)::date IS NULL OR trading_day >= sqlc.narg(from_day)::date)
    AND (sqlc.narg(to_day)::date IS NULL OR trading_day <= sqlc.narg(to_day)::date)
  ORDER BY exit_at DESC, id DESC
@@ -11,6 +15,8 @@ SELECT * FROM trade_detail
 SELECT count(*)::bigint FROM trade_detail
  WHERE deleted = sqlc.arg(deleted)::boolean
    AND (sqlc.narg(account_id)::uuid IS NULL OR account_id = sqlc.narg(account_id)::uuid)
+   AND (sqlc.narg(account_id)::uuid IS NOT NULL OR sqlc.arg(include_backtests)::boolean
+        OR account_id IN (SELECT a.id FROM account a WHERE a.kind = 'live'))
    AND (sqlc.narg(from_day)::date IS NULL OR trading_day >= sqlc.narg(from_day)::date)
    AND (sqlc.narg(to_day)::date IS NULL OR trading_day <= sqlc.narg(to_day)::date);
 

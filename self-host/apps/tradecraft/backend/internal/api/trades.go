@@ -409,6 +409,14 @@ func (s *Server) setDeleted(c *fiber.Ctx, del bool) error {
 func (s *Server) listTrades(c *fiber.Ctx) error {
 	p := store.ListTradesParams{Deleted: c.QueryBool("deleted", false)}
 	var fe []fieldError
+	// With no account chosen only live accounts are listed; includeBacktests adds the backtest accounts (FR-004).
+	if v := c.Query("includeBacktests"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			fe = append(fe, fieldError{"includeBacktests", "Choose true or false."})
+		}
+		p.IncludeBacktests = b
+	}
 	if v := c.Query("accountId"); v != "" {
 		if !uuidText.MatchString(v) {
 			fe = append(fe, fieldError{"accountId", "Choose an account."})
@@ -454,7 +462,7 @@ func (s *Server) listTrades(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	total, err := s.q.CountTrades(c.Context(), store.CountTradesParams{Deleted: p.Deleted, AccountID: p.AccountID, FromDay: p.FromDay, ToDay: p.ToDay})
+	total, err := s.q.CountTrades(c.Context(), store.CountTradesParams{Deleted: p.Deleted, AccountID: p.AccountID, FromDay: p.FromDay, ToDay: p.ToDay, IncludeBacktests: p.IncludeBacktests})
 	if err != nil {
 		return err
 	}

@@ -195,3 +195,25 @@ by the review's trading day.
 - **Status:** unconfirmed.
 - Confirmed by owner on:
 - Source:
+
+# Feature 003: backtest accounts and agent read access
+
+## Backtest accounts
+
+An account has a **kind**, Live or Backtest. A new account is Live. The kind decides where the account's days, weeks
+and trades **count**, never what they are: no trade, review, grade or focus is altered by changing it.
+
+- A day of a Backtest account with trades and no saved review has **no state**: it is never Missing and never
+  Today. A saved review still shows Draft or Reviewed. A week of a Backtest account is never Missing (it is "not
+  reviewed" until marked).
+- A list or figure that spans accounts covers **Live accounts only**: the Trades list with no account chosen (unless
+  "Show backtests" is on) and the mistake counter's "all accounts". Choosing a Backtest account shows it, on its own.
+- A figure of one account (a day, a week, plan followed X of Y, a stop line's status) reads only that account, so it
+  does not change because a Backtest account exists.
+- Backtests are told apart by the account they sit in, not by a flag on each trade. One account per backtest set is
+  the expected way to work.
+
+- **Status:** interpretation recorded 2026-10-12 from the owner's decision of 2026-10-11 (account kind, not one account
+  per backtest and not a per-trade flag). The exact rules above are not yet confirmed by the owner.
+- Confirmed by owner on:
+- Source:

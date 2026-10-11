@@ -31,6 +31,7 @@ var auditKinds = []struct{ Code, Label string }{
 	{"trade_restored", "Trade restored"},
 	{"account_archived", "Account archived"},
 	{"account_restored", "Account restored"},
+	{"account_kind_changed", "Account kind changed"},
 	{"settings_changed", "Settings changed"},
 	{"mistake_retired", "Mistake retired"},
 	{"mistake_restored", "Mistake restored"},

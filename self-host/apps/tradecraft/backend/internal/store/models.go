@@ -18,6 +18,7 @@ type Account struct {
 	ArchivedAt      *time.Time  `json:"archived_at"`
 	CreatedAt       time.Time   `json:"created_at"`
 	UpdatedAt       time.Time   `json:"updated_at"`
+	Kind            string      `json:"kind"`
 }
 
 type AuditEntry struct {

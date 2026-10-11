@@ -11,19 +11,20 @@ import (
 )
 
 const accountForAudit = `-- name: AccountForAudit :one
-SELECT name, (archived_at IS NOT NULL)::boolean AS archived
+SELECT name, (archived_at IS NOT NULL)::boolean AS archived, kind
   FROM account WHERE id = $1::uuid FOR UPDATE
 `
 
 type AccountForAuditRow struct {
 	Name     string `json:"name"`
 	Archived bool   `json:"archived"`
+	Kind     string `json:"kind"`
 }
 
 func (q *Queries) AccountForAudit(ctx context.Context, id string) (AccountForAuditRow, error) {
 	row := q.db.QueryRow(ctx, accountForAudit, id)
 	var i AccountForAuditRow
-	err := row.Scan(&i.Name, &i.Archived)
+	err := row.Scan(&i.Name, &i.Archived, &i.Kind)
 	return i, err
 }
 
@@ -40,7 +41,7 @@ func (q *Queries) ArchiveAccount(ctx context.Context, id string) (string, error)
 
 const getAccount = `-- name: GetAccount :one
 SELECT id, name, currency, COALESCE(to_char(trading_day_start, 'HH24:MI'), '')::text AS trading_day_start,
-       (archived_at IS NOT NULL)::boolean AS archived, updated_at
+       (archived_at IS NOT NULL)::boolean AS archived, updated_at, kind
   FROM account WHERE id = $1::uuid
 `
 
@@ -51,6 +52,7 @@ type GetAccountRow struct {
 	TradingDayStart string    `json:"trading_day_start"`
 	Archived        bool      `json:"archived"`
 	UpdatedAt       time.Time `json:"updated_at"`
+	Kind            string    `json:"kind"`
 }
 
 func (q *Queries) GetAccount(ctx context.Context, id string) (GetAccountRow, error) {
@@ -63,13 +65,15 @@ func (q *Queries) GetAccount(ctx context.Context, id string) (GetAccountRow, err
 		&i.TradingDayStart,
 		&i.Archived,
 		&i.UpdatedAt,
+		&i.Kind,
 	)
 	return i, err
 }
 
 const insertAccount = `-- name: InsertAccount :one
-INSERT INTO account (name, currency, trading_day_start)
-VALUES ($1::text, $2::text, NULLIF($3::text, '')::time)
+INSERT INTO account (name, currency, trading_day_start, kind)
+VALUES ($1::text, $2::text, NULLIF($3::text, '')::time,
+        $4::text)
 RETURNING id
 `
 
@@ -77,10 +81,16 @@ type InsertAccountParams struct {
 	Name            string `json:"name"`
 	Currency        string `json:"currency"`
 	TradingDayStart string `json:"trading_day_start"`
+	Kind            string `json:"kind"`
 }
 
 func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (string, error) {
-	row := q.db.QueryRow(ctx, insertAccount, arg.Name, arg.Currency, arg.TradingDayStart)
+	row := q.db.QueryRow(ctx, insertAccount,
+		arg.Name,
+		arg.Currency,
+		arg.TradingDayStart,
+		arg.Kind,
+	)
 	var id string
 	err := row.Scan(&id)
 	return id, err
@@ -89,7 +99,7 @@ func (q *Queries) InsertAccount(ctx context.Context, arg InsertAccountParams) (s
 const listAccounts = `-- name: ListAccounts :many
 
 SELECT id, name, currency, COALESCE(to_char(trading_day_start, 'HH24:MI'), '')::text AS trading_day_start,
-       (archived_at IS NOT NULL)::boolean AS archived, updated_at
+       (archived_at IS NOT NULL)::boolean AS archived, updated_at, kind
   FROM account
  WHERE $1::boolean OR archived_at IS NULL
  ORDER BY lower(name), id
@@ -102,6 +112,7 @@ type ListAccountsRow struct {
 	TradingDayStart string    `json:"trading_day_start"`
 	Archived        bool      `json:"archived"`
 	UpdatedAt       time.Time `json:"updated_at"`
+	Kind            string    `json:"kind"`
 }
 
 // The day start travels as 'HH:MM' text; the empty string means none.
@@ -121,6 +132,7 @@ func (q *Queries) ListAccounts(ctx context.Context, includeArchived bool) ([]Lis
 			&i.TradingDayStart,
 			&i.Archived,
 			&i.UpdatedAt,
+			&i.Kind,
 		); err != nil {
 			return nil, err
 		}
@@ -147,9 +159,10 @@ const updateAccount = `-- name: UpdateAccount :one
 UPDATE account
    SET name = $1::text,
        currency = $2::text,
-       trading_day_start = NULLIF($3::text, '')::time
- WHERE id = $4::uuid
-   AND ($5::timestamptz IS NULL OR updated_at = $5::timestamptz)
+       trading_day_start = NULLIF($3::text, '')::time,
+       kind = $4::text
+ WHERE id = $5::uuid
+   AND ($6::timestamptz IS NULL OR updated_at = $6::timestamptz)
 RETURNING id
 `
 
@@ -157,6 +170,7 @@ type UpdateAccountParams struct {
 	Name              string     `json:"name"`
 	Currency          string     `json:"currency"`
 	TradingDayStart   string     `json:"trading_day_start"`
+	Kind              string     `json:"kind"`
 	ID                string     `json:"id"`
 	ExpectedUpdatedAt *time.Time `json:"expected_updated_at"`
 }
@@ -166,6 +180,7 @@ func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (s
 		arg.Name,
 		arg.Currency,
 		arg.TradingDayStart,
+		arg.Kind,
 		arg.ID,
 		arg.ExpectedUpdatedAt,
 	)

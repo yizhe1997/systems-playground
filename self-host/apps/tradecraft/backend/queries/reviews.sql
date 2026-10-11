@@ -79,7 +79,7 @@ SELECT reviewed_at FROM weekly_review_mark
 
 -- Days of a month marked for the day picker, and the week states for the week picker.
 -- name: CalendarDays :many
-SELECT t.trading_day::date AS day, (day_state(sqlc.arg(account_id)::uuid, t.trading_day) = 'missing')::boolean AS missing
+SELECT t.trading_day::date AS day, coalesce(day_state(sqlc.arg(account_id)::uuid, t.trading_day) = 'missing', false)::boolean AS missing
   FROM (SELECT DISTINCT trading_day FROM trade
          WHERE account_id = sqlc.arg(account_id)::uuid AND deleted_at IS NULL
            AND trading_day BETWEEN sqlc.arg(from_day)::date AND sqlc.arg(to_day)::date) t

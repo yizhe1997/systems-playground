@@ -19,6 +19,7 @@ type accountInput struct {
 	Name              string     `json:"name"`
 	Currency          string     `json:"currency"`
 	TradingDayStart   *string    `json:"tradingDayStart"`
+	Kind              *string    `json:"kind"` // live or backtest; omitted means live on create and unchanged on update
 	ExpectedUpdatedAt *time.Time `json:"expectedUpdatedAt"`
 }
 
@@ -28,6 +29,7 @@ type accountJSON struct {
 	Currency        string  `json:"currency"`
 	TradingDayStart *string `json:"tradingDayStart"`
 	Archived        bool    `json:"archived"`
+	Kind            string  `json:"kind"`
 	UpdatedAt       string  `json:"updatedAt"`
 }
 
@@ -38,8 +40,8 @@ func startPtr(s string) *string {
 	return &s
 }
 
-func toAccount(id, name, currency, start string, archived bool, updatedAt time.Time) accountJSON {
-	return accountJSON{ID: id, Name: name, Currency: currency, TradingDayStart: startPtr(start), Archived: archived, UpdatedAt: fmtTime(updatedAt)}
+func toAccount(id, name, currency, start string, archived bool, updatedAt time.Time, kind string) accountJSON {
+	return accountJSON{ID: id, Name: name, Currency: currency, TradingDayStart: startPtr(start), Archived: archived, Kind: kind, UpdatedAt: fmtTime(updatedAt)}
 }
 
 var timeOfDay = regexp.MustCompile(`^([01][0-9]|2[0-3]):[0-5][0-9]$`)
@@ -48,7 +50,7 @@ const msgMidnight = "Start time cannot be 00:00. Leave it empty to use the calen
 
 // validateAccount cleans and checks the typed account. The name has surrounding spaces trimmed and runs of
 // spaces collapsed to one (the database also refuses anything else).
-func validateAccount(in accountInput) (name, start string, fe []fieldError) {
+func validateAccount(in accountInput) (name, start, kind string, fe []fieldError) {
 	name = strings.Join(strings.Fields(in.Name), " ")
 	switch {
 	case name == "":
@@ -69,7 +71,15 @@ func validateAccount(in accountInput) (name, start string, fe []fieldError) {
 			fe = append(fe, fieldError{"tradingDayStart", "Enter a time as HH:MM, for example 17:00."})
 		}
 	}
-	return name, start, fe
+	if in.Kind != nil {
+		switch k := strings.TrimSpace(*in.Kind); k {
+		case "live", "backtest":
+			kind = k
+		default:
+			fe = append(fe, fieldError{"kind", "Choose Live or Backtest."})
+		}
+	}
+	return name, start, kind, fe
 }
 
 // nameTaken reports whether err is the unique-name violation, and answers it in the wireframe wording,
@@ -98,7 +108,7 @@ func (s *Server) listAccounts(c *fiber.Ctx) error {
 	}
 	out := make([]accountJSON, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, toAccount(r.ID, r.Name, r.Currency, r.TradingDayStart, r.Archived, r.UpdatedAt))
+		out = append(out, toAccount(r.ID, r.Name, r.Currency, r.TradingDayStart, r.Archived, r.UpdatedAt, r.Kind))
 	}
 	return c.JSON(out)
 }
@@ -111,7 +121,7 @@ func (s *Server) loadAccount(c *fiber.Ctx, id string) (accountJSON, error) {
 	if err != nil {
 		return accountJSON{}, err
 	}
-	return toAccount(r.ID, r.Name, r.Currency, r.TradingDayStart, r.Archived, r.UpdatedAt), nil
+	return toAccount(r.ID, r.Name, r.Currency, r.TradingDayStart, r.Archived, r.UpdatedAt, r.Kind), nil
 }
 
 func (s *Server) getAccount(c *fiber.Ctx) error {
@@ -131,11 +141,14 @@ func (s *Server) createAccount(c *fiber.Ctx) error {
 	if err := readBody(c, &in); err != nil {
 		return err
 	}
-	name, start, fe := validateAccount(in)
+	name, start, kind, fe := validateAccount(in)
 	if len(fe) > 0 {
 		return invalid("account", fe)
 	}
-	id, err := s.q.InsertAccount(c.Context(), store.InsertAccountParams{Name: name, Currency: strings.TrimSpace(in.Currency), TradingDayStart: start})
+	if kind == "" {
+		kind = "live" // an account is Live unless the owner chooses Backtest
+	}
+	id, err := s.q.InsertAccount(c.Context(), store.InsertAccountParams{Name: name, Currency: strings.TrimSpace(in.Currency), TradingDayStart: start, Kind: kind})
 	if err != nil {
 		return s.nameTaken(c.Context(), err, name)
 	}
@@ -158,17 +171,40 @@ func (s *Server) updateAccount(c *fiber.Ctx) error {
 	if _, err := s.loadAccount(c, id); err != nil {
 		return err
 	}
-	name, start, fe := validateAccount(in)
+	name, start, kind, fe := validateAccount(in)
 	if len(fe) > 0 {
 		return invalid("account", fe)
 	}
-	_, err = s.q.UpdateAccount(c.Context(), store.UpdateAccountParams{
-		ID: id, Name: name, Currency: strings.TrimSpace(in.Currency), TradingDayStart: start, ExpectedUpdatedAt: in.ExpectedUpdatedAt})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return conflict("account")
-	}
+	// One transaction: a change of kind moves where the account's days and trades count, so it is recorded with the
+	// change itself (FR-002). Nothing typed is altered by it.
+	ctx := c.Context()
+	actor, by := actorOf(c)
+	err = s.inTx(ctx, func(q *store.Queries) error {
+		cur, err := q.AccountForAudit(ctx, id) // locks the row, and holds the kind as it is now
+		if errors.Is(err, pgx.ErrNoRows) {
+			return notFound("account")
+		}
+		if err != nil {
+			return err
+		}
+		if kind == "" {
+			kind = cur.Kind
+		}
+		_, err = q.UpdateAccount(ctx, store.UpdateAccountParams{
+			ID: id, Name: name, Currency: strings.TrimSpace(in.Currency), TradingDayStart: start, Kind: kind, ExpectedUpdatedAt: in.ExpectedUpdatedAt})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return conflict("account")
+		}
+		if err != nil {
+			return err
+		}
+		if cur.Kind == kind {
+			return nil
+		}
+		return recordAudit(ctx, q, auditEvent{Actor: actor, IdentityID: by, Kind: "account_kind_changed", Subject: name, Fields: []string{"kind"}})
+	})
 	if err != nil {
-		return s.nameTaken(c.Context(), err, name)
+		return s.nameTaken(ctx, err, name)
 	}
 	a, err := s.loadAccount(c, id)
 	if err != nil {

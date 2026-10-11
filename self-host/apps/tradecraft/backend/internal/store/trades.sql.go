@@ -14,21 +14,25 @@ const countTrades = `-- name: CountTrades :one
 SELECT count(*)::bigint FROM trade_detail
  WHERE deleted = $1::boolean
    AND ($2::uuid IS NULL OR account_id = $2::uuid)
-   AND ($3::date IS NULL OR trading_day >= $3::date)
-   AND ($4::date IS NULL OR trading_day <= $4::date)
+   AND ($2::uuid IS NOT NULL OR $3::boolean
+        OR account_id IN (SELECT a.id FROM account a WHERE a.kind = 'live'))
+   AND ($4::date IS NULL OR trading_day >= $4::date)
+   AND ($5::date IS NULL OR trading_day <= $5::date)
 `
 
 type CountTradesParams struct {
-	Deleted   bool       `json:"deleted"`
-	AccountID *string    `json:"account_id"`
-	FromDay   *time.Time `json:"from_day"`
-	ToDay     *time.Time `json:"to_day"`
+	Deleted          bool       `json:"deleted"`
+	AccountID        *string    `json:"account_id"`
+	IncludeBacktests bool       `json:"include_backtests"`
+	FromDay          *time.Time `json:"from_day"`
+	ToDay            *time.Time `json:"to_day"`
 }
 
 func (q *Queries) CountTrades(ctx context.Context, arg CountTradesParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countTrades,
 		arg.Deleted,
 		arg.AccountID,
+		arg.IncludeBacktests,
 		arg.FromDay,
 		arg.ToDay,
 	)
@@ -126,25 +130,31 @@ const listTrades = `-- name: ListTrades :many
 SELECT id, account_id, account_name, account_currency, instrument, direction, size, entry_price, exit_price, entry_at, exit_at, dollars_per_point, cost, stop_price, typed_result, thesis, gross_result, net_result, risk, r_multiple, trading_day, deleted, updated_at, plan_followed, label FROM trade_detail
  WHERE deleted = $1::boolean
    AND ($2::uuid IS NULL OR account_id = $2::uuid)
-   AND ($3::date IS NULL OR trading_day >= $3::date)
-   AND ($4::date IS NULL OR trading_day <= $4::date)
+   AND ($2::uuid IS NOT NULL OR $3::boolean
+        OR account_id IN (SELECT a.id FROM account a WHERE a.kind = 'live'))
+   AND ($4::date IS NULL OR trading_day >= $4::date)
+   AND ($5::date IS NULL OR trading_day <= $5::date)
  ORDER BY exit_at DESC, id DESC
- LIMIT NULLIF($6::int, 0) OFFSET $5::int
+ LIMIT NULLIF($7::int, 0) OFFSET $6::int
 `
 
 type ListTradesParams struct {
-	Deleted    bool       `json:"deleted"`
-	AccountID  *string    `json:"account_id"`
-	FromDay    *time.Time `json:"from_day"`
-	ToDay      *time.Time `json:"to_day"`
-	PageOffset int32      `json:"page_offset"`
-	PageSize   int32      `json:"page_size"`
+	Deleted          bool       `json:"deleted"`
+	AccountID        *string    `json:"account_id"`
+	IncludeBacktests bool       `json:"include_backtests"`
+	FromDay          *time.Time `json:"from_day"`
+	ToDay            *time.Time `json:"to_day"`
+	PageOffset       int32      `json:"page_offset"`
+	PageSize         int32      `json:"page_size"`
 }
 
+// With no account chosen only Live accounts' trades are listed, unless include_backtests; an account chosen is
+// listed whatever its kind (feature 003, FR-004).
 func (q *Queries) ListTrades(ctx context.Context, arg ListTradesParams) ([]TradeDetail, error) {
 	rows, err := q.db.Query(ctx, listTrades,
 		arg.Deleted,
 		arg.AccountID,
+		arg.IncludeBacktests,
 		arg.FromDay,
 		arg.ToDay,
 		arg.PageOffset,

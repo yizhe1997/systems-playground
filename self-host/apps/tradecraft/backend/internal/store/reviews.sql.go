@@ -50,7 +50,7 @@ func (q *Queries) Bounds(ctx context.Context, day time.Time) (BoundsRow, error) 
 }
 
 const calendarDays = `-- name: CalendarDays :many
-SELECT t.trading_day::date AS day, (day_state($1::uuid, t.trading_day) = 'missing')::boolean AS missing
+SELECT t.trading_day::date AS day, coalesce(day_state($1::uuid, t.trading_day) = 'missing', false)::boolean AS missing
   FROM (SELECT DISTINCT trading_day FROM trade
          WHERE account_id = $1::uuid AND deleted_at IS NULL
            AND trading_day BETWEEN $2::date AND $3::date) t
