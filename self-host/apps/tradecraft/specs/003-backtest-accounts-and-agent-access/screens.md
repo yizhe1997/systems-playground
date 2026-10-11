@@ -3,8 +3,8 @@
 **Feature**: `003-backtest-accounts-and-agent-access`
 **Status**: signed-off
 **Penpot**: file `Tradecraft_v2`, pages `B1 Account form`, `B2 Accounts list`, `B3 Reviews of a backtest`, `B4 Trades list`, `B5 Mistakes counter`, `B6 Agent access`, `B7 New token`, `B8 Audit log agents` (B for backtests and agents). The frames live only in Penpot; no images are stored in the repository.
-**Signed off**: 2026-10-11 (structure and wording only; the look is decided elsewhere)
-**spec-sha256**: 7778da30115f3e9b79242caca7fcbb2ef9af6842af5468de2a5ca1b4ef468a45
+**Signed off**: 2026-10-12 (structure and wording only; the look is decided elsewhere; first signed 2026-10-11)
+**spec-sha256**: d945239fab9199375b3fff26cd0408722a20ccf3e8fec9cbe156db1c66aa7092
 
 ## Why these screens
 
@@ -158,9 +158,10 @@ Existing frames that change when this is built (principle V, updated in the same
 ## Sign-off
 
 - **Signed off by**: owner
-- **Date**: 2026-10-11
-- **Spec hash**: 7778da30115f3e9b79242caca7fcbb2ef9af6842af5468de2a5ca1b4ef468a45
+- **Date**: 2026-10-12 (first signed 2026-10-11)
+- **Spec hash**: d945239fab9199375b3fff26cd0408722a20ccf3e8fec9cbe156db1c66aa7092
 - **Notes**: Signed off on the owner's instruction ("sign off, then go to plan") after clarify closed every open question. Checked before signing: every story but US4 has a screen (US4 has none by design: a preview line and a log name, listed under "Changed wording on existing screens"); every requirement that touches the interface is covered (FR-001 to FR-007 by B1 to B5, FR-008 to FR-012 by B6 and B7, FR-017 and FR-020 by B8, FR-024 to FR-026 by the wording table and B4); no TODO or TBD in the content list (the token value in B7 is a made-up example string); the 17 frames named in the inventory exist in Penpot; no money figure appears without the plan figure beside it. One small gap accepted: B7 draws the "name already used" error and the "Name is required." error is the same layout with the other sentence. The existing S, L and A frames gain the changes listed in the open-questions section at build time.
+- **Re-sign-off 2026-10-12**: the sign-off of 2026-10-11 went stale when the spec was clarified after the analysis of the tasks (an audited call is a read or a refused request; the agent's trade filters trimmed; no expiry wording; a day's trades in entry order with the entry time shown; a browser request to the agent door recorded). Checked: no TODO or TBD, no wireframe redrawn, one row added to "Changed wording on existing screens" (the daily review's trades table, first column Entry time), which the owner approved. Signed off on the owner's instruction ("yes run the sign-off").
 
 ## Visual review
 
