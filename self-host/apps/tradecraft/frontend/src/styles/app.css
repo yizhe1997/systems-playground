@@ -75,6 +75,9 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 .section { font-size: 16px; font-weight: 600; line-height: 1.3; }
 .helper { font-size: 13px; color: var(--text-3); line-height: 1.4; }
 .label { font-size: 12px; font-weight: 500; color: var(--text-2); }
+/* the account form's Kind choice: a labelled group like the other fields, without the browser's box around a fieldset */
+.kind-field { border: 0; padding: 0; margin: 0; min-width: 0; }
+.kind-field > legend { padding: 0; margin-bottom: var(--space-xs); }
 
 /* ---------- filters ---------- */
 .filters { display: flex; align-items: flex-end; gap: var(--space-md); flex-wrap: wrap; margin-bottom: var(--space-md); }

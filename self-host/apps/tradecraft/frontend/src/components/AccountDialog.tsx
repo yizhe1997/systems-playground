@@ -118,7 +118,7 @@ function AccountForm({ account, currencies, onClose }: Omit<Props, "open">) {
         {err("tradingDayStart")}
         <p className="helper">Leave the start empty to use the calendar date of each entry. Example: with 17:00, a trade entered at 17:30 counts to the next day.</p>
       </div>
-      <fieldset className="field">
+      <fieldset className="field kind-field">
         <legend className="label">Kind</legend>
         <div className="segment" role="radiogroup" aria-label="Kind">
           {([["live", "Live"], ["backtest", "Backtest"]] as const).map(([v, text]) => (

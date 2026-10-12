@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { OWNER_EMAIL, cookieFor } from "./auth";
-import { API, api, makeAccount, makeTrade, uniq } from "./helpers";
+import { API, api, fillTrade, makeAccount, makeTrade, uniq } from "./helpers";
 
 // Not a check: it captures the built screens of feature 003 (B1 to B8) for the visual review, in a folder outside the
 // repository. Run it on a fresh stack:
@@ -44,6 +44,16 @@ test("capture", async ({ browser, page }) => {
   await shot(page, "b1-account-form-changing-kind");
   await page.keyboard.press("Escape");
 
+  // L2 the trade form: the preview says the entry was read (changed wording on an existing screen)
+  await page.goto("/trades/new");
+  await fillTrade(page, {
+    account: live.name, instrument: "NQ", direction: "Long", size: "2",
+    entryPrice: "21450.00", entryDate: "2025-10-07", entryTime: "16:50",
+    exitPrice: "21452.50", exitDate: "2025-10-07", exitTime: "17:10", dollarsPerPoint: "20", cost: "4.60", stopPrice: "21440.00",
+  });
+  await expect(page.getByRole("region", { name: "Result preview" })).toContainText("Tue 7 Oct 2025"); // the day, once the preview has answered
+  await shot(page, "l2-log-a-trade-entry-read");
+
   // B3 reviews of a backtest
   await page.goto(`/reviews?account=${bt.id}&month=2025-10&open=2025-10-02`);
   await expect(page.getByText(/Backtest account: its days are never marked Missing/)).toBeVisible();
@@ -75,7 +85,9 @@ test("capture", async ({ browser, page }) => {
   await token.getByRole("button", { name: "Create token" }).click();
   await expect(token.getByText("! Name is required.")).toBeVisible();
   await shot(page, "b7-new-token-name-missing");
-  await token.getByLabel("Name").fill("Claude Desktop, backtests");
+  // a token's name is unique for ever, so the night run (on the same stack) gets its own
+  const tokenName = scheme === "dark" ? "Claude Desktop, backtests (night)" : "Claude Desktop, backtests";
+  await token.getByLabel("Name").fill(tokenName);
   await token.getByRole("button", { name: "Create token" }).click();
   await expect(page.getByRole("dialog", { name: "Token created" })).toBeVisible();
   const value = await page.locator("#token-value").inputValue();
@@ -106,7 +118,7 @@ test("capture", async ({ browser, page }) => {
   await door(value, "get_day", { accountId: bt.id, date: "2025-10-02" });
   await door("tca_" + "q".repeat(43), "list_accounts", {});
   const list = await api<{ tokens: { id: string; name: string }[] }>("GET", "/agent");
-  const mine = list.data.tokens.find((t) => t.name === "Claude Desktop, backtests");
+  const mine = list.data.tokens.find((t) => t.name === tokenName);
   if (mine) await api("POST", `/agent/tokens/${mine.id}/revoke`); // a throwaway: it ends the run revoked
   await door(value, "list_accounts", {}); // refused now, and named
   await page.goto("/audit");

@@ -52,6 +52,10 @@ export default async function MistakesPage({ searchParams }: { searchParams: Pro
   const viewed = (r: CounterRow) => (period === "week" ? r.week.total : r.month.total);
   const rows = counter.rows.filter((r) => viewed(r) > 0 || r.stopLine !== null);
   const nothingTagged = counter.rows.every((r) => viewed(r) === 0);
+  // all accounts means all live accounts; said at the foot of the counter itself (feature 003, screen B5)
+  const liveOnly = !account && accounts.some((a) => a.kind === "backtest")
+    ? <p className="helper" style={{ marginTop: 12 }}>Counting live accounts only. Choose a backtest account to count its mistakes on their own.</p>
+    : null;
 
   return (
     <>
@@ -75,6 +79,7 @@ export default async function MistakesPage({ searchParams }: { searchParams: Pro
           <h2 className="section">{current ? `No mistakes tagged this ${period} yet.` : `No mistakes tagged in this ${period}.`}</h2>
           <p>Tag them while you judge a trade in your daily review. They will be counted here, and you can set a stop line for any of them.</p>
           <Link className="btn" href="/reviews">Go to the daily review</Link>
+          {liveOnly}
         </div>
       ) : (
         <section className="card section-card" aria-label="Mistake counter">
@@ -112,11 +117,8 @@ export default async function MistakesPage({ searchParams }: { searchParams: Pro
             </table>
           </div>
           <p className="helper" style={{ marginTop: 12 }}>Each record counts once, whether it was tagged on a trade or recorded for the whole day.</p>
+          {liveOnly}
         </section>
-      )}
-
-      {!account && accounts.some((a) => a.kind === "backtest") && (
-        <p className="helper">Counting live accounts only. Choose a backtest account to count its mistakes on their own.</p>
       )}
 
       <section className="card section-card" aria-labelledby="manage-title">
