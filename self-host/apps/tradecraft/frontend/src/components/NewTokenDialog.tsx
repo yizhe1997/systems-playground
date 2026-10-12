@@ -116,7 +116,7 @@ export function NewTokenDialog({
           {error && <p className="field-error" id="token-name-err">! {error}</p>}
           <p className="helper" id="token-name-help">Choose a name you will recognise. It is shown in the Audit log next to everything this token reads.</p>
         </div>
-        <p className="helper">This token can read your journal. It cannot change anything.</p>
+        <p className="helper">This token can read your journal.</p>
         <div className="form-actions" style={{ marginTop: 0 }}>
           <button type="submit" className="btn" disabled={busy}>Create token</button>
           <button type="button" className="btn-quiet" onClick={onClose}>Cancel</button>

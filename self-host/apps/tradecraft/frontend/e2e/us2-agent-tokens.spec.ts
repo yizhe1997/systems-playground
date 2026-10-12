@@ -26,7 +26,7 @@ test("turn it on, make a token, see its value once, revoke it, turn it off", asy
   const name = uniq("Claude Desktop, backtests");
   await card.getByRole("button", { name: "New token" }).click();
   const dialog = page.getByRole("dialog", { name: "New token" });
-  await expect(dialog).toContainText("This token can read your journal. It cannot change anything.");
+  await expect(dialog).toContainText("This token can read your journal.");
   // empty, then fine
   await dialog.getByRole("button", { name: "Create token" }).click();
   await expect(dialog.getByText("! Name is required.")).toBeVisible();

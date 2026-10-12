@@ -106,7 +106,7 @@ Every word the owner will read. No placeholders.
 | Title | New token |
 | Field | Name |
 | Help | Choose a name you will recognise. It is shown in the Audit log next to everything this token reads. |
-| Line | This token can read your journal. It cannot change anything. |
+| Line | This token can read your journal. |
 | Error | ! That name is already used. Choose another. · ! Name is required. |
 | Actions | Create token · Cancel |
 | Shown once: title | Token created |
@@ -151,6 +151,7 @@ Every word the owner will read. No placeholders.
 | 2026-10-11 | B4, B5 | Show backtests off by default; "All live accounts" is fine | No change |
 | 2026-10-11 | Clarify | A token reads the whole journal; one audit row per agent read (no preference) | Recorded in spec Clarifications; no frame changes |
 | 2026-10-12 | Build of US1 | (no reaction; the existing frames kept in step) | S3's chooser reads "All live accounts". L1 filled, L3 list and L4 new and edit are marked "superseded by" B4, B2 and B1, which draw those screens in full. The closed choosers of S0 to S5 are unchanged; "(Backtest)" and the Backtests group appear in B3 and B5's open choosers |
+| 2026-10-12 | B7 built | The line under the name must not say the token "cannot change anything": agents are meant to be able to do more than read in later features, and the line would then be wrong | B7's line reads "This token can read your journal." (B6's help still says "It can read; it cannot change anything." and is the owner's to decide) |
 | 2026-10-12 | Build of US4 | (no reaction; the existing frames kept in step) | L2's preview line, L3's footer, L4's help line and S1's trades-table header ("Entry time") are updated in Penpot to the wording above |
 | 2026-10-12 | Analysis of the tasks | A day's trades follow the entry too | The daily review's trades table shows Entry time and is in entry order (listed above); to be confirmed with the re-sign-off |
 
