@@ -24,6 +24,15 @@ clock for `sessionAt`" of `docs/security-review.md`, not a defect of this featur
 
 **The 7 skipped** are the capture specs of the visual review (`zz-screens*.spec.ts`), which run only with `CAPTURE_SCREENS`.
 
+## A second full run, 2026-10-13, after the security review
+
+After the fresh-eyes review of 2026-10-13 (`docs/security-review.md`, passes 5 and 6: refusal rows capped, the app cannot be
+framed, Go 1.26.9, `no-store` on the pass-through) and the B6 wording change, `scripts/test.sh` was run again on a fresh
+stack: Go tests pass; Playwright **128 passed, 0 failed, 7 skipped** (the capture specs); loopback, every secret check
+(including the e2e agent token) and persistence (109 accounts and 5,337 trades identical after a stop and start) pass; exit
+code 0. This run includes the sign-out spec that failed in the first run (now backdated against clock skew).
+`govulncheck` and `npm audit --omit=dev` were run by hand and are clean for called code.
+
 ## Per requirement
 
 | Requirement | Shown by |
