@@ -49,8 +49,6 @@ Two local review passes on the agent gate and everything around it (principle IV
 - **A real agent connecting with a real token (Claude Code or Claude Desktop): the owner's manual check.** The tests use the
   SDK's own client against a listening server, which proves the protocol and the gate, not that a particular product
   connects. Steps are in `quickstart.md` section 4. **Result: not yet run.** The feature is not done until it is recorded here.
-- **The visual review** (`/speckit-screens-review`): the built screens were captured in light mode and looked at in part (Settings
-  with the Agent access card, the Trades list with Show backtests). Both modes, every frame, and the owner's approval of the
-  look are still to do.
-- Known to look at in the review: with long account names and a Backtest tag the Trades list is wider than a 1440 px window
+- **The visual review**: done on 2026-10-12 and approved by the owner (`screens.md`, section Visual review); four follow-ups are parked there.
+- Parked in the visual review: with long account names and a Backtest tag the Trades list is wider than a 1440 px window
   (its last columns scroll); real account names are shorter.

@@ -173,11 +173,12 @@ Existing frames that change when this is built (principle V, updated in the same
 
 Filled in after implementation (constitution principle V).
 
-- **Date**:
-- **Visual direction**: see `docs/visual-direction.md`
-- **Built screenshots**: not stored in the repository
-- **Wireframe match**:
-- **Design checks run**: critique, audit
-- **Fixed**:
-- **Parked**:
-- **Owner's approval**:
+- **Date**: 2026-10-12
+- **Visual direction**: see `docs/visual-direction.md` ("The Lab Notebook", approved 2026-10-04)
+- **Built screenshots**: not stored in the repository; captured by `frontend/e2e/zz-screens-agent.spec.ts` (B1 to B8 and the changed trade form, light and night) to a folder outside it
+- **Wireframe match**: B1 (new Live, new Backtest, changing the kind), B2, B3, B4 (off, on), B5, B6 (off, on, tokens, confirm with Google), B7 (name it, name missing, shown once) and B8 match the signed-off structure, content and states. Differences, all decided and recorded above: B7's line reads "This token can read your journal." (the owner's change, 2026-10-12); the daily review's table shows Entry time (re-sign-off 2026-10-12); the account-form help and the Accounts list footer say entry instead of exit
+- **Design checks run**: critique and audit against `DESIGN.md` and `PRODUCT.md`, run inline in one context and so marked degraded (no sub-agents were started); the impeccable detector on the eight new or changed components found nothing; axe WCAG 2 A and AA in light and night for B1 to B8 and a keyboard-only pass (`e2e/zz-a11y-agent.spec.ts`)
+- **Fixed**: the Kind choice in the account form showed the browser's box around a fieldset (now plain, like the other fields); the "Counting live accounts only" note on Mistakes touched the next card (now inside the counter); the trade-form capture was taken before the preview had answered (a capture fix, not a product one)
+- **Parked** (follow-ups, not blocking): (1) the Trades list is wider than a 1440 px window with long account names and the Backtest tag, so Plan, R and the actions scroll; (2) B6's help still says "It can read; it cannot change anything." (the owner changed B7 only; same change suggested); (3) after a token is made, offer a ready-to-paste Claude Code command in the "shown once" dialog (the first real attempt failed on a missing space after Bearer); (4) a week with no trades shows a "Not reviewed" chip on a backtest account
+- **Not exercised**: a phone layout (the product has none); the step-up through real Google
+- **Owner's approval**: approved on 2026-10-12 ("approve the look of feature 003"), with the four parked items as follow-ups
