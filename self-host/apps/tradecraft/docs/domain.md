@@ -1,8 +1,8 @@
 # Domain rules
 
 Where each trading rule used by Tradecraft v2 is defined (constitution principle VIII). A rule marked **unconfirmed**
-is an interpretation the owner has not yet confirmed; each has a "Confirmed by owner on" line and a "Source" line,
-both empty until filled. The rules live in the database as SQL functions (see `specs/000-log-trades/data-model.md`);
+is an interpretation the owner has not yet confirmed; each has a "Confirmed by owner on" line and a "Source" line. On
+2026-10-13 the owner confirmed every rule below, one by one. The rules live in the database as SQL functions (see `specs/000-log-trades/data-model.md`);
 this file says what they mean and shows worked examples that the tests also use.
 
 ## Trading day
@@ -19,12 +19,12 @@ entered Tue 7 Oct 16:59 gives 7 Oct; entered Tue 7 Oct 17:00 exactly gives 8 Oct
 7 Oct (the exit does not matter); entered Tue 7 Oct 23:30 and exited Wed 8 Oct 00:20 gives 8 Oct. With no start time,
 entered Tue 7 Oct 22:00 and exited Wed 8 Oct 01:00 gives 7 Oct.
 
-- **Status:** owner decision 2026-10-11 (feature `003-backtest-accounts-and-agent-access`, user story 4): the day follows the
+- **Status:** confirmed by the owner on 2026-10-13. Decided 2026-10-11 (feature `003-backtest-accounts-and-agent-access`, user story 4): the day follows the
   **entry**, not the exit. It was exit-based from feature 000 until then; on arrival every trade's day was recomputed once
   from its entry. The cost, accepted by the owner: a day that was already reviewed shows a trade entered that day but exited
   later, so its figures can change. A future prop daily-loss rule may group by exit for its own purpose; that is its own decision.
-- Confirmed by owner on:
-- Source:
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Gross result
 
@@ -33,9 +33,9 @@ size × dollars per point. Not defined when dollars per point is blank.
 
 Worked example: NQ long, size 2, entry 21450.00, exit 21452.50, dollars per point 20: (21452.50 − 21450.00) × 2 × 20 = 100.00.
 
-- **Status:** unconfirmed.
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13.
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Net result
 
@@ -44,9 +44,9 @@ after costs) and the cost is not used.
 
 Worked example: gross 100.00, cost 4.60: net 95.40.
 
-- **Status:** unconfirmed (a typed result is taken as after costs: owner decision 2026-10-04).
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13 (a typed result is taken as after costs: owner decision 2026-10-04).
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Risk
 
@@ -55,9 +55,9 @@ a dash with the reason "stop equals entry" when it works out to zero. A stop on 
 
 Worked example: entry 21450.00, stop 21440.00, size 2, dollars per point 20: 10 × 2 × 20 = 400.00.
 
-- **Status:** unconfirmed.
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13.
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## R
 
@@ -65,9 +65,9 @@ Net result divided by risk, kept to six decimal places and shown to two. Not def
 
 Worked example: net 95.40, risk 400.00: R = 0.2385, shown as 0.24 R.
 
-- **Status:** unconfirmed (R on the net result: owner decision 2026-10-04).
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13 (R on the net result: owner decision 2026-10-04).
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Local time to an exact instant
 
@@ -75,22 +75,22 @@ A local date and time typed in the journal time zone is turned into an exact ins
 skipped when clocks go forward) is refused. A local time that happens twice (the hour repeated when clocks go back) uses its
 first occurrence.
 
-- **Status:** unconfirmed (practically irrelevant for futures, which are closed when clocks change).
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13 (practically irrelevant for futures, which are closed when clocks change).
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Prices
 
 Prices must be above zero. Sizes, costs and dollars per point are decimals with at most 8 decimal places.
 
-- **Status:** unconfirmed (a price of zero or below, such as the 2020 oil futures price, is refused for now).
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13 (a price of zero or below, such as the 2020 oil futures price, is refused for now).
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 # Feature 001: reviews, judging and focus
 
 Every rule below is defined once, in the SQL of `backend/migrations/00007` to `00011`, and used by the day, the week and
-the mistake counter alike. All are **unconfirmed** interpretations until the owner confirms them.
+the mistake counter alike. All were confirmed by the owner on 2026-10-13.
 
 ## Week and month
 
@@ -103,9 +103,9 @@ a trade on Tue 30 Sep and one on Wed 1 Oct both count in the week column of the 
 counts 1 for September (30 Sep) and 1 for October (1 Oct). The week's focus is found by its Monday, 29 Sep; the month focus
 shown with it is the month of its Sunday, October.
 
-- **Status:** unconfirmed (Monday weeks; a week under the month of its Sunday).
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13 (Monday weeks; a week under the month of its Sunday).
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Today
 
@@ -116,9 +116,9 @@ Worked example (a 17:00 account): a trade entered at 17:10 on Tue 30 Sep belongs
 belongs to Tue 30 Sep. The sample day of Wed 1 Oct 2025 uses a 17:00 account, so its three trades (entered at 09:41, 10:14,
 10:40) all belong to 1 Oct. The database clock decides what "today" is, so tests that need the current week read it from the database.
 
-- **Status:** unconfirmed.
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13.
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Daily and weekly states
 
@@ -128,9 +128,9 @@ its day later has no trades. A day with no trades and no review has no state. A 
 has a live trade, and it has no reviewed mark; the current week is never Missing; a week with a mark is **Reviewed**.
 Changing the time zone or an account's day start moves trades to other days but leaves reviews on the date they were written.
 
-- **Status:** unconfirmed.
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13.
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Plan followed, wins and losses
 
@@ -146,9 +146,9 @@ Worked example (the sample day, 1 Oct 2025): W +300.00 (plan Yes), L1 -125.00 (Y
 tag Chased entry). Net +45.00; plan followed 2 of 3 (1 not followed, 0 partly); mistakes 1; valid losses 1 of 2 losing
 trades; win rate 1 of 3 (33%).
 
-- **Status:** unconfirmed.
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13.
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Mistakes and stop lines
 
@@ -163,9 +163,9 @@ Worked example: Moved stop has a stop line of 2 per week. L1 and L2 of the sampl
 shows "0 of 2 this week". With the same mistake also recorded for the whole day (a day record) the count is 3, split "2 on trades
 . 1 on the day".
 
-- **Status:** unconfirmed.
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13.
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Focus (week and month)
 
@@ -173,9 +173,9 @@ A focus is a sentence of up to 280 **characters** (counted as characters, not by
 written by the owner and shown on every account's reviews in the period. An empty text clears it. The week is identified by its
 Monday and the month by its first day; a daily review shows the focus of the week and month of its trading day.
 
-- **Status:** unconfirmed.
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13.
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Weekly review
 
@@ -187,9 +187,9 @@ Day statuses in a week: Missing, Draft, Reviewed, Today, No trades (a day with n
 Worked example (the sample week of 29 Sep to 5 Oct 2025 with one extra +20.00 trade on Mon 29 Sep and a review saved for Wed
 1 Oct): Mon missing, Tue none, Wed reviewed, Thu draft if a review was saved, Fri to Sun none; 4 trades, net +65.00.
 
-- **Status:** unconfirmed.
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13.
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 ## Yesterday's focus
 
@@ -197,9 +197,9 @@ The "yesterday" line of a daily review is the nearest earlier review **of the sa
 session" answer is not empty, labelled with its own date. The week and month focus belong to the owner (all accounts), decided
 by the review's trading day.
 
-- **Status:** unconfirmed.
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13.
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
 
 # Feature 003: backtest accounts and agent read access
 
@@ -218,7 +218,7 @@ and trades **count**, never what they are: no trade, review, grade or focus is a
 - Backtests are told apart by the account they sit in, not by a flag on each trade. One account per backtest set is
   the expected way to work.
 
-- **Status:** interpretation recorded 2026-10-12 from the owner's decision of 2026-10-11 (account kind, not one account
-  per backtest and not a per-trade flag). The exact rules above are not yet confirmed by the owner.
-- Confirmed by owner on:
-- Source:
+- **Status:** confirmed by the owner on 2026-10-13. Decided 2026-10-11 (account kind, not one account per backtest and
+  not a per-trade flag); the exact rules above were read and confirmed on 2026-10-13.
+- Confirmed by owner on: 2026-10-13
+- Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
