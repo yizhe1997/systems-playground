@@ -112,6 +112,8 @@ func resetIdentities(t *testing.T) {
 	for _, q := range []string{
 		"SET LOCAL session_replication_role = replica",
 		"DELETE FROM audit_entry",
+		"DELETE FROM agent_token", // the table refuses this in normal operation; the switch goes back to off
+		"UPDATE journal_settings SET agent_access = false",
 		"DELETE FROM identity WHERE email <> '" + testOwner + "'",
 		"INSERT INTO identity (email) VALUES ('" + testOwner + "') ON CONFLICT DO NOTHING",
 		"UPDATE identity SET disabled_at = NULL, provider_sub = NULL, last_sign_in_at = NULL, sessions_valid_after = to_timestamp(0)",

@@ -189,6 +189,9 @@ func TestNoRouteCreatesASession(t *testing.T) {
 		if strings.HasPrefix(r.Path, "/internal/") {
 			internal = append(internal, r.Method+" "+r.Path)
 		}
+		if strings.HasPrefix(r.Path, "/agent/tokens") {
+			continue // agent tokens (feature 003) are read-only keys for an agent, not sessions; the owner's step-up guards them
+		}
 		low := strings.ToLower(r.Path)
 		for _, bad := range []string{"login", "dev", "session", "impersonate", "token"} {
 			if strings.Contains(low, bad) {

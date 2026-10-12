@@ -82,6 +82,7 @@ type exportAuditJSON struct {
 	Kind          string   `json:"kind"`
 	Subject       string   `json:"subject"`
 	ChangedFields []string `json:"changedFields"`
+	ActorLabel    string   `json:"actorLabel"`
 }
 
 // export answers everything as one document: settings, every account (archived marked), every trade (deleted marked)
@@ -195,7 +196,7 @@ func (s *Server) export(c *fiber.Ctx) error {
 			fields = []string{}
 		}
 		out.AuditEntries = append(out.AuditEntries, exportAuditJSON{ID: e.ID, At: fmtTime(e.At), ActorKind: e.ActorKind,
-			IdentityEmail: e.IdentityEmail, Kind: e.Kind, Subject: e.Subject, ChangedFields: fields})
+			IdentityEmail: e.IdentityEmail, Kind: e.Kind, Subject: e.Subject, ChangedFields: fields, ActorLabel: e.ActorLabel})
 	}
 	return c.JSON(out)
 }

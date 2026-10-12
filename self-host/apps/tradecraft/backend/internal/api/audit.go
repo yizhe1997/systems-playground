@@ -32,6 +32,12 @@ var auditKinds = []struct{ Code, Label string }{
 	{"account_archived", "Account archived"},
 	{"account_restored", "Account restored"},
 	{"account_kind_changed", "Account kind changed"},
+	{"agent_access_enabled", "Agent access turned on"},
+	{"agent_access_disabled", "Agent access turned off"},
+	{"agent_token_created", "Agent token created"},
+	{"agent_token_revoked", "Agent token revoked"},
+	{"agent_read", "Agent read"},
+	{"agent_refused", "Agent refused"},
 	{"settings_changed", "Settings changed"},
 	{"mistake_retired", "Mistake retired"},
 	{"mistake_restored", "Mistake restored"},
@@ -53,6 +59,7 @@ type auditEvent struct {
 	Kind       string
 	Subject    string
 	Fields     []string
+	Label      string // for an agent entry: the token's name at that moment
 }
 
 // recordAudit appends one entry through q, which is the change's own transaction for the audited actions: if it
@@ -71,6 +78,7 @@ func recordAudit(ctx context.Context, q *store.Queries, e auditEvent) error {
 		Kind:          e.Kind,
 		Subject:       clip(e.Subject, 254),
 		ChangedFields: fields,
+		ActorLabel:    clip(e.Label, 80),
 	})
 }
 
@@ -129,6 +137,7 @@ type auditEntryJSON struct {
 	KindLabel     string   `json:"kindLabel"`
 	Subject       string   `json:"subject"`
 	ChangedFields []string `json:"changedFields"`
+	ActorLabel    string   `json:"actorLabel"`
 }
 
 func badFilter(field, msg string) *apiError {
@@ -203,7 +212,7 @@ func (s *Server) listAudit(c *fiber.Ctx) error {
 			fields = []string{}
 		}
 		out = append(out, auditEntryJSON{ID: r.ID, At: fmtTime(r.At), ActorKind: r.ActorKind, IdentityEmail: r.IdentityEmail,
-			Kind: r.Kind, KindLabel: label, Subject: r.Subject, ChangedFields: fields})
+			Kind: r.Kind, KindLabel: label, Subject: r.Subject, ChangedFields: fields, ActorLabel: r.ActorLabel})
 	}
 	c.Set("X-Total-Count", strconv.Itoa(int(total)))
 	return c.JSON(out)

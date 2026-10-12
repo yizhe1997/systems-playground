@@ -21,6 +21,16 @@ type Account struct {
 	Kind            string      `json:"kind"`
 }
 
+type AgentToken struct {
+	ID         string     `json:"id"`
+	Name       string     `json:"name"`
+	TokenHash  string     `json:"token_hash"`
+	CreatedBy  string     `json:"created_by"`
+	CreatedAt  time.Time  `json:"created_at"`
+	LastUsedAt *time.Time `json:"last_used_at"`
+	RevokedAt  *time.Time `json:"revoked_at"`
+}
+
 type AuditEntry struct {
 	ID            string    `json:"id"`
 	At            time.Time `json:"at"`
@@ -29,6 +39,7 @@ type AuditEntry struct {
 	Kind          string    `json:"kind"`
 	Subject       string    `json:"subject"`
 	ChangedFields []string  `json:"changed_fields"`
+	ActorLabel    string    `json:"actor_label"`
 }
 
 type DailyReview struct {
@@ -71,9 +82,10 @@ type Identity struct {
 }
 
 type JournalSetting struct {
-	ID        int16     `json:"id"`
-	TimeZone  string    `json:"time_zone"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID          int16     `json:"id"`
+	TimeZone    string    `json:"time_zone"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	AgentAccess bool      `json:"agent_access"`
 }
 
 type JudgedTrade struct {

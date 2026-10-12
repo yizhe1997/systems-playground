@@ -100,6 +100,12 @@ func New(pool *pgxpool.Pool, now func() time.Time, secret string) *fiber.App {
 
 	app.Get("/export", s.export)
 
+	// Agent access (feature 003): the switch and the tokens. Changing either needs a recent Google confirmation.
+	app.Get("/agent", s.getAgent)
+	app.Put("/agent", s.gate.RequireStepUp(), s.setAgent)
+	app.Post("/agent/tokens", s.gate.RequireStepUp(), s.createAgentToken)
+	app.Post("/agent/tokens/:id/revoke", s.gate.RequireStepUp(), s.revokeAgentToken)
+
 	// SPIKE (T001): behind the owner gate for now. T031 and T032 move it before the owner gate, behind the agent
 	// token's own middleware.
 	app.Post("/mcp", s.mcpHandler())

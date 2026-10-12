@@ -41,7 +41,7 @@ func (q *Queries) CountAudit(ctx context.Context, arg CountAuditParams) (int32, 
 }
 
 const exportAuditEntries = `-- name: ExportAuditEntries :many
-SELECT a.id, a.at, a.actor_kind, i.email AS identity_email, a.kind, a.subject, a.changed_fields
+SELECT a.id, a.at, a.actor_kind, i.email AS identity_email, a.kind, a.subject, a.changed_fields, a.actor_label
   FROM audit_entry a LEFT JOIN identity i ON i.id = a.identity_id
  ORDER BY a.at, a.id
 `
@@ -54,6 +54,7 @@ type ExportAuditEntriesRow struct {
 	Kind          string    `json:"kind"`
 	Subject       string    `json:"subject"`
 	ChangedFields []string  `json:"changed_fields"`
+	ActorLabel    string    `json:"actor_label"`
 }
 
 func (q *Queries) ExportAuditEntries(ctx context.Context) ([]ExportAuditEntriesRow, error) {
@@ -73,6 +74,7 @@ func (q *Queries) ExportAuditEntries(ctx context.Context) ([]ExportAuditEntriesR
 			&i.Kind,
 			&i.Subject,
 			&i.ChangedFields,
+			&i.ActorLabel,
 		); err != nil {
 			return nil, err
 		}
@@ -127,9 +129,9 @@ func (q *Queries) ExportIdentities(ctx context.Context) ([]ExportIdentitiesRow, 
 
 const insertAuditEntry = `-- name: InsertAuditEntry :exec
 
-INSERT INTO audit_entry (actor_kind, identity_id, kind, subject, changed_fields)
+INSERT INTO audit_entry (actor_kind, identity_id, kind, subject, changed_fields, actor_label)
 VALUES ($1::text, $2::uuid, $3::text,
-        $4::text, $5::text[])
+        $4::text, $5::text[], $6::text)
 `
 
 type InsertAuditEntryParams struct {
@@ -138,6 +140,7 @@ type InsertAuditEntryParams struct {
 	Kind          string   `json:"kind"`
 	Subject       string   `json:"subject"`
 	ChangedFields []string `json:"changed_fields"`
+	ActorLabel    string   `json:"actor_label"`
 }
 
 // The audit log (feature 002). One append-only table: nothing here updates or deletes an entry, and the database
@@ -149,12 +152,13 @@ func (q *Queries) InsertAuditEntry(ctx context.Context, arg InsertAuditEntryPara
 		arg.Kind,
 		arg.Subject,
 		arg.ChangedFields,
+		arg.ActorLabel,
 	)
 	return err
 }
 
 const listAudit = `-- name: ListAudit :many
-SELECT a.id, a.at, a.actor_kind, a.kind, a.subject, a.changed_fields, i.email AS identity_email
+SELECT a.id, a.at, a.actor_kind, a.kind, a.subject, a.changed_fields, a.actor_label, i.email AS identity_email
   FROM audit_entry a LEFT JOIN identity i ON i.id = a.identity_id
  WHERE ($1::text IS NULL
         OR ($1::text = 'none' AND a.identity_id IS NULL)
@@ -182,6 +186,7 @@ type ListAuditRow struct {
 	Kind          string    `json:"kind"`
 	Subject       string    `json:"subject"`
 	ChangedFields []string  `json:"changed_fields"`
+	ActorLabel    string    `json:"actor_label"`
 	IdentityEmail *string   `json:"identity_email"`
 }
 
@@ -210,6 +215,7 @@ func (q *Queries) ListAudit(ctx context.Context, arg ListAuditParams) ([]ListAud
 			&i.Kind,
 			&i.Subject,
 			&i.ChangedFields,
+			&i.ActorLabel,
 			&i.IdentityEmail,
 		); err != nil {
 			return nil, err
