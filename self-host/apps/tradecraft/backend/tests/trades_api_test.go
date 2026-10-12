@@ -240,7 +240,7 @@ func TestPreviewNeverRefuses(t *testing.T) {
 	}
 	wantStr(t, "gross reason", reasons["grossResult"].(string), "needs prices, size and dollars per point")
 	wantStr(t, "R reason", reasons["rMultiple"].(string), "needs a net result and a risk")
-	wantStr(t, "day reason", reasons["tradingDay"].(string), "needs an exit time")
+	wantStr(t, "day reason", reasons["tradingDay"].(string), "needs an entry time")
 
 	// half filled: still no figures, plain reasons
 	r = call(t, "POST", "/trades/preview", map[string]any{"direction": "long", "size": "2", "entryPrice": "21450", "accountId": acct})
@@ -251,7 +251,7 @@ func TestPreviewNeverRefuses(t *testing.T) {
 	r = call(t, "POST", "/trades/preview", map[string]any{"size": "abc"})
 	wantStr(t, "not a number", r.body["reasons"].(map[string]any)["grossResult"].(string), "not a number")
 	// no account yet
-	r = call(t, "POST", "/trades/preview", map[string]any{"exitAt": "2025-10-07T09:58:00"})
+	r = call(t, "POST", "/trades/preview", map[string]any{"entryAt": "2025-10-07T09:41:00"})
 	wantStr(t, "needs an account", r.body["reasons"].(map[string]any)["tradingDay"].(string), "needs an account")
 }
 
@@ -260,9 +260,9 @@ func TestTimeInScreenStyle(t *testing.T) {
 	reset(t)
 	acct := account(t, "A", "USD", "17:00")
 	in := tradeA(acct)
-	in["entryAt"], in["exitAt"] = "Wed 1 Oct 2025 09:41", "Wed 1 Oct 2025 17:30"
+	in["entryAt"], in["exitAt"] = "Wed 1 Oct 2025 17:30", "Wed 1 Oct 2025 17:45"
 	r := trade(t, in)
-	wantStr(t, "entryAt", r.str("entryAt"), "2025-10-01T09:41:00-05:00")
+	wantStr(t, "entryAt", r.str("entryAt"), "2025-10-01T17:30:00-05:00")
 	wantStr(t, "trading day", r.str("tradingDay"), "2025-10-02")
 	in["exitAt"] = "Thu 1 Oct 2025 17:30"
 	r = call(t, "POST", "/trades", in)

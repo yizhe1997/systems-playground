@@ -115,7 +115,7 @@ SELECT d.id, d.instrument, d.direction, d.size, d.entry_at, d.exit_at, d.account
   JOIN trade t ON t.id = d.id
   LEFT JOIN trade_judgement j ON j.trade_id = d.id
  WHERE d.account_id = $1::uuid AND d.trading_day = $2::date AND NOT d.deleted
- ORDER BY d.exit_at, d.id
+ ORDER BY d.entry_at, d.id
 `
 
 type DayTradesParams struct {

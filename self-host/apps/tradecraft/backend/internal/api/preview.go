@@ -89,14 +89,14 @@ func (s *Server) previewTrade(c *fiber.Ctx) error {
 	}
 	var timeReason string
 	switch {
-	case blank(in.ExitAt):
-		timeReason = "needs an exit time"
+	case blank(in.EntryAt):
+		timeReason = "needs an entry time" // the trading day is read from the entry
 	default:
-		t, err := timeinput.Parse(*in.ExitAt, loc)
+		t, err := timeinput.Parse(*in.EntryAt, loc)
 		if err != nil {
 			timeReason = err.Error()
 		} else {
-			arg.ExitAt = &t
+			arg.EntryAt = &t
 		}
 	}
 	var accountReason string

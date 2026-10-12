@@ -27,10 +27,10 @@ func TestEachRecordedActionWritesOneEntry(t *testing.T) {
 	tr := trade(t, tradeA(acct))
 	id := tr.str("id")
 
-	// trade deleted and restored: named by instrument, direction and exit time, never by an amount
+	// trade deleted and restored: named by instrument, direction and entry time, never by an amount
 	mustStatus(t, call(t, "DELETE", "/trades/"+id, nil), 200)
 	e := lastEntry(t)
-	if e.Kind != "trade_deleted" || e.Subject != "NQ long trade of Tue 7 Oct 09:58" || e.Email != testOwner || e.Actor != "owner" || fieldsOf(e) != "status" {
+	if e.Kind != "trade_deleted" || e.Subject != "NQ long trade of Tue 7 Oct 09:41" || e.Email != testOwner || e.Actor != "owner" || fieldsOf(e) != "status" {
 		t.Fatalf("trade deleted: %+v", e)
 	}
 	n := len(auditRows(t))
@@ -39,7 +39,7 @@ func TestEachRecordedActionWritesOneEntry(t *testing.T) {
 		t.Fatal("a repeated delete was recorded")
 	}
 	mustStatus(t, call(t, "POST", "/trades/"+id+"/restore", nil), 200)
-	if e = lastEntry(t); e.Kind != "trade_restored" || e.Subject != "NQ long trade of Tue 7 Oct 09:58" {
+	if e = lastEntry(t); e.Kind != "trade_restored" || e.Subject != "NQ long trade of Tue 7 Oct 09:41" {
 		t.Fatalf("trade restored: %+v", e)
 	}
 	mustStatus(t, call(t, "POST", "/trades/"+id+"/restore", nil), 200)

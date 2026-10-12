@@ -46,7 +46,7 @@ func toAccount(id, name, currency, start string, archived bool, updatedAt time.T
 
 var timeOfDay = regexp.MustCompile(`^([01][0-9]|2[0-3]):[0-5][0-9]$`)
 
-const msgMidnight = "Start time cannot be 00:00. Leave it empty to use the calendar date of each exit."
+const msgMidnight = "Start time cannot be 00:00. Leave it empty to use the calendar date of each entry."
 
 // validateAccount cleans and checks the typed account. The name has surrounding spaces trimmed and runs of
 // spaces collapsed to one (the database also refuses anything else).

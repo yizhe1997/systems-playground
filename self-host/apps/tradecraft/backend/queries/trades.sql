@@ -8,7 +8,7 @@ SELECT * FROM trade_detail
         OR account_id IN (SELECT a.id FROM account a WHERE a.kind = 'live'))
    AND (sqlc.narg(from_day)::date IS NULL OR trading_day >= sqlc.narg(from_day)::date)
    AND (sqlc.narg(to_day)::date IS NULL OR trading_day <= sqlc.narg(to_day)::date)
- ORDER BY exit_at DESC, id DESC
+ ORDER BY entry_at DESC, id DESC
  LIMIT NULLIF(sqlc.arg(page_size)::int, 0) OFFSET sqlc.arg(page_offset)::int;
 
 -- name: CountTrades :one
@@ -77,8 +77,8 @@ SELECT COALESCE(n.gross::text, '')::text AS gross_result,
        COALESCE(n.net::text, '')::text AS net_result,
        COALESCE(r.risk::text, '')::text AS risk,
        COALESCE(trade_r(n.net, r.risk)::text, '')::text AS r_multiple,
-       COALESCE((CASE WHEN sqlc.narg(exit_at)::timestamptz IS NULL OR sqlc.narg(account_id)::uuid IS NULL THEN NULL
-            ELSE trading_day(sqlc.narg(exit_at)::timestamptz,
+       COALESCE((CASE WHEN sqlc.narg(entry_at)::timestamptz IS NULL OR sqlc.narg(account_id)::uuid IS NULL THEN NULL
+            ELSE trading_day(sqlc.narg(entry_at)::timestamptz,
                              (SELECT time_zone FROM journal_settings WHERE id = 1),
                              (SELECT trading_day_start FROM account WHERE id = sqlc.narg(account_id)::uuid))
        END)::text, '')::text AS trading_day
@@ -86,5 +86,5 @@ SELECT COALESCE(n.gross::text, '')::text AS gross_result,
 
 -- What the audit entry needs about a trade, and whether the state is about to flip. Locks the row for the transaction.
 -- name: TradeForAudit :one
-SELECT instrument, direction, exit_at, (deleted_at IS NOT NULL)::boolean AS deleted
+SELECT instrument, direction, entry_at, (deleted_at IS NOT NULL)::boolean AS deleted
   FROM trade WHERE id = sqlc.arg(id)::uuid FOR UPDATE;

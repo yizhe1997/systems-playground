@@ -82,7 +82,7 @@ func TestAccountDayStartRules(t *testing.T) {
 	reset(t)
 	r := call(t, "POST", "/accounts", map[string]any{"name": "A", "currency": "USD", "tradingDayStart": "00:00"})
 	mustStatus(t, r, 422)
-	if got := r.fields()["tradingDayStart"]; got != "Start time cannot be 00:00. Leave it empty to use the calendar date of each exit." {
+	if got := r.fields()["tradingDayStart"]; got != "Start time cannot be 00:00. Leave it empty to use the calendar date of each entry." {
 		t.Errorf("message %q", got)
 	}
 	for _, bad := range []string{"24:00", "9:30", "17:60", "abc"} {

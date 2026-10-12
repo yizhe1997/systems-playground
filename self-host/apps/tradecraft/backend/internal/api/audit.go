@@ -106,10 +106,10 @@ func cleanAttempted(email string) string {
 	return clip(s, 254)
 }
 
-// tradeSubject names a trade by instrument, direction and exit time in the journal zone, never by amounts:
-// "NQ long trade of Wed 1 Oct 09:58".
-func tradeSubject(instrument, direction string, exit time.Time, loc *time.Location) string {
-	return instrument + " " + direction + " trade of " + exit.In(loc).Format("Mon 2 Jan 15:04")
+// tradeSubject names a trade by instrument, direction and entry time in the journal zone, never by amounts:
+// "NQ long trade of Wed 1 Oct 09:41". The entry is the time that decides the trade's day (feature 003).
+func tradeSubject(instrument, direction string, entry time.Time, loc *time.Location) string {
+	return instrument + " " + direction + " trade of " + entry.In(loc).Format("Mon 2 Jan 15:04")
 }
 
 // actorOf is who made the request: the signed-in identity, or the system.

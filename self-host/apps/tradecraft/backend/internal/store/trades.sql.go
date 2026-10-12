@@ -134,7 +134,7 @@ SELECT id, account_id, account_name, account_currency, instrument, direction, si
         OR account_id IN (SELECT a.id FROM account a WHERE a.kind = 'live'))
    AND ($4::date IS NULL OR trading_day >= $4::date)
    AND ($5::date IS NULL OR trading_day <= $5::date)
- ORDER BY exit_at DESC, id DESC
+ ORDER BY entry_at DESC, id DESC
  LIMIT NULLIF($7::int, 0) OFFSET $6::int
 `
 
@@ -230,7 +230,7 @@ SELECT COALESCE(n.gross::text, '')::text AS gross_result,
 `
 
 type PreviewTradeParams struct {
-	ExitAt          *time.Time `json:"exit_at"`
+	EntryAt         *time.Time `json:"entry_at"`
 	AccountID       *string    `json:"account_id"`
 	Direction       *string    `json:"direction"`
 	Size            *string    `json:"size"`
@@ -254,7 +254,7 @@ type PreviewTradeRow struct {
 // could not be read arrives as null and the matching figure comes back null.
 func (q *Queries) PreviewTrade(ctx context.Context, arg PreviewTradeParams) (PreviewTradeRow, error) {
 	row := q.db.QueryRow(ctx, previewTrade,
-		arg.ExitAt,
+		arg.EntryAt,
 		arg.AccountID,
 		arg.Direction,
 		arg.Size,
@@ -299,14 +299,14 @@ func (q *Queries) SoftDeleteTrade(ctx context.Context, id string) (string, error
 }
 
 const tradeForAudit = `-- name: TradeForAudit :one
-SELECT instrument, direction, exit_at, (deleted_at IS NOT NULL)::boolean AS deleted
+SELECT instrument, direction, entry_at, (deleted_at IS NOT NULL)::boolean AS deleted
   FROM trade WHERE id = $1::uuid FOR UPDATE
 `
 
 type TradeForAuditRow struct {
 	Instrument string    `json:"instrument"`
 	Direction  string    `json:"direction"`
-	ExitAt     time.Time `json:"exit_at"`
+	EntryAt    time.Time `json:"entry_at"`
 	Deleted    bool      `json:"deleted"`
 }
 
@@ -317,7 +317,7 @@ func (q *Queries) TradeForAudit(ctx context.Context, id string) (TradeForAuditRo
 	err := row.Scan(
 		&i.Instrument,
 		&i.Direction,
-		&i.ExitAt,
+		&i.EntryAt,
 		&i.Deleted,
 	)
 	return i, err

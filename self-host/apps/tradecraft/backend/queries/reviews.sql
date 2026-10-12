@@ -64,7 +64,7 @@ SELECT d.id, d.instrument, d.direction, d.size, d.entry_at, d.exit_at, d.account
   JOIN trade t ON t.id = d.id
   LEFT JOIN trade_judgement j ON j.trade_id = d.id
  WHERE d.account_id = sqlc.arg(account_id)::uuid AND d.trading_day = sqlc.arg(day)::date AND NOT d.deleted
- ORDER BY d.exit_at, d.id;
+ ORDER BY d.entry_at, d.id;
 
 -- The weeks (Monday dates) whose Sunday falls in a month, newest first.
 -- name: WeeksEndingIn :many

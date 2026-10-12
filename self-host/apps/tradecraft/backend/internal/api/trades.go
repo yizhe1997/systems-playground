@@ -394,7 +394,7 @@ func (s *Server) setDeleted(c *fiber.Ctx, del bool) error {
 			return err
 		}
 		return recordAudit(ctx, q, auditEvent{Actor: actor, IdentityID: by, Kind: kind,
-			Subject: tradeSubject(cur.Instrument, cur.Direction, cur.ExitAt, loc), Fields: []string{"status"}})
+			Subject: tradeSubject(cur.Instrument, cur.Direction, cur.EntryAt, loc), Fields: []string{"status"}})
 	})
 	if err != nil {
 		return err

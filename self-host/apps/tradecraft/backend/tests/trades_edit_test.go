@@ -18,7 +18,7 @@ func TestEditRecomputesEverything(t *testing.T) {
 	tr := trade(t, tradeA(a))
 	in := tradeA(a)
 	in["exitPrice"] = "21460.00"         // gross (21460-21450)*2*20 = 400, net 395.4, R 0.9885
-	in["exitAt"] = "2025-10-07T17:30:00" // lands on the next trading day
+	in["entryAt"], in["exitAt"] = "2025-10-07T17:30:00", "2025-10-07T17:45:00" // entered after the start: the next trading day
 	r := put(t, tr, in)
 	mustStatus(t, r, 200)
 	wantNum(t, "gross", r.str("grossResult"), "400")
@@ -88,13 +88,13 @@ func TestMoveToAnotherAccount(t *testing.T) {
 	b := account(t, "B", "USD", "17:00")
 	old := account(t, "Old", "USD", "")
 	in := tradeA(a)
-	in["exitAt"] = "2025-10-07T17:30:00"
+	in["entryAt"], in["exitAt"] = "2025-10-07T17:15:00", "2025-10-07T17:30:00"
 	tr := trade(t, in)
 	wantStr(t, "before", tr.str("tradingDay"), "2025-10-07")
 
 	// to an active account: the trading day follows the new account's start time
 	in = tradeA(b)
-	in["exitAt"] = "2025-10-07T17:30:00"
+	in["entryAt"], in["exitAt"] = "2025-10-07T17:15:00", "2025-10-07T17:30:00"
 	r := put(t, tr, in)
 	mustStatus(t, r, 200)
 	wantStr(t, "after the move", r.str("tradingDay"), "2025-10-08")
