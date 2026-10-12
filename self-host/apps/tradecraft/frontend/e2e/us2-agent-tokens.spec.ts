@@ -15,7 +15,7 @@ test("turn it on, make a token, see its value once, revoke it, turn it off", asy
   await setSwitch(false);
   await page.goto("/settings");
   const card = page.getByRole("region", { name: "Agent access" });
-  await expect(card.getByText("Lets an agent you choose read your journal. It can read; it cannot change anything.")).toBeVisible();
+  await expect(card.getByText("Lets an agent you choose read your journal. Everything it reads is written to the Audit log.")).toBeVisible();
   await expect(card.getByText(/Turn agent access on to create tokens\./)).toBeVisible();
   await expect(card.getByRole("button", { name: "New token" })).toHaveCount(0);
 

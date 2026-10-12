@@ -89,7 +89,7 @@ Every word the owner will read. No placeholders.
 | Element | Text |
 |---|---|
 | Title | Agent access |
-| Help | Lets an agent you choose read your journal. It can read; it cannot change anything. Everything it reads is written to the Audit log. |
+| Help | Lets an agent you choose read your journal. Everything it reads is written to the Audit log. |
 | Switch | Off · On |
 | Off | Turn agent access on to create tokens. |
 | On, no tokens | No tokens yet. · A token is what you give your agent so it can read. You can revoke it at any time. · New token |
@@ -151,6 +151,7 @@ Every word the owner will read. No placeholders.
 | 2026-10-11 | B4, B5 | Show backtests off by default; "All live accounts" is fine | No change |
 | 2026-10-11 | Clarify | A token reads the whole journal; one audit row per agent read (no preference) | Recorded in spec Clarifications; no frame changes |
 | 2026-10-12 | Build of US1 | (no reaction; the existing frames kept in step) | S3's chooser reads "All live accounts". L1 filled, L3 list and L4 new and edit are marked "superseded by" B4, B2 and B1, which draw those screens in full. The closed choosers of S0 to S5 are unchanged; "(Backtest)" and the Backtests group appear in B3 and B5's open choosers |
+| 2026-10-13 | B6 | The same change as B7: B6's help must not say the agent "cannot change anything" | B6's help reads "Lets an agent you choose read your journal. Everything it reads is written to the Audit log." (the parked follow-up 2 of the visual review is done) |
 | 2026-10-12 | B7 built | The line under the name must not say the token "cannot change anything": agents are meant to be able to do more than read in later features, and the line would then be wrong | B7's line reads "This token can read your journal." (B6's help still says "It can read; it cannot change anything." and is the owner's to decide) |
 | 2026-10-12 | Build of US4 | (no reaction; the existing frames kept in step) | L2's preview line, L3's footer, L4's help line and S1's trades-table header ("Entry time") are updated in Penpot to the wording above |
 | 2026-10-12 | Analysis of the tasks | A day's trades follow the entry too | The daily review's trades table shows Entry time and is in entry order (listed above); to be confirmed with the re-sign-off |
@@ -179,6 +180,6 @@ Filled in after implementation (constitution principle V).
 - **Wireframe match**: B1 (new Live, new Backtest, changing the kind), B2, B3, B4 (off, on), B5, B6 (off, on, tokens, confirm with Google), B7 (name it, name missing, shown once) and B8 match the signed-off structure, content and states. Differences, all decided and recorded above: B7's line reads "This token can read your journal." (the owner's change, 2026-10-12); the daily review's table shows Entry time (re-sign-off 2026-10-12); the account-form help and the Accounts list footer say entry instead of exit
 - **Design checks run**: critique and audit against `DESIGN.md` and `PRODUCT.md`, run inline in one context and so marked degraded (no sub-agents were started); the impeccable detector on the eight new or changed components found nothing; axe WCAG 2 A and AA in light and night for B1 to B8 and a keyboard-only pass (`e2e/zz-a11y-agent.spec.ts`)
 - **Fixed**: the Kind choice in the account form showed the browser's box around a fieldset (now plain, like the other fields); the "Counting live accounts only" note on Mistakes touched the next card (now inside the counter); the trade-form capture was taken before the preview had answered (a capture fix, not a product one)
-- **Parked** (follow-ups, not blocking): (1) the Trades list is wider than a 1440 px window with long account names and the Backtest tag, so Plan, R and the actions scroll; (2) B6's help still says "It can read; it cannot change anything." (the owner changed B7 only; same change suggested); (3) after a token is made, offer a ready-to-paste Claude Code command in the "shown once" dialog (the first real attempt failed on a missing space after Bearer); (4) a week with no trades shows a "Not reviewed" chip on a backtest account
+- **Parked** (follow-ups, not blocking): (1) the Trades list is wider than a 1440 px window with long account names and the Backtest tag, so Plan, R and the actions scroll; (2) ~~B6's help still says "It can read; it cannot change anything."~~ done on 2026-10-13 (the same change as B7); (3) after a token is made, offer a ready-to-paste Claude Code command in the "shown once" dialog (the first real attempt failed on a missing space after Bearer); (4) a week with no trades shows a "Not reviewed" chip on a backtest account
 - **Not exercised**: a phone layout (the product has none); the step-up through real Google
 - **Owner's approval**: approved on 2026-10-12 ("approve the look of feature 003"), with the four parked items as follow-ups

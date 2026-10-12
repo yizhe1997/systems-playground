@@ -69,7 +69,7 @@ read it. It is off until you turn it on, and nothing here is exposed beyond this
    that client's own documentation. Keep the value out of chat and out of files you commit.
 3. Ask it things ("List my accounts", "How did my last 20 backtest trades compare with my plan?"). It has nine read tools:
    accounts, trades, a day, a week, a month, the mistake list, the mistake counter, the focus and the time zone. It cannot read the
-   audit log, identities, tokens or the export, and it cannot change anything.
+   audit log, identities, tokens or the export, and in this version it only reads.
 4. Audit log, What: Agent read shows every call by token name, never a figure. Revoke one token in Settings, or turn the switch
    off to refuse all of them at once (that revokes none). A request that comes from a web page is refused and recorded as a
    browser request.

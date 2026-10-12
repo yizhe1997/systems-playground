@@ -97,7 +97,7 @@ export function AgentAccessCard({ agent, zone, stepUpAt, stepUpFailed }: { agent
       <div className="stack-md" style={{ maxWidth: 760 }}>
         <div>
           <h2 className="section" id="agent-title">Agent access</h2>
-          <p className="helper">Lets an agent you choose read your journal. It can read; it cannot change anything. Everything it reads is written to the Audit log.</p>
+          <p className="helper">Lets an agent you choose read your journal. Everything it reads is written to the Audit log.</p>
         </div>
 
         <label className="switch">
