@@ -51,6 +51,32 @@ For local work and tests there is a way in without Google: set `TRADECRAFT_ENV=l
 `.env`, restart, and run `node frontend/scripts/dev-mint-session.mjs you@example.com` to get a cookie. Both services **refuse to
 start** if `DEV_SESSION_SECRET` is set while `TRADECRAFT_ENV` is `production` (the default), so remove it when you are done.
 
+## Agent access
+
+An agent (Claude Code, Claude Desktop, any client that speaks the Model Context Protocol) can read your journal, and only
+read it. It is off until you turn it on, and nothing here is exposed beyond this computer.
+
+1. Settings, Agent access: turn the switch on, then New token. Name it ("Claude Desktop, backtests") and copy the value
+   when it is shown: it is shown **once** and cannot be shown again (lose it and you revoke it and make another). Each of
+   these steps asks for a recent Google confirmation first.
+2. Give the value to your agent as a bearer token for `http://127.0.0.1:8081/mcp` (the API's own loopback port). For Claude Code:
+
+   ```bash
+   claude mcp add --transport http tradecraft http://127.0.0.1:8081/mcp --header "Authorization: Bearer <token>"
+   ```
+
+   A client that only speaks stdio (Claude Desktop) needs a bridge such as `mcp-remote` with the same address and header; see
+   that client's own documentation. Keep the value out of chat and out of files you commit.
+3. Ask it things ("List my accounts", "How did my last 20 backtest trades compare with my plan?"). It has nine read tools:
+   accounts, trades, a day, a week, a month, the mistake list, the mistake counter, the focus and the time zone. It cannot read the
+   audit log, identities, tokens or the export, and it cannot change anything.
+4. Audit log, What: Agent read shows every call by token name, never a figure. Revoke one token in Settings, or turn the switch
+   off to refuse all of them at once (that revokes none). A request that comes from a web page is refused and recorded as a
+   browser request.
+
+Backtests are kept apart from live trading: make an account and choose **Backtest**. Its days are never Missing and it stays out
+of live figures until you choose it. A trade belongs to the day it was **entered**, not exited.
+
 ## Test
 
 ```bash
@@ -76,6 +102,7 @@ The Export button on the Trades screen also downloads everything (accounts and e
 
 ## Where things are
 
+- `specs/003-backtest-accounts-and-agent-access/`: backtest accounts, the entry-based trading day and agent read access (spec, plan, tasks, quickstart).
 - `specs/000-log-trades/`: spec, screen list (`screens.md`), plan, tasks and verification notes. The wireframes live in the design tool, not in the repository.
 - `docs/domain.md`: every trading rule in words with worked examples; each is marked unconfirmed until you confirm it.
 - `docs/decisions.md`: dated decisions made while building.
