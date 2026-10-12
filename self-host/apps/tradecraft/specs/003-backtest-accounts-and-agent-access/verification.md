@@ -48,12 +48,18 @@ Two local review passes on the agent gate and everything around it (principle IV
 
 - **A real agent connecting with a real token (Claude Code or Claude Desktop): the owner's manual check.** The tests use the
   SDK's own client against a listening server, which proves the protocol and the gate, not that a particular product
-  connects. Steps are in `quickstart.md` section 4. **Result: partly run, not yet complete.** On 2026-10-12 the owner registered
-  the endpoint in Claude Code with `claude mcp add`; that first attempt failed with HTTP 401 because the header read
-  `Bearertca_...` (no space after `Bearer`). With the space, Claude Code's own client reported the server **Connected**
-  (`claude mcp get`) and a raw `tools/call` of `list_accounts` answered and wrote one `Agent read` entry. **Not yet seen:** an
-  agent asking a question and answering it from the tools, and the revoke refusal seen from the client. The token used was
-  pasted into a chat, so it is to be revoked and replaced. The feature is not done until the whole check is recorded here.
+  connects. Steps are in `quickstart.md` section 4. **Result: connected and read through the owner's own registration; no agent
+  has yet answered a question from the tools.**
+  - 2026-10-12: the owner's first `claude mcp add` failed with HTTP 401 (the header read `Bearertca_...`, no space after `Bearer`);
+    that token was pasted into a chat and revoked.
+  - 2026-10-13: with the owner's second registration (token `Claude00`, local scope of the home folder) Claude Code's own client
+    reports the server **Connected** (`claude mcp get tradecraft`). Using that registration's header, `initialize`, `tools/list`
+    (the nine tools), `list_accounts` (37 live accounts, 0 backtest), `list_trades` (285 live trades, the default), `get_settings`
+    and `mistake_counter` answered, an `export` tool does not exist, and each read is an `Agent read` entry under `Claude00`.
+    (These reads were made by the assistant at the owner's request, not by the owner's agent.)
+  - **Not yet seen:** a model in Claude Code or Desktop asking a question and answering it from the tools (a headless `claude -p`
+    run from the assistant's session could not authenticate), a backtest account's trades (the development journal has no
+    backtest account yet), and the revoke refusal seen from the client. The feature is not done until that is recorded here.
 - **The visual review**: done on 2026-10-12 and approved by the owner (`screens.md`, section Visual review); four follow-ups are parked there.
 - Parked in the visual review: with long account names and a Backtest tag the Trades list is wider than a 1440 px window
   (its last columns scroll); real account names are shorter.
