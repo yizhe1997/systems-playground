@@ -36,8 +36,10 @@ func (s *Server) agentToken() fiber.Handler {
 		}
 
 		var row *store.AgentTokenByHashRow
-		if value, ok := strings.CutPrefix(c.Get("Authorization"), "Bearer "); ok && strings.TrimSpace(value) != "" {
-			r, err := s.q.AgentTokenByHash(ctx, hashToken(strings.TrimSpace(value)))
+		// the scheme name is case-insensitive (RFC 9110); the value is not
+		auth := strings.TrimSpace(c.Get("Authorization"))
+		if len(auth) > 7 && strings.EqualFold(auth[:7], "bearer ") && strings.TrimSpace(auth[7:]) != "" {
+			r, err := s.q.AgentTokenByHash(ctx, hashToken(strings.TrimSpace(auth[7:])))
 			switch {
 			case err == nil:
 				row = &r

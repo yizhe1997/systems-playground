@@ -165,6 +165,7 @@ func (s *Server) createAgentToken(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	c.Set("Cache-Control", "no-store") // the answer holds a secret, once
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"token": toAgentToken(made.ID, made.Name, made.CreatedAt, made.LastUsedAt, made.RevokedAt),
 		"value": value,

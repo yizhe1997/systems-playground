@@ -41,7 +41,12 @@ type readResult struct {
 //
 // The request context is initialised with Init: a bare fasthttp.RequestCtx has no server, and its Done and Err,
 // which the database driver calls through c.Context(), would dereference it (fasthttp v1.51.0).
-func (s *Server) runRead(h fiber.Handler, path string, query url.Values) (readResult, error) {
+func (s *Server) runRead(h fiber.Handler, path string, query url.Values) (res readResult, err error) {
+	defer func() {
+		if p := recover(); p != nil { // a tool must never take the API down; the caller gets a plain failure
+			res, err = readResult{}, errors.New("that read failed")
+		}
+	}()
 	var req fasthttp.Request
 	req.Header.SetMethod(fiber.MethodGet)
 	uri := path
