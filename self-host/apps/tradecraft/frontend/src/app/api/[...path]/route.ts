@@ -9,6 +9,7 @@ import { isFreshStepUp, readSession } from "@/lib/session";
 
 const ALLOWED = new Set([
   "accounts", "trades", "reviews", "weekly", "focus", "mistakes", "settings", "currencies", "export", "identities", "audit",
+  "agent",
 ]);
 const SEGMENT = /^[A-Za-z0-9_-]+$/;
 
@@ -27,8 +28,8 @@ async function handle(request: NextRequest, ctx: { params: Promise<{ path: strin
   }
   const session = await readSession(await cookies());
   if (!session) return refuse(401, "unauthorized", "Not signed in.");
-  // identity changes need a Google confirmation within the last 10 minutes; the API checks it too
-  if (changes && path[0] === "identities" && !isFreshStepUp(session.stepUpAt)) {
+  // identity changes and agent access changes need a Google confirmation within the last 10 minutes; the API checks it too
+  if (changes && (path[0] === "identities" || path[0] === "agent") && !isFreshStepUp(session.stepUpAt)) {
     return refuse(403, "step_up_required", "A recent Google confirmation is needed first. Nothing was changed.");
   }
   const hasBody = method !== "GET" && method !== "HEAD" && method !== "DELETE";

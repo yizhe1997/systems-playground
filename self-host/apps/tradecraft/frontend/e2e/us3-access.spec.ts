@@ -10,7 +10,7 @@ const identities = async () => (await api<Listed>("GET", "/identities")).data;
 
 test("the Access list: add an address, the same one again, a bad one, disable and enable", async ({ page }) => {
   await page.goto("/settings");
-  const card = page.getByRole("region", { name: "Access" });
+  const card = page.getByRole("region", { name: "Access", exact: true });
   await expect(card.getByText("Who can sign in. Every address here is you.")).toBeVisible();
   const owner = card.getByRole("row", { name: new RegExp(OWNER_EMAIL) });
   await expect(owner).toContainText("Active");
@@ -50,7 +50,7 @@ test("the last active address cannot be disabled", async ({ page }) => {
     if (i.email !== OWNER_EMAIL && i.active) expect((await api("POST", `/identities/${i.id}/disable`)).status).toBe(200);
   }
   await page.goto("/settings");
-  const card = page.getByRole("region", { name: "Access" });
+  const card = page.getByRole("region", { name: "Access", exact: true });
   await card.getByRole("row", { name: new RegExp(OWNER_EMAIL) }).getByRole("button", { name: /Disable/ }).click();
   await expect(card.getByText("! This is the last active address. Enable another one before disabling it.")).toBeVisible();
   expect((await identities()).counts.active).toBe(1);

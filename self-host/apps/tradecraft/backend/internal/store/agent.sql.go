@@ -51,6 +51,23 @@ func (q *Queries) AgentTokenByHash(ctx context.Context, tokenHash string) (Agent
 	return i, err
 }
 
+const agentTokenByID = `-- name: AgentTokenByID :one
+SELECT id, name, created_by FROM agent_token WHERE id = $1::uuid
+`
+
+type AgentTokenByIDRow struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedBy string `json:"created_by"`
+}
+
+func (q *Queries) AgentTokenByID(ctx context.Context, id string) (AgentTokenByIDRow, error) {
+	row := q.db.QueryRow(ctx, agentTokenByID, id)
+	var i AgentTokenByIDRow
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedBy)
+	return i, err
+}
+
 const agentTokenForRevoke = `-- name: AgentTokenForRevoke :one
 SELECT id, name, created_at, last_used_at, revoked_at
   FROM agent_token WHERE id = $1::uuid FOR UPDATE

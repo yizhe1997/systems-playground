@@ -35,11 +35,11 @@ for (const scheme of ["light", "dark"] as const) {
 
     test("A2 Access and A5 the sidebar block", async ({ page }) => {
       await page.goto("/settings");
-      await expect(page.getByRole("region", { name: "Access" })).toBeVisible();
+      await expect(page.getByRole("region", { name: "Access", exact: true })).toBeVisible();
       await expect(page.locator(".sidebar").getByText(OWNER_EMAIL)).toBeVisible();
       await clean(page, "A2 filled");
       // the error states
-      const card = page.getByRole("region", { name: "Access" });
+      const card = page.getByRole("region", { name: "Access", exact: true });
       await card.getByLabel("Add an email").fill("not-an-address");
       await card.getByRole("button", { name: "Add email" }).click();
       await expect(card.getByText("! Enter a valid email address, for example name@example.com.")).toBeVisible();
@@ -94,7 +94,7 @@ test("keyboard only: the filters, the Access actions and Sign out are reachable 
   await page.keyboard.press("Tab");
   await expect(page.getByLabel("What")).toBeFocused();
   await page.goto("/settings");
-  const buttons = page.getByRole("region", { name: "Access" }).getByRole("button");
+  const buttons = page.getByRole("region", { name: "Access", exact: true }).getByRole("button");
   for (const b of await buttons.all()) {
     expect(((await b.innerText()) + ((await b.getAttribute("aria-label")) ?? "")).trim().length, "every button has a name").toBeGreaterThan(0);
   }

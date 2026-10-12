@@ -8,10 +8,10 @@ import { Dialog } from "@/components/Dialog";
  * Google's account chooser again and back to Settings; it must be the same Google account as the one signed in.
  * Nothing has been changed when this is shown.
  */
-export function ConfirmItsYouDialog({ open, failed, onCancel }: { open: boolean; failed: boolean; onCancel: () => void }) {
+export function ConfirmItsYouDialog({ open, failed, what = "who can sign in", onCancel }: { open: boolean; failed: boolean; what?: string; onCancel: () => void }) {
   return (
     <Dialog open={open} onClose={onCancel} title="Confirm it's you">
-      <p>You signed in more than 10 minutes ago. Confirm with Google before you change who can sign in.</p>
+      <p>You signed in more than 10 minutes ago. Confirm with Google before you change {what}.</p>
       <p className="helper">Nothing has been changed yet.</p>
       {failed && (
         <p className="field-error" role="alert">

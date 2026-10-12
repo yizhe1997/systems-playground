@@ -60,7 +60,7 @@ test("capture", async ({ browser, page }) => {
 
   // A2 Access
   await page.goto("/settings");
-  const card = page.getByRole("region", { name: "Access" });
+  const card = page.getByRole("region", { name: "Access", exact: true });
   await expect(card).toBeVisible();
   await shot(page, "a2-access-filled");
   await card.getByLabel("Add an email").fill("not-an-address");

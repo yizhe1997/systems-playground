@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { Account, AuditKind, Calendar, Counter, IdentityList, Mistake, DailyReview, ReviewsMonth, Trade, WeeklyReview } from "./types";
+import type { Account, AgentAccess, AuditKind, Calendar, Counter, IdentityList, Mistake, DailyReview, ReviewsMonth, Trade, WeeklyReview } from "./types";
 
 export const getSettings = () => api<{ timeZone: string }>("/settings");
 export const getAccounts = (includeArchived = false) => api<Account[]>(`/accounts?includeArchived=${includeArchived}`);
@@ -18,4 +18,7 @@ export const getWeekly = (accountId: string, date: string) => api<WeeklyReview>(
 // ---------- feature 002 ----------
 export const getIdentities = (status: "all" | "active" | "disabled" = "all") => api<IdentityList>(`/identities?status=${status}`);
 export const getAuditKinds = () => api<AuditKind[]>("/audit/kinds");
+
+// ---------- feature 003 ----------
+export const getAgentAccess = () => api<AgentAccess>("/agent");
 

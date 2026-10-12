@@ -248,6 +248,19 @@ export type AuditEntry = {
   kindLabel: string;
   subject: string;
   changedFields: string[];
+  /** For an agent entry: the name of the token that made it. Empty otherwise. */
+  actorLabel: string;
 };
 export type AuditKind = { kind: string; label: string };
+
+// ---------- feature 003 ----------
+export type AgentToken = {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  active: boolean;
+};
+export type AgentAccess = { enabled: boolean; tokens: AgentToken[] };
 

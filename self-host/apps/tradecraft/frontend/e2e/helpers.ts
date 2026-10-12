@@ -1,6 +1,11 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { expect, type Page } from "@playwright/test";
 import { serviceToken } from "../scripts/session-mint.mjs";
 import { OWNER_EMAIL } from "./auth";
+
+/** Where an agent token made by a spec is written so scripts/check-loopback.sh can look for it: outside the repository. */
+export const AGENT_TOKEN_FILE = join(tmpdir(), "tradecraft-e2e-agent-token.txt");
 
 // The API is reached directly only to set up data; everything under test goes through the browser.
 export const API = process.env.E2E_API_URL ?? "http://127.0.0.1:8081";

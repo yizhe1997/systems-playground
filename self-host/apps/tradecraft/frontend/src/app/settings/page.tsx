@@ -1,8 +1,9 @@
 import { unstable_rethrow } from "next/navigation";
 import { cookies } from "next/headers";
-import { getIdentities, getSettings } from "@/lib/data";
+import { getAgentAccess, getIdentities, getSettings } from "@/lib/data";
 import { readSession } from "@/lib/session";
 import { AccessCard } from "@/components/AccessCard";
+import { AgentAccessCard } from "@/components/AgentAccessCard";
 import { CouldNotLoad } from "@/components/Notice";
 import { SettingsForm } from "@/components/SettingsForm";
 
@@ -14,8 +15,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const session = await readSession(await cookies());
   let settings;
   let identities;
+  let agent;
   try {
-    [settings, { identities }] = await Promise.all([getSettings(), getIdentities()]);
+    [settings, { identities }, agent] = await Promise.all([getSettings(), getIdentities(), getAgentAccess()]);
   } catch (err) {
     unstable_rethrow(err);
     return <CouldNotLoad />;
@@ -33,6 +35,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <div className="stack-md">
         <SettingsForm timeZone={settings.timeZone} zones={zones} />
         <AccessCard identities={identities} zone={settings.timeZone} stepUpAt={session?.stepUpAt ?? 0} stepUpFailed={stepUpFailed} />
+        <AgentAccessCard agent={agent} zone={settings.timeZone} stepUpAt={session?.stepUpAt ?? 0} stepUpFailed={stepUpFailed} />
       </div>
     </>
   );

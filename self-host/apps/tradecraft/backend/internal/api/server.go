@@ -40,6 +40,10 @@ func New(pool *pgxpool.Pool, now func() time.Time, secret string) *fiber.App {
 	s.app = app
 	app.Get("/health", s.health) // the one open route; registered first so nothing below can gate it
 
+	// The agent door (feature 003): the Model Context Protocol, read-only, behind its own gate. An agent token is
+	// never accepted by an owner route, and a service token is never accepted here.
+	app.Post("/mcp", s.agentToken(), s.mcpHandler())
+
 	// Called by web-tier code only, with a system token: sign-in decisions, sign-out, step-up confirmations.
 	internal := app.Group("/internal", s.gate.System())
 	internal.Post("/sign-in", s.internalSignIn)
@@ -105,10 +109,6 @@ func New(pool *pgxpool.Pool, now func() time.Time, secret string) *fiber.App {
 	app.Put("/agent", s.gate.RequireStepUp(), s.setAgent)
 	app.Post("/agent/tokens", s.gate.RequireStepUp(), s.createAgentToken)
 	app.Post("/agent/tokens/:id/revoke", s.gate.RequireStepUp(), s.revokeAgentToken)
-
-	// SPIKE (T001): behind the owner gate for now. T031 and T032 move it before the owner gate, behind the agent
-	// token's own middleware.
-	app.Post("/mcp", s.mcpHandler())
 	return app
 }
 

@@ -35,5 +35,8 @@ SELECT t.id, t.name, t.created_by, t.revoked_at, (i.disabled_at IS NOT NULL)::bo
   FROM agent_token t JOIN identity i ON i.id = t.created_by
  WHERE t.token_hash = sqlc.arg(token_hash)::text;
 
+-- name: AgentTokenByID :one
+SELECT id, name, created_by FROM agent_token WHERE id = sqlc.arg(id)::uuid;
+
 -- name: TouchAgentToken :exec
 UPDATE agent_token SET last_used_at = now() WHERE id = sqlc.arg(id)::uuid;
