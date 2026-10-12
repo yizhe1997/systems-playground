@@ -57,9 +57,13 @@ Two local review passes on the agent gate and everything around it (principle IV
     (the nine tools), `list_accounts` (37 live accounts, 0 backtest), `list_trades` (285 live trades, the default), `get_settings`
     and `mistake_counter` answered, an `export` tool does not exist, and each read is an `Agent read` entry under `Claude00`.
     (These reads were made by the assistant at the owner's request, not by the owner's agent.)
-  - **Not yet seen:** a model in Claude Code or Desktop asking a question and answering it from the tools (a headless `claude -p`
-    run from the assistant's session could not authenticate), a backtest account's trades (the development journal has no
-    backtest account yet), and the revoke refusal seen from the client. The feature is not done until that is recorded here.
+  - **Not seen, and deferred by the owner on 2026-10-13** ("consider it as working for now"): a model asking a question and
+    answering it from the tools, a backtest account's trades (the development journal has no backtest account yet), and the revoke
+    refusal seen from the client. A headless `claude -p` run from the assistant's session could not authenticate. The owner uses
+    Claude Desktop and will connect it after the first live deployment (it needs a bridge such as `mcp-remote` for a stdio-only
+    client, see the README). Claude Code also reports the server Connected from any folder (user scope, registered 2026-10-13).
+    This is an accepted deferral, not a pass: the protocol, the gate and the audit trail are proven by the automated tests above,
+    and a real model using the tools is not.
 - **The visual review**: done on 2026-10-12 and approved by the owner (`screens.md`, section Visual review); four follow-ups are parked there.
 - Parked in the visual review: with long account names and a Backtest tag the Trades list is wider than a 1440 px window
   (its last columns scroll); real account names are shorter.
