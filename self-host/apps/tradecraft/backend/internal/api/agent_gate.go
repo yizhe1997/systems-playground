@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
@@ -74,9 +76,52 @@ func (s *Server) agentToken() fiber.Handler {
 	}
 }
 
+// A refusal is one row of an append-only log that is never trimmed, and anything that can reach this port can cause one,
+// a web page the owner has open included. So the rows an unauthenticated caller can make are capped: a burst of
+// refusalBurst, then one more every refusalEvery. The caller is refused all the same; a refusal that is not written is
+// counted in the server log (never with the token).
+const (
+	refusalBurst = 30
+	refusalEvery = 10 * time.Second
+)
+
+type refusalLimiter struct {
+	mu      sync.Mutex
+	tokens  float64
+	last    time.Time
+	dropped int
+}
+
+// allow reports whether one more refusal may be written now.
+func (l *refusalLimiter) allow(now time.Time) (ok bool, dropped int) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.last.IsZero() {
+		l.tokens = refusalBurst
+	} else {
+		l.tokens = min(refusalBurst, l.tokens+now.Sub(l.last).Seconds()/refusalEvery.Seconds())
+	}
+	l.last = now
+	if l.tokens < 1 {
+		l.dropped++
+		return false, 0
+	}
+	l.tokens--
+	dropped, l.dropped = l.dropped, 0
+	return true, dropped
+}
+
 // agentRefused records one refused request. It is best effort: the caller is refused either way. An entry names the
 // token (as an agent acting for its creator) only when the token is known; otherwise it is a system entry.
 func (s *Server) agentRefused(c *fiber.Ctx, row *store.AgentTokenByHashRow, reason string) {
+	slog.Warn("agent.refused", "reason", reason) // never the token
+	ok, dropped := s.refusals.allow(time.Now())
+	if !ok {
+		return // over the cap: refused, counted in the next row's log line
+	}
+	if dropped > 0 {
+		slog.Warn("agent.refused rows not written", "count", dropped)
+	}
 	ev := auditEvent{Actor: "system", Kind: "agent_refused", Subject: reason}
 	if row != nil {
 		by := row.CreatedBy
@@ -85,5 +130,4 @@ func (s *Server) agentRefused(c *fiber.Ctx, row *store.AgentTokenByHashRow, reas
 	if err := recordAudit(c.Context(), s.q, ev); err != nil {
 		slog.Error("agent refusal not recorded", "reason", reason, "err", err)
 	}
-	slog.Warn("agent.refused", "reason", reason) // never the token
 }

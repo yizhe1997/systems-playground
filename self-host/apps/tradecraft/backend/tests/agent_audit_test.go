@@ -162,6 +162,22 @@ func TestRefusedRequestsAreOneGenericAnswerAndOneEntryEach(t *testing.T) {
 	}
 }
 
+// The log is append-only and never trimmed, so what an unauthenticated caller (or a web page) can write to it is capped:
+// a burst, then a trickle. Every request is still refused.
+func TestRefusalRowsAreCapped(t *testing.T) {
+	reset(t)
+	d := startDoor(t)
+	for i := 0; i < 60; i++ {
+		if status, _ := d.raw(t, "", nil, rpcCallAccounts); status != 401 {
+			t.Fatalf("request %d: %d, want 401", i, status)
+		}
+	}
+	n := len(agentRows(t))
+	if n < 25 || n > 35 {
+		t.Errorf("%d refusal rows for 60 refused requests, want about 30 (the burst)", n)
+	}
+}
+
 // An agent token opens nothing of the owner's; a service token opens nothing of the agent's (FR-013).
 func TestTheTwoKindsOfTokenAreNotInterchangeable(t *testing.T) {
 	reset(t)

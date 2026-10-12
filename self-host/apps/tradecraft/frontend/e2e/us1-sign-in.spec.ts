@@ -42,6 +42,14 @@ async function contextAs(browser: Browser, email: string) {
 test.describe("no session", () => {
   test.use({ storageState: UNSIGNED });
 
+  test("the app cannot be framed by another page, and says nothing about its framework", async ({ request }) => {
+    const res = await request.get("/sign-in");
+    expect(res.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(res.headers()["x-frame-options"]).toBe("DENY");
+    expect(res.headers()["x-content-type-options"]).toBe("nosniff");
+    expect(res.headers()["x-powered-by"]).toBeUndefined();
+  });
+
   test("every page sends you to the sign-in screen, which has no sidebar", async ({ page }) => {
     const routes = pageRoutes();
     expect(routes.length, "the page list looks wrong").toBeGreaterThan(8);

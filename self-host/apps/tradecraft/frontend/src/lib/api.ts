@@ -63,6 +63,8 @@ export async function forward(path: string, init: RequestInit): Promise<Response
     return new Response(await res.arrayBuffer(), {
       status: res.status,
       headers: {
+        // everything here is the owner's private data (and one answer holds a token's value, once): never kept
+        "cache-control": "no-store",
         "content-type": res.headers.get("content-type") ?? "application/json",
         ...(res.headers.get("content-disposition") ? { "content-disposition": res.headers.get("content-disposition")! } : {}),
       },

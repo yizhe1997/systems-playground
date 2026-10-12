@@ -1,6 +1,6 @@
 module tradecraft
 
-go 1.26.8
+go 1.26.9
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.15
