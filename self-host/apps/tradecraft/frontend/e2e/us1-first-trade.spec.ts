@@ -37,7 +37,7 @@ test("first run: no account, then an account, then a trade A with its figures wo
   await expect(p).toContainText("$400.00");
   await expect(p).toContainText("+0.24 R");
   await expect(p).toContainText("Wed 1 Oct 2025");
-  await expect(p).toContainText("exit read in Central Time; Funded 50K starts its trading day at 17:00");
+  await expect(p).toContainText("entry read in Central Time; Funded 50K starts its trading day at 17:00");
   await page.getByRole("button", { name: "Save trade" }).click();
 
   // back on the list, on the month of the trade
@@ -45,6 +45,7 @@ test("first run: no account, then an account, then a trade A with its figures wo
   const row = page.getByRole("row", { name: /NQ/ });
   await expect(row).toContainText("+$95.40");
   await expect(row).toContainText("+0.24 R");
+  await expect(row).toContainText("Wed 1 Oct 09:41"); // the entry first, then the exit
   await expect(row).toContainText("Wed 1 Oct 09:58");
   expect(Date.now() - started, "from opening the form to the trade in the list").toBeLessThan(60_000);
 });

@@ -45,7 +45,7 @@ test("no console errors or failed requests across Reviews, a day, a week, Mistak
     await page.waitForLoadState("networkidle");
   }
   await page.goto(dayUrl(s.id));
-  await page.getByRole("button", { name: /^Judge NQ Long at 10:31/ }).click();
+  await page.getByRole("button", { name: /^Judge NQ Long at 10:14/ }).click();
   await page.getByRole("dialog").getByLabel("Yes").check();
   await page.getByRole("dialog").getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();

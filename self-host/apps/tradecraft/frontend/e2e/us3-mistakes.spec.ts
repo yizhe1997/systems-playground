@@ -11,7 +11,7 @@ test("tag in the drawer, record one for the day, read the counter, reach a stop 
   expect(m.status).toBe(201);
 
   await page.goto(dayUrl(s.id));
-  for (const t of [/^Judge NQ Long at 10:31/, /^Judge NQ Long at 10:52/]) {
+  for (const t of [/^Judge NQ Long at 10:14/, /^Judge NQ Long at 10:40/]) {
     await page.getByRole("button", { name: t }).click();
     const drawer = page.getByRole("dialog");
     await drawer.getByLabel("No", { exact: true }).check();

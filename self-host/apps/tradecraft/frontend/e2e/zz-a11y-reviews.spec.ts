@@ -46,7 +46,7 @@ for (const scheme of ["light", "dark"] as const) {
       await page.goto(dayUrl(s.id));
       await expect(page.getByRole("heading", { name: "Daily review" })).toBeVisible();
       await clean(page, "S1 filled");
-      await page.getByRole("button", { name: /^Judge NQ Long at 10:52/ }).click();
+      await page.getByRole("button", { name: /^Judge NQ Long at 10:40/ }).click();
       const drawer = page.getByRole("dialog");
       await expect(drawer.getByText("What was this decision?")).toBeVisible();
       await clean(page, "S2 loss, not judged");
@@ -58,7 +58,7 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(drawer.getByText("Leave without saving?")).toBeVisible();
       await clean(page, "S2 leave confirmation");
       await drawer.getByRole("button", { name: "Leave" }).click();
-      await page.getByRole("button", { name: /^Judge NQ Long at 09:58/ }).click();
+      await page.getByRole("button", { name: /^Judge NQ Long at 09:41/ }).click();
       await expect(drawer.getByLabel(/This win was a mistake/)).toBeVisible();
       await clean(page, "S2 win");
       await drawer.getByRole("button", { name: "Cancel" }).click();
@@ -122,7 +122,7 @@ test("keyboard only: stars, the drawer, dialogs, the collapsible weeks and the p
   await expect(mental.getByRole("radio", { name: "4 of 5" })).toBeChecked();
 
   // the drawer opens from the keyboard, keeps focus inside, and Escape closes it and returns focus to its button
-  const judge = page.getByRole("button", { name: /^Judge NQ Long at 10:52/ });
+  const judge = page.getByRole("button", { name: /^Judge NQ Long at 10:40/ });
   await judge.focus();
   await page.keyboard.press("Enter");
   const drawer = page.getByRole("dialog");

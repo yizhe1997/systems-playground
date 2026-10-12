@@ -43,6 +43,7 @@ export function TradesTable({ trades, zone, deletedView, backtestIds = [] }: { t
         <table className="table">
           <thead>
             <tr>
+              <th scope="col">Entry time</th>
               <th scope="col">Exit time</th>
               <th scope="col">Trading day</th>
               <th scope="col">Account</th>
@@ -57,9 +58,10 @@ export function TradesTable({ trades, zone, deletedView, backtestIds = [] }: { t
           </thead>
           <tbody>
             {trades.map((t) => {
-              const label = `${t.instrument} ${t.direction} trade of ${dateTime(t.exitAt, zone)}`;
+              const label = `${t.instrument} ${t.direction} trade of ${dateTime(t.entryAt, zone)}`;
               return (
                 <tr key={t.id} className={deletedView ? "muted-row" : undefined}>
+                  <td>{dateTime(t.entryAt, zone)}</td>
                   <td>{dateTime(t.exitAt, zone)}</td>
                   <td>{dayLabel(t.tradingDay, false)}</td>
                   <td>

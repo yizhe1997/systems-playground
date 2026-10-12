@@ -34,7 +34,7 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page.getByText(/Day total .* followed the plan/)).toBeVisible();
 
       // the judge drawer: result and plan in one strip; a trade with no stop has a dash and its reason
-      await page.getByRole("button", { name: /^Judge NQ Long at 10:31/ }).click();
+      await page.getByRole("button", { name: /^Judge NQ Long at 10:14/ }).click();
       const strip = page.getByRole("dialog").getByRole("group", { name: "Result" });
       await expect(strip).toContainText("$");
       await expect(strip).toContainText("Plan");

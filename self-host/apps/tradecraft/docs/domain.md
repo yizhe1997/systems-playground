@@ -7,17 +7,22 @@ this file says what they mean and shows worked examples that the tests also use.
 
 ## Trading day
 
-The trading day of a trade is read from its **exit** time, in the journal time zone (one setting for the whole journal,
-Central Time by default).
+The trading day of a trade is read from its **entry** time, in the journal time zone (one setting for the whole journal,
+Central Time by default). A trade belongs to the day it was decided, whatever day it was exited.
 
-- With no account start time: the calendar date of the exit.
-- With an account start time S: add (24 hours − S) to the local exit time and take the date. So with S = 17:00, an exit
-  at 17:00 or later counts to the next calendar date, and an exit at 16:59 stays on the same date.
+- With no account start time: the calendar date of the entry.
+- With an account start time S: add (24 hours − S) to the local entry time and take the date. So with S = 17:00, an entry
+  at 17:00 or later counts to the next calendar date, and an entry at 16:59 stays on the same date.
 
-Worked examples (journal zone America/Chicago, October, UTC−5, account start 17:00): Tue 7 Oct 17:30 gives 8 Oct; Tue 7 Oct
-16:59 gives 7 Oct; Tue 7 Oct 17:00 exactly gives 8 Oct; with no start time, Tue 7 Oct 17:30 gives 7 Oct.
+Worked examples (journal zone America/Chicago, October, UTC−5, account start 17:00): entered Tue 7 Oct 17:30 gives 8 Oct;
+entered Tue 7 Oct 16:59 gives 7 Oct; entered Tue 7 Oct 17:00 exactly gives 8 Oct; entered 16:50 and exited 17:10 gives
+7 Oct (the exit does not matter); entered Tue 7 Oct 23:30 and exited Wed 8 Oct 00:20 gives 8 Oct. With no start time,
+entered Tue 7 Oct 22:00 and exited Wed 8 Oct 01:00 gives 7 Oct.
 
-- **Status:** owner decision 2026-10-11: the trading day is to be read from the **entry** time, not the exit time. The text above describes the behaviour until feature `003-backtest-accounts-and-agent-access` is built (then this section is rewritten with entry-based examples and this note is replaced by the confirmation date).
+- **Status:** owner decision 2026-10-11 (feature `003-backtest-accounts-and-agent-access`, user story 4): the day follows the
+  **entry**, not the exit. It was exit-based from feature 000 until then; on arrival every trade's day was recomputed once
+  from its entry. The cost, accepted by the owner: a day that was already reviewed shows a trade entered that day but exited
+  later, so its figures can change. A future prop daily-loss rule may group by exit for its own purpose; that is its own decision.
 - Confirmed by owner on:
 - Source:
 
@@ -89,8 +94,8 @@ the mistake counter alike. All are **unconfirmed** interpretations until the own
 
 ## Week and month
 
-A week runs Monday to Sunday and a month is the calendar month, both taken on the **trading day** (never on the exit
-timestamp). A week is listed in the Reviews screen under the month its Sunday falls in. The mistake counter counts a week
+A week runs Monday to Sunday and a month is the calendar month, both taken on the **trading day** (never on the entry
+or exit timestamp itself). A week is listed in the Reviews screen under the month its Sunday falls in. The mistake counter counts a week
 whole in the week column, and in the month column only the days of that week that fall in the month.
 
 Worked example: Wed 1 Oct 2025 is in the week of Mon 29 Sep to Sun 5 Oct, listed under October. That week crosses two months:
@@ -107,9 +112,9 @@ shown with it is the month of its Sunday, October.
 "Today" belongs to the account: the trading day of the current moment (`account_today`). For an account whose trading day
 starts at 17:00, today is already tomorrow at 17:30.
 
-Worked example (a 17:00 account): a trade that exits at 17:10 on Tue 30 Sep belongs to Wed 1 Oct; one that exits at 16:50
-belongs to Tue 30 Sep. The sample day of Wed 1 Oct 2025 uses a 17:00 account, so its three trades (exits at 09:58, 10:31, 10:52)
-all belong to 1 Oct. The database clock decides what "today" is, so tests that need the current week read it from the database.
+Worked example (a 17:00 account): a trade entered at 17:10 on Tue 30 Sep belongs to Wed 1 Oct; one entered at 16:50
+belongs to Tue 30 Sep. The sample day of Wed 1 Oct 2025 uses a 17:00 account, so its three trades (entered at 09:41, 10:14,
+10:40) all belong to 1 Oct. The database clock decides what "today" is, so tests that need the current week read it from the database.
 
 - **Status:** unconfirmed.
 - Confirmed by owner on:

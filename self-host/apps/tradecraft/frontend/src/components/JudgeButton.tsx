@@ -98,7 +98,7 @@ function JudgeDrawer({ tradeId, accountName, zone, onClose }: { tradeId: string;
 
   const t = j?.trade;
   const title = t
-    ? `${t.instrument} ${t.direction === "long" ? "Long" : "Short"} x${plain(t.size)} · ${dayLabel(t.exitAt.slice(0, 10), false)} · ${clock(t.entryAt, zone)} to ${clock(t.exitAt, zone)} · ${accountName}`
+    ? `${t.instrument} ${t.direction === "long" ? "Long" : "Short"} x${plain(t.size)} · ${dayLabel(t.entryAt.slice(0, 10), false)} · ${clock(t.entryAt, zone)} to ${clock(t.exitAt, zone)} · ${accountName}`
     : "Judge a trade";
 
   return (

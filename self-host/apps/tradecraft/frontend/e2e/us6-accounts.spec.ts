@@ -17,7 +17,7 @@ test("edit dialog: notices, name already used, start 00:00 refused, rename saved
   await dialog.getByLabel("Name").fill(mine.name);
   await dialog.getByLabel(/Trading-day start/).fill("00:00");
   await dialog.getByRole("button", { name: "Save account" }).click();
-  await expect(dialog).toContainText("! Start time cannot be 00:00. Leave it empty to use the calendar date of each exit.");
+  await expect(dialog).toContainText("! Start time cannot be 00:00. Leave it empty to use the calendar date of each entry.");
 
   await dialog.getByLabel(/Trading-day start/).fill("18:30");
   await dialog.getByLabel("Name").fill(mine.name + " renamed");

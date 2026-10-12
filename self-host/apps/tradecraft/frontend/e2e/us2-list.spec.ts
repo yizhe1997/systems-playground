@@ -17,7 +17,7 @@ test("filter by account and by date range; Clear filters; newest first", async (
   await expect(page).toHaveURL(new RegExp(`account=${a.id}`));
   const rows = page.locator("tbody tr");
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(0)).toContainText("AA2"); // newest exit first
+  await expect(rows.nth(0)).toContainText("AA2"); // newest entry first
   await expect(rows.nth(1)).toContainText("AA1");
 
   await pickRange(page, "2025-10-02", "2025-10-05");

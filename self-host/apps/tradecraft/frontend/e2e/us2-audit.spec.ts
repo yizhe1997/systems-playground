@@ -29,7 +29,7 @@ test("every recorded action is a row in the Audit log, newest first, with no fig
     expect(text, kind).toContain(kind);
   }
   const deleted = rows.filter({ hasText: "Trade deleted" }).first();
-  await expect(deleted).toContainText("NQ long trade of Wed 1 Oct 09:58");
+  await expect(deleted).toContainText("NQ long trade of Wed 1 Oct 09:41");
   await expect(deleted).toContainText("status");
   // no money figure, price or note in the log
   expect(text).not.toMatch(/\$\s?\d|21450|95\.40|\+\d+\.\d\d/);

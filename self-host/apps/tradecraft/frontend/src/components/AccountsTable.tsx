@@ -96,7 +96,7 @@ export function AccountsView({ accounts, currencies, showArchived, openNew }: { 
           <div className="table-foot stack-md">
             {showArchived && <p className="helper">Archived accounts keep all their trades. Restore one to use it again.</p>}
             <p className="helper">Backtest accounts are marked in every account chooser and left out of live figures until you choose them.</p>
-            <p className="helper">A trade that exits at or after the start time counts to the next day. With no start time, a trade counts to the calendar date of its exit.</p>
+            <p className="helper">A trade entered at or after the start time counts to the next day. With no start time, a trade counts to the calendar date of its entry.</p>
           </div>
         </div>
       )}

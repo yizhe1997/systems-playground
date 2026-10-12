@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { api, fillTrade, makeAccount, makeTrade, preview, tradesFor, uniq } from "./helpers";
 
-test("the preview shows the trading day, from the exit and the account's start", async ({ page }) => {
+test("the preview shows the trading day, from the entry and the account's start", async ({ page }) => {
   const acct = await makeAccount(uniq("Day"), "USD", "17:00");
   await page.goto("/trades/new");
   await fillTrade(page, {
@@ -19,8 +19,8 @@ test("a time that does not exist is refused in the form's words", async ({ page 
   await page.goto("/trades/new");
   await fillTrade(page, {
     account: acct.name, instrument: "GP1", direction: "Long", size: "1",
-    entryPrice: "100", entryDate: "2025-03-09", entryTime: "01:30",
-    exitPrice: "101", exitDate: "2025-03-09", exitTime: "02:30", dollarsPerPoint: "10",
+    entryPrice: "100", entryDate: "2025-03-09", entryTime: "02:30",
+    exitPrice: "101", exitDate: "2025-03-09", exitTime: "04:30", dollarsPerPoint: "10",
   });
   await expect(preview(page)).toContainText("That time does not exist on that date in this time zone.");
   await page.getByRole("button", { name: "Save trade" }).click();

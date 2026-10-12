@@ -37,8 +37,8 @@ export function ResultPreview({ preview: p, values: v, currency, accountName, ac
   const riskFormula = p?.risk != null ? `|${v.entryPrice} - ${v.stopPrice}| x ${v.size} x ${v.dollarsPerPoint}` : undefined;
   const cost = p?.costs != null ? (/^[0.]*$/.test(p.costs) ? "0" : "-" + p.costs) : null;
   const dayHelper = accountName
-    ? `exit read in ${zoneLabel}; ${accountName} ${accountStart ? `starts its trading day at ${accountStart}` : "has no trading-day start"}`
-    : `exit read in ${zoneLabel}`;
+    ? `entry read in ${zoneLabel}; ${accountName} ${accountStart ? `starts its trading day at ${accountStart}` : "has no trading-day start"}`
+    : `entry read in ${zoneLabel}`;
 
   return (
     <section className="card" aria-labelledby="preview-title" aria-live="polite">
@@ -67,7 +67,7 @@ export function ResultPreview({ preview: p, values: v, currency, accountName, ac
           {p?.rMultiple != null ? rValue(p.rMultiple) : <Dash reason={r.rMultiple ?? "needs a net result and a risk"} />}
         </Row>
         <Row name="Trading day" helper={dayHelper}>
-          {p?.tradingDay ? dayLabel(p.tradingDay) : <Dash reason={r.tradingDay ?? "needs an exit time"} />}
+          {p?.tradingDay ? dayLabel(p.tradingDay) : <Dash reason={r.tradingDay ?? "needs an entry time"} />}
         </Row>
       </div>
       <p className="helper" style={{ marginTop: 8 }}>All money is exact. Nothing is rounded until it is shown.</p>

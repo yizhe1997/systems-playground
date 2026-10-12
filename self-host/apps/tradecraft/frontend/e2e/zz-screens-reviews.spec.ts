@@ -72,11 +72,11 @@ test("capture the 001 screens", async ({ page }) => {
 
   // S2
   await page.goto(dayUrl(funded.id));
-  await page.getByRole("button", { name: /^Judge NQ Long at 10:52/ }).click();
+  await page.getByRole("button", { name: /^Judge NQ Long at 10:40/ }).click();
   await expect(page.getByRole("dialog").getByText("Which mistakes?")).toBeVisible();
   await shot(page, "s2-judge-a-loss-mistake");
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: /^Judge NQ Long at 09:58/ }).click();
+  await page.getByRole("button", { name: /^Judge NQ Long at 09:41/ }).click();
   await shot(page, "s2-judge-a-win");
   await page.keyboard.press("Escape");
 

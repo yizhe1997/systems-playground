@@ -10,7 +10,7 @@ test("judge a loss: valid loss needs Yes, the numbers and the Trades list follow
   await expect(page.getByText("Plan followed", { exact: true })).toBeVisible();
 
   // W: plan Yes
-  await page.getByRole("button", { name: /^Judge NQ Long at 09:58/ }).click();
+  await page.getByRole("button", { name: /^Judge NQ Long at 09:41/ }).click();
   const drawer = page.getByRole("dialog");
   await expect(drawer.getByRole("heading", { name: /NQ Long x1 · .* 09:41 to 09:58 · / })).toBeVisible();
   await drawer.getByLabel("Yes").check();
@@ -18,7 +18,7 @@ test("judge a loss: valid loss needs Yes, the numbers and the Trades list follow
   await expect(drawer).toBeHidden();
 
   // L1: plan No; valid loss is dashed and gives its reason; choosing Yes makes it available
-  await page.getByRole("button", { name: /^Judge NQ Long at 10:31/ }).click();
+  await page.getByRole("button", { name: /^Judge NQ Long at 10:14/ }).click();
   await expect(drawer.getByText("What was this decision?")).toBeVisible();
   await drawer.getByLabel("No", { exact: true }).check();
   await expect(drawer.getByText(NOT_FOLLOWED)).toBeVisible();
@@ -51,7 +51,7 @@ test("judge a loss: valid loss needs Yes, the numbers and the Trades list follow
 test("a win can be flagged as a mistake; Cancel with changes asks first", async ({ page }) => {
   const s = await sampleDay("JudgeWin");
   await page.goto(dayUrl(s.id));
-  await page.getByRole("button", { name: /^Judge NQ Long at 09:58/ }).click();
+  await page.getByRole("button", { name: /^Judge NQ Long at 09:41/ }).click();
   const drawer = page.getByRole("dialog");
   await expect(drawer.getByLabel(/This win was a mistake/)).toBeVisible();
   await expect(drawer.getByText("Valid loss")).toHaveCount(0);
@@ -69,7 +69,7 @@ test("a judgement changed elsewhere is not overwritten", async ({ page }) => {
   const s = await sampleDay("JudgeStale");
   await api("PUT", `/trades/${s.w}/judgement`, { planFollowed: "yes" });
   await page.goto(dayUrl(s.id));
-  await page.getByRole("button", { name: /^Judge NQ Long at 09:58/ }).click();
+  await page.getByRole("button", { name: /^Judge NQ Long at 09:41/ }).click();
   const drawer = page.getByRole("dialog");
   await expect(drawer.getByLabel("Yes")).toBeChecked();
   // someone else changes it while the drawer is open

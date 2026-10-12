@@ -17,7 +17,7 @@ export function DayTradesTable({ trades, stats, zone, zoneLabel, accountName }: 
         <table className="trade-grid">
           <thead>
             <tr>
-              <th scope="col">Time</th>
+              <th scope="col">Entry time</th>
               <th scope="col">Instrument</th>
               <th scope="col">Side</th>
               <th scope="col">Size</th>
@@ -31,7 +31,7 @@ export function DayTradesTable({ trades, stats, zone, zoneLabel, accountName }: 
           <tbody>
             {trades.map((t) => (
               <tr key={t.id}>
-                <td>{clock(t.exitAt, zone)}</td>
+                <td>{clock(t.entryAt, zone)}</td>
                 <td className="instrument">{t.instrument}</td>
                 <td>{t.direction === "long" ? "Long" : "Short"}</td>
                 <td className="num">{plain(t.size)}</td>
@@ -47,7 +47,7 @@ export function DayTradesTable({ trades, stats, zone, zoneLabel, accountName }: 
                   )}
                 </td>
                 <td>{t.judgement.mistakes.length > 0 ? t.judgement.mistakes.join(", ") : <span className="helper">—</span>}</td>
-                <td><JudgeButton tradeId={t.id} accountName={accountName} zone={zone} label={`${t.instrument} ${t.direction === "long" ? "Long" : "Short"} at ${clock(t.exitAt, zone)}`} /></td>
+                <td><JudgeButton tradeId={t.id} accountName={accountName} zone={zone} label={`${t.instrument} ${t.direction === "long" ? "Long" : "Short"} at ${clock(t.entryAt, zone)}`} /></td>
               </tr>
             ))}
           </tbody>

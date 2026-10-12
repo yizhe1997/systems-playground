@@ -116,7 +116,7 @@ function AccountForm({ account, currencies, onClose }: Omit<Props, "open">) {
         <input id="a-start" className="field-input" placeholder="e.g. 17:00" inputMode="numeric" value={start} autoComplete="off"
           onChange={(e) => { setStart(e.target.value); clear("tradingDayStart"); }} {...inv("tradingDayStart")} />
         {err("tradingDayStart")}
-        <p className="helper">Leave the start empty to use the calendar date of each exit. Example: with 17:00, a trade that exits at 17:30 counts to the next day.</p>
+        <p className="helper">Leave the start empty to use the calendar date of each entry. Example: with 17:00, a trade entered at 17:30 counts to the next day.</p>
       </div>
       <fieldset className="field">
         <legend className="label">Kind</legend>

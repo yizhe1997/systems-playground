@@ -129,6 +129,9 @@ Every word the owner will read. No placeholders.
 |---|---|---|
 | Trade form preview | exit read in Central Time; Funded 50K starts its trading day at 17:00 | entry read in Central Time; Funded 50K starts its trading day at 17:00 |
 | Audit log, a trade's name | NQ long trade of Wed 1 Oct 09:58 (the exit time) | the same form with the **entry** time |
+| Account form, help under Trading-day start | Leave the start empty to use the calendar date of each exit. Example: with 17:00, a trade that exits at 17:30 counts to the next day. | Leave the start empty to use the calendar date of each entry. Example: with 17:00, a trade entered at 17:30 counts to the next day. |
+| Accounts list, footer | A trade that exits at or after the start time counts to the next day. With no start time, a trade counts to the calendar date of its exit. | A trade entered at or after the start time counts to the next day. With no start time, a trade counts to the calendar date of its entry. |
+| Account form, start 00:00 error | ... Leave it empty to use the calendar date of each exit. | ... Leave it empty to use the calendar date of each entry. |
 | Daily review, trades table | first column "Time" shows the exit time; trades in exit order | first column "Entry time" shows the entry time; trades in entry order (the same in the row's accessible name and the judgement dialog's heading) |
 
 ## Constitution check
@@ -148,6 +151,7 @@ Every word the owner will read. No placeholders.
 | 2026-10-11 | B4, B5 | Show backtests off by default; "All live accounts" is fine | No change |
 | 2026-10-11 | Clarify | A token reads the whole journal; one audit row per agent read (no preference) | Recorded in spec Clarifications; no frame changes |
 | 2026-10-12 | Build of US1 | (no reaction; the existing frames kept in step) | S3's chooser reads "All live accounts". L1 filled, L3 list and L4 new and edit are marked "superseded by" B4, B2 and B1, which draw those screens in full. The closed choosers of S0 to S5 are unchanged; "(Backtest)" and the Backtests group appear in B3 and B5's open choosers |
+| 2026-10-12 | Build of US4 | (no reaction; the existing frames kept in step) | L2's preview line, L3's footer, L4's help line and S1's trades-table header ("Entry time") are updated in Penpot to the wording above |
 | 2026-10-12 | Analysis of the tasks | A day's trades follow the entry too | The daily review's trades table shows Entry time and is in entry order (listed above); to be confirmed with the re-sign-off |
 
 ## Open questions for clarify
