@@ -33,7 +33,9 @@ async function newIdentity(prefix: string): Promise<string> {
 
 async function contextAs(browser: Browser, email: string) {
   const context = await browser.newContext({ storageState: UNSIGNED });
-  await context.addCookies([await cookieFor(email)]);
+  // A minted session is stamped with this computer's clock and sign-out with the database's. The Docker VM's clock can be
+  // a second or more behind, which would let a copy made "now" outlive a sign-out "now": backdate by far more than that.
+  await context.addCookies([await cookieFor(email, { sessionAt: Date.now() - 30_000 })]);
   return context;
 }
 
