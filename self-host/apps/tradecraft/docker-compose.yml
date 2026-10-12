@@ -57,6 +57,8 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       TRADECRAFT_ENV: ${TRADECRAFT_ENV:-production}
       DEV_SESSION_SECRET: ${DEV_SESSION_SECRET:-}
+      # the address an agent connects to, shown in the "Token created" dialog (the API's published port, with /mcp)
+      AGENT_MCP_URL: ${AGENT_MCP_URL:-http://127.0.0.1:${BACKEND_HOST_PORT:-8081}/mcp}
     ports:
       - "127.0.0.1:${FRONTEND_HOST_PORT:-3100}:3000"
     depends_on:

@@ -141,6 +141,9 @@ table.table { width: 100%; border-collapse: collapse; }
 .table .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; font-weight: 600; white-space: nowrap; }
 .table .actions { text-align: right; white-space: nowrap; }
 .table .actions .btn-quiet { padding: 0 8px; }
+/* the Trades list has the most columns: tighter cells, and a long account name wraps instead of widening the table */
+.trades-table th, .trades-table td { padding-left: 10px; padding-right: 10px; }
+.trades-table td.account { white-space: normal; min-width: 130px; max-width: 220px; }
 .table-foot { padding: var(--space-md) var(--space-md) var(--space-md); border-top: 1px solid var(--border); }
 .instrument { font-weight: 600; }
 .profit { color: var(--profit); }

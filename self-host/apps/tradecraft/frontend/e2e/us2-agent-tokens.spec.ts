@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { OWNER_EMAIL, cookieFor } from "./auth";
-import { AGENT_TOKEN_FILE, api, uniq } from "./helpers";
+import { AGENT_TOKEN_FILE, API, api, uniq } from "./helpers";
 
 // Feature 003, user story 2 (screens B6 and B7): the switch and the tokens.
 
@@ -39,6 +39,13 @@ test("turn it on, make a token, see its value once, revoke it, turn it off", asy
   const value = await shown.getByLabel(name).inputValue();
   expect(value).toMatch(/^tca_[A-Za-z0-9_-]{43}$/);
   writeFileSync(AGENT_TOKEN_FILE, value); // for scripts/check-loopback.sh, outside the repository
+  // ready to paste: the address and the value are already in the Claude Code command and the Claude Desktop settings
+  expect(await shown.locator("#token-command").inputValue()).toBe(
+    `claude mcp add --transport http tradecraft ${API}/mcp --header "Authorization: Bearer ${value}"`,
+  );
+  const desktop = JSON.parse(await shown.locator("#token-desktop").inputValue());
+  expect(desktop.mcpServers.tradecraft.args).toEqual(["-y", "mcp-remote", `${API}/mcp`, "--allow-http", "--header", "Authorization:${AUTH_HEADER}"]);
+  expect(desktop.mcpServers.tradecraft.env.AUTH_HEADER).toBe(`Bearer ${value}`);
   await shown.getByRole("button", { name: "Done" }).click();
   await expect(shown).toBeHidden();
 

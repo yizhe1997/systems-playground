@@ -19,10 +19,11 @@ type Created = { token: AgentToken; value: string };
  * the name, and the token is made once.
  */
 export function NewTokenDialog({
-  initialName = "", auto = false, isFresh, onNeedConfirm, onClose,
+  initialName = "", auto = false, mcpUrl, isFresh, onNeedConfirm, onClose,
 }: {
   initialName?: string;
   auto?: boolean;
+  mcpUrl: string;
   isFresh: () => boolean;
   onNeedConfirm: (name: string) => void;
   onClose: () => void;
@@ -33,7 +34,7 @@ export function NewTokenDialog({
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<Created | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const waiting = useNoticeableWait(busy);
   const started = useRef(false);
 
@@ -66,17 +67,32 @@ export function NewTokenDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const copy = async () => {
-    if (!created) return;
+  const copy = async (what: string, text: string) => {
     try {
-      await navigator.clipboard.writeText(created.value);
-      setCopied(true);
+      await navigator.clipboard.writeText(text);
+      setCopied(what);
     } catch {
-      setCopied(false); // the value is selectable in the field, so the owner can copy it by hand
+      setCopied(null); // every block is selectable, so the owner can copy it by hand
     }
   };
 
   if (created) {
+    // ready to paste, with the address and the value in place (the value is in these blocks only as long as the dialog is)
+    const command = `claude mcp add --transport http tradecraft ${mcpUrl} --header "Authorization: Bearer ${created.value}"`;
+    const desktop = JSON.stringify(
+      {
+        mcpServers: {
+          tradecraft: {
+            command: "npx",
+            args: ["-y", "mcp-remote", mcpUrl, "--allow-http", "--header", "Authorization:${AUTH_HEADER}"],
+            env: { AUTH_HEADER: `Bearer ${created.value}` },
+          },
+        },
+      },
+      null,
+      2,
+    );
+    const mono = { fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 12 } as const;
     return (
       // Escape and the backdrop do not close it: the value cannot be shown again, only Done ends it
       <Dialog open onClose={() => undefined} title="Token created">
@@ -84,11 +100,24 @@ export function NewTokenDialog({
         <div className="field">
           <label className="label" htmlFor="token-value">{created.token.name}</label>
           <input id="token-value" className="field-input" readOnly value={created.value} spellCheck={false} autoComplete="off"
-            style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)" }} onFocus={(e) => e.currentTarget.select()} />
+            style={mono} onFocus={(e) => e.currentTarget.select()} />
           <p className="helper">If you lose it, revoke this token and make a new one.</p>
         </div>
+        <div className="field">
+          <label className="label" htmlFor="token-command">Claude Code: paste this in a terminal</label>
+          <textarea id="token-command" className="field-input" readOnly rows={3} value={command} spellCheck={false}
+            style={{ ...mono, height: "auto", padding: 8, resize: "none" }} onFocus={(e) => e.currentTarget.select()} />
+          <div><button type="button" className="btn-quiet" onClick={() => void copy("command", command)}>Copy command</button></div>
+        </div>
+        <div className="field">
+          <label className="label" htmlFor="token-desktop">Claude Desktop: add this to claude_desktop_config.json, then restart it</label>
+          <textarea id="token-desktop" className="field-input" readOnly rows={8} value={desktop} spellCheck={false}
+            style={{ ...mono, height: "auto", padding: 8, resize: "none" }} onFocus={(e) => e.currentTarget.select()} />
+          <p className="helper">Claude Desktop reaches a program on this computer through a small bridge (mcp-remote, run by npx, so Node.js must be installed).</p>
+          <div><button type="button" className="btn-quiet" onClick={() => void copy("desktop", desktop)}>Copy settings</button></div>
+        </div>
         <div className="form-actions" style={{ marginTop: 0 }}>
-          <button type="button" className="btn" onClick={() => void copy()}>Copy</button>
+          <button type="button" className="btn" onClick={() => void copy("token", created.value)}>Copy token</button>
           <button type="button" className="btn-quiet" autoFocus onClick={onClose}>Done</button>
           <span role="status" className="helper">{copied ? "Copied" : ""}</span>
         </div>

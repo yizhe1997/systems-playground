@@ -55,7 +55,8 @@ export function WeekBlock({ week, account, open, backtest = false }: { week: Wee
           </span>
           <span className="helper week-sum">{summary}</span>
         </div>
-        <StatusChip state={week.state} />
+        {/* a backtest week with no trades has nothing to review, so it carries no "Not reviewed" */}
+        {!(backtest && s.daysWithTrades === 0 && s.draft === 0 && week.state === "not_reviewed") && <StatusChip state={week.state} />}
         <Link className="btn" href={`/reviews/week?account=${account}&date=${week.weekStart}`}>Open weekly review</Link>
         <Collapsible.Trigger className="week-trigger" aria-label={`Show or hide the days of the week of ${range}`}>
           <ChevronsUpDown size={16} strokeWidth={1.75} aria-hidden="true" />

@@ -40,7 +40,7 @@ export function TradesTable({ trades, zone, deletedView, backtestIds = [] }: { t
     <RowActions>
     <div className="card card-flush">
       <div className="table-wrap">
-        <table className="table">
+        <table className="table trades-table">
           <thead>
             <tr>
               <th scope="col">Entry time</th>
@@ -64,7 +64,7 @@ export function TradesTable({ trades, zone, deletedView, backtestIds = [] }: { t
                   <td>{dateTime(t.entryAt, zone)}</td>
                   <td>{dateTime(t.exitAt, zone)}</td>
                   <td>{dayLabel(t.tradingDay, false)}</td>
-                  <td>
+                  <td className="account">
                     {t.accountName}
                     {backtest.has(t.accountId) && <span className="tag">Backtest</span>}
                   </td>

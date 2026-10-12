@@ -19,7 +19,7 @@ const WINDOW_MS = 10 * 60 * 1000;
  * comes first and the action is kept across the Google redirect and finished once on return (as the Access card does).
  * A failed confirmation drops the action; the Access card's own dialog says so.
  */
-export function AgentAccessCard({ agent, zone, stepUpAt, stepUpFailed }: { agent: AgentAccess; zone: string; stepUpAt: number; stepUpFailed: boolean }) {
+export function AgentAccessCard({ agent, zone, stepUpAt, stepUpFailed, mcpUrl }: { agent: AgentAccess; zone: string; stepUpAt: number; stepUpFailed: boolean; mcpUrl: string }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [rowError, setRowError] = useState<string | null>(null);
@@ -166,6 +166,7 @@ export function AgentAccessCard({ agent, zone, stepUpAt, stepUpFailed }: { agent
           key={dialog.key}
           initialName={dialog.name}
           auto={dialog.auto}
+          mcpUrl={mcpUrl}
           isFresh={fresh}
           onNeedConfirm={(name) => ask({ kind: "create", name })}
           onClose={() => { setDialog(null); opener.current?.focus(); router.refresh(); }}

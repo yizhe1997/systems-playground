@@ -43,6 +43,10 @@ test("B3: a backtest day is never Missing; a live day with the same trade is", a
   // the day shows a dash where a live day would show Missing
   await expect(page.locator(".day-row").first()).toContainText("—");
   await expect(page.locator(".day-row").first()).not.toContainText("Missing");
+  // a week with no trades has nothing to review, so it does not say "Not reviewed"
+  const empty = page.locator(".week-card", { hasText: "No days to review yet" });
+  await expect(empty.first()).toBeVisible();
+  await expect(empty.filter({ hasText: "Not reviewed" })).toHaveCount(0);
 });
 
 test("B4: the Trades list is live only until Show backtests is on or the backtest account is chosen", async ({ page }) => {
@@ -64,6 +68,8 @@ test("B4: the Trades list is live only until Show backtests is on or the backtes
   await expect(row).toBeVisible();
   await expect(row).toContainText("Backtest");
   await expect(page.getByText(/backtests included\./)).toBeVisible();
+  // every column and the actions fit a 1440 px window (a long account name wraps instead of widening the table)
+  expect(await page.locator(".table-wrap").first().evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
 
   // choosing the account shows its trades without the switch
   await page.goto("/trades?from=&to=");

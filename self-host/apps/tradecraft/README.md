@@ -59,14 +59,16 @@ read it. It is off until you turn it on, and nothing here is exposed beyond this
 1. Settings, Agent access: turn the switch on, then New token. Name it ("Claude Desktop, backtests") and copy the value
    when it is shown: it is shown **once** and cannot be shown again (lose it and you revoke it and make another). Each of
    these steps asks for a recent Google confirmation first.
-2. Give the value to your agent as a bearer token for `http://127.0.0.1:8081/mcp` (the API's own loopback port). For Claude Code:
+2. The "Token created" dialog gives you the two ready-to-paste forms, with the address and the value already in them (the
+   address is `AGENT_MCP_URL`, by default the API's own loopback port, `http://127.0.0.1:8081/mcp`). For Claude Code:
 
    ```bash
    claude mcp add --transport http tradecraft http://127.0.0.1:8081/mcp --header "Authorization: Bearer <token>"
    ```
 
-   A client that only speaks stdio (Claude Desktop) needs a bridge such as `mcp-remote` with the same address and header; see
-   that client's own documentation. Keep the value out of chat and out of files you commit.
+   Note the space after `Bearer`: without it the server answers 401. Claude Desktop reaches a program on this computer through
+   a small bridge, `mcp-remote` (run by `npx`, so Node.js must be installed); the dialog's second block is its entry for
+   `claude_desktop_config.json` (restart Claude Desktop after adding it). Keep the value out of chat and out of files you commit.
 3. Ask it things ("List my accounts", "How did my last 20 backtest trades compare with my plan?"). It has nine read tools:
    accounts, trades, a day, a week, a month, the mistake list, the mistake counter, the focus and the time zone. It cannot read the
    audit log, identities, tokens or the export, and in this version it only reads.

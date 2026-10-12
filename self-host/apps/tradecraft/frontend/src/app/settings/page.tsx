@@ -22,6 +22,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     unstable_rethrow(err);
     return <CouldNotLoad />;
   }
+  // where an agent connects: the API's own address, as the owner's computer reaches it (docker-compose.yml)
+  const mcpUrl = process.env.AGENT_MCP_URL || "http://127.0.0.1:8081/mcp";
   // every standard time zone, plus UTC which Intl lists separately on some engines
   const zones = Array.from(new Set([...Intl.supportedValuesOf("timeZone"), "UTC"])).sort();
   return (
@@ -35,7 +37,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <div className="stack-md">
         <SettingsForm timeZone={settings.timeZone} zones={zones} />
         <AccessCard identities={identities} zone={settings.timeZone} stepUpAt={session?.stepUpAt ?? 0} stepUpFailed={stepUpFailed} />
-        <AgentAccessCard agent={agent} zone={settings.timeZone} stepUpAt={session?.stepUpAt ?? 0} stepUpFailed={stepUpFailed} />
+        <AgentAccessCard agent={agent} zone={settings.timeZone} stepUpAt={session?.stepUpAt ?? 0} stepUpFailed={stepUpFailed} mcpUrl={mcpUrl} />
       </div>
     </>
   );
