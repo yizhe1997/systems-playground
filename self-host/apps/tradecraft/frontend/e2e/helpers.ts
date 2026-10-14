@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { serviceToken } from "../scripts/session-mint.mjs";
 import { OWNER_EMAIL } from "./auth";
 
@@ -23,6 +23,28 @@ export async function api<T = any>(method: string, path: string, body?: unknown,
 }
 
 /** A name that no earlier run has used, so specs never collide on the unique account name. */
+/**
+ * A row action (Edit, Delete, Archive, Rename ...) lives in the row's kebab menu: open the menu of the row called `name`
+ * (a string is matched as a part of the name, a RegExp as written), then choose the action. `within` narrows the search.
+ */
+export async function rowAction(page: Page, name: string | RegExp, action: string, within?: Locator) {
+  const label = typeof name === "string" ? `Actions for ${name}` : new RegExp(`Actions for .*${name.source}`);
+  await (within ?? page).getByRole("button", { name: label }).click();
+  await page.getByRole("menuitem", { name: action, exact: true }).click();
+}
+/**
+ * Opens the Accounts list on the page that holds the account called `name`. The list is paged and sorted by name,
+ * so which page an account lands on depends on every account the other tests made. `query` is "archived=1" for the
+ * archived view.
+ */
+export async function gotoAccount(page: Page, name: string, query = "") {
+  for (let p = 1; p <= 30; p++) {
+    await page.goto(`/accounts?${query ? query + "&" : ""}size=100&page=${p}`);
+    if ((await page.locator("tbody tr", { hasText: name }).count()) > 0) return;
+    if ((await page.getByRole("link", { name: "Older" }).count()) === 0) break;
+  }
+  throw new Error(`no page of the Accounts list holds ${name}`);
+}
 export const uniq = (prefix: string) => `${prefix} ${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
 export async function makeAccount(name: string, currency = "USD", tradingDayStart?: string, kind?: "live" | "backtest"): Promise<{ id: string; name: string }> {

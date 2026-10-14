@@ -93,9 +93,10 @@ test.describe("no session", () => {
 test("signed in: the sidebar names the identity and has Sign out", async ({ page }) => {
   await page.goto("/reviews");
   const nav = page.locator(".sidebar");
-  await expect(nav.getByText("Signed in as")).toBeVisible();
   await expect(nav.getByText(OWNER_EMAIL)).toBeVisible();
-  await expect(nav.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await nav.getByRole("button", { name: /^Signed in as/ }).click();
+  await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("menu").getByRole("menuitem")).toHaveCount(1); // Sign out only; Settings is in the sidebar
   // someone who is signed in has no use for the sign-in screen
   await page.goto("/sign-in");
   await expect(page).toHaveURL(/\/reviews/);
@@ -111,7 +112,8 @@ test("signing out ends the session at once, also for a copy of the cookie", asyn
   await pageB.goto("/reviews");
   await expect(pageB.getByRole("navigation", { name: "Main" })).toBeVisible();
 
-  await pageA.getByRole("button", { name: "Sign out" }).click();
+  await pageA.getByRole("button", { name: /^Signed in as/ }).click();
+  await pageA.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(pageA).toHaveURL(/\/sign-in/);
   await pageA.goto("/trades");
   await expect(pageA).toHaveURL(/\/sign-in/);

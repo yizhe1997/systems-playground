@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { api, makeAccount, makeTrade, uniq } from "./helpers";
+import { gotoAccount, api, makeAccount, makeTrade, uniq, rowAction } from "./helpers";
 
 /** An instrument name no earlier run has used, so a row can be found by it alone. */
 const inst = (prefix: string) => `${prefix}${Date.now().toString(36).toUpperCase()}`;
@@ -19,6 +19,7 @@ test("B1 and B2: make a Backtest account in the dialog; the list marks it and sa
   await dialog.getByRole("button", { name: "Save account" }).click();
   await expect(dialog).toBeHidden();
 
+  await gotoAccount(page, name); // the list is paged and sorted by name
   const row = page.getByRole("row", { name: new RegExp(name) });
   await expect(row).toContainText("Backtest");
   await expect(page.getByText("Backtest accounts are marked in every account chooser and left out of live figures until you choose them.")).toBeVisible();
@@ -53,10 +54,12 @@ test("B4: the Trades list is live only until Show backtests is on or the backtes
   const live = await makeAccount(uniq("Live B4"));
   const bt = await makeAccount(uniq("BT B4"), "USD", undefined, "backtest");
   const liveInst = inst("LIV"), btInst = inst("BCK");
-  await makeTrade(live.id, { instrument: liveInst });
-  await makeTrade(bt.id, { instrument: btInst });
+  // a day no other test uses, so the two trades are on the first page of the list of every account
+  const day = { entryAt: "2024-03-15T09:00", exitAt: "2024-03-15T09:30" };
+  await makeTrade(live.id, { instrument: liveInst, ...day });
+  await makeTrade(bt.id, { instrument: btInst, ...day });
 
-  await page.goto("/trades?from=&to=");
+  await page.goto("/trades?from=2024-03-15&to=2024-03-15");
   await expect(page.getByRole("row", { name: new RegExp(liveInst) })).toBeVisible();
   await expect(page.getByRole("row", { name: new RegExp(btInst) })).toHaveCount(0);
   await expect(page.getByText(/Backtests are hidden; turn on Show backtests or choose a backtest account\./)).toBeVisible();
@@ -90,9 +93,9 @@ test("B5: the counter's all-accounts means live accounts, and backtests are list
 test("changing the kind shows the notice, moves the account, is recorded, and the export carries the kind", async ({ page }) => {
   const acct = await makeAccount(uniq("Flip"), "USD", undefined, "backtest");
   const flipInst = inst("FLP");
-  await makeTrade(acct.id, { instrument: flipInst });
-  await page.goto("/accounts");
-  await page.getByRole("button", { name: `Edit ${acct.name}` }).click();
+  await makeTrade(acct.id, { instrument: flipInst, entryAt: "2024-03-16T09:00", exitAt: "2024-03-16T09:30" }); // a day no other test uses
+  await gotoAccount(page, acct.name);
+  await rowAction(page, acct.name, "Edit");
   const dialog = page.getByRole("dialog", { name: "Edit account" });
   await expect(dialog.getByRole("radio", { name: "Backtest" })).toBeChecked();
   await expect(dialog).not.toContainText("Changing the kind moves this account's days and trades");
@@ -102,7 +105,7 @@ test("changing the kind shows the notice, moves the account, is recorded, and th
   await expect(dialog).toBeHidden();
 
   // now live: its trade is on the default Trades list
-  await page.goto("/trades?from=&to=");
+  await page.goto("/trades?from=2024-03-16&to=2024-03-16");
   await expect(page.getByRole("row", { name: new RegExp(flipInst) })).toBeVisible();
 
   const log = await api("GET", "/audit?kind=account_kind_changed");

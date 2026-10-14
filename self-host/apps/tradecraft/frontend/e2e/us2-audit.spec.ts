@@ -62,16 +62,16 @@ test("filter by what, by who and by period; clear the filters; paging", async ({
 
 test("more than a page of entries is paged, with Newer and Older", async ({ page }) => {
   const acct = await makeAccount(uniq("Paging"));
-  // archive and restore: two entries per round, so 30 rounds push the log past the page size of 50
-  for (let i = 0; i < 30; i++) {
+  // archive and restore: two entries per round, so 6 rounds push the log past the page size of 10
+  for (let i = 0; i < 6; i++) {
     await api("POST", `/accounts/${acct.id}/archive`);
     await api("POST", `/accounts/${acct.id}/restore`);
   }
   await page.goto("/audit");
-  await expect(page.getByText(/^Showing 1 to 50 of \d+$/)).toBeVisible();
-  await expect(page.locator("tbody tr")).toHaveCount(50);
+  await expect(page.getByText(/^Showing 1 to 10 of \d+$/)).toBeVisible();
+  await expect(page.locator("tbody tr")).toHaveCount(10);
   await page.getByRole("link", { name: "Older" }).click();
   await expect(page).toHaveURL(/page=2/);
-  await expect(page.getByText(/^Showing 51 to /)).toBeVisible();
+  await expect(page.getByText(/^Showing 11 to /)).toBeVisible();
   await expect(page.getByRole("link", { name: "Newer" })).toBeVisible();
 });

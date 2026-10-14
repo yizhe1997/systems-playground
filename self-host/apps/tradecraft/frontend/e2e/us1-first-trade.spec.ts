@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { fillTrade, hasNoAccounts, makeAccount, makeTrade, preview, tradesFor, uniq } from "./helpers";
+import { fillTrade, hasNoAccounts, makeAccount, makeTrade, preview, tradesFor, uniq, rowAction } from "./helpers";
 
 test("first run: no account, then an account, then a trade A with its figures worked out (SC-001)", async ({ page }) => {
   test.skip(!(await hasNoAccounts()), "needs an empty journal; scripts/test.sh gives each run a fresh one");
@@ -124,6 +124,6 @@ test("the time field takes ISO or the screen style, and shows the screen style",
   await page.getByRole("button", { name: "Save trade" }).click();
   await expect(page).toHaveURL(/\/trades\?from=2025-10-01/);
   await page.goto(tradesFor(acct.id));
-  await page.getByRole("link", { name: /Edit TM1/ }).click();
+  await rowAction(page, /TM1/, "Edit");
   await expect(page.getByLabel(/Entry time \(/)).toHaveValue("Wed 1 Oct 2025 09:41");
 });

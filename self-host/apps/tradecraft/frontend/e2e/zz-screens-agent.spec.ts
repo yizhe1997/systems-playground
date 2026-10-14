@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { OWNER_EMAIL, cookieFor } from "./auth";
-import { API, api, fillTrade, makeAccount, makeTrade, uniq } from "./helpers";
+import { API, api, fillTrade, makeAccount, makeTrade, uniq, rowAction } from "./helpers";
 
 // Not a check: it captures the built screens of feature 003 (B1 to B8) for the visual review, in a folder outside the
 // repository. Run it on a fresh stack:
@@ -39,7 +39,7 @@ test("capture", async ({ browser, page }) => {
   await dialog.getByText("Backtest", { exact: true }).click();
   await shot(page, "b1-account-form-new-backtest");
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: `Edit ${bt.name}` }).click();
+  await rowAction(page, bt.name, "Edit");
   await page.getByRole("dialog", { name: "Edit account" }).getByText("Live", { exact: true }).click();
   await shot(page, "b1-account-form-changing-kind");
   await page.keyboard.press("Escape");
@@ -72,7 +72,7 @@ test("capture", async ({ browser, page }) => {
 
   // B6 the card: off, on with no tokens (only on a fresh journal), tokens
   await api("PUT", "/agent", { enabled: false });
-  await page.goto("/settings");
+  await page.goto("/settings/integrations");
   await shot(page, "b6-agent-access-off");
   await page.getByRole("region", { name: "Agent access" }).locator("label.switch").click();
   await expect(page.getByRole("button", { name: "New token" })).toBeVisible();
@@ -100,7 +100,7 @@ test("capture", async ({ browser, page }) => {
   const now = Date.now();
   await context.addCookies([await cookieFor(OWNER_EMAIL, { sessionAt: now - 60_000, stepUpAt: now - 11 * 60_000 })]);
   const old = await context.newPage();
-  await old.goto("/settings");
+  await old.goto("/settings/integrations");
   await old.getByRole("region", { name: "Agent access" }).locator("label.switch").click();
   await expect(old.getByRole("dialog", { name: "Confirm it's you" })).toBeVisible();
   await shot(old, "b6-agent-access-confirm-with-google");

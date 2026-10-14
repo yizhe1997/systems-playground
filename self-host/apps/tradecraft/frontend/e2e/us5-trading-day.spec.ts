@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { api, fillTrade, makeAccount, makeTrade, preview, tradesFor, uniq } from "./helpers";
+import { gotoAccount, api, fillTrade, makeAccount, makeTrade, preview, tradesFor, uniq, rowAction } from "./helpers";
 
 test("the preview shows the trading day, from the entry and the account's start", async ({ page }) => {
   const acct = await makeAccount(uniq("Day"), "USD", "17:00");
@@ -33,8 +33,8 @@ test("changing the account's start moves its trades to the right trading day", a
   await page.goto(tradesFor(acct.id));
   await expect(page.getByRole("row", { name: /ST1/ })).toContainText("Wed 8 Oct");
 
-  await page.goto("/accounts");
-  await page.getByRole("button", { name: `Edit ${acct.name}` }).click();
+  await gotoAccount(page, acct.name);
+  await rowAction(page, acct.name, "Edit");
   const dialog = page.getByRole("dialog", { name: "Edit account" });
   await dialog.getByLabel(/Trading-day start/).fill("");
   await dialog.getByRole("button", { name: "Save account" }).click();

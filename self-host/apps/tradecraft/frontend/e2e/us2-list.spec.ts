@@ -29,7 +29,9 @@ test("filter by account and by date range; Clear filters; newest first", async (
   await expect(page.getByText("No trades for these filters.")).toBeVisible();
   await expect(page.getByText("Try another account or a wider date range.")).toBeVisible();
   await page.getByRole("link", { name: "Clear filters" }).last().click();
-  await expect(page.getByText("AA1").first()).toBeVisible();
+  await expect(page).not.toHaveURL(/account=/); // the account and the dates are cleared: every account, all dates
+  await expect(page.getByLabel("Account", { exact: true })).toHaveValue("");
+  await expect(page.locator("tbody tr").first()).toBeVisible();
 
   // the currency of each account stays its own
   await page.goto(tradesFor(b.id));
@@ -52,10 +54,16 @@ test("Export downloads one file named with the date, and its count equals the sc
   await api("DELETE", `/trades/${doomed.id}`);
 
   await page.goto("/trades?from=&to=&backtests=1"); // the export holds every account, backtests included
-  const live = await page.locator("tbody tr").count();
+  // "the screen count" is the n of "Showing x to y of n" (the list is paged); with one page it is the rows
+  const onScreen = async () => {
+    const pager = page.getByLabel("Pages of trades");
+    if (await pager.count()) return Number((await pager.innerText()).match(/of ([\d,]+)/)![1].replace(/,/g, ""));
+    return page.locator("tbody tr").count();
+  };
+  const live = await onScreen();
   await page.getByText("Show deleted").click();
   await expect(page.getByText("Showing deleted trades.")).toBeVisible();
-  const deleted = await page.locator("tbody tr").count();
+  const deleted = await onScreen();
 
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Export" }).click()]);
   expect(download.suggestedFilename()).toMatch(/^tradecraft-export-\d{4}-\d{2}-\d{2}\.json$/);
@@ -74,10 +82,10 @@ test("a fresh month shows the current month by default", async ({ page }) => {
   expect([m![1], m![2]]).toEqual([m![4], m![5]]);
 });
 
-test("long lists are paged at 200: Showing x to y of n, Newer and Older", async ({ page }) => {
+test("long lists are paged at 10: Showing x to y of n, Newer and Older, and Rows per page", async ({ page }) => {
   const acct = await makeAccount(uniq("Pages"));
   const jobs: Array<() => Promise<unknown>> = [];
-  for (let n = 0; n < 205; n++) {
+  for (let n = 0; n < 25; n++) {
     const day = String(1 + (n % 28)).padStart(2, "0");
     const min = String(10 + (n % 40)).padStart(2, "0");
     jobs.push(() => api("POST", "/trades", tradeA(acct.id, { entryAt: `2025-08-${day}T09:00`, exitAt: `2025-08-${day}T09:${min}` })));
@@ -85,20 +93,30 @@ test("long lists are paged at 200: Showing x to y of n, Newer and Older", async 
   await Promise.all(Array.from({ length: 10 }, async () => { for (let j = jobs.shift(); j; j = jobs.shift()) await j(); }));
 
   await page.goto(tradesFor(acct.id));
-  await expect(page.getByText("Showing 1 to 200 of 205")).toBeVisible();
-  await expect(page.locator("tbody tr")).toHaveCount(200);
+  await expect(page.getByText("Showing 1 to 10 of 25")).toBeVisible();
+  await expect(page.locator("tbody tr")).toHaveCount(10);
   await expect(page.getByText("Newer", { exact: true })).toHaveAttribute("aria-disabled", "true");
   await page.getByRole("link", { name: "Older" }).click();
-  await expect(page.getByText("Showing 201 to 205 of 205")).toBeVisible();
+  await expect(page.getByText("Showing 11 to 20 of 25")).toBeVisible();
+  await page.getByRole("link", { name: "Older" }).click();
+  await expect(page.getByText("Showing 21 to 25 of 25")).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(5);
   await page.getByRole("link", { name: "Newer" }).click();
-  await expect(page.getByText("Showing 1 to 200 of 205")).toBeVisible();
+  await expect(page.getByText("Showing 11 to 20 of 25")).toBeVisible();
 
   // changing a filter starts again at the first page
   await page.getByRole("link", { name: "Older" }).click();
   await pickRange(page, "2025-08-10", "2025-08-31");
   await expect(page).not.toHaveURL(/page=/);
   // a short list shows no pager
-  await page.goto(`/trades?account=${acct.id}&from=2025-08-27&to=2025-08-28`);
+  await page.goto(`/trades?account=${acct.id}&from=2025-08-01&to=2025-08-05`);
   await expect(page.getByLabel("Pages of trades")).toBeHidden();
+
+  // Rows per page: 25 shows them all, back at the first page, and is remembered for the next visit
+  await page.goto(tradesFor(acct.id));
+  await page.getByLabel("Rows per page").selectOption("25");
+  await expect(page.getByText("Showing 1 to 25 of 25")).toBeVisible();
+  await expect(page.locator("tbody tr")).toHaveCount(25);
+  await page.goto(tradesFor(acct.id));
+  await expect(page.locator("tbody tr")).toHaveCount(25);
 });

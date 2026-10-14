@@ -21,7 +21,7 @@ const WINDOW_MS = 10 * 60 * 1000;
  */
 export function AgentAccessCard({ agent, zone, stepUpAt, stepUpFailed, mcpUrl }: { agent: AgentAccess; zone: string; stepUpAt: number; stepUpFailed: boolean; mcpUrl: string }) {
   const router = useRouter();
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useState(stepUpFailed); // a failed confirmation says so here, on this page
   const [rowError, setRowError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [dialog, setDialog] = useState<{ key: number; name: string; auto: boolean } | null>(null);
@@ -87,6 +87,7 @@ export function AgentAccessCard({ agent, zone, stepUpAt, stepUpFailed, mcpUrl }:
     } catch {
       /* nothing to forget */
     }
+    if (stepUpFailed) router.replace("/settings/integrations");
     opener.current?.focus();
   };
 
@@ -172,7 +173,7 @@ export function AgentAccessCard({ agent, zone, stepUpAt, stepUpFailed, mcpUrl }:
           onClose={() => { setDialog(null); opener.current?.focus(); router.refresh(); }}
         />
       )}
-      <ConfirmItsYouDialog open={confirming} failed={false} what="agent access" onCancel={cancel} />
+      <ConfirmItsYouDialog open={confirming} failed={stepUpFailed} what="agent access" returnTo="/settings/integrations" onCancel={cancel} />
     </section>
   );
 }

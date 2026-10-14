@@ -1,6 +1,8 @@
 import { unstable_rethrow } from "next/navigation";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { PAGE_SIZES, PAGE_SIZE_COOKIE, pickPageSize } from "@/lib/pageSize";
 import { api, apiPaged, ApiFailure } from "@/lib/api";
 import { getAccounts, getSettings } from "@/lib/data";
 import { count, currentMonth } from "@/lib/format";
@@ -13,7 +15,6 @@ import { ExportButton } from "@/components/ExportButton";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 200;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 function Head({ canLog, exportable = true }: { canLog: boolean; exportable?: boolean }) {
@@ -75,6 +76,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   const backtests = one(sp.backtests) === "1";
   const hasBacktestAccounts = accounts.some((a) => a.kind === "backtest");
   const page = Math.max(1, Number.parseInt(one(sp.page), 10) || 1);
+  const PAGE_SIZE = pickPageSize(one(sp.size), (await cookies()).get(PAGE_SIZE_COOKIE)?.value);
 
   const q = new URLSearchParams();
   if (account) q.set("accountId", account);
@@ -141,7 +143,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
             : `Showing ${count(total, "trade")}. Backtests are hidden; turn on Show backtests or choose a backtest account.`}
         </p>
       )}
-      {!problem && total > PAGE_SIZE && (
+      {!problem && total > PAGE_SIZES[0] && (
         <Pager page={page} pageSize={PAGE_SIZE} total={total} params={{ account, from, to, deleted: deleted ? "1" : "", backtests: backtests ? "1" : "" }} />
       )}
       {!problem && trades.length === 0 && !deleted && !anyTrades && (

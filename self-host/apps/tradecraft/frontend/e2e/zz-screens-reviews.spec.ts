@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { api, makeAccount } from "./helpers";
+import { api, makeAccount, rowAction } from "./helpers";
 import { dayUrl, reviewsUrl } from "./helpers_reviews";
 
 // Not a check: it captures the built screens of feature 001 for the visual review (a folder outside the repository, see CAPTURE_DIR).
@@ -92,7 +92,7 @@ test("capture the 001 screens", async ({ page }) => {
   await expect(page.getByText("Stop line must be 1 or more.")).toBeVisible();
   await shot(page, "s3-stop-line-error");
   await page.keyboard.press("Escape");
-  await page.locator(".manage-list li", { hasText: "Oversized" }).getByRole("button", { name: "Retire Oversized" }).click();
+  await rowAction(page, "Oversized", "Retire", page.locator(".manage-list li", { hasText: "Oversized" }));
   await shot(page, "s3-retire-a-mistake");
   await page.keyboard.press("Escape");
   await page.goto("/mistakes?period=month&date=2019-03-06");

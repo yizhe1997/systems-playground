@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
+import { cookies } from "next/headers";
+import { PAGE_SIZES, PAGE_SIZE_COOKIE, pickPageSize } from "@/lib/pageSize";
 import { apiPaged, ApiFailure } from "@/lib/api";
 import { getAuditKinds, getIdentities, getSettings } from "@/lib/data";
 import { currentMonth } from "@/lib/format";
@@ -11,7 +13,6 @@ import { Pager } from "@/components/Pager";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 50;
 type Params = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] ?? "" : v ?? "");
 
@@ -33,6 +34,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Params
   const from = one(sp.from);
   const to = one(sp.to);
   const page = Math.max(1, Number.parseInt(one(sp.page), 10) || 1);
+  const PAGE_SIZE = pickPageSize(one(sp.size), (await cookies()).get(PAGE_SIZE_COOKIE)?.value);
 
   let settings, identities, kinds;
   try {
@@ -86,10 +88,10 @@ export default async function AuditPage({ searchParams }: { searchParams: Params
         </div>
       )}
       {!problem && entries.length > 0 && <AuditTable entries={entries} zone={settings.timeZone} />}
-      {!problem && total > PAGE_SIZE && (
+      {!problem && total > PAGE_SIZES[0] && (
         <Pager page={page} pageSize={PAGE_SIZE} total={total} path="/audit" keepEmpty={[]} label="Pages of the audit log" params={{ identity, kind, from, to }} />
       )}
-      {!problem && entries.length > 0 && total <= PAGE_SIZE && (
+      {!problem && entries.length > 0 && total <= PAGE_SIZES[0] && (
         <p className="helper" role="status">Showing 1 to {total} of {total}</p>
       )}
       {!problem && entries.length === 0 && !filtered && (

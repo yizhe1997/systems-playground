@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { api, uniq } from "./helpers";
+import { api, rowAction, uniq } from "./helpers";
 import { dayUrl, sampleDay } from "./helpers_reviews";
 
 const counterUrl = (date: string, period = "week") => `/mistakes?period=${period}&date=${date}`;
@@ -63,7 +63,7 @@ test("rename and retire from the list, with the Undo notice", async ({ page }) =
   await page.goto("/mistakes");
   const item = () => page.locator(".manage-list li", { hasText: name });
 
-  await item().getByRole("button", { name: `Rename ${name}` }).click();
+  await rowAction(page, name, "Rename", item());
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Name").fill("chased ENTRY");
   await dialog.getByRole("button", { name: "Save" }).click();
@@ -74,7 +74,7 @@ test("rename and retire from the list, with the Undo notice", async ({ page }) =
   await expect(dialog).toBeHidden();
   await expect(page.locator(".manage-list li", { hasText: renamed })).toBeVisible();
 
-  await page.locator(".manage-list li", { hasText: renamed }).getByRole("button", { name: `Retire ${renamed}` }).click();
+  await rowAction(page, renamed, "Retire", page.locator(".manage-list li", { hasText: renamed }));
   await expect(dialog.getByText(`Retire ${renamed}?`)).toBeVisible();
   await expect(dialog.getByText("It stops appearing in new tags. Past trades keep it, so history and counts stay correct.")).toBeVisible();
   await dialog.getByRole("button", { name: "Retire", exact: true }).click();

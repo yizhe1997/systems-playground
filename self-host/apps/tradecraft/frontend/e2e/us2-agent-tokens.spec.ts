@@ -13,7 +13,7 @@ const setSwitch = async (on: boolean) => expect((await api("PUT", "/agent", { en
 
 test("turn it on, make a token, see its value once, revoke it, turn it off", async ({ page }) => {
   await setSwitch(false);
-  await page.goto("/settings");
+  await page.goto("/settings/integrations");
   const card = page.getByRole("region", { name: "Agent access" });
   await expect(card.getByText("Lets an agent you choose read your journal. Everything it reads is written to the Audit log.")).toBeVisible();
   await expect(card.getByText(/Turn agent access on to create tokens\./)).toBeVisible();
@@ -89,7 +89,7 @@ test.describe("an older sign-in", () => {
     const page = await context.newPage();
     await page.route("https://accounts.google.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>stub</title>" }));
 
-    await page.goto("/settings");
+    await page.goto("/settings/integrations");
     const card = page.getByRole("region", { name: "Agent access" });
     await card.locator("label.switch").click();
     const confirm = page.getByRole("dialog", { name: "Confirm it's you" });

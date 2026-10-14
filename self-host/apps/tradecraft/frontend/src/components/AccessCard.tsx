@@ -98,7 +98,7 @@ export function AccessCard({ identities, zone, stepUpAt, stepUpFailed }: { ident
     } catch {
       /* nothing to forget */
     }
-    if (stepUpFailed) router.replace("/settings");
+    if (stepUpFailed) router.replace("/settings/access");
     opener.current?.focus();
   };
 
@@ -175,7 +175,7 @@ export function AccessCard({ identities, zone, stepUpAt, stepUpFailed }: { ident
           </div>
         </form>
       </div>
-      <ConfirmItsYouDialog open={confirming} failed={stepUpFailed} onCancel={cancel} />
+      <ConfirmItsYouDialog open={confirming} failed={stepUpFailed} returnTo="/settings/access" onCancel={cancel} />
     </section>
   );
 }

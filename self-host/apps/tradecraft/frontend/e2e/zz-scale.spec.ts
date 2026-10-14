@@ -51,11 +51,11 @@ async function saveATrade(page: Page) {
 
 test("5,000 trades: open a month, change a filter, save a trade, each under one second", async ({ page }) => {
   const open = await timed(async () => {
-    await page.goto("/trades?from=2025-06-01&to=2025-06-30");
+    await page.goto("/trades?from=2025-06-01&to=2025-06-30&size=100");
     await expect(page.locator("tbody tr").first()).toBeVisible();
   });
   const rows = await page.locator("tbody tr").count();
-  await expect(page.getByText(/Showing 1 to 200 of 4\d\d/)).toBeVisible(); // a month of the seeded data, in pages of 200
+  await expect(page.getByText(/Showing 1 to 100 of 4\d\d/)).toBeVisible(); // a month of the seeded data, in the largest page
 
   const filter = await timed(async () => {
     await page.getByLabel("Account", { exact: true }).selectOption({ value: accounts[3].id });
@@ -64,7 +64,7 @@ test("5,000 trades: open a month, change a filter, save a trade, each under one 
   const save = await saveATrade(page);
 
   console.log(`SC-008: open a month of ${rows} trades ${open} ms, change a filter ${filter} ms, save a trade ${save} ms`);
-  expect.soft(rows, "the first page").toBe(200);
+  expect.soft(rows, "the first page").toBe(100);
   expect.soft(open, "open the list").toBeLessThan(1000);
   expect.soft(filter, "change a filter").toBeLessThan(1000);
   expect.soft(save, "save a trade").toBeLessThan(1000);
@@ -72,13 +72,13 @@ test("5,000 trades: open a month, change a filter, save a trade, each under one 
 
 test("the whole journal of 5,000 trades, unfiltered, opens its first page and pages through it in under a second", async ({ page }) => {
   const open = await timed(async () => {
-    await page.goto("/trades?from=&to=");
+    await page.goto("/trades?from=&to=&size=100");
     await expect(page.locator("tbody tr").first()).toBeVisible();
   });
-  await expect(page.getByText(/Showing 1 to 200 of [\d,]{5,}/)).toBeVisible();
+  await expect(page.getByText(/Showing 1 to 100 of [\d,]{5,}/)).toBeVisible();
   const older = await timed(async () => {
     await page.getByRole("link", { name: "Older" }).click();
-    await expect(page.getByText(/Showing 201 to 400 of/)).toBeVisible();
+    await expect(page.getByText(/Showing 101 to 200 of/)).toBeVisible();
   });
   console.log(`SC-008 whole journal: first page ${open} ms, next page ${older} ms`);
   expect.soft(open, "open the whole list").toBeLessThan(1000);

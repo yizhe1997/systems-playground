@@ -34,7 +34,7 @@ for (const scheme of ["light", "dark"] as const) {
     });
 
     test("A2 Access and A5 the sidebar block", async ({ page }) => {
-      await page.goto("/settings");
+      await page.goto("/settings/access");
       await expect(page.getByRole("region", { name: "Access", exact: true })).toBeVisible();
       await expect(page.locator(".sidebar").getByText(OWNER_EMAIL)).toBeVisible();
       await clean(page, "A2 filled");
@@ -51,7 +51,7 @@ for (const scheme of ["light", "dark"] as const) {
       const now = Date.now();
       await context.addCookies([await cookieFor(OWNER_EMAIL, { sessionAt: now - 60_000, stepUpAt: now - 11 * 60_000 })]);
       const page = await context.newPage();
-      await page.goto("/settings");
+      await page.goto("/settings/access");
       await page.getByLabel("Add an email").fill("a11y@example.com");
       await page.getByRole("button", { name: "Add email" }).click();
       const dialog = page.getByRole("dialog", { name: "Confirm it's you" });
@@ -59,7 +59,7 @@ for (const scheme of ["light", "dark"] as const) {
       await clean(page, "A3 dialog");
       await page.keyboard.press("Escape");
       await expect(dialog).toBeHidden();
-      await page.goto("/settings?stepup=failed");
+      await page.goto("/settings/access?stepup=failed");
       await expect(page.getByText("! That account is not the one signed in. Nothing was changed.")).toBeVisible();
       await clean(page, "A3 failed");
       await context.close();
@@ -93,10 +93,15 @@ test("keyboard only: the filters, the Access actions and Sign out are reachable 
   await page.getByLabel("Identity").focus();
   await page.keyboard.press("Tab");
   await expect(page.getByLabel("What")).toBeFocused();
-  await page.goto("/settings");
+  await page.goto("/settings/access");
   const buttons = page.getByRole("region", { name: "Access", exact: true }).getByRole("button");
   for (const b of await buttons.all()) {
     expect(((await b.innerText()) + ((await b.getAttribute("aria-label")) ?? "")).trim().length, "every button has a name").toBeGreaterThan(0);
   }
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  const account = page.getByRole("button", { name: /^Signed in as/ });
+  await account.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(account).toBeFocused();
 });

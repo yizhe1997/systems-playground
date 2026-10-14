@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { api, makeAccount, makeTrade, uniq } from "./helpers";
+import { api, makeAccount, makeTrade, uniq, rowAction } from "./helpers";
 
 // Accessibility pass for feature 003 (FR-023): WCAG 2 A and AA rules, which include text contrast of at least 4.5:1,
 // on screens B1 to B8 in the light and in the night colour set, and the new controls from the keyboard alone.
@@ -33,7 +33,7 @@ for (const scheme of ["light", "dark"] as const) {
       await clean(page, "B1 new Backtest");
       await page.keyboard.press("Escape");
 
-      await page.getByRole("button", { name: `Edit ${bt.name}` }).click();
+      await rowAction(page, bt.name, "Edit");
       const edit = page.getByRole("dialog", { name: "Edit account" });
       await edit.getByText("Live", { exact: true }).click();
       await expect(edit).toContainText("Changing the kind moves this account's days and trades");
@@ -65,7 +65,7 @@ for (const scheme of ["light", "dark"] as const) {
 
     test("B6 Agent access (off, on with tokens), B7 New token (name it, an error, shown once) and B8 the Audit log", async ({ page }) => {
       await api("PUT", "/agent", { enabled: false });
-      await page.goto("/settings");
+      await page.goto("/settings/integrations");
       const card = page.getByRole("region", { name: "Agent access" });
       await expect(card.getByText(/Turn agent access on to create tokens\./)).toBeVisible();
       await clean(page, "B6 off");
@@ -109,7 +109,7 @@ test("keyboard only: the kind choice, the switch and the new token dialog", asyn
   await expect(dialog.getByRole("radio", { name: "Backtest" })).toBeChecked();
   await page.keyboard.press("Escape");
 
-  await page.goto("/settings");
+  await page.goto("/settings/integrations");
   const card = page.getByRole("region", { name: "Agent access" });
   await card.getByRole("button", { name: "New token" }).focus();
   await page.keyboard.press("Enter");

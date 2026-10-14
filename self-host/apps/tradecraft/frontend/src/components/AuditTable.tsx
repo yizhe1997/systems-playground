@@ -1,5 +1,8 @@
 import type { AuditEntry } from "@/lib/types";
 import { dateTime } from "@/lib/format";
+import { cookies } from "next/headers";
+import { ReorderTable } from "@/components/ReorderTable";
+import { readColumnOrder } from "@/lib/columnOrder";
 
 // What an agent read, in words: the entry holds the tool's name and the account's name, never a figure (screen B8).
 const READS: Record<string, string> = {
@@ -15,33 +18,21 @@ const about = (e: AuditEntry) => {
 const who = (e: AuditEntry) => (e.actorKind === "agent" && e.actorLabel ? `${e.actorLabel} [agent]` : (e.identityEmail ?? "Not signed in"));
 
 /** The log, newest first. The moment is shown in the journal time zone; nothing here can be edited or removed. */
-export function AuditTable({ entries, zone }: { entries: AuditEntry[]; zone: string }) {
+export async function AuditTable({ entries, zone }: { entries: AuditEntry[]; zone: string }) {
   return (
     <div className="card card-flush">
-      <div className="table-wrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th scope="col">When</th>
-              <th scope="col">Who</th>
-              <th scope="col">What</th>
-              <th scope="col">About</th>
-              <th scope="col">Changed</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((e) => (
-              <tr key={e.id}>
-                <td>{dateTime(e.at, zone, true)}</td>
-                <td>{who(e)}</td>
-                <td>{e.kindLabel}</td>
-                <td>{about(e)}</td>
-                <td>{e.changedFields.length > 0 ? e.changedFields.join(", ") : "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ReorderTable
+        id="audit"
+        initialOrder={readColumnOrder(await cookies(), "audit")}
+        rowKeys={entries.map((e) => e.id)}
+        columns={[
+          { key: "when", label: "When", cells: entries.map((e) => dateTime(e.at, zone, true)) },
+          { key: "who", label: "Who", cells: entries.map(who) },
+          { key: "what", label: "What", cells: entries.map((e) => e.kindLabel) },
+          { key: "about", label: "About", cells: entries.map(about) },
+          { key: "changed", label: "Changed", cells: entries.map((e) => (e.changedFields.length > 0 ? e.changedFields.join(", ") : "—")) },
+        ]}
+      />
     </div>
   );
 }

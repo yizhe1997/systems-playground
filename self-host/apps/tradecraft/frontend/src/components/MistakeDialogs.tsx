@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Mistake } from "@/lib/types";
 import { call } from "@/lib/browserApi";
 import { Dialog } from "@/components/Dialog";
+import { RowMenu } from "@/components/RowMenu";
 import { FailureBanner, Waiting, useNoticeableWait, useToast } from "@/components/Notice";
 
 type Kind = "stop" | "rename" | "retire";
@@ -16,11 +17,15 @@ export function MistakeActions({ mistake, actions }: { mistake: Mistake; actions
   const close = () => setOpen(null);
   return (
     <>
-      {actions.map((k) => (
-        <button key={k} type="button" className="btn-quiet" onClick={() => setOpen(k)} aria-label={`${label[k]} ${mistake.name}`}>
-          {label[k]}
-        </button>
-      ))}
+      {actions.length > 1 ? (
+        <RowMenu name={mistake.name} items={actions.map((k) => ({ label: label[k], onSelect: () => setOpen(k) }))} />
+      ) : (
+        actions.map((k) => (
+          <button key={k} type="button" className="btn-quiet" onClick={() => setOpen(k)} aria-label={`${label[k]} ${mistake.name}`}>
+            {label[k]}
+          </button>
+        ))
+      )}
       <Dialog open={open === "stop"} onClose={close} title={`Stop line for ${mistake.name}`}>
         <StopLineForm mistake={mistake} onClose={close} />
       </Dialog>

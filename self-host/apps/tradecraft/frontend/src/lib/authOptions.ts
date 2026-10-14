@@ -20,7 +20,7 @@ declare module "next-auth/jwt" {
 const BACKEND = process.env.INTERNAL_BACKEND_URL ?? "http://backend:8080";
 const REFUSED = "/sign-in?reason=refused";
 const ENDED = "/sign-in?reason=ended";
-const STEP_UP_FAILED = "/settings?stepup=failed";
+const STEP_UP_PAGES = ["/settings/access", "/settings/integrations"];
 
 type SessionTimes = { email: string; sessionAt: number; stepUpAt: number };
 
@@ -35,6 +35,12 @@ async function internal(path: string, body: unknown): Promise<{ ok: boolean; sta
     body: JSON.stringify(body),
   });
   return { ok: res.ok, status: res.status, data: await res.json().catch(() => null) };
+}
+
+/** Where a failed confirmation lands: the page it was asked from (a cookie the dialog set), else Access. */
+async function stepUpFailedPath(): Promise<string> {
+  const from = (await cookies()).get("tc-stepup-from")?.value ?? "";
+  return (STEP_UP_PAGES.includes(from) ? from : "/settings/access") + "?stepup=failed";
 }
 
 function google(id: "google" | "google-confirm") {
@@ -80,13 +86,13 @@ export const authOptions: NextAuthOptions = {
         const current = await readSession(await cookies());
         if (!current) return ENDED;
         const r = await internal("/internal/step-up", { email: current.email, providerSub: subject });
-        if (!r.ok) return r.status === 403 ? STEP_UP_FAILED : STEP_UP_FAILED;
+        if (!r.ok) return await stepUpFailedPath();
         Object.assign(user, { tc: r.data as SessionTimes });
         return true;
       } catch (err) {
         // an unreachable API must never let a sign-in through
         console.error("[auth] the API could not be asked:", err instanceof Error ? err.message : "unknown error");
-        return provider === "google" ? REFUSED : STEP_UP_FAILED;
+        return provider === "google" ? REFUSED : await stepUpFailedPath();
       }
     },
     async jwt({ token, user }) {

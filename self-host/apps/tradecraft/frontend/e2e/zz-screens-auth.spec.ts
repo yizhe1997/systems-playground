@@ -59,7 +59,7 @@ test("capture", async ({ browser, page }) => {
   await api("GET", "/export");
 
   // A2 Access
-  await page.goto("/settings");
+  await page.goto("/settings/access");
   const card = page.getByRole("region", { name: "Access", exact: true });
   await expect(card).toBeVisible();
   await shot(page, "a2-access-filled");
@@ -77,12 +77,12 @@ test("capture", async ({ browser, page }) => {
   const now = Date.now();
   await old11.addCookies([await cookieFor(OWNER_EMAIL, { sessionAt: now - 60_000, stepUpAt: now - 11 * 60_000 })]);
   const op = await old11.newPage();
-  await op.goto("/settings");
+  await op.goto("/settings/access");
   await op.getByLabel("Add an email").fill("name@example.com");
   await op.getByRole("button", { name: "Add email" }).click();
   await expect(op.getByRole("dialog", { name: "Confirm it's you" })).toBeVisible();
   await shot(op, "a3-confirm-its-you-dialog");
-  await op.goto("/settings?stepup=failed");
+  await op.goto("/settings/access?stepup=failed");
   await expect(op.getByText("! That account is not the one signed in. Nothing was changed.")).toBeVisible();
   await shot(op, "a3-confirm-its-you-failed");
   await old11.close();

@@ -6,8 +6,12 @@ import type { Account } from "@/lib/types";
 import { call } from "@/lib/browserApi";
 import { AccountDialog } from "@/components/AccountDialog";
 import { FailureBanner, useToast } from "@/components/Notice";
+import { RowMenu } from "@/components/RowMenu";
+import { ReorderTable } from "@/components/ReorderTable";
 
-export function AccountsView({ accounts, currencies, showArchived, openNew }: { accounts: Account[]; currencies: string[]; showArchived: boolean; openNew: boolean }) {
+export function AccountsView({
+  accounts, currencies, showArchived, openNew, columnOrder = [], pager = null,
+}: { accounts: Account[]; currencies: string[]; showArchived: boolean; openNew: boolean; columnOrder?: string[]; pager?: React.ReactNode }) {
   const router = useRouter();
   const toast = useToast();
   const [dialog, setDialog] = useState<{ account: Account | null } | null>(openNew ? { account: null } : null);
@@ -57,42 +61,43 @@ export function AccountsView({ accounts, currencies, showArchived, openNew }: { 
         </div>
       ) : (
         <div className="card card-flush">
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Currency</th>
-                  <th scope="col">Kind</th>
-                  <th scope="col">Trading-day start</th>
-                  <th scope="col"><span className="sr-only">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {accounts.map((a) => (
-                  <tr key={a.id} className={a.archived ? "muted-row" : undefined}>
-                    <td>
-                      <strong>{a.name}</strong>
-                      {a.archived && <span className="tag tag-dashed">Archived</span>}
-                    </td>
-                    <td>{a.currency}</td>
-                    <td>{a.kind === "backtest" ? <span className="tag">Backtest</span> : "Live"}</td>
-                    <td>{a.tradingDayStart ?? "—"}</td>
-                    <td className="actions">
-                      {a.archived ? (
-                        <button type="button" className="btn" onClick={() => setArchived(a, false)} aria-label={`Restore ${a.name}`}>Restore</button>
-                      ) : (
-                        <>
-                          <button type="button" className="btn-quiet" onClick={() => setDialog({ account: a })} aria-label={`Edit ${a.name}`}>Edit</button>
-                          <button type="button" className="btn-quiet" onClick={() => setArchived(a, true)} aria-label={`Archive ${a.name}`}>Archive</button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ReorderTable
+            id="accounts"
+            initialOrder={columnOrder}
+            rowKeys={accounts.map((a) => a.id)}
+            rowClasses={accounts.map((a) => (a.archived ? "muted-row" : undefined))}
+            columns={[
+              {
+                key: "name", label: "Name",
+                cells: accounts.map((a) => (
+                  <>
+                    <strong>{a.name}</strong>
+                    {a.archived && <span className="tag tag-dashed">Archived</span>}
+                  </>
+                )),
+              },
+              { key: "currency", label: "Currency", cells: accounts.map((a) => a.currency) },
+              { key: "kind", label: "Kind", cells: accounts.map((a) => (a.kind === "backtest" ? <span className="tag">Backtest</span> : "Live")) },
+              { key: "start", label: "Trading-day start", cells: accounts.map((a) => a.tradingDayStart ?? "—") },
+            ]}
+            end={{
+              label: "Actions",
+              className: "actions",
+              cells: accounts.map((a) =>
+                a.archived ? (
+                  <button type="button" className="btn" onClick={() => setArchived(a, false)} aria-label={`Restore ${a.name}`}>Restore</button>
+                ) : (
+                  <RowMenu
+                    name={a.name}
+                    items={[
+                      { label: "Edit", onSelect: () => setDialog({ account: a }) },
+                      { label: "Archive", onSelect: () => void setArchived(a, true) },
+                    ]}
+                  />
+                ),
+              ),
+            }}
+          />
           <div className="table-foot stack-md">
             {showArchived && <p className="helper">Archived accounts keep all their trades. Restore one to use it again.</p>}
             <p className="helper">Backtest accounts are marked in every account chooser and left out of live figures until you choose them.</p>
@@ -100,6 +105,8 @@ export function AccountsView({ accounts, currencies, showArchived, openNew }: { 
           </div>
         </div>
       )}
+
+      {pager}
 
       <AccountDialog open={dialog !== null} account={dialog?.account ?? null} currencies={currencies} onClose={close} />
     </>

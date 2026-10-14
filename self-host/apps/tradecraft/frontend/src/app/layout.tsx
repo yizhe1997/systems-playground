@@ -26,6 +26,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="en">
       <body>
+        <div className="zoom-root">
         <NoticeProvider>
           {session ? (
             <div className="shell">
@@ -40,6 +41,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             children
           )}
         </NoticeProvider>
+        </div>
       </body>
     </html>
   );

@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { api, fillTrade, makeAccount, makeTrade, tradeA, tradesFor } from "./helpers";
+import { api, fillTrade, makeAccount, makeTrade, tradeA, tradesFor, rowAction } from "./helpers";
 
 // Not a check: it captures the built screens for the visual review (a folder outside the repository, see CAPTURE_DIR).
 // Run on a fresh stack:  CAPTURE_SCREENS=light npx playwright test e2e/zz-screens.spec.ts   (and =dark)
@@ -70,7 +70,7 @@ test("capture", async ({ page }) => {
   await expect(page.getByText("Showing deleted trades.")).toBeVisible();
   await shot(page, "l1-showing-deleted");
   await page.goto("/trades?from=&to=");
-  await page.getByRole("button", { name: /Delete NQ long trade of Wed 1 Oct 09:58/ }).click();
+  await rowAction(page, /NQ long trade of Wed 1 Oct 09:58/, "Delete");
   await expect(page.getByText("Trade deleted.")).toBeVisible();
   await shot(page, "l1-trade-deleted-undo");
   await page.getByRole("button", { name: "Undo" }).click();
@@ -136,7 +136,7 @@ test("capture", async ({ page }) => {
   await expect(page.getByText(/Start time cannot be 00:00/)).toBeVisible();
   await shot(page, "l4-start-time-0000");
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Edit Funded 50K" }).click();
+  await rowAction(page, "Funded 50K", "Edit");
   await shot(page, "l4-account-dialog-edit");
   await page.keyboard.press("Escape");
 

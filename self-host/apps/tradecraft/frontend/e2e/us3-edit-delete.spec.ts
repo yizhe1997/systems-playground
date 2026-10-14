@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { api, fillTrade, makeAccount, makeTrade, preview, tradeA, tradesFor, uniq } from "./helpers";
+import { api, fillTrade, makeAccount, makeTrade, preview, tradeA, tradesFor, uniq, rowAction } from "./helpers";
 
 test("edit a price and see the result change", async ({ page }) => {
   const acct = await makeAccount(uniq("Edit"));
   await makeTrade(acct.id, { instrument: "ED1" });
   await page.goto(tradesFor(acct.id));
-  await page.getByRole("link", { name: /Edit ED1/ }).click();
+  await rowAction(page, /ED1/, "Edit");
   await expect(page.getByRole("heading", { name: "Edit trade" })).toBeVisible();
   await expect(page.getByText(/ED1 Long x2 · Wed 1 Oct 2025 · /)).toBeVisible();
   await expect(page.getByText(/Last saved /)).toBeVisible();
@@ -22,7 +22,7 @@ test("delete shows Undo for ten seconds; Show deleted keeps it restorable", asyn
   const acct = await makeAccount(uniq("Del"));
   await makeTrade(acct.id, { instrument: "DL1" });
   await page.goto(tradesFor(acct.id));
-  await page.getByRole("button", { name: /Delete DL1/ }).click();
+  await rowAction(page, /DL1/, "Delete");
   await expect(page.getByText("Trade deleted.")).toBeVisible();
   await expect(page.getByRole("row", { name: /DL1/ })).toBeHidden();
 
@@ -31,7 +31,7 @@ test("delete shows Undo for ten seconds; Show deleted keeps it restorable", asyn
   await expect(page.getByRole("row", { name: /DL1/ })).toBeVisible();
 
   // delete again, then restore from the deleted view
-  await page.getByRole("button", { name: /Delete DL1/ }).click();
+  await rowAction(page, /DL1/, "Delete");
   await expect(page.getByText("Trade deleted.")).toBeVisible();
   await page.getByText("Show deleted").click();
   await expect(page.getByText("Showing deleted trades. They are hidden everywhere else until restored.")).toBeVisible();
@@ -48,7 +48,7 @@ test("the toast goes away by itself after ten seconds", async ({ page }) => {
   const acct = await makeAccount(uniq("Toast"));
   await makeTrade(acct.id, { instrument: "TO1" });
   await page.goto(tradesFor(acct.id));
-  await page.getByRole("button", { name: /Delete TO1/ }).click();
+  await rowAction(page, /TO1/, "Delete");
   await expect(page.getByText("Trade deleted.")).toBeVisible();
   await expect(page.getByText("Trade deleted.")).toBeHidden({ timeout: 13_000 });
 });

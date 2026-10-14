@@ -9,7 +9,7 @@ type Listed = { identities: { id: string; email: string; active: boolean }[]; co
 const identities = async () => (await api<Listed>("GET", "/identities")).data;
 
 test("the Access list: add an address, the same one again, a bad one, disable and enable", async ({ page }) => {
-  await page.goto("/settings");
+  await page.goto("/settings/access");
   const card = page.getByRole("region", { name: "Access", exact: true });
   await expect(card.getByText("Who can sign in. Every address here is you.")).toBeVisible();
   const owner = card.getByRole("row", { name: new RegExp(OWNER_EMAIL) });
@@ -49,7 +49,7 @@ test("the last active address cannot be disabled", async ({ page }) => {
   for (const i of (await identities()).identities) {
     if (i.email !== OWNER_EMAIL && i.active) expect((await api("POST", `/identities/${i.id}/disable`)).status).toBe(200);
   }
-  await page.goto("/settings");
+  await page.goto("/settings/access");
   const card = page.getByRole("region", { name: "Access", exact: true });
   await card.getByRole("row", { name: new RegExp(OWNER_EMAIL) }).getByRole("button", { name: /Disable/ }).click();
   await expect(card.getByText("! This is the last active address. Enable another one before disabling it.")).toBeVisible();
@@ -67,7 +67,7 @@ test.describe("an older sign-in", () => {
     await page.route("https://accounts.google.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>stub</title>" }));
     const before = (await identities()).counts.all;
 
-    await page.goto("/settings");
+    await page.goto("/settings/access");
     await page.getByLabel("Add an email").fill(`stale-${stamp()}@example.com`);
     await page.getByRole("button", { name: "Add email" }).click();
     const dialog = page.getByRole("dialog", { name: "Confirm it's you" });
@@ -92,12 +92,12 @@ test.describe("an older sign-in", () => {
     const context = await browser.newContext({ storageState: UNSIGNED });
     await context.addCookies([await cookieFor(OWNER_EMAIL)]);
     const page = await context.newPage();
-    await page.goto("/settings?stepup=failed");
+    await page.goto("/settings/access?stepup=failed");
     const dialog = page.getByRole("dialog", { name: "Confirm it's you" });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText("! That account is not the one signed in. Nothing was changed.")).toBeVisible();
     await dialog.getByRole("button", { name: "Cancel" }).click();
-    await expect(page).toHaveURL(/\/settings$/);
+    await expect(page).toHaveURL(/\/settings\/access$/);
     await context.close();
   });
 });

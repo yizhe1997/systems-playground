@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { api, uniq } from "./helpers";
+import { api, rowAction, uniq } from "./helpers";
 import { dayUrl, reviewsUrl, sampleDay } from "./helpers_reviews";
 
 // Accessibility pass for feature 001 (FR-024): WCAG 2 A and AA rules, including text contrast of at least 4.5:1, on
@@ -79,13 +79,13 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page.getByText("! Stop line must be 1 or more.")).toBeVisible();
       await clean(page, "S3 stop line with an error");
       await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
-      await page.locator(".manage-list li", { hasText: s.rush }).getByRole("button", { name: `Rename ${s.rush}` }).click();
+      await rowAction(page, s.rush, "Rename", page.locator(".manage-list li", { hasText: s.rush }));
       await page.getByRole("dialog").getByLabel("Name").fill("chased entry");
       await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
       await expect(page.getByText(/already exists/)).toBeVisible();
       await clean(page, "S3 rename, name already used");
       await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
-      await page.locator(".manage-list li", { hasText: s.rush }).getByRole("button", { name: `Retire ${s.rush}` }).click();
+      await rowAction(page, s.rush, "Retire", page.locator(".manage-list li", { hasText: s.rush }));
       await clean(page, "S3 retire");
       await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
       await page.goto("/mistakes?period=month&date=2019-03-06");

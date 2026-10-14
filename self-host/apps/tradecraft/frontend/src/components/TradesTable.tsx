@@ -1,6 +1,10 @@
 import type { Trade } from "@/lib/types";
 import { dateTime, dayLabel, money, plain, profitClass, rValue } from "@/lib/format";
+import { cookies } from "next/headers";
 import { RowActions } from "@/components/TradeRowActions";
+import { RowMenu } from "@/components/RowMenu";
+import { ReorderTable } from "@/components/ReorderTable";
+import { readColumnOrder } from "@/lib/columnOrder";
 
 function ResultCell({ t }: { t: Trade }) {
   if (t.netResult === null) return <>—</>;
@@ -34,66 +38,64 @@ function RCell({ t }: { t: Trade }) {
   );
 }
 
-export function TradesTable({ trades, zone, deletedView, backtestIds = [] }: { trades: Trade[]; zone: string; deletedView: boolean; backtestIds?: string[] }) {
+export async function TradesTable({ trades, zone, deletedView, backtestIds = [] }: { trades: Trade[]; zone: string; deletedView: boolean; backtestIds?: string[] }) {
   const backtest = new Set(backtestIds);
+  const labelOf = (t: Trade) => `${t.instrument} ${t.direction} trade of ${dateTime(t.entryAt, zone)}`;
   return (
     <RowActions>
     <div className="card card-flush">
-      <div className="table-wrap">
-        <table className="table trades-table">
-          <thead>
-            <tr>
-              <th scope="col">Entry time</th>
-              <th scope="col">Exit time</th>
-              <th scope="col">Trading day</th>
-              <th scope="col">Account</th>
-              <th scope="col">Instrument</th>
-              <th scope="col">Direction</th>
-              <th scope="col">Size</th>
-              <th scope="col">Net result</th>
-              <th scope="col">Plan</th>
-              <th scope="col">R</th>
-              <th scope="col"><span className="sr-only">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {trades.map((t) => {
-              const label = `${t.instrument} ${t.direction} trade of ${dateTime(t.entryAt, zone)}`;
-              return (
-                <tr key={t.id} className={deletedView ? "muted-row" : undefined}>
-                  <td>{dateTime(t.entryAt, zone)}</td>
-                  <td>{dateTime(t.exitAt, zone)}</td>
-                  <td>{dayLabel(t.tradingDay, false)}</td>
-                  <td className="account">
-                    {t.accountName}
-                    {backtest.has(t.accountId) && <span className="tag">Backtest</span>}
-                  </td>
-                  <td className="instrument">
-                    {t.instrument}
-                    {deletedView && <span className="tag tag-dashed">Deleted</span>}
-                  </td>
-                  <td>{t.direction === "long" ? "Long" : "Short"}</td>
-                  <td className="num">{plain(t.size)}</td>
-                  <td className="num tall"><ResultCell t={t} /></td>
-                  <td className="tall"><PlanCell t={t} /></td>
-                  <td className="num tall"><RCell t={t} /></td>
-                  <td className="actions">
-                    {deletedView ? (
-                      <button type="button" className="btn" data-restore={t.id} aria-label={`Restore ${label}`}>Restore</button>
-                    ) : (
-                      <>
-                        {/* a plain link: thousands of prefetching Link components would slow the list down */}
-                        <a className="btn-quiet" href={`/trades/${t.id}/edit`} aria-label={`Edit ${label}`}>Edit</a>
-                        <button type="button" className="btn-quiet" data-delete={t.id} aria-label={`Delete ${label}`}>Delete</button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <ReorderTable
+        id="trades"
+        tableClass="table trades-table"
+        initialOrder={readColumnOrder(await cookies(), "trades")}
+        rowKeys={trades.map((t) => t.id)}
+        rowClasses={trades.map(() => (deletedView ? "muted-row" : undefined))}
+        columns={[
+          { key: "entry", label: "Entry time", cells: trades.map((t) => dateTime(t.entryAt, zone)) },
+          { key: "exit", label: "Exit time", cells: trades.map((t) => dateTime(t.exitAt, zone)) },
+          { key: "day", label: "Trading day", cells: trades.map((t) => dayLabel(t.tradingDay, false)) },
+          {
+            key: "account", label: "Account", className: "account",
+            cells: trades.map((t) => (
+              <>
+                {t.accountName}
+                {backtest.has(t.accountId) && <span className="tag">Backtest</span>}
+              </>
+            )),
+          },
+          {
+            key: "instrument", label: "Instrument", className: "instrument",
+            cells: trades.map((t) => (
+              <>
+                {t.instrument}
+                {deletedView && <span className="tag tag-dashed">Deleted</span>}
+              </>
+            )),
+          },
+          { key: "direction", label: "Direction", cells: trades.map((t) => (t.direction === "long" ? "Long" : "Short")) },
+          { key: "size", label: "Size", className: "num", cells: trades.map((t) => plain(t.size)) },
+          { key: "net", label: "Net result", className: "num tall", cells: trades.map((t) => <ResultCell t={t} />) },
+          { key: "plan", label: "Plan", className: "tall", cells: trades.map((t) => <PlanCell t={t} />) },
+          { key: "r", label: "R", className: "num tall", cells: trades.map((t) => <RCell t={t} />) },
+        ]}
+        end={{
+          label: "Actions",
+          className: "actions",
+          cells: trades.map((t) =>
+            deletedView ? (
+              <button type="button" className="btn" data-restore={t.id} aria-label={`Restore ${labelOf(t)}`}>Restore</button>
+            ) : (
+              <RowMenu
+                name={labelOf(t)}
+                items={[
+                  { label: "Edit", href: `/trades/${t.id}/edit` },
+                  { label: "Delete", attrs: { "data-delete": t.id } },
+                ]}
+              />
+            ),
+          ),
+        }}
+      />
       <p className="helper table-foot">Each result is in its own account&apos;s currency. This list has no totals. The plan answer comes from the daily review.</p>
     </div>
     </RowActions>
