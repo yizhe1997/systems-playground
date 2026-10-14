@@ -1,0 +1,57 @@
+name: Test Tradecraft
+
+# GitHub-hosted runner, deliberately - not self-hosted - so it can also run on pull_request without putting untrusted code
+# on the host (see test-apps-scripts.yml). It runs the same script a developer runs locally: the Go tests against a real
+# Postgres, the whole Playwright suite against the composed stack on a throwaway database, then the loopback-and-secrets
+# and persistence checks. Nothing here needs a secret: scripts/test.sh makes fresh random ones for every run.
+#
+# The build and deploy of Tradecraft wait for this workflow (build-app-tradecraft.yml listens for its completion), so
+# nothing reaches the host that has not passed it. Constitution IV's exposure gate also asks that CI has been shown to
+# run on GitHub: the first green run of this file is that evidence.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'self-host/apps/tradecraft/**'
+      - '.github/workflows/test-app-tradecraft.yml'
+  pull_request:
+    paths:
+      - 'self-host/apps/tradecraft/**'
+      - '.github/workflows/test-app-tradecraft.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: test-tradecraft-${{ github.ref }}
+  cancel-in-progress: true
+
+# nothing here writes to the repository: the default token is read-only
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: self-host/apps/tradecraft/frontend/package-lock.json
+
+      - name: Install the frontend's dependencies and Chromium
+        working-directory: self-host/apps/tradecraft/frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Run the whole check
+        working-directory: self-host/apps/tradecraft
+        env:
+          # any value: the database is thrown away at the end of the run
+          POSTGRES_PASSWORD: ci-throwaway-database-password
+        run: bash scripts/test.sh

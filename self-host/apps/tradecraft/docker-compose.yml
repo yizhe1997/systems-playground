@@ -1,8 +1,12 @@
-name: tradecraft-v2
-
-# Everything is published on the loopback address only: constitution IV says nothing is exposed beyond this
-# computer until CI has been proven on GitHub. Sign-in and the audit log (feature 002) are in place; the exposure
-# gate is a separate condition (docs/security-review.md).
+# Base Docker Compose configuration, shared by every way of running Tradecraft.
+# Do NOT run this alone; it is merged with either:
+# - docker-compose.override.yml (loaded automatically for local development and tests: builds the images, publishes
+#   loopback ports, holds the test runner)
+# - docker-compose.prod.yml (the host: pre-built images from the registry, the public hostname; the deploy workflow
+#   installs it beside this file as compose.override.yml)
+#
+# Constitution IV: nothing is published beyond this computer by this file. The only public route is the Cloudflare
+# tunnel to the web tier, set by labels in docker-compose.prod.yml; the database and the API publish no port there.
 services:
   postgres:
     image: postgres:18-alpine
@@ -11,8 +15,6 @@ services:
       POSTGRES_DB: tradecraft
       POSTGRES_USER: tradecraft
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-    ports:
-      - "127.0.0.1:${POSTGRES_HOST_PORT:-5435}:5432"
     volumes:
       # PostgreSQL 18 images keep their data under /var/lib/postgresql (a versioned folder inside it).
       - tradecraft_v2_pgdata:/var/lib/postgresql
@@ -23,8 +25,6 @@ services:
       retries: 20
 
   backend:
-    build:
-      context: ./backend
     restart: unless-stopped
     environment:
       PORT: "8080"
@@ -33,8 +33,6 @@ services:
       OWNER_BOOTSTRAP_EMAIL: ${OWNER_BOOTSTRAP_EMAIL:?OWNER_BOOTSTRAP_EMAIL is required (see .env.example)}
       TRADECRAFT_ENV: ${TRADECRAFT_ENV:-production}
       DEV_SESSION_SECRET: ${DEV_SESSION_SECRET:-}
-    ports:
-      - "127.0.0.1:${BACKEND_HOST_PORT:-8081}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,8 +43,6 @@ services:
       retries: 20
 
   frontend:
-    build:
-      context: ./frontend
     restart: unless-stopped
     environment:
       INTERNAL_BACKEND_URL: http://backend:8080
@@ -57,31 +53,11 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       TRADECRAFT_ENV: ${TRADECRAFT_ENV:-production}
       DEV_SESSION_SECRET: ${DEV_SESSION_SECRET:-}
-      # the address an agent connects to, shown in the "Token created" dialog (the API's published port, with /mcp)
+      # the address an agent connects to, shown in the "Token created" dialog
       AGENT_MCP_URL: ${AGENT_MCP_URL:-http://127.0.0.1:${BACKEND_HOST_PORT:-8081}/mcp}
-    ports:
-      - "127.0.0.1:${FRONTEND_HOST_PORT:-3100}:3000"
     depends_on:
       backend:
         condition: service_healthy
 
-  # Go tests against a real Postgres. Run with: docker compose --profile tests run --rm tests
-  tests:
-    profiles: ["tests"]
-    image: golang:1.26-alpine
-    working_dir: /src
-    volumes:
-      - ./backend:/src
-      - tradecraft_v2_gocache:/go
-    environment:
-      TEST_DATABASE_URL: postgres://tradecraft:${POSTGRES_PASSWORD}@postgres:5432/tradecraft?sslmode=disable
-      SERVICE_TOKEN_SECRET: ${SERVICE_TOKEN_SECRET:?SERVICE_TOKEN_SECRET is required (see .env.example)}
-      CGO_ENABLED: "0"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: ["go", "test", "-tags", "timetzdata", "-count=1", "./..."]
-
 volumes:
   tradecraft_v2_pgdata:
-  tradecraft_v2_gocache:

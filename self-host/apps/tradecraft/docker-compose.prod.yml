@@ -1,0 +1,26 @@
+# Production override. The deploy workflow (.github/workflows/deploy-app-tradecraft.yml) installs this file beside
+# docker-compose.yml on the host as compose.override.yml and runs it under `infisical run`, so every secret comes from
+# Infisical's environment injection and none is written to a file (ADR 002). The files land as compose.yml and
+# compose.override.yml, not docker-compose.yml, on purpose: wsl-startup.sh runs a bare `docker compose up -d` on every
+# */docker-compose.yml with no Infisical in the environment, which would recreate these containers with blank secrets.
+# `restart: unless-stopped` brings them back after a reboot without it.
+#
+# The only thing published is the web tier, on the loopback address, for cloudflared (native on the host) to reach by
+# the label below. The API and the database publish nothing: the API is reached only through the web tier, which also
+# carries /mcp for agents (frontend/next.config.ts).
+
+services:
+  backend:
+    image: ${REGISTRY_HOST:-localhost:5000}/tradecraft-backend:latest
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  frontend:
+    image: ${REGISTRY_HOST:-localhost:5000}/tradecraft-frontend:latest
+    ports:
+      - "127.0.0.1:18090:3000"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      # Picked up by self-host/infra/scripts/cloudflared-sync.sh: the hostname and the DNS record are made for it.
+      - cloudflare.tunnel.hostname=${TRADECRAFT_SUBDOMAIN:-tradecraft}.${HOST:?HOST must be set}
+      - cloudflare.tunnel.port=18090
