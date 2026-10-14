@@ -92,6 +92,15 @@ Node on the host once: `cd frontend && npm install && npx playwright install chr
 
 Faster loop on the running stack: `cd frontend && npx playwright test` (set `E2E_BASE_URL` and `E2E_API_URL` if you changed the ports).
 
+## Deploy (the host)
+
+Same pipeline as the portfolio (`docs/DEPLOYMENT.md`): push to `main` -> `Test Tradecraft` (GitHub-hosted, runs `scripts/test.sh`) -> `Build and Push Tradecraft` (self-hosted, images `tradecraft-backend` and `tradecraft-frontend` to the registry) -> `Deploy App - Tradecraft` (copies the compose files to `$APP_BASE_DIR/tradecraft` as `compose.yml` and `compose.override.yml` and runs them under `infisical run`).
+
+- **Public address:** `https://tradecraft.<HOST>` (`TRADECRAFT_SUBDOMAIN` repository variable to change the first label). cloudflared-sync reads the label in `docker-compose.prod.yml`. Agents connect to `https://tradecraft.<HOST>/mcp`.
+- **Infisical (prod):** `TRADECRAFT_POSTGRES_PASSWORD`, `TRADECRAFT_NEXTAUTH_SECRET`, `TRADECRAFT_SERVICE_TOKEN_SECRET` (each `openssl rand -base64 48`, all three different), `TRADECRAFT_OWNER_EMAIL`; the Google client is the portfolio's `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, or `TRADECRAFT_GOOGLE_CLIENT_ID` and `TRADECRAFT_GOOGLE_CLIENT_SECRET` for one of its own.
+- **Google Cloud console, OAuth client, Authorised redirect URIs:** `https://tradecraft.<HOST>/api/auth/callback/google` and `https://tradecraft.<HOST>/api/auth/callback/google-confirm`.
+- **Before the first deploy:** the exposure gate in `docs/security-review.md`.
+
 ## Back up and restore the data
 
 ```bash
