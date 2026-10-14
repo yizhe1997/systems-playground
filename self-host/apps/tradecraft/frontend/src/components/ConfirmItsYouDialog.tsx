@@ -34,7 +34,7 @@ export function ConfirmItsYouDialog({
           autoFocus
           onClick={() => {
             // a failed confirmation is decided on the server, which reads this to send the owner back to the same page
-            document.cookie = `tc-stepup-from=${returnTo}; path=/; max-age=600; samesite=lax`;
+            document.cookie = `tc-stepup-from=${returnTo}; path=/; max-age=600; samesite=lax${location.protocol === "https:" ? "; secure" : ""}`;
             void signIn("google-confirm", { callbackUrl: returnTo });
           }}
         >

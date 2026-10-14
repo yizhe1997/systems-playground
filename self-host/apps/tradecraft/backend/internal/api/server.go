@@ -23,6 +23,8 @@ type Server struct {
 	app  *fiber.App // the agent door runs the owner's read handlers through it (mcp.go)
 
 	refusals refusalLimiter // caps the refusal rows an unauthenticated caller can make (agent_gate.go)
+	// the same cap for refused sign-ins: anyone with a Google account can attempt one, and each is a row in a log that is never trimmed
+	signinRefusals refusalLimiter
 }
 
 // New builds the app. now may be nil (the real clock); tests pass their own to pin the future-time check. secret

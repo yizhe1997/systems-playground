@@ -1,6 +1,7 @@
 package api
 
 import (
+	"time"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -43,7 +44,10 @@ func (s *Server) internalSignIn(c *fiber.Ctx) error {
 	ctx := c.Context()
 	deny := func(reason string) error {
 		slog.Warn("sign-in refused", "reason", reason)
-		writeAudit(ctx, s.q, auditEvent{Actor: "system", Kind: "sign_in_refused", Subject: cleanAttempted(in.Email)})
+		// capped like the agent refusals: refused all the same, but past the burst the row is not written
+		if ok, _ := s.signinRefusals.allow(time.Now()); ok {
+			writeAudit(ctx, s.q, auditEvent{Actor: "system", Kind: "sign_in_refused", Subject: cleanAttempted(in.Email)})
+		}
 		return refusal()
 	}
 	email := auth.NormaliseEmail(in.Email)

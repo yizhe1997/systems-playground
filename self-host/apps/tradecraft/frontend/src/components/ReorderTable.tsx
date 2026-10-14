@@ -41,7 +41,7 @@ export function ReorderTable({
 
   const keep = (next: string[]) => {
     setSaved(next);
-    document.cookie = `${COLUMN_COOKIE}${id}=${next.join(",")}; path=/; max-age=31536000; samesite=lax`;
+    document.cookie = `${COLUMN_COOKIE}${id}=${next.join(",")}; path=/; max-age=31536000; samesite=lax${location.protocol === "https:" ? "; secure" : ""}`;
   };
   const move = (key: string, to: number) => {
     const from = order.indexOf(key);
@@ -54,7 +54,7 @@ export function ReorderTable({
   };
   const reset = () => {
     setSaved([]);
-    document.cookie = `${COLUMN_COOKIE}${id}=; path=/; max-age=0; samesite=lax`;
+    document.cookie = `${COLUMN_COOKIE}${id}=; path=/; max-age=0; samesite=lax${location.protocol === "https:" ? "; secure" : ""}`;
     setSaid("Columns are back in their original order.");
   };
   const customized = order.join(",") !== defaults.join(",");

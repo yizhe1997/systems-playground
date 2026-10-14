@@ -16,7 +16,7 @@ export function PageSizeSelect({ value, path, params, label = "Rows per page" }:
         className="field-input"
         value={value}
         onChange={(e) => {
-          document.cookie = `${PAGE_SIZE_COOKIE}=${e.target.value}; path=/; max-age=31536000; samesite=lax`;
+          document.cookie = `${PAGE_SIZE_COOKIE}=${e.target.value}; path=/; max-age=31536000; samesite=lax${location.protocol === "https:" ? "; secure" : ""}`;
           const q = new URLSearchParams();
           for (const [k, v] of Object.entries(params)) q.set(k, v ?? "");
           q.set("size", e.target.value);
