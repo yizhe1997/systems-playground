@@ -107,6 +107,7 @@ Every word the owner will read. Times are in the journal time zone. No placehold
 | 2026-10-10 | Screen list | Draw A1 to A5 as proposed; Access is a card in Settings, not its own page | Done |
 | 2026-10-10 | A1 to A5 | Yes to all the proposals, including the answers to the four open questions | Open questions closed; the wireframes are unchanged |
 | 2026-10-10 | Spec FR-005 | A Google re-confirmation restarts the 8 hours; re-run the sign-off | Spec clarified, hash updated; the wireframes are unchanged |
+| 2026-10-14 | A2, A4, A5: list polish | Access is its own page under Settings (sidebar: Settings, then Access), not a card below Time zone; the Audit log is paged at 10 with Rows per page and has draggable columns; the sidebar is grouped and stays the height of the window; its foot is an account menu (the first letter, the address, a chevron; the menu holds Sign out only), drawn in every wireframe frame | Built and recorded in `docs/decisions.md` (2026-10-14). The Google confirmation returns to the page that asked for it. In Penpot the sidebar of every wireframe frame is redrawn with the two groups (JOURNAL, MANAGE), and with General, Access and Integrations under Settings where Settings is the current page; the Hex skin frames and the Time zone and Access cards drawn together on one Settings frame keep the earlier layout until the owner's visual pass before the first live deployment |
 
 ## Open questions for clarify
 

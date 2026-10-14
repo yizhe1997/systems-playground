@@ -135,6 +135,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings (the same sidebar on e
 | 2026-10-04 | Clarify: currency change | Allow it, "after all it's just a label" | Edit dialog warns that existing results are relabelled, not converted |
 | 2026-10-04 | Clarify: R | Chose the recommendation | R is net result over risk (as drawn) |
 | 2026-10-04 | Feature 001 plan | Yes to the Plan column on the Trades list and to the shared sidebar | L1 gains a Plan column and footnote sentence; every L screen shows the sidebar Reviews, Trades, Mistakes, Accounts, Settings under the brand TRADECRAFT; Penpot frames, Hex skins and wireframe images updated the same day |
+| 2026-10-14 | L1, L3, L5 and the sidebar: list polish | Do it: row actions in a kebab menu (L1 Edit and Delete, L3 Edit and Archive), columns that can be dragged into any order, 10 rows per page with Rows per page of 10, 25, 50, 100, a sidebar that stays the height of the window and is grouped (Journal, Manage), and Settings split into General, Access and Integrations pages | Built and recorded in `docs/decisions.md` (2026-10-14). L5 is now the General page (time zone only). The sidebar of every wireframe frame is redrawn (see feature 002). The row actions as a kebab menu are drawn on B2 (which supersedes L3); the superseded L1 and L3 frames keep Edit and Delete as words, and the Rows per page control is not drawn. They are redrawn in the owner's visual pass before the first live deployment |
 
 ## Open questions for clarify
 

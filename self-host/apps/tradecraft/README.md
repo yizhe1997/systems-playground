@@ -41,7 +41,7 @@ Sign-in is Google only, for the email addresses you allow. Steps and settings ar
 2. In the Google Cloud console create an OAuth client (type Web application) with the redirect addresses
    `<NEXTAUTH_URL>/api/auth/callback/google` and `<NEXTAUTH_URL>/api/auth/callback/google-confirm`, and put its id and secret in
    `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Until then the sign-in button answers with the refusal screen.
-3. Settings, Access: add other addresses (a recent Google confirmation is asked for first). Audit log in the sidebar shows who did what.
+3. Settings, Access (sidebar: Settings, then Access): add other addresses (a recent Google confirmation is asked for first). Audit log in the sidebar shows who did what.
 
 Open the app at exactly the `NEXTAUTH_URL` address (host and port): the sign-in sets a cookie for that host, and finishing the
 flow on another one (`127.0.0.1` instead of `localhost`) fails with "State cookie was missing" in the web tier's log and the
@@ -56,7 +56,7 @@ start** if `DEV_SESSION_SECRET` is set while `TRADECRAFT_ENV` is `production` (t
 An agent (Claude Code, Claude Desktop, any client that speaks the Model Context Protocol) can read your journal, and only
 read it. It is off until you turn it on, and nothing here is exposed beyond this computer.
 
-1. Settings, Agent access: turn the switch on, then New token. Name it ("Claude Desktop, backtests") and copy the value
+1. Settings, Integrations (sidebar: Settings, then Integrations), Agent access: turn the switch on, then New token. Name it ("Claude Desktop, backtests") and copy the value
    when it is shown: it is shown **once** and cannot be shown again (lose it and you revoke it and make another). Each of
    these steps asks for a recent Google confirmation first.
 2. The "Token created" dialog gives you the two ready-to-paste forms, with the address and the value already in them (the
@@ -72,7 +72,7 @@ read it. It is off until you turn it on, and nothing here is exposed beyond this
 3. Ask it things ("List my accounts", "How did my last 20 backtest trades compare with my plan?"). It has nine read tools:
    accounts, trades, a day, a week, a month, the mistake list, the mistake counter, the focus and the time zone. It cannot read the
    audit log, identities, tokens or the export, and in this version it only reads.
-4. Audit log, What: Agent read shows every call by token name, never a figure. Revoke one token in Settings, or turn the switch
+4. Audit log, What: Agent read shows every call by token name, never a figure. Revoke one token in Settings, Integrations, or turn the switch
    off to refuse all of them at once (that revokes none). A request that comes from a web page is refused and recorded as a
    browser request.
 

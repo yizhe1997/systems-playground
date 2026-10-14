@@ -158,6 +158,7 @@ Every word the owner will read. No placeholders.
 | 2026-10-12 | B7 built | The line under the name must not say the token "cannot change anything": agents are meant to be able to do more than read in later features, and the line would then be wrong | B7's line reads "This token can read your journal." (B6's help still says "It can read; it cannot change anything." and is the owner's to decide) |
 | 2026-10-12 | Build of US4 | (no reaction; the existing frames kept in step) | L2's preview line, L3's footer, L4's help line and S1's trades-table header ("Entry time") are updated in Penpot to the wording above |
 | 2026-10-12 | Analysis of the tasks | A day's trades follow the entry too | The daily review's trades table shows Entry time and is in entry order (listed above); to be confirmed with the re-sign-off |
+| 2026-10-14 | B1, B4, B6: list polish | Agent access is its own page under Settings (Integrations); Edit and Archive of an account are in a kebab menu, Edit and Delete of a trade too; the Trades list pages at 10 by default with Rows per page | Built and recorded in `docs/decisions.md` (2026-10-14). The wireframes still show the earlier layout |
 
 ## Open questions for clarify
 
