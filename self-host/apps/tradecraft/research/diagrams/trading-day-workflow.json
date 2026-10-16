@@ -1,0 +1,45 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "A trading day and its reviews",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "plan", "label": "Plan" },
+    { "id": "live", "label": "During the session" },
+    { "id": "capture", "label": "Trades" },
+    { "id": "reflect", "label": "Reflect" }
+  ],
+  "phases": [
+    { "id": "before", "label": "Before the open", "fromCol": 0, "toCol": 0 },
+    { "id": "during", "label": "Live", "fromCol": 1, "toCol": 3, "variant": "emphasis" },
+    { "id": "after", "label": "After and beyond", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [],
+  "mainPath": ["prep", "window", "gate", "trade", "treview", "daily", "weekly"],
+  "nodes": [
+    { "id": "prep", "lane": "plan", "col": 0, "type": "frontend", "label": "Prepare", "sublabel": "goals, checklist, context", "width": 132 },
+    { "id": "window", "lane": "live", "col": 1, "type": "backend", "label": "Session live", "sublabel": "planned or unplanned", "width": 132 },
+    { "id": "gate", "lane": "live", "col": 2, "type": "security", "label": "Trade gate", "sublabel": "go, wait or no trade", "width": 132 },
+    { "id": "log", "lane": "live", "col": 3, "type": "messagebus", "label": "Session log", "sublabel": "timestamped notes", "width": 132 },
+    { "id": "trade", "lane": "capture", "col": 3, "type": "database", "label": "Trade logged", "sublabel": "form, import or sync", "width": 132 },
+    { "id": "treview", "lane": "capture", "col": 4, "type": "backend", "label": "Trade review", "sublabel": "questions by outcome", "width": 132 },
+    { "id": "daily", "lane": "reflect", "col": 4, "type": "frontend", "label": "Daily review", "sublabel": "grades, mistakes, notes", "width": 132 },
+    { "id": "weekly", "lane": "reflect", "col": 5, "type": "frontend", "label": "Weekly review", "sublabel": "pulls the days together", "width": 132 }
+  ],
+  "edges": [
+    { "id": "prep-window", "from": "prep", "to": "window", "variant": "emphasis" },
+    { "id": "window-gate", "from": "window", "to": "gate", "label": "before each trade" },
+    { "id": "gate-trade", "from": "gate", "to": "trade", "label": "green light", "variant": "emphasis" },
+    { "id": "gate-log", "from": "gate", "to": "log", "label": "any outcome", "variant": "dashed", "role": "branch" },
+    { "id": "trade-review", "from": "trade", "to": "treview", "label": "after the day" },
+    { "id": "review-daily", "from": "treview", "to": "daily", "variant": "emphasis" },
+    { "id": "daily-weekly", "from": "daily", "to": "weekly", "label": "sections pulled up" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Plan flows down", "items": ["A weekly or monthly focus shows on each daily review", "Recurring goals and the checklist are copied into new reviews"] },
+    { "dot": "amber", "title": "Reflection flows up", "items": ["The weekly review lists each day's chosen sections", "Monthly and yearly reviews roll up grades and mistakes"] },
+    { "dot": "rose", "title": "Optional by design", "items": ["Session mode, gate and log can be skipped", "Reviews can be created automatically when the first trade arrives"] }
+  ]
+}

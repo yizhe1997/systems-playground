@@ -1,0 +1,59 @@
+/* Every colour, size and font as a variable. Values come from DESIGN.md (visual direction approved 2026-10-04).
+   Light is the primary mode; night follows the system setting (no switch in this feature). */
+:root {
+  --parchment: #fffcfc;
+  --bone-mist: #ecedf2;
+  --card: #ffffff;
+  --border: #dbd7da;
+  --ink: #01011b;
+  --outline: #31263b;
+  --text-2: #43394c;
+  --text-3: #6b6472;
+  --accent: #473982;
+  --profit: #187a47;
+  --loss: #b3261e;
+  --halo: rgba(71, 57, 130, 0.15);
+  --card-shadow: 0 0 0 1px rgba(71, 57, 130, 0.06), 0 14px 40px -18px rgba(49, 38, 59, 0.28);
+  --dim: rgba(1, 1, 27, 0.35);
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --r-button: 3px;
+  --r-card: 6px;
+  --r-field: 6px;
+  --r-pill: 9999px;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --row: 48px;
+  --field: 36px;
+  --card-pad: 18px;
+  --sidebar: 220px;
+  --content-max: 1136px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --parchment: #100f19;
+    --bone-mist: #171525;
+    --card: #1c1a2b;
+    --border: #2f2b45;
+    --ink: #f2f0fa;
+    --outline: #d9d4ee;
+    --text-2: #b3abc8;
+    --text-3: #9a92b0;
+    --accent: #9e91d6;
+    --profit: #5fd08f;
+    --loss: #ff7b72;
+    --halo: rgba(158, 145, 214, 0.25);
+    --card-shadow: none; /* night uses tone, not shadow */
+    --dim: rgba(0, 0, 0, 0.55);
+    color-scheme: dark;
+  }
+}

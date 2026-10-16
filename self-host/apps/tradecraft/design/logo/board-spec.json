@@ -1,0 +1,37 @@
+{
+  "brand": "Tradecraft",
+  "tagline": "Futures trade journal and prop-firm rule tracker",
+  "brief": "A self-hosted journal for futures traders on prop-firm accounts: log trades, track drawdown and payout rules. It should feel disciplined and precise, like a ledger, not flashy like a trading app.",
+  "adjectives": ["disciplined", "precise", "calm", "crafted"],
+  "criteria": "Success: has both letters T and C, recognisable at 16 px, works in one colour, distinct from candlestick-chart marks.",
+  "industry": "software",
+  "nav": ["Trades", "Accounts", "Strategies"],
+  "brand_color": "#473982",
+  "greyscale": false,
+  "final": true,
+  "round": 3,
+  "designer": "Claude",
+  "concepts": [
+    {
+      "name": "Boundary C",
+      "symbol": "tradecraft-symbol.svg",
+      "lockup": "tradecraft-horizontal.svg",
+      "stacked": "tradecraft-stacked.svg",
+      "avatar": "variants/tradecraft-symbol-square.svg",
+      "symbol_on_tile": "variants/tradecraft-symbol-white.svg",
+      "lockup_on_tile": "variants/tradecraft-horizontal-white.svg",
+      "stacked_on_tile": "variants/tradecraft-stacked-white.svg",
+      "symbol_on_dark": "tradecraft-symbol-on-dark.svg",
+      "lockup_on_dark": "tradecraft-horizontal-on-dark.svg",
+      "stacked_on_dark": "tradecraft-stacked-on-dark.svg",
+      "idea": "A T held inside a C: the trader inside the rule boundary, with the opening as the breach point.",
+      "rationale": [
+        "Both letters of the name: T and C. The uppercase, tracked wordmark carries the same blocky weight as the T",
+        "The T sits exactly centred with 28 units on every side, equal to the ring's own thickness",
+        "Single-colour outline geometry on a 16-unit grid; a heavier small-size cut is used for favicons",
+        "Deliberately avoids the candlestick and chart-arrow clichés of trading apps"
+      ]
+    }
+  ],
+  "recommendation": "Use the horizontal lockup in the app header and the small-cut symbol on a violet tile as the favicon and app icon."
+}

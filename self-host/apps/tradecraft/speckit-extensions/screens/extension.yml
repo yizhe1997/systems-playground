@@ -1,0 +1,59 @@
+schema_version: "1.0"
+
+extension:
+  id: screens
+  name: "Design gates: wireframes, visual direction, visual review"
+  version: "0.2.0"
+  description: "Adds the design steps to the Spec Kit flow: greyscale wireframes after specify, a wireframe sign-off before plan, a once-per-project visual-direction check before implement, and a visual review after implement."
+  author: tradecraft
+  license: MIT
+
+requires:
+  speckit_version: ">=1.0.0"
+  tools:
+    - name: penpot-mcp
+      required: false
+
+provides:
+  commands:
+    - name: speckit.screens.draft
+      file: commands/speckit.screens.draft.md
+      description: "Draft the feature's wireframes (greyscale, structure, real wording, states) and collect the owner's reactions"
+    - name: speckit.screens.signoff
+      file: commands/speckit.screens.signoff.md
+      description: "Check the wireframes against the clarified spec and get the owner's sign-off on structure and wording; blocks plan until signed off"
+    - name: speckit.screens.direction
+      file: commands/speckit.screens.direction.md
+      description: "Check that the project's visual direction is decided and approved; if not, run that step with the owner; blocks implement until approved"
+    - name: speckit.screens.review
+      file: commands/speckit.screens.review.md
+      description: "Visual review of the built screens in a real browser against the wireframes and the visual direction, with the owner's approval"
+
+  templates:
+    - name: screens-template
+      file: templates/screens-template.md
+      description: "The screens.md each feature gets: inventory, content list, reactions, sign-off, visual review"
+
+hooks:
+  after_specify:
+    command: speckit.screens.draft
+    optional: false
+    description: "Draft greyscale wireframes from the new spec (constitution principle V)"
+  before_plan:
+    command: speckit.screens.signoff
+    optional: false
+    description: "Wireframes must be signed off before technical design (constitution principle V)"
+  before_implement:
+    command: speckit.screens.direction
+    optional: false
+    description: "The visual direction must be approved before implementation (constitution principle V)"
+  after_implement:
+    command: speckit.screens.review
+    optional: false
+    description: "Visual review of the built screens before the feature is done (constitution principle V)"
+
+tags:
+  - "design"
+  - "wireframe"
+  - "penpot"
+  - "gate"

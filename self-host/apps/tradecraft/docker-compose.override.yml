@@ -1,0 +1,42 @@
+# Local development override: Docker Compose loads this file automatically next to docker-compose.yml.
+# It builds the images, publishes every port on the loopback address only (constitution IV), and holds the test runner.
+# The project name is fixed here (and only here) so a stack on a host that runs the production files, whose project is
+# named after its folder, can never share containers or volumes with a developer's.
+name: tradecraft-v2
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5435}:5432"
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8081}:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-3100}:3000"
+
+  # Go tests against a real Postgres. Run with: docker compose --profile tests run --rm tests
+  tests:
+    profiles: ["tests"]
+    image: golang:1.26-alpine
+    working_dir: /src
+    volumes:
+      - ./backend:/src
+      - tradecraft_v2_gocache:/go
+    environment:
+      TEST_DATABASE_URL: postgres://tradecraft:${POSTGRES_PASSWORD}@postgres:5432/tradecraft?sslmode=disable
+      SERVICE_TOKEN_SECRET: ${SERVICE_TOKEN_SECRET:?SERVICE_TOKEN_SECRET is required (see .env.example)}
+      CGO_ENABLED: "0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["go", "test", "-tags", "timetzdata", "-count=1", "./..."]
+
+volumes:
+  tradecraft_v2_gocache:

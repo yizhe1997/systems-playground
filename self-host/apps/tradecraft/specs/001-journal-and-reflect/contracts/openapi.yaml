@@ -1,0 +1,468 @@
+openapi: 3.1.0
+info:
+  title: Tradecraft v2 API, feature 001 (journal and reflect)
+  version: 0.1.0
+  description: >
+    Reviews, judging trades, mistakes, focus and the weekly review, added to the API of feature 000 (accounts, trades,
+    settings, export), which is unchanged except for the additions listed at the end. Money is a JSON string holding an exact
+    decimal, as in 000. Days are plain dates (YYYY-MM-DD, trading days); instants are RFC 3339 with an offset. Errors have
+    the 000 shape (code, message, fields[]); 404 for an unknown record, 409 when a record was changed elsewhere, 422 when a
+    value is not valid. There is no sign-in in this version: the API listens on the loopback address only (written exception,
+    constitution IV) and is called by the web tier, never by the browser.
+servers:
+  - url: http://127.0.0.1:8081
+paths:
+  /reviews:
+    get:
+      operationId: listReviews
+      summary: One month of reviews for an account (screen S0), grouped by week
+      description: "The weeks listed are the weeks whose Sunday falls in the month, newest first. Days with no trades and no saved review are not listed."
+      parameters:
+        - { $ref: "#/components/parameters/AccountId" }
+        - { name: month, in: query, required: false, description: "YYYY-MM; absent means the current month of the account's today", schema: { type: string, pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$" } }
+      responses:
+        "200": { description: The month, content: { application/json: { schema: { $ref: "#/components/schemas/ReviewsMonth" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /reviews/calendar:
+    get:
+      operationId: reviewsCalendar
+      summary: What the day picker, the week picker and the month list mark and offer
+      parameters:
+        - { $ref: "#/components/parameters/AccountId" }
+        - { name: month, in: query, required: true, schema: { type: string, pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$" } }
+      responses:
+        "200": { description: Marks, content: { application/json: { schema: { $ref: "#/components/schemas/Calendar" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /reviews/day:
+    get:
+      operationId: getDailyReview
+      summary: The daily review of one account on one trading day (screen S1)
+      parameters:
+        - { $ref: "#/components/parameters/AccountId" }
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200": { description: The day, content: { application/json: { schema: { $ref: "#/components/schemas/DailyReview" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Invalid" }
+    put:
+      operationId: saveDailyReview
+      summary: Save the answers and grades; optionally mark as reviewed
+      description: "Creates the review on first save. Saving a reviewed review again sets editedAt. markReviewed on a day that has not happened yet is refused."
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DailyReviewInput" } } } }
+      responses:
+        "200": { description: Saved, content: { application/json: { schema: { $ref: "#/components/schemas/DailyReview" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /reviews/day-mistakes:
+    put:
+      operationId: setDayMistakes
+      summary: Replace the mistakes recorded for the whole day (not tied to one trade)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DayMistakesInput" } } } }
+      responses:
+        "200": { description: The day after the change, content: { application/json: { schema: { $ref: "#/components/schemas/DailyReview" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /trades/{id}/judgement:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getJudgement
+      summary: The judgement of a trade (screen S2), with whether Valid loss is available
+      responses:
+        "200": { description: The judgement, content: { application/json: { schema: { $ref: "#/components/schemas/Judgement" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      operationId: saveJudgement
+      summary: Save the plan answer, the label and the mistake tags of a trade
+      description: "A plan answer other than yes clears a valid-loss label. Valid loss is refused unless the plan answer is yes and the trade is a loss."
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/JudgementInput" } } } }
+      responses:
+        "200": { description: Saved, content: { application/json: { schema: { $ref: "#/components/schemas/Judgement" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /mistakes:
+    get:
+      operationId: listMistakes
+      summary: The list of mistakes, by name
+      parameters:
+        - { name: includeRetired, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200": { description: Mistakes, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Mistake" } } } } }
+    post:
+      operationId: addMistake
+      summary: Add a mistake; a name that matches a retired mistake brings that one back
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/MistakeInput" } } } }
+      responses:
+        "201": { description: Added or restored, content: { application/json: { schema: { $ref: "#/components/schemas/Mistake" } } } }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /mistakes/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    put:
+      operationId: updateMistake
+      summary: Rename a mistake and set or remove its stop line
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/MistakeInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Mistake" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /mistakes/{id}/retire:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: retireMistake
+      summary: Hide a mistake from new tags; past records keep it
+      responses:
+        "200": { description: Retired, content: { application/json: { schema: { $ref: "#/components/schemas/Mistake" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /mistakes/{id}/restore:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: restoreMistake
+      summary: Undo a retire (the Undo notice); the stop line and every record come back unchanged
+      responses:
+        "200": { description: Restored, content: { application/json: { schema: { $ref: "#/components/schemas/Mistake" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /mistakes/counter:
+    get:
+      operationId: mistakeCounter
+      summary: How often each mistake showed up in a week or a month (screen S3)
+      parameters:
+        - { name: period, in: query, required: true, schema: { type: string, enum: [week, month] } }
+        - { name: date, in: query, required: false, description: "Any day in the period; absent means today", schema: { type: string, format: date } }
+        - { name: accountId, in: query, required: false, description: "Absent means all accounts", schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: The counter, content: { application/json: { schema: { $ref: "#/components/schemas/Counter" } } } }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /focus:
+    get:
+      operationId: getFocus
+      summary: The focus of the week or month that contains a date
+      parameters:
+        - { name: period, in: query, required: true, schema: { type: string, enum: [week, month] } }
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200": { description: The focus (body null when none is written), content: { application/json: { schema: { $ref: "#/components/schemas/Focus" } } } }
+    put:
+      operationId: saveFocus
+      summary: Write, replace or clear (empty body) the focus of a week or month
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/FocusInput" } } } }
+      responses:
+        "200": { description: Saved or cleared, content: { application/json: { schema: { $ref: "#/components/schemas/Focus" } } } }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /weekly:
+    get:
+      operationId: getWeeklyReview
+      summary: The weekly review of one account (screen S5), read from the days
+      parameters:
+        - { $ref: "#/components/parameters/AccountId" }
+        - { name: date, in: query, required: true, description: "Any day of the week", schema: { type: string, format: date } }
+      responses:
+        "200": { description: The week, content: { application/json: { schema: { $ref: "#/components/schemas/WeeklyReview" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Invalid" }
+  /weekly/mark:
+    post:
+      operationId: markWeekReviewed
+      summary: Mark a week as reviewed (the only thing a weekly review stores); marking again changes nothing
+      description: "Refused for a week that has not started."
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [accountId, date], properties: { accountId: { type: string, format: uuid }, date: { type: string, format: date } } } } } }
+      responses:
+        "200": { description: The week after the change, content: { application/json: { schema: { $ref: "#/components/schemas/WeeklyReview" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Invalid" }
+components:
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    AccountId: { name: accountId, in: query, required: true, schema: { type: string, format: uuid } }
+  responses:
+    NotFound: { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Conflict: { description: "The record was changed elsewhere; reload and try again", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Invalid: { description: One or more fields are invalid, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  schemas:
+    Decimal: { type: string, pattern: "^-?[0-9]+(\\.[0-9]+)?$", description: "An exact decimal, never a JSON number", example: "45" }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        fields: { type: array, items: { type: object, required: [field, message], properties: { field: { type: string }, message: { type: string } } } }
+    DayState: { type: string, enum: [missing, draft, reviewed, today], description: "Absent (null) for a day with no trades and no saved review" }
+    WeekState: { type: string, enum: [reviewed, missing, not_reviewed] }
+    Figure:
+      type: object
+      description: "A number that may be unavailable: value null comes with a plain reason (a dash and why)"
+      properties:
+        value: { type: [integer, "null"] }
+        reason: { type: [string, "null"] }
+    PlanFollowed:
+      type: object
+      required: [followed, notFollowed, partly, notJudged, of]
+      description: "Plan followed X of Y: followed counts only answer yes; partly never counts as followed; notJudged is shown when above zero"
+      properties:
+        followed: { type: integer }
+        notFollowed: { type: integer }
+        partly: { type: integer }
+        notJudged: { type: integer }
+        of: { type: integer }
+    MistakeCount:
+      type: object
+      required: [mistakeId, name, count]
+      properties: { mistakeId: { type: string, format: uuid }, name: { type: string }, count: { type: integer } }
+    Stats:
+      type: object
+      description: "The figures of a day or a week, from the same SQL functions. Money is in the account's currency."
+      required: [trades, planFollowed, mistakes, validLosses, winRate, currency, reasons]
+      properties:
+        trades: { type: integer }
+        netResult: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        currency: { type: string }
+        planFollowed: { $ref: "#/components/schemas/PlanFollowed" }
+        mistakes:
+          type: object
+          required: [count, byMistake]
+          properties: { count: { type: integer }, byMistake: { type: array, items: { $ref: "#/components/schemas/MistakeCount" } } }
+        validLosses: { type: object, required: [count, losingTrades], properties: { count: { type: integer }, losingTrades: { type: integer } } }
+        winRate:
+          type: object
+          required: [wins, trades]
+          properties: { wins: { type: integer }, trades: { type: integer }, percent: { type: [integer, "null"], description: "round(100 * wins / trades), half up; null when there are no trades" } }
+        reasons: { type: object, additionalProperties: { type: string }, description: "For each figure that is unavailable, why (keys: netResult, winRate)" }
+    Mistake:
+      type: object
+      required: [id, name, retired, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        stopLine: { type: [integer, "null"] }
+        stopPeriod: { type: [string, "null"], enum: [week, month, null] }
+        retired: { type: boolean }
+        updatedAt: { type: string, format: date-time }
+    MistakeInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        stopLine: { type: [integer, "null"], minimum: 1, maximum: 999, description: "A whole number from 1 to 999, with stopPeriod; both null removes the stop line" }
+        stopPeriod: { type: [string, "null"], enum: [week, month, null] }
+        expectedUpdatedAt: { type: [string, "null"], format: date-time }
+    Judgement:
+      type: object
+      required: [tradeId, planFollowed, label, mistakeIds, validLoss, trade]
+      properties:
+        tradeId: { type: string, format: uuid }
+        planFollowed: { type: [string, "null"], enum: ["yes", partly, "no", null] }
+        label: { type: [string, "null"], enum: [valid_loss, mistake, null] }
+        mistakeIds: { type: array, items: { type: string, format: uuid } }
+        updatedAt: { type: [string, "null"], format: date-time, description: "null until the first save" }
+        isLoss: { type: boolean, description: "net result below zero" }
+        isWin: { type: boolean, description: "net result above zero" }
+        validLoss:
+          type: object
+          required: [available]
+          properties: { available: { type: boolean }, reason: { type: [string, "null"], example: "Not available: you answered that the plan was not followed." } }
+        trade: { $ref: "#/components/schemas/DayTrade" }
+    JudgementInput:
+      type: object
+      properties:
+        planFollowed: { type: [string, "null"], enum: ["yes", partly, "no", null] }
+        label: { type: [string, "null"], enum: [valid_loss, mistake, null] }
+        mistakeIds: { type: array, items: { type: string, format: uuid } }
+        expectedUpdatedAt: { type: [string, "null"], format: date-time }
+    DayTrade:
+      type: object
+      required: [id, instrument, direction, size, entryAt, exitAt, currency, netResult, risk, rMultiple, reasons, judgement]
+      properties:
+        id: { type: string, format: uuid }
+        instrument: { type: string }
+        direction: { type: string, enum: [long, short] }
+        size: { $ref: "#/components/schemas/Decimal" }
+        entryAt: { type: string, format: date-time }
+        exitAt: { type: string, format: date-time }
+        currency: { type: string }
+        netResult: { $ref: "#/components/schemas/Decimal" }
+        risk: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        rMultiple: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        thesis: { type: [string, "null"], description: "Read only here; written in the trade form of feature 000" }
+        reasons: { type: object, additionalProperties: { type: string } }
+        judgement:
+          type: object
+          required: [planFollowed, label, mistakes]
+          properties:
+            planFollowed: { type: [string, "null"], enum: ["yes", partly, "no", null] }
+            label: { type: [string, "null"], enum: [valid_loss, mistake, null] }
+            mistakes: { type: array, items: { type: string }, description: "Names of the tags" }
+    Focus:
+      type: object
+      required: [period, periodStart, periodEnd]
+      properties:
+        period: { type: string, enum: [week, month] }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        body: { type: [string, "null"], description: "null when no focus is written for the period" }
+        updatedAt: { type: [string, "null"], format: date-time }
+    FocusInput:
+      type: object
+      required: [period, date, body]
+      properties:
+        period: { type: string, enum: [week, month] }
+        date: { type: string, format: date, description: "Any day in the period" }
+        body: { type: string, description: "Up to 280 characters; empty clears the focus" }
+        expectedUpdatedAt: { type: [string, "null"], format: date-time }
+    DailyReviewInput:
+      type: object
+      required: [accountId, date]
+      properties:
+        accountId: { type: string, format: uuid }
+        date: { type: string, format: date }
+        didWell: { type: string, maxLength: 2000 }
+        couldImprove: { type: string, maxLength: 2000 }
+        nextFocus: { type: string, maxLength: 2000 }
+        mentalGrade: { type: [integer, "null"], minimum: 1, maximum: 5 }
+        technicalGrade: { type: [integer, "null"], minimum: 1, maximum: 5 }
+        markReviewed: { type: boolean, default: false }
+        expectedUpdatedAt: { type: [string, "null"], format: date-time, description: "The updatedAt last seen; null on the first save" }
+    DayMistakesInput:
+      type: object
+      required: [accountId, date, mistakeIds]
+      properties:
+        accountId: { type: string, format: uuid }
+        date: { type: string, format: date }
+        mistakeIds: { type: array, items: { type: string, format: uuid } }
+    DailyReview:
+      type: object
+      required: [accountId, accountName, currency, date, today, isToday, state, answers, stats, trades, dayMistakes, focus, previousDate, nextDate, tradesChangedAfterReview]
+      properties:
+        accountId: { type: string, format: uuid }
+        accountName: { type: string }
+        currency: { type: string }
+        date: { type: string, format: date }
+        today: { type: string, format: date, description: "The account's today (its current trading day); a date after it has not happened yet" }
+        isToday: { type: boolean }
+        state: { oneOf: [{ $ref: "#/components/schemas/DayState" }, { type: "null" }] }
+        answers: { type: object, required: [didWell, couldImprove, nextFocus], properties: { didWell: { type: string }, couldImprove: { type: string }, nextFocus: { type: string } } }
+        mentalGrade: { type: [integer, "null"] }
+        technicalGrade: { type: [integer, "null"] }
+        reviewedAt: { type: [string, "null"], format: date-time }
+        editedAt: { type: [string, "null"], format: date-time }
+        savedAt: { type: [string, "null"], format: date-time }
+        updatedAt: { type: [string, "null"], format: date-time, description: "The version token; null before the first save" }
+        tradesChangedAfterReview: { type: integer, description: "Trades of this day whose updatedAt is later than reviewedAt; 0 when not reviewed" }
+        previousDate: { type: string, format: date }
+        nextDate: { type: string, format: date }
+        focus:
+          type: object
+          required: [week, month]
+          properties:
+            yesterday: { type: [object, "null"], properties: { date: { type: string, format: date }, body: { type: string } }, description: "The nearest earlier answer to what will I focus on next session, from this account" }
+            week: { $ref: "#/components/schemas/Focus" }
+            month: { $ref: "#/components/schemas/Focus" }
+        stats: { $ref: "#/components/schemas/Stats" }
+        trades: { type: array, items: { $ref: "#/components/schemas/DayTrade" } }
+        dayMistakes: { type: array, items: { type: object, required: [mistakeId, name], properties: { mistakeId: { type: string, format: uuid }, name: { type: string } } } }
+    DayRow:
+      type: object
+      required: [date, trades, planFollowed, mistakes]
+      properties:
+        date: { type: string, format: date }
+        state: { oneOf: [{ $ref: "#/components/schemas/DayState" }, { type: "null" }] }
+        trades: { type: integer }
+        netResult: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        currency: { type: string }
+        planFollowed: { $ref: "#/components/schemas/PlanFollowed" }
+        mistakes: { type: integer }
+    WeekBlock:
+      type: object
+      required: [weekStart, weekEnd, current, state, days, summary]
+      properties:
+        weekStart: { type: string, format: date }
+        weekEnd: { type: string, format: date }
+        current: { type: boolean }
+        state: { $ref: "#/components/schemas/WeekState" }
+        reviewedAt: { type: [string, "null"], format: date-time }
+        summary: { type: object, required: [daysWithTrades, reviewed, draft, missing], properties: { daysWithTrades: { type: integer }, reviewed: { type: integer }, draft: { type: integer }, missing: { type: integer } } }
+        days: { type: array, items: { $ref: "#/components/schemas/DayRow" } }
+    ReviewsMonth:
+      type: object
+      required: [accountId, accountName, month, monthFocus, filters, weeks, previousMonth, nextMonth, today]
+      properties:
+        accountId: { type: string, format: uuid }
+        accountName: { type: string }
+        month: { type: string, description: "YYYY-MM" }
+        today: { type: string, format: date }
+        previousMonth: { type: string }
+        nextMonth: { type: string }
+        monthFocus: { $ref: "#/components/schemas/Focus" }
+        filters: { type: object, required: [missing, draft, reviewed], properties: { missing: { type: integer }, draft: { type: integer }, reviewed: { type: integer } }, description: "Counts of listed days by state, for the All, Missing, Draft, Reviewed filter" }
+        weeks: { type: array, items: { $ref: "#/components/schemas/WeekBlock" } }
+    Calendar:
+      type: object
+      required: [month, days, weeks, months]
+      properties:
+        month: { type: string }
+        months: { type: array, items: { type: string, pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$" }, description: "The month list: every month that has live trades or a saved review for the account, plus the current month, newest first" }
+        days: { type: array, items: { type: object, required: [date, hasTrades, missing], properties: { date: { type: string, format: date }, hasTrades: { type: boolean }, missing: { type: boolean } } } }
+        weeks: { type: array, items: { type: object, required: [weekStart, state], properties: { weekStart: { type: string, format: date }, state: { $ref: "#/components/schemas/WeekState" } } } }
+    WeeklyDay:
+      type: object
+      required: [date, status]
+      properties:
+        date: { type: string, format: date }
+        status: { type: string, enum: [missing, draft, reviewed, no_trades, not_yet, today] }
+        trades: { type: integer }
+        netResult: { oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }] }
+        planFollowed: { $ref: "#/components/schemas/PlanFollowed" }
+        answers: { type: [object, "null"], properties: { didWell: { type: string }, couldImprove: { type: string }, nextFocus: { type: string } } }
+        mentalGrade: { type: [integer, "null"] }
+        technicalGrade: { type: [integer, "null"] }
+    WeeklyReview:
+      type: object
+      required: [accountId, accountName, currency, weekStart, weekEnd, state, days, stats, focus, previousWeek, nextWeek]
+      properties:
+        accountId: { type: string, format: uuid }
+        accountName: { type: string }
+        currency: { type: string }
+        weekStart: { type: string, format: date }
+        weekEnd: { type: string, format: date }
+        state: { $ref: "#/components/schemas/WeekState" }
+        reviewedAt: { type: [string, "null"], format: date-time }
+        previousWeek: { type: string, format: date }
+        nextWeek: { type: string, format: date }
+        focus: { type: object, required: [week, month], properties: { week: { $ref: "#/components/schemas/Focus" }, month: { $ref: "#/components/schemas/Focus" } } }
+        days: { type: array, minItems: 7, maxItems: 7, items: { $ref: "#/components/schemas/WeeklyDay" } }
+        stats: { $ref: "#/components/schemas/Stats" }
+    CounterCell:
+      type: object
+      required: [onTrades, onDays, total]
+      properties: { onTrades: { type: integer }, onDays: { type: integer }, total: { type: integer } }
+    Counter:
+      type: object
+      required: [period, periodStart, periodEnd, rows]
+      properties:
+        period: { type: string, enum: [week, month] }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        rows:
+          type: array
+          items:
+            type: object
+            required: [mistakeId, name, retired, week, month, status]
+            properties:
+              mistakeId: { type: string, format: uuid }
+              name: { type: string }
+              retired: { type: boolean }
+              accounts: { type: array, items: { type: object, required: [accountId, name, count], properties: { accountId: { type: string, format: uuid }, name: { type: string }, count: { type: integer } } }, description: "The split by account over the chosen period" }
+              week: { $ref: "#/components/schemas/CounterCell" }
+              month: { $ref: "#/components/schemas/CounterCell" }
+              stopLine: { type: [integer, "null"] }
+              stopPeriod: { type: [string, "null"], enum: [week, month, null] }
+              status: { type: string, enum: [stop, count_only], description: "stop when the count in the stop line's own period has reached the line; there is no other status" }
+              progress: { type: [string, "null"], example: "4 of 4 this week", description: "Present when a stop line is set" }
+x-additions-to-feature-000:
+  description: >
+    GET /export gains, additively: mistakes, dailyReviews, focuses, weeklyMarks, dayMistakes, and a judgement object on each
+    trade. GET /trades and GET /trades/{id} gain a planFollowed field and a label field (null until judged) so the Trades list can
+    show the Plan column beside the net result. No existing field changes.

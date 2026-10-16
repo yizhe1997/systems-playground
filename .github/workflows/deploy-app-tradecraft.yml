@@ -1,0 +1,130 @@
+name: Deploy App - Tradecraft
+
+# Same shape as deploy-app-portfolio.yml: secrets come from Infisical's environment injection and are never written to a
+# file (ADR 002). The differences are deliberate and explained where they happen below.
+on:
+  workflow_run:
+    workflows: ["Build and Push Tradecraft"]
+    types:
+      - completed
+  push:
+    branches:
+      - main
+    paths:
+      # the compose files are not covered by a build, so a change to them needs a direct trigger; code changes arrive
+      # through Test -> Build -> this workflow's workflow_run, never straight from the push (that would race the build)
+      - 'self-host/apps/tradecraft/docker-compose.yml'
+      - 'self-host/apps/tradecraft/docker-compose.prod.yml'
+      - '.github/workflows/deploy-app-tradecraft.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-tradecraft
+  cancel-in-progress: false
+
+# nothing here writes to the repository: the default token is read-only
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: self-hosted
+    env:
+      APP_BASE_DIR: ${{ vars.APP_BASE_DIR }}
+      HOST: ${{ vars.HOST }}
+      TRADECRAFT_SUBDOMAIN: ${{ vars.TRADECRAFT_SUBDOMAIN }}
+      INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
+      INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+      INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
+      INFISICAL_DOMAIN: ${{ vars.INFISICAL_SITE_URL || 'http://localhost:8090' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install Infisical CLI
+        run: |
+          LATEST_TAG=$(curl -sL -o /dev/null -w '%{url_effective}' https://github.com/Infisical/cli/releases/latest | sed 's#.*/tag/##')
+          VERSION="${LATEST_TAG#v}"
+          curl -sL "https://github.com/Infisical/cli/releases/download/${LATEST_TAG}/cli_${VERSION}_linux_amd64.tar.gz" -o infisical-cli.tar.gz
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf infisical-cli.tar.gz -C "$HOME/.local/bin" infisical
+          chmod +x "$HOME/.local/bin/infisical"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          rm infisical-cli.tar.gz
+
+      - name: Authenticate to Infisical
+        id: infisical-auth
+        run: |
+          : "${INFISICAL_CLIENT_ID:?INFISICAL_CLIENT_ID repository variable must be set}"
+          : "${INFISICAL_CLIENT_SECRET:?INFISICAL_CLIENT_SECRET repository secret must be set}"
+          : "${INFISICAL_PROJECT_ID:?INFISICAL_PROJECT_ID repository variable must be set}"
+          TOKEN=$(infisical login --domain="$INFISICAL_DOMAIN" --method=universal-auth \
+            --client-id="$INFISICAL_CLIENT_ID" --client-secret="$INFISICAL_CLIENT_SECRET" \
+            --plain --silent)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        env:
+          INFISICAL_TOKEN: ${{ steps.infisical-auth.outputs.token }}
+        run: |
+          infisical run --domain="$INFISICAL_DOMAIN" --token="$INFISICAL_TOKEN" \
+            --projectId="$INFISICAL_PROJECT_ID" --env=prod -- bash -c '
+          set -e
+          : "${APP_BASE_DIR:?APP_BASE_DIR repository variable must be set}"
+          : "${HOST:?HOST repository variable must be set (your domain, e.g. example.com)}"
+          APP_DIR="$APP_BASE_DIR/tradecraft"
+          mkdir -p "$APP_DIR"
+
+          # Secret names in the shared Infisical project carry a TRADECRAFT_ prefix so they cannot collide with the
+          # portfolio own NEXTAUTH_SECRET and friends; the compose files use the plain names, mapped here.
+          : "${TRADECRAFT_POSTGRES_PASSWORD:?TRADECRAFT_POSTGRES_PASSWORD must be set in Infisical}"
+          : "${TRADECRAFT_NEXTAUTH_SECRET:?TRADECRAFT_NEXTAUTH_SECRET must be set in Infisical}"
+          : "${TRADECRAFT_SERVICE_TOKEN_SECRET:?TRADECRAFT_SERVICE_TOKEN_SECRET must be set in Infisical}"
+          : "${TRADECRAFT_OWNER_EMAIL:?TRADECRAFT_OWNER_EMAIL must be set in Infisical}"
+          export POSTGRES_PASSWORD="$TRADECRAFT_POSTGRES_PASSWORD"
+          export NEXTAUTH_SECRET="$TRADECRAFT_NEXTAUTH_SECRET"
+          export SERVICE_TOKEN_SECRET="$TRADECRAFT_SERVICE_TOKEN_SECRET"
+          export OWNER_BOOTSTRAP_EMAIL="$TRADECRAFT_OWNER_EMAIL"
+          # the Google client may be the one the portfolio already uses (add Tradecraft redirect addresses to it) or a
+          # client of its own under TRADECRAFT_GOOGLE_*
+          export GOOGLE_CLIENT_ID="${TRADECRAFT_GOOGLE_CLIENT_ID:-${GOOGLE_CLIENT_ID:-}}"
+          export GOOGLE_CLIENT_SECRET="${TRADECRAFT_GOOGLE_CLIENT_SECRET:-${GOOGLE_CLIENT_SECRET:-}}"
+          : "${GOOGLE_CLIENT_ID:?a Google client id (GOOGLE_CLIENT_ID or TRADECRAFT_GOOGLE_CLIENT_ID) must be set in Infisical}"
+          : "${GOOGLE_CLIENT_SECRET:?a Google client secret (GOOGLE_CLIENT_SECRET or TRADECRAFT_GOOGLE_CLIENT_SECRET) must be set in Infisical}"
+          # addresses are derived from HOST, not secrets, and must agree with the tunnel label in the prod file
+          SUB="${TRADECRAFT_SUBDOMAIN:-tradecraft}"
+          export NEXTAUTH_URL="https://$SUB.$HOST"
+          export AGENT_MCP_URL="https://$SUB.$HOST/mcp"
+          export TRADECRAFT_ENV=production
+          unset DEV_SESSION_SECRET   # the apps refuse to start with it set while production
+
+          echo "Copying the compose files to $APP_DIR..."
+          # compose.yml, not docker-compose.yml, on purpose: wsl-startup.sh runs a bare docker compose up -d for every
+          # */docker-compose.yml with no Infisical in the environment, which would recreate the containers with blank
+          # secrets. Under this name the boot script skips it and restart: unless-stopped brings them back (same as dsh).
+          cp -v self-host/apps/tradecraft/docker-compose.yml "$APP_DIR/compose.yml"
+          cp -v self-host/apps/tradecraft/docker-compose.prod.yml "$APP_DIR/compose.override.yml"
+          # the one non-secret value kept beside the files, so a manual docker compose run there renders the same labels
+          printf "HOST=%s\n" "$HOST" > "$APP_DIR/.env"
+          if [ -n "${TRADECRAFT_SUBDOMAIN:-}" ]; then printf "TRADECRAFT_SUBDOMAIN=%s\n" "$TRADECRAFT_SUBDOMAIN" >> "$APP_DIR/.env"; fi
+
+          cd "$APP_DIR"
+          : "${REGISTRY_USERNAME:?REGISTRY_USERNAME must be set in Infisical}"
+          : "${REGISTRY_PASSWORD:?REGISTRY_PASSWORD must be set in Infisical}"
+          export REGISTRY_HOST="${REGISTRY_HOST:-localhost:5000}"
+          echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_HOST" -u "$REGISTRY_USERNAME" --password-stdin
+
+          echo "Pulling the images..."
+          docker compose pull backend frontend
+
+          docker compose ps -a --status created -q | xargs -r docker rm -f
+
+          echo "Recreating the containers..."
+          docker compose up -d --wait --wait-timeout 180
+
+          docker image prune -f
+          echo "Deployed: $NEXTAUTH_URL"
+          '

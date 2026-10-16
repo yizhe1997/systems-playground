@@ -1,0 +1,63 @@
+# Base Docker Compose configuration, shared by every way of running Tradecraft.
+# Do NOT run this alone; it is merged with either:
+# - docker-compose.override.yml (loaded automatically for local development and tests: builds the images, publishes
+#   loopback ports, holds the test runner)
+# - docker-compose.prod.yml (the host: pre-built images from the registry, the public hostname; the deploy workflow
+#   installs it beside this file as compose.override.yml)
+#
+# Constitution IV: nothing is published beyond this computer by this file. The only public route is the Cloudflare
+# tunnel to the web tier, set by labels in docker-compose.prod.yml; the database and the API publish no port there.
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tradecraft
+      POSTGRES_USER: tradecraft
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      # PostgreSQL 18 images keep their data under /var/lib/postgresql (a versioned folder inside it).
+      - tradecraft_v2_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradecraft -d tradecraft"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://tradecraft:${POSTGRES_PASSWORD}@postgres:5432/tradecraft?sslmode=disable
+      SERVICE_TOKEN_SECRET: ${SERVICE_TOKEN_SECRET:?SERVICE_TOKEN_SECRET is required (see .env.example)}
+      OWNER_BOOTSTRAP_EMAIL: ${OWNER_BOOTSTRAP_EMAIL:?OWNER_BOOTSTRAP_EMAIL is required (see .env.example)}
+      TRADECRAFT_ENV: ${TRADECRAFT_ENV:-production}
+      DEV_SESSION_SECRET: ${DEV_SESSION_SECRET:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  frontend:
+    restart: unless-stopped
+    environment:
+      INTERNAL_BACKEND_URL: http://backend:8080
+      NEXTAUTH_URL: ${NEXTAUTH_URL:?NEXTAUTH_URL is required (see .env.example)}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required (see .env.example)}
+      SERVICE_TOKEN_SECRET: ${SERVICE_TOKEN_SECRET:?SERVICE_TOKEN_SECRET is required (see .env.example)}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      TRADECRAFT_ENV: ${TRADECRAFT_ENV:-production}
+      DEV_SESSION_SECRET: ${DEV_SESSION_SECRET:-}
+      # the address an agent connects to, shown in the "Token created" dialog
+      AGENT_MCP_URL: ${AGENT_MCP_URL:-http://127.0.0.1:${BACKEND_HOST_PORT:-8081}/mcp}
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  tradecraft_v2_pgdata:
