@@ -6,6 +6,8 @@ import { fillTrade, makeAccount, makeTrade, tradesFor, uniq } from "./helpers";
 // on the five screens in the light and in the night colour set.
 
 async function clean(page: Page, name: string) {
+  // the page title is streamed in after the first paint: wait for it, or the check can run before the page has one
+  await expect(page).toHaveTitle(/.+/);
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   const summary = r.violations.map((v) => `${v.id} (${v.nodes.length}): ${v.help} — ${v.nodes.slice(0, 2).map((n) => n.target.join(" ")).join("; ")}`);
   expect(summary, `${name}: accessibility violations`).toEqual([]);
