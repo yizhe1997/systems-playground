@@ -2,20 +2,17 @@ name: Deploy App - Tradecraft
 
 # Same shape as deploy-app-portfolio.yml: secrets come from Infisical's environment injection and are never written to a
 # file (ADR 002). The differences are deliberate and explained where they happen below.
+#
+# The ONLY automatic trigger is the end of "Build and Push Tradecraft", which itself runs only after "Test Tradecraft"
+# passed on a push to main: tests, then build, then deploy, always in that order. There is deliberately no `push`
+# trigger here: the compose files and this app's code are all under self-host/apps/tradecraft/, which already starts the
+# chain, and a direct push trigger would deploy in parallel with the tests and before the images exist (it did, on the
+# first merge). To redeploy by hand: Actions, this workflow, Run workflow.
 on:
   workflow_run:
     workflows: ["Build and Push Tradecraft"]
     types:
       - completed
-  push:
-    branches:
-      - main
-    paths:
-      # the compose files are not covered by a build, so a change to them needs a direct trigger; code changes arrive
-      # through Test -> Build -> this workflow's workflow_run, never straight from the push (that would race the build)
-      - 'self-host/apps/tradecraft/docker-compose.yml'
-      - 'self-host/apps/tradecraft/docker-compose.prod.yml'
-      - '.github/workflows/deploy-app-tradecraft.yml'
   workflow_dispatch:
 
 concurrency:
