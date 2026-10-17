@@ -1,0 +1,56 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_USER=hindsight
+      - POSTGRES_PASSWORD=${HINDSIGHT_POSTGRES_PASSWORD:?HINDSIGHT_POSTGRES_PASSWORD must be set}
+      - POSTGRES_DB=hindsight
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hindsight -d hindsight"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  hindsight:
+    # Pinned, and deliberately NOT watchtower-enabled: this holds the memory store, and a surprise
+    # minor-version bump can migrate its schema. Bump the tag here on purpose, then redeploy.
+    image: ghcr.io/vectorize-io/hindsight:1.0.0
+    shm_size: 1g
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Loopback only. The API/MCP port is published to the internet solely through the Cloudflare
+      # tunnel label below; the Control Plane UI (9999) has no auth of its own in this setup, so it
+      # is never routed - reach it from the host (or an SSH tunnel) at http://localhost:9999.
+      - "127.0.0.1:8888:8888"
+      - "127.0.0.1:9999:9999"
+    environment:
+      - HINDSIGHT_API_DATABASE_URL=postgresql://hindsight:${HINDSIGHT_POSTGRES_PASSWORD}@db:5432/hindsight
+      - HINDSIGHT_API_WORKER_ID=hindsight-prod
+      # Auth. Every request needs "Authorization: Bearer <key>" or gets a 401. The :? makes a bare
+      # `docker compose up -d` at host boot (wsl-startup.sh has no Infisical secrets) fail closed
+      # instead of recreating the container with an empty key; the running container is restored
+      # by `restart: unless-stopped` either way.
+      - HINDSIGHT_API_TENANT_EXTENSION=hindsight_api.extensions.builtin.tenant:ApiKeyTenantExtension
+      - HINDSIGHT_API_TENANT_API_KEY=${HINDSIGHT_TENANT_API_KEY:?HINDSIGHT_TENANT_API_KEY must be set}
+      # The Control Plane UI proxies to the API from inside this container; without a key it gets
+      # 401 on every call once the tenant extension is on. Same key, loopback-only UI.
+      - HINDSIGHT_CP_DATAPLANE_API_KEY=${HINDSIGHT_TENANT_API_KEY}
+      # LLM used for fact extraction (retain) and reflect. Any OpenAI-compatible endpoint works.
+      - HINDSIGHT_API_LLM_PROVIDER=${HINDSIGHT_LLM_PROVIDER:-openai}
+      - HINDSIGHT_API_LLM_BASE_URL=${HINDSIGHT_LLM_BASE_URL:-https://openrouter.ai/api/v1}
+      - HINDSIGHT_API_LLM_MODEL=${HINDSIGHT_LLM_MODEL:-deepseek/deepseek-v4-flash-0731}
+      - HINDSIGHT_API_LLM_API_KEY=${HINDSIGHT_LLM_API_KEY:?HINDSIGHT_LLM_API_KEY must be set}
+    restart: unless-stopped
+    labels:
+      # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh. Nothing is published
+      # until HOST is set. Port 8888 serves both the REST API and the MCP endpoint (/mcp/...).
+      - cloudflare.tunnel.hostname=${HINDSIGHT_SUBDOMAIN:-memory}.${HOST:?HOST must be set}
+      - cloudflare.tunnel.port=8888
+
+volumes:
+  postgres_data:
