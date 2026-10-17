@@ -44,6 +44,28 @@ claude mcp add --transport http hindsight https://memory.<HOST>/mcp/<bank-id>/ \
 
 Any other harness: plain HTTP against `https://memory.<HOST>` with the same `Authorization` header (`retain` on the way out, `recall` before a prompt). Interactive API docs are at `/docs`.
 
+## Claude Code hooks (automatic memory)
+
+[`hooks/hindsight-hook.mjs`](hooks/hindsight-hook.mjs) gives Claude Code sessions memory without anyone calling a tool:
+
+- **SessionStart** (`startup`, `clear`, `compact`; not `resume`): in a git repo, injects the project's mental model (`<repo-name>-state`) plus related memories, capped at about 1500 tokens, framed as background notes rather than instructions. Outside a git repo it injects nothing.
+- **SessionEnd**: condenses the transcript to the user's messages and the assistant's prose (tool output, thinking and system reminders dropped, secrets redacted, middle of very long sessions omitted) and retains it asynchronously under `document_id = claude-code-<session id>`, tagged `project:<repo-name>`. Sessions under 3 user turns or about 1500 characters are skipped. A 1.8 MB transcript came out at about 19k characters.
+
+**No key in the repo.** The hook reads the endpoint, bank and bearer key from the user-scope `hindsight` MCP server in `~/.claude.json`, so any machine where the `claude mcp add` command from "Connecting a client" has been run only needs the settings entry below. Failures are written to `~/.claude/hindsight-hook.log` and never block a session. `HINDSIGHT_HOOKS=off` disables both hooks; `node hooks/hindsight-hook.mjs selftest` checks redaction and trimming offline, and `--dry` on either mode shows what would be injected or sent.
+
+Add to `~/.claude/settings.json` on each machine (adjust the path to where this repo is cloned):
+
+```json
+"hooks": {
+  "SessionStart": [{ "matcher": "startup|clear|compact", "hooks": [{ "type": "command", "timeout": 15,
+    "command": "node \"C:/Users/<you>/source/repos/systems-playground/self-host/infra/hindsight/hooks/hindsight-hook.mjs\" recall" }] }],
+  "SessionEnd": [{ "hooks": [{ "type": "command", "timeout": 20,
+    "command": "node \"C:/Users/<you>/source/repos/systems-playground/self-host/infra/hindsight/hooks/hindsight-hook.mjs\" retain" }] }]
+}
+```
+
+Per project, create the mental model once (`create_mental_model` with id `<repo-name>-state`, tag `project:<repo-name>`, `tags_match: any`); without it the briefing is just the related memories. A session that is killed instead of ended may never fire SessionEnd and so is not retained.
+
 ## Verify
 
 ```bash
