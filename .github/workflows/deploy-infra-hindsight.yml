@@ -15,6 +15,11 @@ jobs:
       INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
       HOST: ${{ vars.HOST }}
       HINDSIGHT_SUBDOMAIN: ${{ vars.HINDSIGHT_SUBDOMAIN }}
+      # Optional, all identifiers rather than secrets. The Control Plane UI is published only when
+      # HINDSIGHT_UI_ACCESS_AUD (the Access application's Audience tag) AND CF_ACCESS_TEAM are set.
+      HINDSIGHT_UI_SUBDOMAIN: ${{ vars.HINDSIGHT_UI_SUBDOMAIN }}
+      HINDSIGHT_UI_ACCESS_AUD: ${{ vars.HINDSIGHT_UI_ACCESS_AUD }}
+      CF_ACCESS_TEAM: ${{ vars.CF_ACCESS_TEAM }}
       INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
       INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
@@ -71,9 +76,12 @@ jobs:
           # closed on their :? guards and the existing container is restored by its restart policy.
           ENV_FILE="$TARGET/.env"
           touch "$ENV_FILE"
-          grep -v -E "^(HOST|HINDSIGHT_SUBDOMAIN)=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
+          grep -v -E "^(HOST|HINDSIGHT_SUBDOMAIN|HINDSIGHT_UI_SUBDOMAIN|HINDSIGHT_UI_ACCESS_AUD|CF_ACCESS_TEAM)=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
           printf "HOST=%s\n" "$HOST" >> "$ENV_FILE.tmp"
           if [ -n "${HINDSIGHT_SUBDOMAIN:-}" ]; then printf "HINDSIGHT_SUBDOMAIN=%s\n" "$HINDSIGHT_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
+          if [ -n "${HINDSIGHT_UI_SUBDOMAIN:-}" ]; then printf "HINDSIGHT_UI_SUBDOMAIN=%s\n" "$HINDSIGHT_UI_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
+          if [ -n "${HINDSIGHT_UI_ACCESS_AUD:-}" ]; then printf "HINDSIGHT_UI_ACCESS_AUD=%s\n" "$HINDSIGHT_UI_ACCESS_AUD" >> "$ENV_FILE.tmp"; fi
+          if [ -n "${CF_ACCESS_TEAM:-}" ]; then printf "CF_ACCESS_TEAM=%s\n" "$CF_ACCESS_TEAM" >> "$ENV_FILE.tmp"; fi
           cat "$ENV_FILE.tmp" > "$ENV_FILE"
           rm -f "$ENV_FILE.tmp"
 

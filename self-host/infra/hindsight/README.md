@@ -10,6 +10,7 @@ Platform-wide infrastructure service — shared across everything on the host, n
 |---|---|---|
 | `hindsight` | `ghcr.io/vectorize-io/hindsight` (pinned) | API + MCP on `8888`, Control Plane UI on `9999`. Bundles local embedding and reranker models. |
 | `db` | `pgvector/pgvector:pg16` | Hindsight's store. Named volume `postgres_data`. |
+| `ui-route` | `alpine` | Does nothing but carry the tunnel labels for the Control Plane UI (the sync reads one hostname per container). No network, read-only, no capabilities. |
 
 An LLM extracts facts on every `retain`, so a model key is needed (default: OpenRouter, DeepSeek model). Embeddings run locally inside the image.
 
@@ -29,7 +30,25 @@ Repository variables: `HOST` (already used by other services). `HINDSIGHT_SUBDOM
 
 ## Going public
 
-Nothing is published until `HOST` is set; then `memory.<HOST>` routes to port `8888` via `cloudflared-sync.sh` (label on the container). Port `9999` (Control Plane UI) is never routed and binds to loopback only. The only gate on `8888` is the bearer key, so keep it long and rotate it by changing the Infisical value and redeploying.
+Nothing is published until `HOST` is set; then `memory.<HOST>` routes to port `8888` via `cloudflared-sync.sh` (label on the container). The only gate on `8888` is the bearer key, so keep it long and rotate it by changing the Infisical value and redeploying.
+
+### Control Plane UI (`memory-ui.<HOST>`)
+
+The UI (port `9999`) holds the API key, so anyone who reaches it has full access. It always binds to loopback (`http://localhost:9999` on the host, or an SSH tunnel), and is published only when its Cloudflare Access application exists: the `ui-route` service carries the tunnel labels and leaves the hostname empty until `HINDSIGHT_UI_ACCESS_AUD` is set. With the AUD tag and `CF_ACCESS_TEAM` both set, `cloudflared` also rejects any request lacking a valid Access token for this application, so a deleted or mis-scoped policy cannot expose it. A half-set pair leaves it unrouted (see `cloudflared-sync.sh`).
+
+1. **Login method.** Zero Trust → Integrations → Identity providers: *One-time PIN* must be listed (the dsh setup already uses it).
+2. **Policy.** Zero Trust → Access controls → Policies. Reuse dsh's *Allow* policy for your own email, or add one the same way (session 24 hours, never a *Bypass*).
+3. **Application.** Access controls → Applications → Create new application → Self-hosted and private → Add public hostname. Domain `<HOST>`, subdomain `memory-ui` (or your `HINDSIGHT_UI_SUBDOMAIN`), no path. Attach the policy, enable *One-time PIN*, Create.
+4. **HTTPS.** Zone → SSL/TLS → Edge Certificates → *Always Use HTTPS* (zone-wide; already on if dsh is set up).
+5. **Copy the Audience (AUD) tag.** Applications → *Configure* on the new application → *Additional settings*. It is an identifier, not a secret.
+6. **Publish.** GitHub → Settings → Secrets and variables → Actions → *Variables*: set `HINDSIGHT_UI_ACCESS_AUD` to the tag (`CF_ACCESS_TEAM` is already set for dsh), then run *Deploy Infra - Hindsight*. Within about 30 seconds `cloudflared-sync.sh` adds the route and DNS record.
+7. **Verify from outside.** An unauthenticated request must redirect to `cloudflareaccess.com`, never reach the UI:
+
+```bash
+curl -sI https://memory-ui.<HOST>/ | grep -i -E "^HTTP|^location"
+```
+
+The bearer key on the API hostname is separate: the Access policy does not apply to `memory.<HOST>`, so MCP clients and the hooks are unaffected.
 
 Do not put Cloudflare Access's interactive login in front of it: MCP clients cannot complete the browser flow. If you want a second gate, use an Access *service token* policy and send its two headers from the client.
 
