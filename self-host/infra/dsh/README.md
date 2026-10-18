@@ -96,11 +96,12 @@ curl -X POST http://127.0.0.1:4010/v1/mcp/server -H "Authorization: Bearer $LITE
 
 `allowed_tools` is enforced by the hub, so a tool outside it is hidden and refused even if called directly. Use a fine-grained, least-privilege token as well.
 
-**Link dsh** (once, and again to rotate the key). It creates a key limited to MCP tools and the servers you name, writes dsh's MCP entry, and revokes the previous key. Then restart dsh:
+**Link dsh.** The deploy does this for you. Once dsh is up it runs `mcp-link.sh --restart` as a best-effort step: if dsh already holds a working hub key it changes nothing; otherwise it creates a key limited to MCP tools (every server, now and later, with tool search on), writes dsh's MCP entry, revokes the old key and restarts dsh. A failure only prints a warning and never blocks the deploy: typical causes are that dsh has never started (run the deploy again), or that its MCP file holds hand-written entries, which the script refuses to overwrite.
+
+Run it by hand to rotate the key, or to limit the key to some servers (this also replaces the current key):
 
 ```bash
-cd ~/infra/dsh && infisical run --env=prod -- sh mcp-link.sh github posthog   # no names = every server
-docker restart dsh-dsh-1
+cd ~/infra/dsh && infisical run --env=prod -- sh mcp-link.sh --rotate --restart github posthog
 ```
 
 The key has tool search switched on, so dsh sees four small tools (`mcp_tool_search`, `mcp_tool_call`, and two for agents and skills) instead of every server's full tool list; the model searches, then calls what it found.

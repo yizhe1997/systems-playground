@@ -120,6 +120,10 @@ jobs:
           echo "🔄 Restarting dsh..."
           docker compose up -d --wait --wait-timeout 180
           docker compose ps
+          # Link dsh to the MCP hub. Best effort: it changes nothing when dsh already holds a working key, and a failure
+          # (for example dsh has never started, or its MCP file holds hand-written entries) only prints a warning.
+          echo "🔗 Linking dsh to the MCP hub (best effort, never blocks the deploy)..."
+          sh mcp-link.sh --restart || echo "⚠️  dsh is not linked to the MCP hub; see the MCP tools section of self-host/infra/dsh/README.md"
           if [ -n "${HOST:-}" ]; then
             echo "🌐 Published at https://${DSH_SUBDOMAIN:-dsh}.$HOST - it must already be behind a Cloudflare Access policy."
           else
