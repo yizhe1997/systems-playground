@@ -13,6 +13,12 @@ on:
       - completed
   workflow_dispatch:
 
+# One deploy at a time. A run that arrives while another is deploying waits; if several wait, only the newest is kept,
+# which is what you want because every deploy applies the current state of main.
+concurrency:
+  group: deploy-infra-dsh
+  cancel-in-progress: false
+
 jobs:
   deploy:
     # Skip if this run was triggered by a failed/cancelled build - no point redeploying the old images.
@@ -42,7 +48,38 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      # A push that changes this workflow AND self-host/infra/dsh/ also starts "Build and Push dsh", which deploys through
+      # workflow_run once the images exist. Deploying here as well would run first, with the old images, so skip it.
+      # A push that changes only this workflow (nothing to build) still deploys right away. Fails open: if the previous
+      # commit cannot be fetched, deploy anyway.
+      - name: Skip when the build will deploy this commit
+        id: gate
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          SKIP=false
+          case "$BEFORE" in
+            ""|0000000000000000000000000000000000000000) ;;
+            *)
+              if git fetch --no-tags --depth=1 origin "$BEFORE"; then
+                CHANGED=$(git diff --name-only "$BEFORE" "$SHA")
+                case "$CHANGED" in
+                  *self-host/infra/dsh/*)
+                    echo "This push also changes self-host/infra/dsh/, so Build and Push dsh will deploy it. Skipping this direct run."
+                    SKIP=true
+                    ;;
+                esac
+              else
+                echo "Could not fetch $BEFORE, so deploying anyway."
+              fi
+              ;;
+          esac
+          echo "skip=$SKIP" >> "$GITHUB_OUTPUT"
+
       - name: Install Infisical CLI
+        if: steps.gate.outputs.skip != 'true'
         run: |
           LATEST_TAG=$(curl -sL -o /dev/null -w '%{url_effective}' https://github.com/Infisical/cli/releases/latest | sed 's#.*/tag/##')
           VERSION="${LATEST_TAG#v}"
@@ -54,6 +91,7 @@ jobs:
           rm infisical-cli.tar.gz
 
       - name: Authenticate to Infisical
+        if: steps.gate.outputs.skip != 'true'
         id: infisical-auth
         run: |
           : "${INFISICAL_CLIENT_ID:?INFISICAL_CLIENT_ID repository variable must be set}"
@@ -66,6 +104,7 @@ jobs:
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
 
       - name: Deploy dsh
+        if: steps.gate.outputs.skip != 'true'
         env:
           INFISICAL_TOKEN: ${{ steps.infisical-auth.outputs.token }}
         run: |
@@ -133,4 +172,5 @@ jobs:
           '
 
       - name: Prune old images
+        if: steps.gate.outputs.skip != 'true'
         run: docker image prune -f
