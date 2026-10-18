@@ -79,6 +79,15 @@ dsh's own MCP client is installed but ships with no servers. Rather than putting
 
 **Admin UI.** `http://localhost:4010/ui` on the host (user `admin`, password is the master key); from another machine use an SSH tunnel to `127.0.0.1:4010`. It is never routed through the tunnel.
 
+**Sign-in.** Out of the box the UI accepts the shared master key as a password. Once you have created your own admin account (Users, then invite, and set its password through the invitation link), switch that shared login off. It is stored in the database, so it survives restarts, and the master key keeps working as an API key. Run on the host, after `infisical login` and `infisical init` once in this directory:
+
+```bash
+echo '{"general_settings":{"disable_env_credential_login":true}}' > /tmp/disable-env-login.json
+infisical run --env=prod -- sh -c 'curl -s -X POST http://127.0.0.1:4010/config/update -H "Authorization: Bearer $LITELLM_MASTER_KEY" -H "Content-Type: application/json" -d @/tmp/disable-env-login.json'
+```
+
+Check your own account can sign in (private window) first. To undo, send the same request with `false`. Checked on a throwaway stack: the shared login stopped working at once and stayed off after a restart, and the master key still worked as an API key. A fresh database loses the setting, so repeat it after a rebuild.
+
 **Add a tool server** (UI: *MCP Servers → Add New MCP Server*, or the API). Put the token in the server's bearer-token/credentials field, not in *static headers*: the admin API returns static header values in plain text.
 
 ```bash
@@ -97,6 +106,13 @@ docker restart dsh-dsh-1
 The key has tool search switched on, so dsh sees four small tools (`mcp_tool_search`, `mcp_tool_call`, and two for agents and skills) instead of every server's full tool list; the model searches, then calls what it found.
 
 **Checked on a throwaway stack with fake secrets** (not on the live host): from the sandbox network dsh reaches `litellm` but not its database or the internet; the dsh key can use tools but gets 401/403 on adding servers, minting or listing keys; its server listing shows only the servers it was granted and no token values; a caller-supplied `x-mcp-<server>-authorization` header **replaces** the configured upstream token for that call, so rely on `allowed_tools`, per-key permissions and a scoped token, never on a header the hub injects.
+
+**Publishing the admin UI** at `litellm.<HOST>` (or `LITELLM_SUBDOMAIN`). It is a full admin console, so it is routed only behind its own Cloudflare Access application, exactly like dsh: the hostname label stays empty until `LITELLM_ACCESS_AUD` is set, and with the AUD tag and `CF_ACCESS_TEAM` both set `cloudflared` rejects any request without a valid Access token. The tunnel carries the whole hub, so the hub's `/mcp` and API paths are behind the same gate. dsh itself still talks to the hub over the internal network.
+
+1. Zero Trust, Access controls, Applications, Create new application, Self-hosted and private, add public hostname: your domain, subdomain `litellm`, no path. Attach your *Allow* policy (your email only, never *Bypass*) and enable *One-time PIN*.
+2. Copy the application's Audience (AUD) tag (Configure, then Additional settings).
+3. GitHub, Settings, Secrets and variables, Actions, *Variables*: set `LITELLM_ACCESS_AUD` to the tag (`HOST` and `CF_ACCESS_TEAM` are already set for dsh), then run *Deploy Infra - dsh*.
+4. Check from outside: `curl -sI https://litellm.<HOST>/` must redirect to `cloudflareaccess.com`, never serve the UI.
 
 Known gaps: the database (`litellm_db_data`) is not backed up, same as `dsh_home`; the hub uses about 650 MB of memory; LiteLLM is pinned and updates are manual.
 

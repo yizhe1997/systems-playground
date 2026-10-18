@@ -119,6 +119,15 @@ services:
       STORE_MODEL_IN_DB: "True"
       # Use the bundled model price list instead of fetching it from GitHub at startup.
       LITELLM_LOCAL_MODEL_COST_MAP: "True"
+    labels:
+      # Publishes the admin UI (and the hub's /mcp, behind the same gate) at <LITELLM_SUBDOMAIN or litellm>.<HOST>. The
+      # hostname stays empty, so nothing is routed, until LITELLM_ACCESS_AUD (the Cloudflare Access application's
+      # Audience tag) is set: create the Access application first. With the AUD tag and CF_ACCESS_TEAM both set,
+      # cloudflared itself rejects any request that lacks a valid Access token (see cloudflared-sync.sh).
+      - cloudflare.tunnel.hostname=${LITELLM_ACCESS_AUD:+${HOST:+${LITELLM_SUBDOMAIN:-litellm}.${HOST}}}
+      - cloudflare.tunnel.port=${LITELLM_PORT:-4010}
+      - cloudflare.tunnel.access-aud=${LITELLM_ACCESS_AUD:-}
+      - cloudflare.tunnel.access-team=${CF_ACCESS_TEAM:-}
     ports:
       # Loopback only: the admin UI is at http://localhost:${LITELLM_PORT:-4010}/ui (user admin, password is the master key).
       - "127.0.0.1:${LITELLM_PORT:-4010}:4000"
