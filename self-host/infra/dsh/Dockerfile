@@ -1,11 +1,15 @@
 FROM node:24-bookworm-slim
 
 ARG DSH_VERSION=0.1.5-rc.2
+# npm --before installs the dependency versions that existed on this date. Only the top-level package is pinned by
+# DSH_VERSION; its sub-packages float, and rc.3 of them (published after this date) moved the files that
+# patch-remote-settings.js edits and broke the build. Move this date forward only together with that patch.
+ARG DSH_DEPS_BEFORE=2026-09-20T12:00:00Z
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends socat curl git ripgrep ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
- && npm install -g "@deepseek-ai/dsh@${DSH_VERSION}" \
+ && npm install -g --before="${DSH_DEPS_BEFORE}" "@deepseek-ai/dsh@${DSH_VERSION}" \
  && mkdir -p /home/node/.dsh /workspace \
  && chown node:node /home/node/.dsh /workspace
 
