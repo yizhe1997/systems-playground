@@ -12,6 +12,7 @@ Interactive version: [`dsh-stack-trust-zones.html`](../../../docs/diagrams/dsh-s
 |---|---|---|
 | `dsh` | `systems-playground-dsh` | The harness. Holds only placeholder keys. Non-root, read-only rootfs, no capabilities. Attached only to the internal `sandbox` network. |
 | `gateway` | `systems-playground-dsh-gateway` | nginx. The sole published port (`127.0.0.1:3080`). Relays the UI to `dsh`, and is dsh's LLM endpoint: it injects the real OpenRouter/Anthropic key, verifies the upstream certificate, and forwards only the chat and models endpoints. |
+| `litellm`, `litellm-db` | `ghcr.io/berriai/litellm` (pinned), `postgres:16-alpine` | The MCP hub (see [MCP tools](#mcp-tools-litellm-hub)). Holds the tokens for tools like GitHub; dsh holds one scoped key. The admin UI is loopback only. |
 | `egress` | `systems-playground-dsh-egress` | squid. The agent's only route to the public internet (ports 80/443, for web, git and npm). Refuses loopback, RFC 1918, link-local and CGNAT destinations: the host, the LAN, every other stack's published ports. |
 
 **Why the split.** A process running as the same user can read another's environment from `/proc`, so any key placed in `dsh` is readable by the agent, even though dsh scrubs credential-named variables for the commands it spawns. Keys therefore live only in the gateway. And a normal container can reach every service published on the host, so `dsh` sits on a network with no route out at all. Model-authored scripts that ignore the proxy variables simply have no route.
@@ -69,6 +70,35 @@ wsl -e bash -c "cd ~/infra/dsh && sh link.sh"
 - **From anywhere (GitHub or Discord):** run the *dsh - Send Launch Link* workflow (Actions → Run workflow, from the website or mobile app). The link is posted to a private Discord channel and masked in the public run log. When dsh is published the message carries two links with the same token: the public one for any device, and a loopback one (`http://127.0.0.1:…`) that only works in a browser on the host machine, as the fallback for model and settings editing. It needs a Discord webhook URL stored in Infisical as `DSH_LINK_WEBHOOK_URL`.
 
 Either way the link is a credential. It is useless without also passing Access, and it stops working when dsh next restarts (until then it can be reused), so keep the Discord channel private.
+
+## MCP tools (LiteLLM hub)
+
+dsh's own MCP client is installed but ships with no servers. Rather than putting tokens inside dsh (the agent can read anything in its own container, see ADR 004), one MCP hub holds them: [LiteLLM](https://docs.litellm.ai/docs/mcp). dsh gets a single entry pointing at `http://litellm:4000/mcp/` with a **virtual key that can only call MCP tools**. Adding GitHub, PostHog or anything else later is an admin-UI or API action, with no change to this repo.
+
+**Before the next deploy**, add three secrets to Infisical (`prod`); the deploy fails without them: `LITELLM_MASTER_KEY` and `LITELLM_SALT_KEY` (both `sk-` plus `openssl rand -hex 32`) and `LITELLM_DB_PASSWORD`. The salt key encrypts the tokens stored in the database, so keep a copy: changing it makes them unreadable.
+
+**Admin UI.** `http://localhost:4010/ui` on the host (user `admin`, password is the master key); from another machine use an SSH tunnel to `127.0.0.1:4010`. It is never routed through the tunnel.
+
+**Add a tool server** (UI: *MCP Servers → Add New MCP Server*, or the API). Put the token in the server's bearer-token/credentials field, not in *static headers*: the admin API returns static header values in plain text.
+
+```bash
+curl -X POST http://127.0.0.1:4010/v1/mcp/server -H "Authorization: Bearer $LITELLM_MASTER_KEY" -H 'Content-Type: application/json'   -d '{"server_name":"github","url":"https://api.githubcopilot.com/mcp/","transport":"http","auth_type":"bearer_token","credentials":{"auth_value":"<fine-grained token>"},"allowed_tools":["search_code","get_file_contents"]}'
+```
+
+`allowed_tools` is enforced by the hub, so a tool outside it is hidden and refused even if called directly. Use a fine-grained, least-privilege token as well.
+
+**Link dsh** (once, and again to rotate the key). It creates a key limited to MCP tools and the servers you name, writes dsh's MCP entry, and revokes the previous key. Then restart dsh:
+
+```bash
+cd ~/infra/dsh && infisical run --env=prod -- sh mcp-link.sh github posthog   # no names = every server
+docker restart dsh-dsh-1
+```
+
+The key has tool search switched on, so dsh sees four small tools (`mcp_tool_search`, `mcp_tool_call`, and two for agents and skills) instead of every server's full tool list; the model searches, then calls what it found.
+
+**Checked on a throwaway stack with fake secrets** (not on the live host): from the sandbox network dsh reaches `litellm` but not its database or the internet; the dsh key can use tools but gets 401/403 on adding servers, minting or listing keys; its server listing shows only the servers it was granted and no token values; a caller-supplied `x-mcp-<server>-authorization` header **replaces** the configured upstream token for that call, so rely on `allowed_tools`, per-key permissions and a scoped token, never on a header the hub injects.
+
+Known gaps: the database (`litellm_db_data`) is not backed up, same as `dsh_home`; the hub uses about 650 MB of memory; LiteLLM is pinned and updates are manual.
 
 ## Auth model (checked against 0.1.5-rc.2)
 

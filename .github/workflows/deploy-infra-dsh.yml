@@ -74,6 +74,9 @@ jobs:
             echo "❌ Set OPENROUTER_API_KEY and/or ANTHROPIC_API_KEY in Infisical (prod): dsh has no model to call without one."
             exit 1
           fi
+          : "${LITELLM_MASTER_KEY:?LITELLM_MASTER_KEY must be set in Infisical (prod): the MCP hub needs it}"
+          : "${LITELLM_SALT_KEY:?LITELLM_SALT_KEY must be set in Infisical (prod)}"
+          : "${LITELLM_DB_PASSWORD:?LITELLM_DB_PASSWORD must be set in Infisical (prod)}"
           : "${REGISTRY_USERNAME:?REGISTRY_USERNAME must be set in Infisical}"
           : "${REGISTRY_PASSWORD:?REGISTRY_PASSWORD must be set in Infisical}"
           export REGISTRY_HOST="${REGISTRY_HOST:-localhost:5000}"
@@ -88,6 +91,7 @@ jobs:
           # the existing containers back with the environment baked in by this deploy (the end state ADR 002 describes).
           cp -v self-host/infra/dsh/docker-compose.yml "$TARGET/compose.yml"
           cp -v self-host/infra/dsh/link.sh "$TARGET/link.sh"
+          cp -v self-host/infra/dsh/mcp-link.sh "$TARGET/mcp-link.sh"
 
           # Persist the (non-secret) hostname settings so a manual docker compose up -d in this directory renders the
           # same tunnel label instead of an empty one, which would silently drop the public route.

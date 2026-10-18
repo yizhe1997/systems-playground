@@ -17,7 +17,7 @@ services:
       HOME: /workspace
       HTTP_PROXY: http://egress:3128
       HTTPS_PROXY: http://egress:3128
-      NO_PROXY: gateway,egress
+      NO_PROXY: gateway,egress,litellm
     volumes:
       - dsh_home:/home/node/.dsh
       - ${DSH_WORKSPACES_DIR:-./workspaces}:/workspace
@@ -104,11 +104,70 @@ services:
       - sandbox
       - edge
 
+  # MCP hub. dsh's MCP client calls http://litellm:4000/mcp/ with one scoped virtual key; the real tokens for GitHub,
+  # PostHog and the rest are added in the admin UI or API and live encrypted in litellm-db, never in dsh. It is on the
+  # sandbox network so dsh can reach it, on edge so it can reach the upstream MCP servers, and on mcpdb with its database.
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.106.0
+    restart: unless-stopped
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?LITELLM_MASTER_KEY must be set}
+      # Encrypts the credentials stored in the database. Changing it later makes them unreadable.
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:?LITELLM_SALT_KEY must be set}
+      DATABASE_URL: postgresql://litellm:${LITELLM_DB_PASSWORD:?LITELLM_DB_PASSWORD must be set}@litellm-db:5432/litellm
+      # Servers, keys and settings live in the database, so they are managed in the UI or API, not in a file.
+      STORE_MODEL_IN_DB: "True"
+      # Use the bundled model price list instead of fetching it from GitHub at startup.
+      LITELLM_LOCAL_MODEL_COST_MAP: "True"
+    ports:
+      # Loopback only: the admin UI is at http://localhost:${LITELLM_PORT:-4010}/ui (user admin, password is the master key).
+      - "127.0.0.1:${LITELLM_PORT:-4010}:4000"
+    depends_on:
+      litellm-db:
+        condition: service_healthy
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 1536m
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness',timeout=4).status==200 else 1)\""]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+      start_period: 90s
+    networks:
+      - sandbox
+      - edge
+      - mcpdb
+
+  litellm-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: ${LITELLM_DB_PASSWORD:?LITELLM_DB_PASSWORD must be set}
+      POSTGRES_DB: litellm
+    volumes:
+      - litellm_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - mcpdb
+
 networks:
   # No route out of this network: dsh can only reach the gateway and the egress proxy.
   sandbox:
     internal: true
   edge:
+  # Only litellm and its database. dsh cannot see the database.
+  mcpdb:
+    internal: true
 
 volumes:
   dsh_home:
+  litellm_db_data:
