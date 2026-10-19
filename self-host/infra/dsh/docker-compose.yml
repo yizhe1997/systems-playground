@@ -119,6 +119,10 @@ services:
       STORE_MODEL_IN_DB: "True"
       # Use the bundled model price list instead of fetching it from GitHub at startup.
       LITELLM_LOCAL_MODEL_COST_MAP: "True"
+      # How long the hub waits for an upstream MCP tool call before giving up (seconds). The default is 60, which cuts off
+      # Hindsight's reflect (about 30 to 65 seconds, longer on a big bank). A server can still override it with its own
+      # timeout field. dsh's own MCP client has a separate 60 second limit (toolCallTimeoutMs).
+      LITELLM_MCP_CLIENT_TIMEOUT: "${LITELLM_MCP_CLIENT_TIMEOUT:-180}"
     labels:
       # Publishes the admin UI (and the hub's /mcp, behind the same gate) at <LITELLM_SUBDOMAIN or litellm>.<HOST>. The
       # hostname stays empty, so nothing is routed, until LITELLM_ACCESS_AUD (the Cloudflare Access application's
