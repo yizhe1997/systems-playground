@@ -5,7 +5,8 @@
 # Needs LITELLM_MASTER_KEY in the environment. The deploy has it; by hand: infisical run --env=prod -- sh mcp-link.sh
 #   --rotate   replace the key even if the current one works (also how to change which servers it may use)
 #   --restart  restart dsh after a change so it loads the entry
-# With no server names the key may use every server, now and later.
+# A key made with no server names is granted no server of its own: it can use only servers flagged "available to all
+# keys" in the hub. Name servers here to grant them to this key explicitly.
 # It only manages dsh's MCP file while that holds nothing or just the hub entry; anything else is left alone.
 # Exit status: 0 linked or already linked, 1 could not link (the deploy treats that as a warning, not a failure).
 set -eu

@@ -96,9 +96,9 @@ curl -X POST http://127.0.0.1:4010/v1/mcp/server -H "Authorization: Bearer $LITE
 
 `allowed_tools` is enforced by the hub, so a tool outside it is hidden and refused even if called directly. Use a fine-grained, least-privilege token as well.
 
-**Link dsh.** The deploy does this for you. Once dsh is up it runs `mcp-link.sh --restart` as a best-effort step: if dsh already holds a working hub key it changes nothing; otherwise it creates a key limited to MCP tools (every server, now and later, with tool search on), writes dsh's MCP entry, revokes the old key and restarts dsh. A failure only prints a warning and never blocks the deploy: typical causes are that dsh has never started (run the deploy again), or that its MCP file holds hand-written entries, which the script refuses to overwrite.
+**Link dsh.** The deploy does this for you. Once dsh is up it runs `mcp-link.sh --restart` as a best-effort step: if dsh already holds a working hub key it changes nothing; otherwise it creates a key limited to MCP tools with tool search on. That key is granted no server of its own: dsh can use a server only if it is flagged "available to all keys" in the hub (a toggle on the server's form), or if you named it when running the script by hand. A server that is neither is invisible to dsh, writes dsh's MCP entry, revokes the old key and restarts dsh. A failure only prints a warning and never blocks the deploy: typical causes are that dsh has never started (run the deploy again), or that its MCP file holds hand-written entries, which the script refuses to overwrite.
 
-Run it by hand to rotate the key, or to limit the key to some servers (this also replaces the current key):
+Run it by hand to rotate the key, or to grant it named servers instead of relying on the "available to all keys" flag (this also replaces the current key):
 
 ```bash
 cd ~/infra/dsh && infisical run --env=prod -- sh mcp-link.sh --rotate --restart github posthog
