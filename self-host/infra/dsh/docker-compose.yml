@@ -156,6 +156,37 @@ services:
       - edge
       - mcpdb
 
+  # Grafana's official MCP server as a network service (streamable-http on 8000, endpoint /mcp), so the hub can offer
+  # Grafana to any client without a Windows program. Read-only (--disable-write also removes the raw-SQL tools). Its
+  # Grafana service-account token lives only here; the hub reaches it with MCP_GRAFANA_SERVER_TOKEN as a bearer token.
+  # It is on the edge network only, so dsh (sandbox) cannot reach it directly. Register it in the hub as
+  # http://mcp-grafana:8000/mcp.
+  mcp-grafana:
+    image: grafana/mcp-grafana:2.1.1
+    restart: unless-stopped
+    # --allowed-hosts: the server rejects any Host header that is not loopback unless told otherwise, so name the one the hub
+    # uses. --usage-stats disabled: it reports anonymous usage to Grafana Labs by default.
+    command: ["-t", "streamable-http", "--address", ":8000", "--disable-write", "--allowed-hosts", "mcp-grafana:8000", "--usage-stats", "disabled"]
+    environment:
+      # Grafana is published on the host (observability stack, port 3030), reached through the host gateway.
+      GRAFANA_URL: ${GRAFANA_MCP_URL:-http://host.docker.internal:3030}
+      # Use a VIEWER service account, so Grafana itself refuses writes even if a tool slips through.
+      GRAFANA_SERVICE_ACCOUNT_TOKEN: ${GRAFANA_SERVICE_ACCOUNT_TOKEN:?GRAFANA_SERVICE_ACCOUNT_TOKEN must be set}
+      MCP_GRAFANA_SERVER_TOKEN: ${MCP_GRAFANA_SERVER_TOKEN:?MCP_GRAFANA_SERVER_TOKEN must be set}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    networks:
+      - edge
+
   litellm-db:
     image: postgres:16-alpine
     restart: unless-stopped
