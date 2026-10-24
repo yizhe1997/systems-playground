@@ -18,7 +18,7 @@ llm-pi-ai:
       api: openai-completions
       baseURL: http://gateway:8080/openrouter/v1
       models:
-        - id: deepseek/deepseek-v4.1-flash
+        - id: deepseek/deepseek-v4.1-flash-1017
           contextWindow: 1310720
           maxTokens: 32768
           compat:

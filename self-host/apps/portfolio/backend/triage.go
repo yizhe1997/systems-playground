@@ -18,7 +18,7 @@ var triageTracer = otel.Tracer("triage")
 // triageModel is an OpenRouter model slug, not a direct-provider one - see
 // callTriageModel for why this goes through OpenRouter's routing rather
 // than DeepSeek's own API.
-const triageModel = "deepseek/deepseek-v4.1-flash"
+const triageModel = "deepseek/deepseek-v4.1-flash-1017"
 
 // Separate client (not the shared httpClient in filebrowser.go, whose 10s
 // timeout is tuned for local Filebrowser calls) - a hosted LLM call needs
@@ -121,7 +121,7 @@ type openRouterToolChoice struct {
 }
 
 // openRouterProviderOpts is the safety-critical part of this integration -
-// see the PII investigation this is based on: deepseek/deepseek-v4.1-flash
+// see the PII investigation this is based on: deepseek/deepseek-v4.1-flash-1017
 // is served by ~28 providers on OpenRouter, including DeepSeek's own
 // endpoint (which per DeepSeek's own privacy policy stores data in China
 // and may train on it) and only one ("Makora") OpenRouter-confirmed as
@@ -160,7 +160,7 @@ type openRouterResponse struct {
 	} `json:"error"`
 }
 
-// callTriageModel calls deepseek/deepseek-v4.1-flash via OpenRouter
+// callTriageModel calls deepseek/deepseek-v4.1-flash-1017 via OpenRouter
 // rather than DeepSeek's own API directly - OpenRouter is the layer that
 // can enforce zero-data-retention routing and explicitly exclude
 // DeepSeek's own (China-hosted, per their privacy policy) endpoint; calling

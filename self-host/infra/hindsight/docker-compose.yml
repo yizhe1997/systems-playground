@@ -44,7 +44,7 @@ services:
       # LLM used for fact extraction (retain) and reflect. Any OpenAI-compatible endpoint works.
       - HINDSIGHT_API_LLM_PROVIDER=${HINDSIGHT_LLM_PROVIDER:-openai}
       - HINDSIGHT_API_LLM_BASE_URL=${HINDSIGHT_LLM_BASE_URL:-https://openrouter.ai/api/v1}
-      - HINDSIGHT_API_LLM_MODEL=${HINDSIGHT_LLM_MODEL:-deepseek/deepseek-v4.1-flash}
+      - HINDSIGHT_API_LLM_MODEL=${HINDSIGHT_LLM_MODEL:-deepseek/deepseek-v4.1-flash-1017}
       - HINDSIGHT_API_LLM_API_KEY=${HINDSIGHT_LLM_API_KEY:?HINDSIGHT_LLM_API_KEY must be set}
     restart: unless-stopped
     labels:
