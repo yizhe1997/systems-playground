@@ -63,27 +63,23 @@ claude mcp add --transport http hindsight https://memory.<HOST>/mcp/<bank-id>/ \
 
 Any other harness: plain HTTP against `https://memory.<HOST>` with the same `Authorization` header (`retain` on the way out, `recall` before a prompt). Interactive API docs are at `/docs`.
 
-## Claude Code hooks (automatic memory)
+## Claude Code memory (automatic)
 
-[`hooks/hindsight-hook.mjs`](hooks/hindsight-hook.mjs) gives Claude Code sessions memory without anyone calling a tool:
+Claude Code uses Hindsight's own package, [`@vectorize-io/hindsight-coding-agents`](https://hindsight.vectorize.io/sdks/integrations/coding-agents), which adds recall, write-back and `hindsight_*` tools through hooks and an MCP server. It replaces the hook script this repo used to carry. Install on each machine:
 
-- **SessionStart** (`startup`, `clear`, `compact`; not `resume`): in a git repo, injects the project's mental model (`<repo-name>-state`) plus related memories, capped at about 1500 tokens, framed as background notes rather than instructions. Outside a git repo it injects nothing.
-- **SessionEnd**: condenses the transcript to the user's messages and the assistant's prose (tool output, thinking and system reminders dropped, secrets redacted, middle of very long sessions omitted) and retains it asynchronously under `document_id = claude-code-<session id>`, tagged `project:<repo-name>`. Sessions under 3 user turns or about 1500 characters are skipped. A 1.8 MB transcript came out at about 19k characters.
-
-**No key in the repo.** The hook reads the endpoint, bank and bearer key from the user-scope `hindsight` MCP server in `~/.claude.json`, so any machine where the `claude mcp add` command from "Connecting a client" has been run only needs the settings entry below. Failures are written to `~/.claude/hindsight-hook.log` and never block a session. `HINDSIGHT_HOOKS=off` disables both hooks; `node hooks/hindsight-hook.mjs selftest` checks redaction and trimming offline, and `--dry` on either mode shows what would be injected or sent.
-
-Add to `~/.claude/settings.json` on each machine (adjust the path to where this repo is cloned):
-
-```json
-"hooks": {
-  "SessionStart": [{ "matcher": "startup|clear|compact", "hooks": [{ "type": "command", "timeout": 15,
-    "command": "node \"C:/Users/<you>/source/repos/systems-playground/self-host/infra/hindsight/hooks/hindsight-hook.mjs\" recall" }] }],
-  "SessionEnd": [{ "hooks": [{ "type": "command", "timeout": 20,
-    "command": "node \"C:/Users/<you>/source/repos/systems-playground/self-host/infra/hindsight/hooks/hindsight-hook.mjs\" retain" }] }]
-}
+```bash
+npx @vectorize-io/hindsight-coding-agents install claude-code --server self-hosted --api-url https://memory.<HOST>
 ```
 
-Per project, create the mental model once (`create_mental_model` with id `<repo-name>-state`, tag `project:<repo-name>`, `tags_match: any`); without it the briefing is just the related memories. A session that is killed instead of ended may never fire SessionEnd and so is not retained.
+then edit `~/.hindsight/coding-agent.json` (it holds the bearer key, so it stays out of the repo). The settings used here, chosen to keep extraction cost down and memory shared across harnesses:
+
+```json
+{ "apiUrl": "https://memory.<HOST>", "apiToken": "<HINDSIGHT_TENANT_API_KEY>", "bankId": "personal",
+  "autoInject": "recall", "retainExtractionMode": "concise", "gitIngest": "none", "autoSeed": false,
+  "codebaseSurvey": false, "pageTriggerCron": "0 4 * * *", "autoUpdate": false }
+```
+
+`bankId: "personal"` keeps one bank shared with other harnesses (the default is one bank per repo). `autoInject: "recall"` avoids the default low-budget reflect at the first prompt, `codebaseSurvey: false` keeps it from spending Claude tokens, and `autoUpdate: false` pins the version. The installer also registers its own MCP server named `hindsight`, which replaces a direct HTTP entry of that name. Check a machine with the `hindsight_diagnose` tool, or `npx @vectorize-io/hindsight-coding-agents stats`. Verified on one machine only: recall injected at prompt time, and the whole conversation retained (a completed retain, 93 facts) at a size of about 280k characters, far larger than the old condensed transcript, so watch the extraction key's spend.
 
 ## Verify
 
