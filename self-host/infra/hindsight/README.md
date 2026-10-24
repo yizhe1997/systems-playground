@@ -14,6 +14,8 @@ Platform-wide infrastructure service — shared across everything on the host, n
 
 An LLM extracts facts on every `retain`, so a model key is needed (default: OpenRouter, DeepSeek model). Embeddings run locally inside the image.
 
+Consolidation, the background job that merges new facts into observations after each retain, uses its own cheaper model (`HINDSIGHT_CONSOLIDATION_LLM_MODEL`, default `deepseek/deepseek-v4-flash-0731`), because it reads far more than it writes and was the largest cost. It shares the provider and key with extraction. Check an observation or two after changing it, since a weak model can merge unrelated facts.
+
 ## Deploy
 
 Deployed by `.github/workflows/deploy-infra-hindsight.yml` whenever `self-host/infra/hindsight/**` changes on `main`, with secrets from Infisical (`prod`):

@@ -44,8 +44,11 @@ services:
       # LLM used for fact extraction (retain) and reflect. Any OpenAI-compatible endpoint works.
       - HINDSIGHT_API_LLM_PROVIDER=${HINDSIGHT_LLM_PROVIDER:-openai}
       - HINDSIGHT_API_LLM_BASE_URL=${HINDSIGHT_LLM_BASE_URL:-https://openrouter.ai/api/v1}
-      - HINDSIGHT_API_LLM_MODEL=${HINDSIGHT_LLM_MODEL:-deepseek/deepseek-v4.1-flash-1017}
+      - HINDSIGHT_API_LLM_MODEL=${HINDSIGHT_LLM_MODEL:-deepseek/deepseek-v4-flash-0731}
       - HINDSIGHT_API_LLM_API_KEY=${HINDSIGHT_LLM_API_KEY:?HINDSIGHT_LLM_API_KEY must be set}
+      # Consolidation (merging new facts into observations) runs after every retain and was the biggest cost. It reads far
+      # more than it writes, so it gets the cheapest DeepSeek Flash by input price. Provider, base URL and key are inherited.
+      - HINDSIGHT_API_CONSOLIDATION_LLM_MODEL=${HINDSIGHT_CONSOLIDATION_LLM_MODEL:-deepseek/deepseek-v4-flash-0731}
     restart: unless-stopped
     labels:
       # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh. Nothing is published
