@@ -119,6 +119,8 @@ The key has tool search switched on, so dsh sees four small tools (`mcp_tool_sea
 3. GitHub, Settings, Secrets and variables, Actions, *Variables*: set `LITELLM_ACCESS_AUD` to the tag (`HOST` and `CF_ACCESS_TEAM` are already set for dsh), then run *Deploy Infra - dsh*.
 4. Check from outside: `curl -sI https://litellm.<HOST>/` must redirect to `cloudflareaccess.com`, never serve the UI.
 
+**OAuth sign-in for tool servers (Atlassian, Slack).** These sign in through a browser, and the hub rejects the redirect unless it knows its own public origin: Cloudflare ends TLS, so inside the container the hub only sees http. The compose file therefore sets `PROXY_BASE_URL` to `https://<LITELLM_SUBDOMAIN or litellm>.<HOST>` whenever the UI is published (`LITELLM_ACCESS_AUD` set), and leaves it empty otherwise. Always open the hub from that same public address when you click Connect. Checked on a scratch hub: the OAuth issuer follows the variable, and an unpublished hub is unchanged. Not yet checked with a real Atlassian sign-in.
+
 Known gaps: the database (`litellm_db_data`) is not backed up, same as `dsh_home`; the hub uses about 650 MB of memory; LiteLLM is pinned and updates are manual.
 
 ## Auth model (checked against 0.1.5-rc.2)

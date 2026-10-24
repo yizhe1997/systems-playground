@@ -124,6 +124,9 @@ services:
       # timeout field. LiteLLM has no upper cap, but a call that goes through the Cloudflare tunnel (Hindsight does) is
       # also bound by Cloudflare's own 125 second origin timeout. dsh's MCP client has a separate 60 second limit.
       LITELLM_MCP_CLIENT_TIMEOUT: "${LITELLM_MCP_CLIENT_TIMEOUT:-300}"
+      # The public origin the hub is opened from. Cloudflare ends TLS, so the container only sees http and would reject the
+      # https redirect of an OAuth sign-in (Atlassian, Slack) as an origin mismatch. Empty while the UI is not published.
+      PROXY_BASE_URL: "${LITELLM_ACCESS_AUD:+${HOST:+https://${LITELLM_SUBDOMAIN:-litellm}.${HOST}}}"
     labels:
       # Publishes the admin UI (and the hub's /mcp, behind the same gate) at <LITELLM_SUBDOMAIN or litellm>.<HOST>. The
       # hostname stays empty, so nothing is routed, until LITELLM_ACCESS_AUD (the Cloudflare Access application's
