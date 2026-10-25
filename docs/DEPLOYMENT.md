@@ -143,11 +143,11 @@ Every port a compose file publishes on the host, so a new service can pick a fre
 | 3030 | observability: Grafana | tunnel |
 | 3080 | dsh | loopback, overridable via `DSH_PORT` |
 | 3100 | observability: Loki | |
+| 3101 | tradecraft dev frontend | loopback, `docker-compose.override.yml` only |
 | 4010 | dsh: LiteLLM | loopback, `LITELLM_PORT` |
 | 4317 / 4318 | observability: Tempo OTLP gRPC / HTTP | |
 | 5000 | registry | |
 | 5435 / 8081 | tradecraft dev: Postgres / backend | loopback, `docker-compose.override.yml` only |
-| 3101 | tradecraft dev frontend | loopback, `docker-compose.override.yml` only |
 | 5678 | n8n | tunnel |
 | 6379 / 16379 | portfolio Redis (dev / prod) | |
 | 8025 | penpot Mailpit UI | |
