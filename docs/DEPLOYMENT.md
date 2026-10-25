@@ -157,7 +157,6 @@ Every port a compose file publishes on the host, so a new service can pick a fre
 | 8090 | infisical | |
 | 8333 | seaweedfs S3 API | loopback, tunnel |
 | 8888 | hindsight API + MCP | loopback, tunnel |
-| 8889 | seaweedfs filer UI | loopback, no auth (container port 8888) |
 | 9001 | penpot | tunnel, `PENPOT_PORT` |
 | 9090 | observability: Prometheus | |
 | 9999 | hindsight Control Plane UI | loopback, routed only behind Cloudflare Access |
