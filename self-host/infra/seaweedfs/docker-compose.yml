@@ -6,9 +6,8 @@ services:
     image: chrislusf/seaweedfs:4.48
     command: ["mini", "-dir=/data", "-admin.password=${SEAWEEDFS_ADMIN_PASSWORD:?SEAWEEDFS_ADMIN_PASSWORD must be set}"]
     ports:
-      # Loopback only. S3 (8333) reaches the internet solely through the Cloudflare tunnel label
-      # below. The admin UI (23646, password-protected, user "admin") stays on loopback:
-      # reach it from the host or an SSH tunnel at http://localhost:23646. See "Host port map" in
+      # Loopback only: S3 (8333) and the admin UI (23646, login: user "admin" + SEAWEEDFS_ADMIN_PASSWORD)
+      # reach the internet solely through the Cloudflare tunnel labels. See "Host port map" in
       # docs/DEPLOYMENT.md before changing any of these.
       - "127.0.0.1:8333:8333"
       - "127.0.0.1:23646:23646"
@@ -31,10 +30,9 @@ services:
       - cloudflare.tunnel.hostname=${S3_SUBDOMAIN:-s3}.${HOST:?HOST must be set}
       - cloudflare.tunnel.port=8333
 
-  # Carries the tunnel labels for the admin UI and does nothing else. cloudflared-sync.sh reads one
-  # hostname/port pair per container and `seaweedfs` already spends its pair on S3 (8333). The admin
-  # UI is published ONLY when its Cloudflare Access application exists: with SEAWEEDFS_ADMIN_ACCESS_AUD
-  # unset the hostname label is empty and the sync skips this container, leaving the UI on loopback.
+  # Carries the tunnel label for the admin UI and does nothing else: cloudflared-sync.sh reads one
+  # hostname/port pair per container and `seaweedfs` already spends its pair on S3 (8333). The UI is
+  # protected by its own login (SEAWEEDFS_ADMIN_PASSWORD).
   ui-route:
     image: alpine:3.20
     command: ["tail", "-f", "/dev/null"]
@@ -48,12 +46,8 @@ services:
       - seaweedfs
     restart: unless-stopped
     labels:
-      - cloudflare.tunnel.hostname=${SEAWEEDFS_ADMIN_ACCESS_AUD:+${S3_ADMIN_SUBDOMAIN:-s3-admin}.${HOST:?HOST must be set}}
+      - cloudflare.tunnel.hostname=${S3_ADMIN_SUBDOMAIN:-s3-admin}.${HOST:?HOST must be set}
       - cloudflare.tunnel.port=23646
-      # With BOTH set, cloudflared itself rejects any request lacking a valid Access token for this
-      # application. Set both or neither: a half-set pair leaves the hostname unrouted.
-      - cloudflare.tunnel.access-aud=${SEAWEEDFS_ADMIN_ACCESS_AUD:-}
-      - cloudflare.tunnel.access-team=${CF_ACCESS_TEAM:-}
 
 volumes:
   seaweedfs_data:

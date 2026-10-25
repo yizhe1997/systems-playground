@@ -162,7 +162,7 @@ Every port a compose file publishes on the host, so a new service can pick a fre
 | 9999 | hindsight Control Plane UI | loopback, routed only behind Cloudflare Access |
 | 18085 / 18086 | portfolio backend / frontend (prod) | |
 | 18090 | tradecraft (prod) | loopback, tunnel |
-| 23646 | seaweedfs admin UI | loopback, password-protected; tunnel only behind Cloudflare Access |
+| 23646 | seaweedfs admin UI | password-protected, tunnel |
 
 1. **Install cloudflared:** `make bootstrap` does this for you (or follow the [official Cloudflare documentation](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-local-tunnel/) to install it manually).
 2. **Authenticate:** Run `cloudflared tunnel login`.

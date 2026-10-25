@@ -16,11 +16,7 @@ jobs:
       HOST: ${{ vars.HOST }}
       S3_SUBDOMAIN: ${{ vars.S3_SUBDOMAIN }}
       SEAWEEDFS_BUCKETS: ${{ vars.SEAWEEDFS_BUCKETS }}
-      # Optional identifiers, not secrets. The admin UI is published only when SEAWEEDFS_ADMIN_ACCESS_AUD
-      # (the Access application's Audience tag) AND CF_ACCESS_TEAM are both set.
       S3_ADMIN_SUBDOMAIN: ${{ vars.S3_ADMIN_SUBDOMAIN }}
-      SEAWEEDFS_ADMIN_ACCESS_AUD: ${{ vars.SEAWEEDFS_ADMIN_ACCESS_AUD }}
-      CF_ACCESS_TEAM: ${{ vars.CF_ACCESS_TEAM }}
       INFISICAL_CLIENT_ID: ${{ vars.INFISICAL_CLIENT_ID }}
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
       INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
@@ -77,13 +73,11 @@ jobs:
           # the existing container is restored by its restart policy.
           ENV_FILE="$TARGET/.env"
           touch "$ENV_FILE"
-          grep -v -E "^(HOST|S3_SUBDOMAIN|SEAWEEDFS_BUCKETS|S3_ADMIN_SUBDOMAIN|SEAWEEDFS_ADMIN_ACCESS_AUD|CF_ACCESS_TEAM)=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
+          grep -v -E "^(HOST|S3_SUBDOMAIN|SEAWEEDFS_BUCKETS|S3_ADMIN_SUBDOMAIN)=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
           printf "HOST=%s\n" "$HOST" >> "$ENV_FILE.tmp"
           if [ -n "${S3_SUBDOMAIN:-}" ]; then printf "S3_SUBDOMAIN=%s\n" "$S3_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
           if [ -n "${SEAWEEDFS_BUCKETS:-}" ]; then printf "SEAWEEDFS_BUCKETS=%s\n" "$SEAWEEDFS_BUCKETS" >> "$ENV_FILE.tmp"; fi
           if [ -n "${S3_ADMIN_SUBDOMAIN:-}" ]; then printf "S3_ADMIN_SUBDOMAIN=%s\n" "$S3_ADMIN_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
-          if [ -n "${SEAWEEDFS_ADMIN_ACCESS_AUD:-}" ]; then printf "SEAWEEDFS_ADMIN_ACCESS_AUD=%s\n" "$SEAWEEDFS_ADMIN_ACCESS_AUD" >> "$ENV_FILE.tmp"; fi
-          if [ -n "${CF_ACCESS_TEAM:-}" ]; then printf "CF_ACCESS_TEAM=%s\n" "$CF_ACCESS_TEAM" >> "$ENV_FILE.tmp"; fi
           cat "$ENV_FILE.tmp" > "$ENV_FILE"
           rm -f "$ENV_FILE.tmp"
 
