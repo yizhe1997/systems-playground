@@ -1,0 +1,35 @@
+services:
+  seaweedfs:
+    # Pinned, and deliberately NOT watchtower-enabled: this holds the object store's data and index,
+    # and a surprise upgrade can change the on-disk format. Bump the tag here on purpose, then redeploy.
+    # `mini` runs master + volume + filer + S3 gateway + admin UI in this one process.
+    image: chrislusf/seaweedfs:4.48
+    command: ["mini", "-dir=/data", "-admin.password=${SEAWEEDFS_ADMIN_PASSWORD:?SEAWEEDFS_ADMIN_PASSWORD must be set}"]
+    ports:
+      # Loopback only. S3 (8333) reaches the internet solely through the Cloudflare tunnel label
+      # below. The admin UI (23646, password-protected, user "admin") and filer UI (8888, no auth)
+      # stay on loopback: reach them from the host or an SSH tunnel at http://localhost:23646.
+      - "127.0.0.1:8333:8333"
+      - "127.0.0.1:23646:23646"
+      - "127.0.0.1:8888:8888"
+    environment:
+      # Without these the S3 gateway runs in allow-all mode, and it is published to the internet.
+      # The :? makes a bare `docker compose up -d` at host boot (wsl-startup.sh has no Infisical
+      # secrets) fail closed; the running container is restored by `restart: unless-stopped`.
+      - AWS_ACCESS_KEY_ID=${SEAWEEDFS_S3_ACCESS_KEY:?SEAWEEDFS_S3_ACCESS_KEY must be set}
+      - AWS_SECRET_ACCESS_KEY=${SEAWEEDFS_S3_SECRET_KEY:?SEAWEEDFS_S3_SECRET_KEY must be set}
+      # Optional comma-separated buckets to pre-create on start.
+      - S3_BUCKET=${SEAWEEDFS_BUCKETS:-}
+    volumes:
+      # Named volume, not a bind mount: volume files and the filer's embedded store need real
+      # flock/mmap, which Docker Desktop's WSL2 bind-mount passthrough doesn't reliably give
+      # (the Filebrowser SQLite incident).
+      - seaweedfs_data:/data
+    restart: unless-stopped
+    labels:
+      # Picked up automatically by self-host/infra/scripts/cloudflared-sync.sh.
+      - cloudflare.tunnel.hostname=${S3_SUBDOMAIN:-s3}.${HOST:?HOST must be set}
+      - cloudflare.tunnel.port=8333
+
+volumes:
+  seaweedfs_data:
