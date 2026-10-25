@@ -81,12 +81,9 @@ jobs:
           printf "HOST=%s\n" "$HOST" >> "$ENV_FILE.tmp"
           if [ -n "${S3_SUBDOMAIN:-}" ]; then printf "S3_SUBDOMAIN=%s\n" "$S3_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
           if [ -n "${SEAWEEDFS_BUCKETS:-}" ]; then printf "SEAWEEDFS_BUCKETS=%s\n" "$SEAWEEDFS_BUCKETS" >> "$ENV_FILE.tmp"; fi
-          if [ -n "${S3_ADMIN_SUBDOMAIN:-}" ]; then printf "S3_ADMIN_SUBDOMAIN=%s
-" "$S3_ADMIN_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
-          if [ -n "${SEAWEEDFS_ADMIN_ACCESS_AUD:-}" ]; then printf "SEAWEEDFS_ADMIN_ACCESS_AUD=%s
-" "$SEAWEEDFS_ADMIN_ACCESS_AUD" >> "$ENV_FILE.tmp"; fi
-          if [ -n "${CF_ACCESS_TEAM:-}" ]; then printf "CF_ACCESS_TEAM=%s
-" "$CF_ACCESS_TEAM" >> "$ENV_FILE.tmp"; fi
+          if [ -n "${S3_ADMIN_SUBDOMAIN:-}" ]; then printf "S3_ADMIN_SUBDOMAIN=%s\n" "$S3_ADMIN_SUBDOMAIN" >> "$ENV_FILE.tmp"; fi
+          if [ -n "${SEAWEEDFS_ADMIN_ACCESS_AUD:-}" ]; then printf "SEAWEEDFS_ADMIN_ACCESS_AUD=%s\n" "$SEAWEEDFS_ADMIN_ACCESS_AUD" >> "$ENV_FILE.tmp"; fi
+          if [ -n "${CF_ACCESS_TEAM:-}" ]; then printf "CF_ACCESS_TEAM=%s\n" "$CF_ACCESS_TEAM" >> "$ENV_FILE.tmp"; fi
           cat "$ENV_FILE.tmp" > "$ENV_FILE"
           rm -f "$ENV_FILE.tmp"
 
