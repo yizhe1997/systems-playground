@@ -19,7 +19,7 @@ services:
     build:
       context: ./frontend
     ports:
-      - "127.0.0.1:${FRONTEND_HOST_PORT:-3100}:3000"
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-3101}:3000"
 
   # Go tests against a real Postgres. Run with: docker compose --profile tests run --rm tests
   tests:

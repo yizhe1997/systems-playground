@@ -13,7 +13,7 @@ export default async function globalSetup() {
       "DEV_SESSION_SECRET is not set. Run the browser tests through ./scripts/test.sh, which starts a stack that accepts a minted session.",
     );
   }
-  const base = new URL(process.env.E2E_BASE_URL ?? "http://127.0.0.1:3100");
+  const base = new URL(process.env.E2E_BASE_URL ?? "http://127.0.0.1:3101");
   const value = await mintSession({ email: OWNER_EMAIL, secret });
   const state = {
     cookies: [

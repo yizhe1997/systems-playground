@@ -14,7 +14,7 @@ test.describe("the way to Google", () => {
     await page.getByRole("button", { name: "Continue with Google" }).click();
     await page.waitForURL(/accounts\.google\.com/);
     const u = new URL(page.url());
-    const origin = new URL(process.env.NEXTAUTH_URL ?? process.env.E2E_BASE_URL ?? "http://127.0.0.1:3100").origin;
+    const origin = new URL(process.env.NEXTAUTH_URL ?? process.env.E2E_BASE_URL ?? "http://127.0.0.1:3101").origin;
     expect(u.searchParams.get("client_id")).toBe(process.env.GOOGLE_CLIENT_ID);
     expect(u.searchParams.get("redirect_uri")).toBe(`${origin}/api/auth/callback/google`);
     expect(u.searchParams.get("response_type")).toBe("code");

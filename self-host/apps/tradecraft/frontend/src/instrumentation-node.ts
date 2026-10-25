@@ -14,7 +14,7 @@ export function checkStartup() {
     const u = new URL(url);
     if (u.protocol !== "http:" && u.protocol !== "https:") problems.push("NEXTAUTH_URL must be an http or https address");
   } catch {
-    problems.push("NEXTAUTH_URL is not set or is not an address, for example http://127.0.0.1:3100");
+    problems.push("NEXTAUTH_URL is not set or is not an address, for example http://127.0.0.1:3101");
   }
   const env = (process.env.TRADECRAFT_ENV ?? "").trim();
   if (env !== "" && !["production", "local", "test"].includes(env)) {

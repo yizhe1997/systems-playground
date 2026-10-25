@@ -15,7 +15,7 @@ openssl rand -base64 48   # run twice: one for NEXTAUTH_SECRET, one for SERVICE_
 
 | Variable | Used by | Value |
 |---|---|---|
-| `NEXTAUTH_URL` | web | the address you open the app at, for example `http://127.0.0.1:3100` (3101 in your setup; no trailing slash) |
+| `NEXTAUTH_URL` | web | the address you open the app at, for example `http://127.0.0.1:3101` (3101 in your setup; no trailing slash) |
 | `NEXTAUTH_SECRET` | web | at least 32 bytes, as generated above |
 | `SERVICE_TOKEN_SECRET` | web and API | at least 32 bytes, different from the one above |
 | `OWNER_BOOTSTRAP_EMAIL` | API | your own Google email; becomes the first identity |

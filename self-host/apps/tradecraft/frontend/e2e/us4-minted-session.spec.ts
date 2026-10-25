@@ -29,7 +29,7 @@ test.describe("nothing creates a session without Google", () => {
   test("a cookie made with a key the app does not know is no session", async ({ browser }) => {
     const context = await browser.newContext({ storageState: UNSIGNED });
     const forged = await mintSession({ email: process.env.OWNER_BOOTSTRAP_EMAIL ?? "owner@example.com", secret: "an-unknown-key-0123456789abcdefghij-zz" });
-    const base = new URL(process.env.E2E_BASE_URL ?? "http://127.0.0.1:3100");
+    const base = new URL(process.env.E2E_BASE_URL ?? "http://127.0.0.1:3101");
     await context.addCookies([{ name: sessionCookieName(base.origin), value: forged, domain: base.hostname, path: "/", httpOnly: true, sameSite: "Lax" }]);
     const page = await context.newPage();
     await page.goto("/reviews");

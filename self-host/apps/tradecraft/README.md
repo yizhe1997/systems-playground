@@ -22,7 +22,7 @@ docker compose up --build -d --wait
 The stack will not start until `.env` has `POSTGRES_PASSWORD`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `SERVICE_TOKEN_SECRET` and
 `OWNER_BOOTSTRAP_EMAIL` (it stops with a plain message naming the one that is missing). An existing database keeps all its data.
 
-- Web: http://127.0.0.1:3100
+- Web: http://127.0.0.1:3101
 - API: http://127.0.0.1:8081 (health check at `/health`; the browser never calls it, the web tier does)
 
 If a port is taken on your machine, set `FRONTEND_HOST_PORT`, `BACKEND_HOST_PORT` or `POSTGRES_HOST_PORT` in `.env`.
@@ -36,7 +36,7 @@ Sign-in is Google only, for the email addresses you allow. Steps and settings ar
 `specs/002-sign-in-and-audit-log/quickstart.md`; in short:
 
 1. Put in `.env` a long random value for `NEXTAUTH_SECRET` and another for `SERVICE_TOKEN_SECRET`
-   (`openssl rand -base64 48`), the address you open the app at as `NEXTAUTH_URL` (for example `http://127.0.0.1:3100`), and your
+   (`openssl rand -base64 48`), the address you open the app at as `NEXTAUTH_URL` (for example `http://127.0.0.1:3101`), and your
    own Google email as `OWNER_BOOTSTRAP_EMAIL` (it becomes the first identity, and is the way back in if every identity is disabled).
 2. In the Google Cloud console create an OAuth client (type Web application) with the redirect addresses
    `<NEXTAUTH_URL>/api/auth/callback/google` and `<NEXTAUTH_URL>/api/auth/callback/google-confirm`, and put its id and secret in

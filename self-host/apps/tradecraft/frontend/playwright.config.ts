@@ -13,7 +13,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: [["list"]],
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? "http://127.0.0.1:3100",
+    baseURL: process.env.E2E_BASE_URL ?? "http://127.0.0.1:3101",
     colorScheme: "light",
     storageState: STORAGE_STATE,
     viewport: { width: 1440, height: 900 },

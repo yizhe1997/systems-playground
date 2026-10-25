@@ -15,7 +15,7 @@ How to prove the feature works end to end once it is built. This is a run guide,
 POSTGRES_PASSWORD=<pick one> docker compose up --build -d
 ```
 
-- Web: http://127.0.0.1:3100
+- Web: http://127.0.0.1:3101
 - API: http://127.0.0.1:8081 (health check at `/health`)
 
 ## Run the automated checks

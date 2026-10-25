@@ -10,7 +10,7 @@ export const STORAGE_STATE = join(tmpdir(), "tradecraft-e2e-state.json");
 
 /** A browser cookie for any identity, made without Google. For specs that sign out or disable an identity. */
 export async function cookieFor(email: string, over: { sessionAt?: number; stepUpAt?: number } = {}) {
-  const base = new URL(process.env.E2E_BASE_URL ?? "http://127.0.0.1:3100");
+  const base = new URL(process.env.E2E_BASE_URL ?? "http://127.0.0.1:3101");
   return {
     name: sessionCookieName(base.origin),
     value: await mintSession({ email, secret: process.env.DEV_SESSION_SECRET, ...over }),

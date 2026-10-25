@@ -7,7 +7,7 @@ import { api, uniq } from "./helpers";
 // the token's value is in this spec's memory; keep it out of the Playwright output
 test.use({ trace: "off", screenshot: "off", video: "off" });
 
-const WEB = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3100";
+const WEB = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3101";
 
 async function mcpViaWeb(headers: Record<string, string>, method = "tools/list") {
   const res = await fetch(WEB + "/mcp", {
