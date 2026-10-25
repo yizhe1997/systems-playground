@@ -31,5 +31,29 @@ services:
       - cloudflare.tunnel.hostname=${S3_SUBDOMAIN:-s3}.${HOST:?HOST must be set}
       - cloudflare.tunnel.port=8333
 
+  # Carries the tunnel labels for the admin UI and does nothing else. cloudflared-sync.sh reads one
+  # hostname/port pair per container and `seaweedfs` already spends its pair on S3 (8333). The admin
+  # UI is published ONLY when its Cloudflare Access application exists: with SEAWEEDFS_ADMIN_ACCESS_AUD
+  # unset the hostname label is empty and the sync skips this container, leaving the UI on loopback.
+  ui-route:
+    image: alpine:3.20
+    command: ["tail", "-f", "/dev/null"]
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - seaweedfs
+    restart: unless-stopped
+    labels:
+      - cloudflare.tunnel.hostname=${SEAWEEDFS_ADMIN_ACCESS_AUD:+${S3_ADMIN_SUBDOMAIN:-s3-admin}.${HOST:?HOST must be set}}
+      - cloudflare.tunnel.port=23646
+      # With BOTH set, cloudflared itself rejects any request lacking a valid Access token for this
+      # application. Set both or neither: a half-set pair leaves the hostname unrouted.
+      - cloudflare.tunnel.access-aud=${SEAWEEDFS_ADMIN_ACCESS_AUD:-}
+      - cloudflare.tunnel.access-team=${CF_ACCESS_TEAM:-}
+
 volumes:
   seaweedfs_data:
