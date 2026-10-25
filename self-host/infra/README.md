@@ -7,6 +7,7 @@ Platform-wide infrastructure — shared across everything on the host, unlike `s
 - **`uptime-kuma/`** — uptime monitoring.
 - **`watchtower/`** — automatic container image updates.
 - **`filebrowser/`** — shared file storage (used by the portfolio project for resume/CMS assets).
+- **`seaweedfs/`** — self-hosted S3-compatible object store (SeaweedFS `weed mini`) with a built-in admin UI; successor to `filebrowser/` for bucket-style storage. See [`seaweedfs/README.md`](seaweedfs/README.md).
 - **`n8n/`** — automation.
 - **`infisical/`** — self-hosted secrets manager; every deploy workflow fetches its secrets from here at deploy time.
 - **`registry/`** — self-hosted Docker image registry (`registry:2`), replaces Docker Hub for every build/deploy workflow.
