@@ -8,10 +8,11 @@ services:
     ports:
       # Loopback only. S3 (8333) reaches the internet solely through the Cloudflare tunnel label
       # below. The admin UI (23646, password-protected, user "admin") stays on loopback:
-      # reach it from the host or an SSH tunnel at http://localhost:23646. The filer UI (8888, no
-      # auth) is deliberately not published: Hindsight already owns host port 8888.
+      # reach it from the host or an SSH tunnel at http://localhost:23646. The filer UI (no auth,
+      # file browser at http://localhost:8889) is remapped because Hindsight owns host port 8888.
       - "127.0.0.1:8333:8333"
       - "127.0.0.1:23646:23646"
+      - "127.0.0.1:8889:8888"
     environment:
       # Without these the S3 gateway runs in allow-all mode, and it is published to the internet.
       # The :? makes a bare `docker compose up -d` at host boot (wsl-startup.sh has no Infisical
