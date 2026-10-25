@@ -133,6 +133,37 @@ Register-ScheduledTask -TaskName "WSL Startup" -Action $action -Trigger $trigger
 
 To expose your local services securely without opening router ports, we use Cloudflare Tunnels (`cloudflared`). This is the only reverse-proxy layer in front of services — there is no nginx (or similar) in the request path. Cloudflare Tunnel's `ingress` config already does hostname- and path-based routing straight to each service's `localhost:<port>`, which is sufficient on its own; adding nginx would just be a second, redundant routing layer. (This host happens to also have a system `nginx` package installed, but it's unconfigured/unused — serves only the stock placeholder page on port 80, which nothing points at — a leftover from an earlier, abandoned approach. Don't wire anything through it.)
 
+### Host port map
+
+Every port a compose file publishes on the host, so a new service can pick a free one without guessing. **Check this table (or `grep -rn '"[0-9.:]*[0-9]*:[0-9]*"' self-host --include='docker-compose*.yml'`) before assigning a port, and add a row when you add one.** "Loopback" means bound to `127.0.0.1` only; ports marked "tunnel" are the ones a `cloudflare.tunnel.port` label points at.
+
+| Host port | Service | Notes |
+|---|---|---|
+| 3001 | uptime-kuma | tunnel |
+| 3030 | observability: Grafana | tunnel |
+| 3080 | dsh | loopback, overridable via `DSH_PORT` |
+| 3100 | observability: Loki | also the default of tradecraft's dev frontend (`FRONTEND_HOST_PORT`), so override one if both run |
+| 4010 | dsh: LiteLLM | loopback, `LITELLM_PORT` |
+| 4317 / 4318 | observability: Tempo OTLP gRPC / HTTP | |
+| 5000 | registry | |
+| 5435 / 8081 / 3100 | tradecraft dev: Postgres / backend / frontend | loopback, `docker-compose.override.yml` only |
+| 5678 | n8n | tunnel |
+| 6379 / 16379 | portfolio Redis (dev / prod) | |
+| 8025 | penpot Mailpit UI | |
+| 8082 | observability: cAdvisor | |
+| 8085 / 8086 | portfolio backend / frontend (dev) | |
+| 8088 | filebrowser | tunnel |
+| 8090 | infisical | |
+| 8333 | seaweedfs S3 API | loopback, tunnel |
+| 8888 | hindsight API + MCP | loopback, tunnel |
+| 8889 | seaweedfs filer UI | loopback, no auth (container port 8888) |
+| 9001 | penpot | tunnel, `PENPOT_PORT` |
+| 9090 | observability: Prometheus | |
+| 9999 | hindsight Control Plane UI | loopback, routed only behind Cloudflare Access |
+| 18085 / 18086 | portfolio backend / frontend (prod) | |
+| 18090 | tradecraft (prod) | loopback, tunnel |
+| 23646 | seaweedfs admin UI | loopback, password-protected |
+
 1. **Install cloudflared:** `make bootstrap` does this for you (or follow the [official Cloudflare documentation](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-local-tunnel/) to install it manually).
 2. **Authenticate:** Run `cloudflared tunnel login`.
 3. **Create a Tunnel:** Run `cloudflared tunnel create <your-tunnel-name>`. This generates a JSON credentials file.
