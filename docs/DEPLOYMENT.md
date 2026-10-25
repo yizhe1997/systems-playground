@@ -142,11 +142,11 @@ Every port a compose file publishes on the host, so a new service can pick a fre
 | 3001 | uptime-kuma | tunnel |
 | 3030 | observability: Grafana | tunnel |
 | 3080 | dsh | loopback, overridable via `DSH_PORT` |
-| 3100 | observability: Loki | also the default of tradecraft's dev frontend (`FRONTEND_HOST_PORT`), so override one if both run |
+| 3100 | observability: Loki | tradecraft's dev frontend also *defaults* to 3100, so it is overridden to 3101 in this host's untracked `.env` (see tradecraft `docs/decisions.md`) |
 | 4010 | dsh: LiteLLM | loopback, `LITELLM_PORT` |
 | 4317 / 4318 | observability: Tempo OTLP gRPC / HTTP | |
 | 5000 | registry | |
-| 5435 / 8081 / 3100 | tradecraft dev: Postgres / backend / frontend | loopback, `docker-compose.override.yml` only |
+| 5435 / 8081 / 3101 | tradecraft dev: Postgres / backend / frontend | loopback, `docker-compose.override.yml` only; frontend default is 3100, 3101 on this host via `.env` |
 | 5678 | n8n | tunnel |
 | 6379 / 16379 | portfolio Redis (dev / prod) | |
 | 8025 | penpot Mailpit UI | |
