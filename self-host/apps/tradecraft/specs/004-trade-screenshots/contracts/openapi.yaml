@@ -1,0 +1,147 @@
+openapi: 3.1.0
+info:
+  title: Tradecraft v2 API, feature 004 (trade screenshots)
+  version: 0.1.0
+  description: >
+    Additions and changes to the API of features 000 to 003. Every route needs the signed service token of feature 002
+    (an agent token is refused by all of them). Errors keep the 000 shape (code, message, fields[]). Only what changes
+    is listed. The browser reaches these routes through two binary route handlers of the web tier
+    (POST /api/trades/{id}/images and GET, PUT, DELETE /api/images/{id}); the JSON pass-through is unchanged.
+servers:
+  - url: http://127.0.0.1:8081
+security:
+  - bearerAuth: []
+paths:
+  /trades/{id}/images:
+    get:
+      operationId: listTradeImages
+      summary: A trade's images, in the order they were added, with their details and the limits. No bytes
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: The images, content: { application/json: { schema: { $ref: "#/components/schemas/TradeImages" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: addTradeImage
+      summary: Add an image to a trade. The request body is the image itself (raw bytes)
+      description: >
+        The bytes are judged, not the name or the Content-Type: PNG, JPEG or WebP only (SVG, GIF, PDF, pages, scripts and
+        anything else are refused with code `image_not_allowed`). At most 5 MiB (`image_too_big`, 413) and 10 per trade
+        (`image_limit`, 409). The trade row is locked while the count is checked, so two adds cannot both take the last
+        place. One `attachment_added` audit entry is written in the same transaction. Works on a deleted trade and on a
+        trade of an archived or Backtest account.
+      parameters:
+        - { $ref: "#/components/parameters/Id" }
+        - { name: name, in: query, required: false, description: "The file's name; cleaned by the API (no path, no control characters, at most 100 characters). Empty or absent: 'Screenshot' with the date and time in the journal time zone.", schema: { type: string, maxLength: 300 } }
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+          application/octet-stream: { schema: { type: string, format: binary } }
+      responses:
+        "201": { description: Added, content: { application/json: { schema: { $ref: "#/components/schemas/TradeImage" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: "The trade already has 10 images; code image_limit", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "413": { description: "Over 5 MiB; code image_too_big", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { description: "Not an allowed image; code image_not_allowed", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /images/{id}:
+    get:
+      operationId: getImage
+      summary: The image's bytes, for the signed-in owner only
+      description: >
+        Content-Type is the stored type (decided from the bytes when it was added). Always sent with
+        `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; sandbox` and
+        `Cache-Control: private, max-age=3600`. `Content-Disposition` is `inline`, or `attachment` with a safe file name
+        when `download=1`. A removed image answers 404.
+      parameters:
+        - { $ref: "#/components/parameters/Id" }
+        - { name: download, in: query, required: false, schema: { type: string, enum: ["1"] } }
+      responses:
+        "200":
+          description: The image
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      operationId: updateImageNote
+      summary: Change an image's note (not an audit entry)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [note], properties: { note: { type: string, maxLength: 200 } } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/TradeImage" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Invalid" }
+    delete:
+      operationId: removeImage
+      summary: Remove an image for good (the row and its bytes). One `attachment_removed` audit entry in the same transaction
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: Removed }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /trades:
+    get:
+      operationId: listTrades
+      summary: Trades (unchanged), each now with `imageCount`
+      responses:
+        "200": { description: Trades, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Trade" } } } } }
+  /export:
+    get:
+      operationId: exportJournal
+      summary: The export (unchanged) gains `images`, the metadata of every image of every trade. No bytes
+      responses:
+        "200": { description: The export, content: { application/json: { schema: { type: object, properties: { images: { type: array, items: { $ref: "#/components/schemas/ExportImage" } } } } } } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, description: "The signed service token of feature 002" }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    NotFound: { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    Invalid: { description: "Invalid input; code invalid, with fields[]", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        fields: { type: array, items: { type: object, properties: { field: { type: string }, message: { type: string } } } }
+    TradeImage:
+      type: object
+      required: [id, tradeId, name, note, contentType, sizeBytes, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        tradeId: { type: string, format: uuid }
+        name: { type: string }
+        note: { type: string }
+        contentType: { type: string, enum: [image/png, image/jpeg, image/webp] }
+        sizeBytes: { type: integer }
+        createdAt: { type: string, format: date-time }
+    TradeImages:
+      type: object
+      required: [items, limits]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/TradeImage" } }
+        limits:
+          type: object
+          required: [maxBytes, maxCount, maxNoteChars]
+          properties:
+            maxBytes: { type: integer, example: 5242880 }
+            maxCount: { type: integer, example: 10 }
+            maxNoteChars: { type: integer, example: 200 }
+    ExportImage:
+      allOf:
+        - { $ref: "#/components/schemas/TradeImage" }
+        - type: object
+          required: [path]
+          properties:
+            path: { type: string, description: "/api/images/{id}: the address the signed-in owner opens", example: /api/images/6f1d7a0c-1b6e-4e0a-9d52-2f2a2d1f0b11 }
+    Trade:
+      type: object
+      properties:
+        imageCount: { type: integer, minimum: 0, description: "How many images the trade has" }

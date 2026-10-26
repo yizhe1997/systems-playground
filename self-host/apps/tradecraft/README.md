@@ -79,6 +79,10 @@ read it. It is off until you turn it on, and nothing here is exposed beyond this
 Backtests are kept apart from live trading: make an account and choose **Backtest**. Its days are never Missing and it stays out
 of live figures until you choose it. A trade belongs to the day it was **entered**, not exited.
 
+## Screenshots
+
+A trade can carry up to 10 images (PNG, JPEG or WebP, 5 MB each). On a trade's Edit screen press **Ctrl+V** after taking a screenshot (Win+Shift+S), or choose a file, or drop one on the Images section; on a new trade they wait and are stored when you press Save trade. Click a picture to see it large, edit its note, download or remove it; the daily review's Judge drawer shows them too, and the Trades list has an Images column. The export lists each image (details and address) but not the pictures: those are in the SeaweedFS bucket, which is not backed up yet. An agent can list a trade's images by name and note (`list_trade_images`) and can never fetch a picture. Adding and removing an image are Audit log entries.
+
 ## Test
 
 ```bash
@@ -100,6 +104,7 @@ Same pipeline as the portfolio (`docs/DEPLOYMENT.md`): push to `main` -> `Test T
 - **Infisical (prod):** `TRADECRAFT_POSTGRES_PASSWORD`, `TRADECRAFT_NEXTAUTH_SECRET`, `TRADECRAFT_SERVICE_TOKEN_SECRET` (each `openssl rand -base64 48`, all three different), `TRADECRAFT_OWNER_EMAIL`; the Google client is the portfolio's `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, or `TRADECRAFT_GOOGLE_CLIENT_ID` and `TRADECRAFT_GOOGLE_CLIENT_SECRET` for one of its own.
 - **Google Cloud console, OAuth client, Authorised redirect URIs:** `https://tradecraft.<HOST>/api/auth/callback/google` and `https://tradecraft.<HOST>/api/auth/callback/google-confirm`.
 - **Before the first deploy:** the exposure gate in `docs/security-review.md`.
+- **Trade images (SeaweedFS):** the pictures are stored in the SeaweedFS from `self-host/infra/seaweedfs`, in the bucket `tradecraft-images` (made on first use), reached at `https://s3.$HOST`. The deploy maps the shared `SEAWEEDFS_S3_ACCESS_KEY` and `SEAWEEDFS_S3_SECRET_KEY` already in Infisical (or `TRADECRAFT_S3_ACCESS_KEY` and `TRADECRAFT_S3_SECRET_KEY` if you want Tradecraft's own); the repository variable `S3_SUBDOMAIN` is used if the subdomain is not `s3`. Locally, `docker compose up` runs a throwaway SeaweedFS for you. **Not covered by any backup yet**: the pictures are in SeaweedFS's volume, not in the database.
 
 ## Back up and restore the data
 
