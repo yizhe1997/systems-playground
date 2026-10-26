@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Judgement, Mistake } from "@/lib/types";
+import type { Judgement, Mistake, TradeImage, TradeImages } from "@/lib/types";
 import { call } from "@/lib/browserApi";
 import { clock, dayLabel, money, plain, profitClass } from "@/lib/format";
 import { Drawer } from "@/components/Drawer";
+import { ImageViewer } from "@/components/ImageViewer";
 import { FailureBanner, Waiting, useNoticeableWait } from "@/components/Notice";
 
 type Plan = "yes" | "partly" | "no" | null;
@@ -46,6 +47,21 @@ function JudgeDrawer({ tradeId, accountName, zone, onClose }: { tradeId: string;
   const [conflict, setConflict] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const waiting = useNoticeableWait(saving);
+
+  const [images, setImages] = useState<TradeImage[]>([]);
+  const [maxNote, setMaxNote] = useState(200);
+  const [viewing, setViewing] = useState<number | null>(null);
+  // the pictures are extra: if they do not load, the judgement still works
+  useEffect(() => {
+    let live = true;
+    void call<TradeImages>("GET", `/trades/${tradeId}/images`).then((r) => {
+      if (live && r.ok) {
+        setImages(r.data.items);
+        setMaxNote(r.data.limits.maxNoteChars);
+      }
+    });
+    return () => { live = false; };
+  }, [tradeId]);
 
   const [tries, setTries] = useState(0);
   useEffect(() => {
@@ -117,6 +133,24 @@ function JudgeDrawer({ tradeId, accountName, zone, onClose }: { tradeId: string;
             </div>
             <div><span className="label">Plan</span><div className="stat-value">{plan ? PLAN_WORD[plan] : "Not answered yet"}</div></div>
           </div>
+
+          {images.length > 0 && (
+            <section className="field" aria-label="Images">
+              <span className="section">Images</span>
+              <ul className="drawer-images">
+                {images.map((img, n) => (
+                  <li key={img.id}>
+                    <button type="button" className="image-open" onClick={() => setViewing(n)} aria-label={`View ${img.name}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- a private same-origin picture */}
+                      <img className="image-thumb" src={`/api/images/${img.id}`} alt={img.note || img.name} loading="lazy" />
+                    </button>
+                    {img.note && <span className="helper">{img.note}</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {viewing !== null && <ImageViewer images={images} start={viewing} maxNote={maxNote} onChange={setImages} onClose={() => setViewing(null)} />}
 
           <fieldset className="field">
             <legend className="section">Did you follow your plan?</legend>

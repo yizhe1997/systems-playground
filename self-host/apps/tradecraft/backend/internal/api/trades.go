@@ -60,6 +60,7 @@ type tradeJSON struct {
 	UpdatedAt       string            `json:"updatedAt"`
 	PlanFollowed    *string           `json:"planFollowed"` // the daily review's plan answer; null until judged (feature 001)
 	Label           *string           `json:"label"`
+	ImageCount      int               `json:"imageCount"` // how many screenshots the trade has (feature 004)
 }
 
 // riskReason says why risk (and so R) is a dash, in the words the screens use.
@@ -268,7 +269,13 @@ func (s *Server) loadTrade(c *fiber.Ctx, id string, loc *time.Location) (tradeJS
 	if err != nil {
 		return tradeJSON{}, err
 	}
-	return toTrade(r, loc), nil
+	t := toTrade(r, loc)
+	counts, err := s.imageCounts(c.Context(), []string{id})
+	if err != nil {
+		return tradeJSON{}, err
+	}
+	t.ImageCount = counts[id]
+	return t, nil
 }
 
 func (s *Server) createTrade(c *fiber.Ctx) error {
@@ -472,8 +479,17 @@ func (s *Server) listTrades(c *fiber.Ctx) error {
 		return err
 	}
 	out := make([]tradeJSON, 0, len(rows))
+	ids := make([]string, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, toTrade(r, loc))
+		ids = append(ids, r.ID)
+	}
+	counts, err := s.imageCounts(c.Context(), ids)
+	if err != nil {
+		return err
+	}
+	for i := range out {
+		out[i].ImageCount = counts[out[i].ID]
 	}
 	return c.JSON(out)
 }

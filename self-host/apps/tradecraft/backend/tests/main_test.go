@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"tradecraft/internal/api"
+	"tradecraft/internal/objects"
 	"tradecraft/internal/store"
 )
 
@@ -37,6 +38,9 @@ var (
 	// clock is the time the API believes it is; tests move it to probe the "not in the future" rule
 	clock = time.Date(2025, 10, 15, 12, 0, 0, 0, time.UTC)
 )
+
+// imgStore is the bucket the test app writes images to, so a test can look at what is (and is not) in it.
+var imgStore *objects.Store
 
 func TestMain(m *testing.M) {
 	adminURL := os.Getenv("TEST_DATABASE_URL")
@@ -70,7 +74,13 @@ func TestMain(m *testing.M) {
 		fmt.Println("cannot create the test identity:", err)
 		os.Exit(1)
 	}
-	app = api.New(pool, func() time.Time { return clock }, testSecret)
+	// the images' bytes go to a real S3 bucket (the test stack's SeaweedFS); the variables are set by docker-compose.override.yml
+	imgStore, err = objects.FromEnv()
+	if err != nil || imgStore == nil {
+		fmt.Println("S3_ENDPOINT and its keys are not set; run ./scripts/test.sh:", err)
+		os.Exit(1)
+	}
+	app = api.New(pool, func() time.Time { return clock }, testSecret, api.WithObjects(imgStore))
 	code := m.Run()
 	pool.Close()
 	_, _ = admin.Exec(ctx, "DROP DATABASE "+name+" WITH (FORCE)")

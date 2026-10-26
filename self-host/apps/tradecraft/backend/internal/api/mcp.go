@@ -99,6 +99,17 @@ func (s *Server) agentTokenOf(ctx context.Context, req *mcp.CallToolRequest) (st
 // read runs one tool: the handler, then the audit entry, then the answer. The entry names the tool and, when the call
 // is about an account, the account's name; never an argument value, a figure or any text of the answer.
 func (s *Server) read(ctx context.Context, req *mcp.CallToolRequest, tool, accountID string, h fiber.Handler, path string, q url.Values) (*mcp.CallToolResult, any, error) {
+	subject := tool
+	if uuidText.MatchString(accountID) {
+		if a, err := s.q.GetAccount(ctx, accountID); err == nil {
+			subject = tool + ", " + a.Name
+		}
+	}
+	return s.readAs(ctx, req, subject, h, path, q)
+}
+
+// readAs is read with the audit subject already decided.
+func (s *Server) readAs(ctx context.Context, req *mcp.CallToolRequest, subject string, h fiber.Handler, path string, q url.Values) (*mcp.CallToolResult, any, error) {
 	tok, err := s.agentTokenOf(ctx, req)
 	if err != nil {
 		return nil, nil, err
@@ -106,12 +117,6 @@ func (s *Server) read(ctx context.Context, req *mcp.CallToolRequest, tool, accou
 	r, err := s.runRead(h, path, q)
 	if err != nil {
 		return nil, nil, err
-	}
-	subject := tool
-	if uuidText.MatchString(accountID) {
-		if a, err := s.q.GetAccount(ctx, accountID); err == nil {
-			subject = tool + ", " + a.Name
-		}
 	}
 	by := tok.CreatedBy
 	if err := recordAudit(ctx, s.q, auditEvent{Actor: "agent", IdentityID: &by, Kind: "agent_read", Subject: subject, Label: tok.Name}); err != nil {
@@ -150,6 +155,10 @@ type listTradesArgs struct {
 	Deleted          bool   `json:"deleted,omitempty" jsonschema:"list deleted trades instead"`
 	Limit            int    `json:"limit,omitempty" jsonschema:"items to return, 1 to 200 (default 50)"`
 	Offset           int    `json:"offset,omitempty" jsonschema:"items to skip, to continue a list"`
+}
+
+type tradeImagesArgs struct {
+	TradeID string `json:"tradeId" jsonschema:"the trade (its id from list_trades or get_day)"`
 }
 
 type dayArgs struct {
@@ -229,6 +238,24 @@ func (s *Server) mcpServer() *mcp.Server {
 			q.Set("offset", strconv.Itoa(in.Offset))
 		}
 		return s.read(ctx, req, "list_trades", in.AccountID, s.listTrades, "/trades", q)
+	})
+
+	mcp.AddTool(srv, &mcp.Tool{
+		Name: "list_trade_images",
+		Description: "The screenshots attached to one trade: id, name, note, type, size and when each was added, in the order they were added. " +
+			"Details only: an image itself cannot be fetched by an agent, and the limits in the answer are the owner's.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, in tradeImagesArgs) (*mcp.CallToolResult, any, error) {
+		if !uuidText.MatchString(in.TradeID) {
+			return nil, nil, errors.New("tradeId must be a trade's id")
+		}
+		subject := "list_trade_images"
+		if cur, err := s.q.TradeForAudit(ctx, in.TradeID); err == nil {
+			if loc, err := s.journalLocation(ctx); err == nil {
+				subject += ", " + tradeSubject(cur.Instrument, cur.Direction, cur.EntryAt, loc)
+			}
+		}
+		id := in.TradeID
+		return s.readAs(ctx, req, subject, func(c *fiber.Ctx) error { return s.tradeImages(c, id) }, "/trades/"+id+"/images", nil)
 	})
 
 	mcp.AddTool(srv, &mcp.Tool{

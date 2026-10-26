@@ -41,6 +41,8 @@ var auditKinds = []struct{ Code, Label string }{
 	{"settings_changed", "Settings changed"},
 	{"mistake_retired", "Mistake retired"},
 	{"mistake_restored", "Mistake restored"},
+	{"attachment_added", "Attachment added"},
+	{"attachment_removed", "Attachment removed"},
 }
 
 func kindLabel(code string) (string, bool) {

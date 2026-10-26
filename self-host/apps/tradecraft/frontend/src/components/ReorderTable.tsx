@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { COLUMN_COOKIE, mergeOrder } from "@/lib/columnOrder";
 
 /** One column: its cells, one per row, already rendered by the page. `key` is stable and is what is saved. */
-export type TableColumn = { key: string; label: string; className?: string; cells: ReactNode[] };
+export type TableColumn = { key: string; label: string; help?: string; className?: string; cells: ReactNode[] };
 
 /**
  * A list whose columns the owner can put in the order they like: drag a heading onto another, or focus a heading and press
@@ -103,6 +103,7 @@ export function ReorderTable({
                       type="button"
                       className="col-head"
                       id={`${uid}-${key}`}
+                      title={c.help}
                       aria-describedby={hint}
                       onKeyDown={(e) => {
                         if (!e.altKey || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;

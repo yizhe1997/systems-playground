@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { api, makeAccount, tradeA } from "./helpers";
+import { api, makeAccount, makePng, tradeA, uploadImage } from "./helpers";
 import { uniq } from "./helpers";
 
 // SC-008, measured in the browser: with 5,000 trades across 10 accounts, opening the trades list, changing a filter and
@@ -119,4 +119,39 @@ test("the review screens on 5,000 trades: Reviews, a day, a week, the counter, a
 
   console.log(`SC-008 reviews: Reviews ${reviews} ms, change month ${changeMonth} ms, a day ${dayOpen} ms, a week ${week} ms, the counter ${counter} ms, save a review ${saveReview} ms, save a judgement ${saveJudgement} ms`);
   for (const [name, ms] of Object.entries({ reviews, changeMonth, dayOpen, week, counter, saveReview, saveJudgement })) expect.soft(ms, name).toBeLessThan(1000);
+});
+
+// Feature 004 (SC-007): with images on the trades, the same lists still open in under a second. Runs last, so the images
+// it adds do not change the figures above. Each list reads one aggregate count (never a picture); the picture
+// itself is fetched by the drawer from the bucket.
+test("with images attached: the month list of 5,000 trades, a day's review and its drawer stay under a second", async ({ page }) => {
+  test.setTimeout(240_000);
+  const a = accounts[0].id;
+  const day = (await api("GET", `/reviews?accountId=${a}&month=2025-06`)).data.weeks.flatMap((w: any) => w.days).find((d: any) => d.trades > 0).date as string;
+  const list = await api("GET", `/trades?from=2025-06-01&to=2025-06-30&limit=100`);
+  const ids: string[] = list.data.map((t: any) => t.id);
+  const png = makePng(640, 360);
+  const jobs = ids.map((id) => async () => { for (let i = 0; i < 3; i++) expect((await uploadImage(id, png, `chart ${i}.png`)).status).toBe(201); });
+  await Promise.all(Array.from({ length: 10 }, async () => { for (let j = jobs.shift(); j; j = jobs.shift()) await j(); }));
+
+  const open = await timed(async () => {
+    await page.goto("/trades?from=2025-06-01&to=2025-06-30&size=100");
+    await expect(page.locator("tbody tr").first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /^3 images on / }).first()).toBeVisible();
+  });
+  const dayOpen = await timed(async () => {
+    await page.goto(`/reviews/day?account=${a}&date=${day}`);
+    await expect(page.getByRole("heading", { name: "Daily review" })).toBeVisible();
+  });
+  // every trade of that day gets pictures, then the drawer of the first is timed
+  for (const t of (await api("GET", `/reviews/day?accountId=${a}&date=${day}`)).data.trades) {
+    for (let i = 0; i < 3; i++) if (t.imageCount === 0) expect((await uploadImage(t.id, png, `day ${i}.png`)).status).toBe(201);
+  }
+  await page.reload();
+  await page.getByRole("button", { name: /^Judge / }).first().click();
+  const drawer = await timed(async () => { await expect(page.getByRole("button", { name: /^View / }).first()).toBeVisible(); });
+  console.log(`SC-007 with images: month list ${open} ms, a day ${dayOpen} ms, pictures in the drawer ${drawer} ms`);
+  expect.soft(open, "month list with images").toBeLessThan(1000);
+  expect.soft(dayOpen, "a day with images").toBeLessThan(1000);
+  expect.soft(drawer, "pictures in the drawer").toBeLessThan(1000);
 });

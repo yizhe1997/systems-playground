@@ -15,6 +15,7 @@ export type Account = {
 
 export type Trade = {
   id: string;
+  imageCount: number; // how many screenshots the trade has (feature 004)
   accountId: string;
   accountName: string;
   currency: string;
@@ -98,6 +99,7 @@ export type Focus = {
 
 export type DayTrade = {
   id: string;
+  imageCount: number;
   instrument: string;
   direction: "long" | "short";
   size: string;
@@ -264,3 +266,18 @@ export type AgentToken = {
 };
 export type AgentAccess = { enabled: boolean; tokens: AgentToken[] };
 
+
+/** A screenshot attached to a trade (feature 004). No bytes: the picture is at /api/images/{id}. */
+export type TradeImage = {
+  id: string;
+  tradeId: string;
+  name: string;
+  note: string;
+  contentType: "image/png" | "image/jpeg" | "image/webp";
+  sizeBytes: number;
+  createdAt: string;
+};
+
+export type ImageLimits = { maxBytes: number; maxCount: number; maxNoteChars: number };
+
+export type TradeImages = { items: TradeImage[]; limits: ImageLimits };

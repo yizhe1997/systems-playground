@@ -117,6 +117,7 @@ type dayTradeJSON struct {
 	RMultiple  *string           `json:"rMultiple"`
 	Thesis     *string           `json:"thesis"`
 	Reasons    map[string]string `json:"reasons"`
+	ImageCount int               `json:"imageCount"` // how many screenshots the trade has (feature 004)
 	Judgement  struct {
 		PlanFollowed *string  `json:"planFollowed"`
 		Label        *string  `json:"label"`
@@ -283,8 +284,17 @@ func (s *Server) loadDay(c *fiber.Ctx, acct store.GetAccountRow, day time.Time) 
 		return out, err
 	}
 	out.Trades = make([]dayTradeJSON, 0, len(trades))
+	ids := make([]string, 0, len(trades))
 	for _, t := range trades {
 		out.Trades = append(out.Trades, toDayTrade(t, loc))
+		ids = append(ids, t.ID)
+	}
+	counts, err := s.imageCounts(ctx, ids)
+	if err != nil {
+		return out, err
+	}
+	for i := range out.Trades {
+		out.Trades[i].ImageCount = counts[out.Trades[i].ID]
 	}
 	dm, err := s.q.DayMistakes(ctx, store.DayMistakesParams{AccountID: acct.ID, Day: day})
 	if err != nil {

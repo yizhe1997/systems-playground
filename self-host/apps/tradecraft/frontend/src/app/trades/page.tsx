@@ -119,6 +119,17 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
     redirect(`/trades?${back}`);
   }
 
+  // an account name in the list links to the same list for that account, keeping the other filters (feature 004, C5)
+  const accountHref = (id: string) => {
+    const p = new URLSearchParams();
+    p.set("account", id);
+    p.set("from", from);
+    p.set("to", to);
+    if (deleted) p.set("deleted", "1");
+    if (backtests) p.set("backtests", "1");
+    return `/trades?${p}`;
+  };
+
   return (
     <>
       <Head canLog={canLog} />
@@ -134,7 +145,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
         </div>
       )}
       {!problem && trades.length > 0 && (
-        <TradesTable trades={trades} zone={settings.timeZone} deletedView={deleted} backtestIds={accounts.filter((a) => a.kind === "backtest").map((a) => a.id)} />
+        <TradesTable trades={trades} zone={settings.timeZone} deletedView={deleted} backtestIds={accounts.filter((a) => a.kind === "backtest").map((a) => a.id)} accountHref={accountHref} />
       )}
       {!problem && trades.length > 0 && !account && hasBacktestAccounts && (
         <p className="helper" style={{ marginTop: 12 }}>

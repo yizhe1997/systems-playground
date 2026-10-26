@@ -20,6 +20,7 @@ type Server struct {
 	q    *store.Queries
 	now  func() time.Time
 	gate *auth.Gate
+	objects Objects // where the bytes of images live; nil when storage is not set up (images.go)
 	app  *fiber.App // the agent door runs the owner's read handlers through it (mcp.go)
 
 	refusals refusalLimiter // caps the refusal rows an unauthenticated caller can make (agent_gate.go)
@@ -30,18 +31,23 @@ type Server struct {
 // New builds the app. now may be nil (the real clock); tests pass their own to pin the future-time check. secret
 // is the service token secret shared with the web tier: every route except GET /health refuses a request that does
 // not carry a token signed with it (constitution IV; the token's own times are wall time, not now).
-func New(pool *pgxpool.Pool, now func() time.Time, secret string) *fiber.App {
+func New(pool *pgxpool.Pool, now func() time.Time, secret string, opts ...Option) *fiber.App {
 	if now == nil {
 		now = time.Now
 	}
 	q := store.New(pool)
 	s := &Server{pool: pool, q: q, now: now, gate: auth.NewGate(secret, q, nil)}
+	for _, o := range opts {
+		o(s)
+	}
 	app := fiber.New(fiber.Config{
 		ErrorHandler:          errorHandler,
 		DisableStartupMessage: true,
-		BodyLimit:             1 << 20,
+		// 6 MiB so an image (5 MiB, feature 004) fits; every other route keeps a small effective limit below
+		BodyLimit: 6 << 20,
 	})
 	s.app = app
+	app.Use(smallBodies)
 	app.Get("/health", s.health) // the one open route; registered first so nothing below can gate it
 
 	// The agent door (feature 003): the Model Context Protocol, read-only, behind its own gate. An agent token is
@@ -83,6 +89,11 @@ func New(pool *pgxpool.Pool, now func() time.Time, secret string) *fiber.App {
 	app.Put("/trades/:id", s.updateTrade)
 	app.Delete("/trades/:id", s.deleteTrade)
 	app.Post("/trades/:id/restore", s.restoreTrade)
+	app.Get("/trades/:id/images", s.listTradeImages)
+	app.Post("/trades/:id/images", s.addTradeImage)
+	app.Get("/images/:id", s.getImage)
+	app.Put("/images/:id", s.updateImageNote)
+	app.Delete("/images/:id", s.removeImage)
 	app.Get("/trades/:id/judgement", s.getJudgement)
 	app.Put("/trades/:id/judgement", s.saveJudgement)
 

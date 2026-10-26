@@ -1,5 +1,7 @@
+import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { crc32, deflateSync } from "node:zlib";
 import { expect, type Locator, type Page } from "@playwright/test";
 import { serviceToken } from "../scripts/session-mint.mjs";
 import { OWNER_EMAIL } from "./auth";
@@ -134,4 +136,65 @@ export async function pickRange(page: Page, from: string, to: string) {
     await pop.getByRole("button", { name: new RegExp(`, ${MONTHS[m - 1]} ${ordinal(d)}, ${y}`) }).first().click();
   }
   await expect(pop).toBeHidden();
+}
+
+// ---------- feature 004: images on trades ----------
+
+/** A real PNG of w x h pixels. `noise` fills it with random bytes so it does not compress (a big file on purpose). */
+export function makePng(w = 2, h = 2, noise = false): Buffer {
+  const rows: Buffer[] = [];
+  for (let y = 0; y < h; y++) rows.push(Buffer.concat([Buffer.from([0]), noise ? randomBytes(w * 3) : Buffer.alloc(w * 3, 200)]));
+  const chunk = (type: string, data: Buffer) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    const body = Buffer.concat([Buffer.from(type), data]);
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(crc32(body) >>> 0);
+    return Buffer.concat([len, body, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 2; // colour type: RGB
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(Buffer.concat(rows))), chunk("IEND", Buffer.alloc(0))]);
+}
+
+/** Adds an image to a trade straight through the API (set-up for a spec). */
+export async function uploadImage(tradeId: string, body: Buffer, name = "chart.png", as: string = OWNER_EMAIL): Promise<{ status: number; data: any }> {
+  const token = serviceToken({ sub: as, secret: process.env.SERVICE_TOKEN_SECRET });
+  const res = await fetch(`${API}/trades/${tradeId}/images?name=${encodeURIComponent(name)}`, {
+    method: "POST",
+    headers: { "content-type": "image/png", authorization: `Bearer ${token}` },
+    body: new Uint8Array(body),
+  });
+  return { status: res.status, data: await res.json().catch(() => null) };
+}
+
+/** Pastes an image the way Ctrl+V does: a paste event whose clipboard holds the file. Answers whether the page took it over. */
+export async function pasteImage(page: Page, body: Buffer, name = "image.png", type = "image/png"): Promise<boolean> {
+  return page.evaluate(
+    ([b64, n, t]) => {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const dt = new DataTransfer();
+      dt.items.add(new File([bytes], n, { type: t }));
+      // false means a listener called preventDefault: the page took the paste, no text is inserted
+      return !window.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+    },
+    [body.toString("base64"), name, type] as const,
+  );
+}
+
+/** Drops files onto an element, as a drag from the desktop does. */
+export async function dropFiles(page: Page, selector: string, files: { name: string; type: string; body: Buffer }[]) {
+  await page.evaluate(
+    ([sel, list]) => {
+      const dt = new DataTransfer();
+      for (const f of list) dt.items.add(new File([Uint8Array.from(atob(f.b64), (c) => c.charCodeAt(0))], f.name, { type: f.type }));
+      const el = document.querySelector(sel)!;
+      el.dispatchEvent(new DragEvent("dragover", { dataTransfer: dt, bubbles: true, cancelable: true }));
+      el.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true }));
+    },
+    [selector, files.map((f) => ({ name: f.name, type: f.type, b64: f.body.toString("base64") }))] as const,
+  );
 }

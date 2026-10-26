@@ -33,6 +33,11 @@ services:
       OWNER_BOOTSTRAP_EMAIL: ${OWNER_BOOTSTRAP_EMAIL:?OWNER_BOOTSTRAP_EMAIL is required (see .env.example)}
       TRADECRAFT_ENV: ${TRADECRAFT_ENV:-production}
       DEV_SESSION_SECRET: ${DEV_SESSION_SECRET:-}
+      # where the bytes of trade images live (feature 004): an S3 bucket. Unset, the journal runs with images switched off.
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_BUCKET: ${S3_BUCKET:-tradecraft-images}
     depends_on:
       postgres:
         condition: service_healthy
