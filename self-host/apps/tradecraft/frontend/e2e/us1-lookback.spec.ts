@@ -28,7 +28,10 @@ test("Jump to date shows today until another day is chosen, then opens the week 
   await expect(page.locator(".week", { hasText: "Week of 8 Sep to 14 Sep" })).toHaveAttribute("data-open");
 
   // the current month with the current week open, when no day is chosen
-  await page.goto(`/reviews?account=${s.id}`);
+  // (a week is listed under the month its Sunday falls in, so near a month end the current week is in the next month)
+  const t = new Date(`${today}T00:00:00Z`);
+  t.setUTCDate(t.getUTCDate() + ((7 - t.getUTCDay()) % 7));
+  await page.goto(`/reviews?account=${s.id}&month=${t.toISOString().slice(0, 7)}`);
   await expect(page.locator(".week[data-open]")).toHaveCount(1);
 
   // Jump to date opens the week that holds it

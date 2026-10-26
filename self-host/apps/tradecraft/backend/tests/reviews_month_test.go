@@ -3,6 +3,7 @@ package tests
 import (
 	"net/url"
 	"testing"
+	"time"
 )
 
 func getMonth(t *testing.T, acct, month string) resp {
@@ -104,7 +105,13 @@ func TestTodayIsNeverMissingAndTheCurrentWeekIsOpen(t *testing.T) {
 	acct := account(t, "A", "USD", "")
 	insertTradeAt(t, acct, "now() - interval '1 minute'")
 	today := scalar(t, "account_today($1::uuid)", acct)
-	r := getMonth(t, acct, today[:7])
+	// a week is listed under the month its Sunday falls in, so ask for that month, not today's
+	td, err := time.Parse("2006-01-02", today)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sunday := td.AddDate(0, 0, (7-int(td.Weekday()))%7)
+	r := getMonth(t, acct, sunday.Format("2006-01"))
 	var cur map[string]any
 	for _, w := range r.body["weeks"].([]any) {
 		if w.(map[string]any)["current"] == true {
