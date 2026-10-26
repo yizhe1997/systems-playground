@@ -1,10 +1,11 @@
 import { api } from "./api";
-import type { Account, AgentAccess, AuditKind, Calendar, Counter, IdentityList, Mistake, DailyReview, ReviewsMonth, Trade, WeeklyReview } from "./types";
+import type { Account, AgentAccess, AuditKind, Calendar, Counter, IdentityList, Mistake, DailyReview, ReviewsMonth, Trade, WeeklyReview, TradeImages } from "./types";
 
 export const getSettings = () => api<{ timeZone: string }>("/settings");
 export const getAccounts = (includeArchived = false) => api<Account[]>(`/accounts?includeArchived=${includeArchived}`);
 export const getCurrencies = () => api<string[]>("/currencies");
 export const getTrade = (id: string) => api<Trade>(`/trades/${encodeURIComponent(id)}`);
+export const getTradeImages = (id: string) => api<TradeImages>(`/trades/${encodeURIComponent(id)}/images`);
 
 // ---------- feature 001 ----------
 const q = (o: Record<string, string | undefined>) => new URLSearchParams(Object.entries(o).filter(([, v]) => v) as [string, string][]).toString();

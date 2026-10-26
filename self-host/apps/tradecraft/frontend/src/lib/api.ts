@@ -74,6 +74,26 @@ export async function forward(path: string, init: RequestInit): Promise<Response
   }
 }
 
+/**
+ * Forwards a request whose body or answer is not JSON (an image: feature 004). The answer's status, body and the
+ * headers named in `keep` are passed on as they are; nothing else is added that a browser could reinterpret.
+ */
+export async function forwardRaw(path: string, init: RequestInit, keep: string[]): Promise<Response> {
+  const auth = await ownerAuthorization();
+  if (!auth) return Response.json({ code: "unauthorized", message: "Not signed in." }, { status: 401 });
+  try {
+    const res = await fetch(base + path, { cache: "no-store", ...init, headers: { ...(init.headers as Record<string, string>), ...auth } });
+    const headers = new Headers({ "cache-control": "no-store" });
+    for (const k of keep) {
+      const v = res.headers.get(k);
+      if (v) headers.set(k, v);
+    }
+    return new Response(res.status === 204 ? null : await res.arrayBuffer(), { status: res.status, headers });
+  } catch {
+    return Response.json({ code: "unreachable", message: "Could not reach the journal." }, { status: 502 });
+  }
+}
+
 /** A list with the total number of matches (the X-Total-Count header), for paging. */
 export async function apiPaged<T>(path: string): Promise<{ data: T[]; total: number }> {
   const res = await authedFetch(path);

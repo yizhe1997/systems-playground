@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Account, FieldError, Preview, Trade, TradeFormValues } from "@/lib/types";
+import type { Account, FieldError, Preview, Trade, TradeFormValues, TradeImages as TradeImagesAnswer } from "@/lib/types";
 import { call } from "@/lib/browserApi";
 import { dateTime, dayLabel, monthQuery, plain, screenTime } from "@/lib/format";
 import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
@@ -10,6 +10,8 @@ import { FailureBanner, Waiting, useNoticeableWait } from "@/components/Notice";
 import { ResultPreview } from "@/components/ResultPreview";
 import { AccountOptions } from "@/components/AccountOptions";
 import { useTradeActions } from "@/components/TradeRowActions";
+import { TradeImages, type TradeImagesHandle } from "@/components/TradeImages";
+import { DEFAULT_LIMITS } from "@/lib/imageLimits";
 
 const blankValues = (accounts: Account[]): TradeFormValues => ({
   accountId: accounts.length === 1 ? accounts[0].id : "",
@@ -47,7 +49,9 @@ function fromTrade(t: Trade): TradeFormValues {
 
 const orNull = (s: string) => (s.trim() === "" ? null : s.trim());
 
-export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Account[]; zone: string; zoneLabel: string; trade?: Trade }) {
+export function TradeForm({
+  accounts, zone, zoneLabel, trade, images, notAdded,
+}: { accounts: Account[]; zone: string; zoneLabel: string; trade?: Trade; images?: TradeImagesAnswer; notAdded?: number }) {
   const router = useRouter();
   const initial = useMemo(() => (trade ? fromTrade(trade) : blankValues(accounts)), [trade, accounts]);
   const [v, setV] = useState<TradeFormValues>(initial);
@@ -59,8 +63,10 @@ export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Acco
   const [saved, setSaved] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const del = useTradeActions();
+  const imagesRef = useRef<TradeImagesHandle>(null);
+  const [pendingImages, setPendingImages] = useState(0); // images added before the trade was saved
 
-  const dirty = !saved && JSON.stringify(v) !== JSON.stringify(initial);
+  const dirty = !saved && (JSON.stringify(v) !== JSON.stringify(initial) || pendingImages > 0);
   const { prompt, leave } = useUnsavedGuard(dirty);
   const waiting = useNoticeableWait(saving);
 
@@ -126,6 +132,16 @@ export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Acco
     setSaving(false);
     if (r.ok) {
       setSaved(true);
+      // a new trade: its images were waiting; the trade is saved, so store them now. If some fail the trade is kept
+      // and the owner lands on its edit screen with a message naming how many were not added.
+      if (!trade && imagesRef.current && imagesRef.current.pendingCount() > 0) {
+        const failed = await imagesRef.current.uploadPending(r.data.id);
+        if (failed > 0) {
+          router.push(`/trades/${r.data.id}/edit?notadded=${failed}#images`);
+          router.refresh();
+          return;
+        }
+      }
       router.push(monthQuery(r.data.tradingDay));
       router.refresh();
       return;
@@ -289,6 +305,15 @@ export function TradeForm({ accounts, zone, zoneLabel, trade }: { accounts: Acco
               {err("thesis", "t-thesis")}
             </div>
           </details>
+
+          <TradeImages
+            ref={imagesRef}
+            tradeId={trade?.id}
+            initial={images?.items ?? []}
+            limits={images?.limits ?? DEFAULT_LIMITS}
+            onPending={setPendingImages}
+            notAdded={notAdded}
+          />
 
           <div className="form-actions">
             <button type="submit" className="btn" disabled={saving}>{trade ? "Save changes" : "Save trade"}</button>

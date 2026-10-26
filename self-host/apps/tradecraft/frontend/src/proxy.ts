@@ -32,7 +32,10 @@ export async function proxy(req: NextRequest) {
   forward.set("x-nonce", nonce);
   forward.set(header, csp); // Next reads the nonce from the request header and puts it on its own scripts
   const res = await gate(req, forward);
-  res.headers.set(header, csp);
+  // An image is not a page: its own policy (a sandbox with nothing allowed, set by the route) must reach the browser
+  // unchanged, so the app's page policy is not laid over it (feature 004).
+  if (/^\/api\/images\/[^/]+$/.test(req.nextUrl.pathname)) res.headers.set("content-security-policy", "default-src 'none'; sandbox");
+  else res.headers.set(header, csp);
   return res;
 }
 

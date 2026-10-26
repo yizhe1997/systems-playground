@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Trade } from "@/lib/types";
 import { dateTime, dayLabel, money, plain, profitClass, rValue } from "@/lib/format";
 import { cookies } from "next/headers";
@@ -38,7 +39,7 @@ function RCell({ t }: { t: Trade }) {
   );
 }
 
-export async function TradesTable({ trades, zone, deletedView, backtestIds = [] }: { trades: Trade[]; zone: string; deletedView: boolean; backtestIds?: string[] }) {
+export async function TradesTable({ trades, zone, deletedView, backtestIds = [], accountHref }: { trades: Trade[]; zone: string; deletedView: boolean; backtestIds?: string[]; accountHref: (accountId: string) => string }) {
   const backtest = new Set(backtestIds);
   const labelOf = (t: Trade) => `${t.instrument} ${t.direction} trade of ${dateTime(t.entryAt, zone)}`;
   return (
@@ -58,7 +59,7 @@ export async function TradesTable({ trades, zone, deletedView, backtestIds = [] 
             key: "account", label: "Account", className: "account",
             cells: trades.map((t) => (
               <>
-                {t.accountName}
+                <Link href={accountHref(t.accountId)}>{t.accountName}</Link>
                 {backtest.has(t.accountId) && <span className="tag">Backtest</span>}
               </>
             )),
@@ -75,6 +76,14 @@ export async function TradesTable({ trades, zone, deletedView, backtestIds = [] 
           { key: "direction", label: "Direction", cells: trades.map((t) => (t.direction === "long" ? "Long" : "Short")) },
           { key: "size", label: "Size", className: "num", cells: trades.map((t) => plain(t.size)) },
           { key: "net", label: "Net result", className: "num tall", cells: trades.map((t) => <ResultCell t={t} />) },
+          {
+            key: "images", label: "Images", help: "How many screenshots this trade has.", className: "num",
+            cells: trades.map((t) =>
+              t.imageCount > 0 ? (
+                <Link href={`/trades/${t.id}/edit#images`} aria-label={`${t.imageCount} ${t.imageCount === 1 ? "image" : "images"} on ${labelOf(t)}`}>{t.imageCount}</Link>
+              ) : null,
+            ),
+          },
           { key: "plan", label: "Plan", className: "tall", cells: trades.map((t) => <PlanCell t={t} />) },
           { key: "r", label: "R", className: "num tall", cells: trades.map((t) => <RCell t={t} />) },
         ]}

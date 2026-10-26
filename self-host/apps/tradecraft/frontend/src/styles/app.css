@@ -158,6 +158,27 @@ th.col-dragging { opacity: 0.5; }
 th.col-over { box-shadow: inset 2px 0 0 var(--ink); }
 .col-head { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; pointer-events: none; text-align: inherit; white-space: nowrap; }
 .col-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+/* ---------- images on a trade (feature 004) ---------- */
+.images { border-top: 1px solid var(--border); margin: var(--space-md) calc(-1 * var(--card-pad)) 0; padding: var(--space-md) var(--card-pad) 0; display: flex; flex-direction: column; gap: var(--space-sm); }
+.images-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); }
+.drop-area { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; padding: var(--space-md); border: 1px dashed var(--outline); border-radius: var(--r-card); background: var(--bone-mist); }
+.drop-area p { margin: 0; }
+.drop-area.drop-over { border-style: solid; border-color: var(--accent); }
+.drop-area.drop-off { border-style: solid; border-color: var(--border); color: var(--text-2); }
+.image-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-md); }
+.image-tile { display: flex; flex-direction: column; gap: var(--space-xs); min-width: 0; }
+.image-thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: var(--bone-mist); border: 1px solid var(--border); border-radius: var(--r-field); }
+.image-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.image-actions { display: flex; gap: var(--space-sm); }
+.image-actions .btn-quiet { padding: 0; height: 28px; text-decoration: underline; text-underline-offset: 3px; }
+.image-open { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.image-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+dialog.dialog:has(.viewer) { width: min(1100px, calc(100vw - 32px)); }
+.viewer { display: flex; justify-content: center; background: var(--bone-mist); border: 1px solid var(--border); border-radius: var(--r-field); }
+.viewer-img { max-width: 100%; max-height: 60vh; object-fit: contain; }
+.drawer-images { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+.drawer-images li { width: 120px; display: flex; flex-direction: column; gap: var(--space-xs); min-width: 0; }
+.drawer-images .helper { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .col-tools { padding-top: var(--space-xs); padding-bottom: var(--space-xs); text-align: right; }
 /* the Trades list has the most columns: tighter cells, and a long account name wraps instead of widening the table */
 .trades-table th, .trades-table td { padding-left: 10px; padding-right: 10px; }
@@ -187,6 +208,8 @@ strong, b { font-weight: 600; } /* only the 400, 500 and 600 faces are loaded, s
 .preview-row.big .value { font-size: 16px; }
 
 /* ---------- dialog ---------- */
+/* a dialog can be opened from inside a table cell (the Judge button), which does not wrap its text */
+dialog { white-space: normal; }
 dialog.dialog { border: 1px solid var(--border); border-radius: var(--r-card); background: var(--card); color: var(--ink); padding: var(--card-pad); width: min(480px, calc(100vw - 32px)); box-shadow: var(--card-shadow); }
 dialog.dialog::backdrop { background: var(--dim); }
 .dialog h2 { font-size: 16px; font-weight: 600; }

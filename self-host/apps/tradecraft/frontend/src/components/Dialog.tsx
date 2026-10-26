@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 /**
  * A modal on the native <dialog> element: focus stays inside, Escape closes it, and the page behind is inert.
@@ -8,6 +8,7 @@ import { useEffect, useRef, type ReactNode } from "react";
  */
 export function Dialog({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId(); // a viewer can open over another dialog, so each needs its own id
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -18,7 +19,7 @@ export function Dialog({ open, onClose, title, children }: { open: boolean; onCl
     <dialog
       ref={ref}
       className="dialog"
-      aria-labelledby="dialog-title"
+      aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -26,7 +27,7 @@ export function Dialog({ open, onClose, title, children }: { open: boolean; onCl
     >
       {open && (
         <>
-          <h2 id="dialog-title">{title}</h2>
+          <h2 id={titleId}>{title}</h2>
           <div className="stack">{children}</div>
         </>
       )}
