@@ -17,13 +17,25 @@ export_all() {
     "$PY" -c "import sys,json; d=json.load(sys.stdin); d.pop('exportedAt'); d['auditEntries']=[e for e in d['auditEntries'] if e['kind']!='export_downloaded']; print(json.dumps(d, sort_keys=True, indent=1))" > "$1"
 }
 
+# Feature 004 (SC-006): every image's picture, by checksum, is part of what must survive.
+image_sums() {
+  local token ids id
+  token=$(node scripts/service-token.mjs)
+  ids=$(curl -fsS -H "Authorization: Bearer $token" "$api/export" | "$PY" -c "import sys,json; print(' '.join(i['id'] for i in json.load(sys.stdin)['images']))")
+  for id in $ids; do
+    echo "image $id $(curl -fsS -H "Authorization: Bearer $token" "$api/images/$id" | sha256sum | cut -d' ' -f1)"
+  done
+}
+
 export_all "$before" || { echo "FAIL: could not read the export before"; exit 1; }
+image_sums >> "$before" || { echo "FAIL: could not read the images before"; exit 1; }
 docker compose -p "$project" stop >/dev/null 2>&1
 docker compose -p "$project" start >/dev/null 2>&1
 for i in $(seq 1 60); do curl -fsS "$api/health" >/dev/null 2>&1 && break; sleep 1; done
 export_all "$after" || { echo "FAIL: could not read the export after"; exit 1; }
+image_sums >> "$after" || { echo "FAIL: could not read the images after"; exit 1; }
 if diff -q "$before" "$after" >/dev/null; then
-  echo "ok: $("$PY" -c "import json,sys;d=json.load(sys.stdin);print(len(d['accounts']),'accounts and',len(d['trades']),'trades')" < "$after") identical after a stop and start"
+  echo "ok: accounts, trades and $(grep -c '^image ' "$after") images identical after a stop and start"
 else
   echo "FAIL: the export changed across a stop and start"; diff "$before" "$after" | head -20; exit 1
 fi

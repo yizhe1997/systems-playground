@@ -123,9 +123,9 @@ func sameJSON(t *testing.T, what string, got, want []byte) {
 	}
 }
 
-var wantTools = []string{"get_day", "get_focus", "get_month", "get_settings", "get_week", "list_accounts", "list_mistakes", "list_trades", "mistake_counter"}
+var wantTools = []string{"get_day", "get_focus", "get_month", "get_settings", "get_week", "list_accounts", "list_mistakes", "list_trade_images", "list_trades", "mistake_counter"}
 
-func TestToolsAreExactlyTheNineReads(t *testing.T) {
+func TestToolsAreExactlyTheTenReads(t *testing.T) {
 	reset(t)
 	token := agentWithToken(t, "Claude Desktop")
 	s := startDoor(t).connect(t, token)

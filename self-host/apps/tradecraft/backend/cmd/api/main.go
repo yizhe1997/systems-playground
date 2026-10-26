@@ -12,6 +12,7 @@ import (
 
 	"tradecraft/internal/api"
 	"tradecraft/internal/auth"
+	"tradecraft/internal/objects"
 	"tradecraft/internal/store"
 )
 
@@ -54,6 +55,17 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+	// images live in an S3 bucket (feature 004); without S3_ENDPOINT the journal runs and says so when an image is asked for
+	var opts []api.Option
+	objs, err := objects.FromEnv()
+	if err != nil {
+		log.Fatalf("Stopping: %v", err)
+	}
+	if objs != nil {
+		opts = append(opts, api.WithObjects(objs))
+	} else {
+		log.Print("S3_ENDPOINT is not set: images are switched off.")
+	}
 	log.Printf("Journal API listening on :%s", port)
-	log.Fatal(api.New(pool, nil, secret).Listen(":" + port))
+	log.Fatal(api.New(pool, nil, secret, opts...).Listen(":" + port))
 }

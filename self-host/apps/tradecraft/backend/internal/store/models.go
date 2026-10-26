@@ -163,6 +163,16 @@ type TradeDetail struct {
 	Label           *string    `json:"label"`
 }
 
+type TradeImage struct {
+	ID          string    `json:"id"`
+	TradeID     string    `json:"trade_id"`
+	Name        string    `json:"name"`
+	Note        string    `json:"note"`
+	ContentType string    `json:"content_type"`
+	SizeBytes   int32     `json:"size_bytes"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type TradeJudgement struct {
 	TradeID      string    `json:"trade_id"`
 	PlanFollowed *string   `json:"plan_followed"`

@@ -248,7 +248,7 @@ func TestAuditListFiltersPagesAndTimes(t *testing.T) {
 	// the kinds the filter offers
 	k := call(t, "GET", "/audit/kinds", nil)
 	mustStatus(t, k, 200)
-	if len(k.list) != 22 { // feature 003 adds account_kind_changed and the five agent kinds
+	if len(k.list) != 24 { // feature 003 adds account_kind_changed and the five agent kinds; feature 004 the two attachment kinds
 		t.Fatalf("%d kinds", len(k.list))
 	}
 }

@@ -56,4 +56,22 @@ if [ -f "$token_file" ]; then
 else
   echo "skipped: no e2e agent token file to look for"
 fi
+
+# Feature 004: the note the image specs wrote on an image (the file holds a random marker, not a secret). The owner's
+# notes and names must be in no container log (the audit entries and the logs never carry them).
+marker_file="${TMPDIR:-/tmp}/tradecraft-e2e-image-marker.txt"
+if [ -f "$marker_file" ]; then
+  marker=$(tr -d '
+' < "$marker_file")
+  if [ -n "$marker" ] && docker compose -p "$project" logs --no-color 2>&1 | grep -F -q -- "$marker"; then
+    echo "FAIL: an image note appears in a container log"; fail=1
+  else
+    echo "ok: image notes are in no container log"
+  fi
+  if [ -n "$marker" ] && git ls-files -z | xargs -0 grep -I -l -F -- "$marker" 2>/dev/null | grep -q .; then
+    echo "FAIL: the image marker appears in a tracked file"; fail=1
+  fi
+else
+  echo "skipped: no image marker file to look for"
+fi
 exit $fail

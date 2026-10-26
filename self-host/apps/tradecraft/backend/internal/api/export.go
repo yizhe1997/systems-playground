@@ -62,6 +62,14 @@ type exportJSON struct {
 	DayMistakes []exportDayMistakeJSON `json:"dayMistakes"`
 	Identities  []exportIdentityJSON   `json:"identities"`
 	AuditEntries []exportAuditJSON     `json:"auditEntries"`
+	Images       []exportImageJSON     `json:"images"`
+}
+
+// exportImageJSON lists an image without its picture: the owner's own bucket holds that, and Path is where a signed-in
+// owner can download it (feature 004; a written exception to constitution VII, see docs/decisions.md).
+type exportImageJSON struct {
+	tradeImageJSON
+	Path string `json:"path"`
 }
 
 // exportIdentityJSON is an identity without the provider's account identifier (FR-019).
@@ -149,8 +157,17 @@ func (s *Server) export(c *fiber.Ctx) error {
 		return err
 	}
 
+	images, err := s.q.ExportImages(ctx)
+	if err != nil {
+		return err
+	}
+	perTrade := map[string]int{}
+	for _, i := range images {
+		perTrade[i.TradeID]++
+	}
+
 	out := exportJSON{
-		Identities: []exportIdentityJSON{}, AuditEntries: []exportAuditJSON{},
+		Images: make([]exportImageJSON, 0, len(images)), Identities: []exportIdentityJSON{}, AuditEntries: []exportAuditJSON{},
 		ExportedAt: fmtTime(s.now()), Settings: settingsJSON{TimeZone: st.TimeZone},
 		Accounts: make([]accountJSON, 0, len(accts)), Trades: make([]exportTradeJSON, 0, len(trades)),
 		Mistakes: make([]mistakeJSON, 0, len(mistakes)), DailyReview: []exportReviewJSON{}, Focuses: []exportFocusJSON{},
@@ -161,11 +178,16 @@ func (s *Server) export(c *fiber.Ctx) error {
 	}
 	for _, t := range trades {
 		e := exportTradeJSON{tradeJSON: toTrade(t, loc)}
+		e.ImageCount = perTrade[t.ID]
 		e.Judgement.PlanFollowed, e.Judgement.Label, e.Judgement.Mistakes = t.PlanFollowed, t.Label, byTrade[t.ID]
 		if e.Judgement.Mistakes == nil {
 			e.Judgement.Mistakes = []string{}
 		}
 		out.Trades = append(out.Trades, e)
+	}
+	for _, i := range images {
+		out.Images = append(out.Images, exportImageJSON{Path: "/api/images/" + i.ID, tradeImageJSON: tradeImageJSON{ID: i.ID, TradeID: i.TradeID,
+			Name: i.Name, Note: i.Note, ContentType: i.ContentType, SizeBytes: i.SizeBytes, CreatedAt: fmtTime(i.CreatedAt)}})
 	}
 	for _, m := range mistakes {
 		out.Mistakes = append(out.Mistakes, toMistake(m.ID, m.Name, m.StopLine, m.StopPeriod, m.Retired, m.UpdatedAt))
