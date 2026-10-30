@@ -91,8 +91,8 @@ To change the extension, edit the source folder and reinstall with `--force`.
 - The step commands (`/speckit-specify` and the rest) are Claude Code skills in `.claude/skills/`. They
   are available in a Claude session started inside `tradecraft`, or one working on files under it.
 - Each step is run one at a time and reviewed before the next. The agent may stop and ask questions.
-- Git: everything stays on the branch `tradecraft_v2`. There are no per-feature branches. Feature folders
-  are still numbered (`specs/001-...`). Nothing is pushed without your say-so.
+- Git: each feature is built on its own `feat/<short-name>` branch and reaches `main` by a pull request. Feature folders
+  are numbered (`specs/001-...`). Nothing is pushed or merged without your say-so.
 - Penpot: the plugin tab must be open and connected for the wireframe steps. If it drops, the step says
   so and waits.
 
