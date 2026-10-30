@@ -1,0 +1,203 @@
+openapi: 3.1.0
+info:
+  title: Tradecraft v2 API, feature 005 (Home and Analytics)
+  version: 0.1.0
+  description: >
+    Additions to the API of features 000 to 004. Every route needs the signed service token of feature 002 (an agent
+    token is refused by all of them). Errors keep the 000 shape (code, message, fields[]). The routes are read-only:
+    they create, change and delete nothing, write no audit entry and add nothing to the export. Money is an exact
+    decimal string; a figure that cannot be computed is null with its reason, never zero.
+servers:
+  - url: http://127.0.0.1:8081
+security:
+  - bearerAuth: []
+paths:
+  /analytics:
+    get:
+      operationId: getAnalytics
+      summary: Every figure of Home and Analytics for a period and an account scope, one block per currency
+      description: >
+        Scope: trades that are not deleted, with a trading day from `from` to `to`, in the chosen account or, with no
+        account, in all Live accounts (archived ones included, Backtest accounts never). The figures are made from
+        the same rows, so they agree with each other and with `GET /trades` for the same filters.
+      parameters:
+        - { name: from, in: query, required: true, description: "First trading day, YYYY-MM-DD", schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, description: "Last trading day, on or after `from`, at most 20 years after it", schema: { type: string, format: date } }
+        - { name: accountId, in: query, required: false, description: "One account of any kind. Absent: all Live accounts", schema: { type: string, format: uuid } }
+        - { name: band, in: query, required: false, description: "Break-even band, an amount >= 0 with at most 8 decimals. A trade whose net result is from -band to +band is set aside from the win rate and the streaks. Default 0 (no band)", schema: { type: string } }
+      responses:
+        "200": { description: The figures, content: { application/json: { schema: { $ref: "#/components/schemas/Analytics" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: The account does not exist, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { description: A parameter is not valid (dates, range order or length, band, account), content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /needs-you:
+    get:
+      operationId: getNeedsYou
+      summary: What is waiting for the owner in the scope, from the same states as the Reviews screens
+      description: >
+        Days Missing (ended, with live trades, no review; Backtest days never), trades not judged yet, and weeks Missing
+        (not marked reviewed), newest first, at most 20 of each with the real total. Uses the existing day and week
+        state rules, so it equals the Reviews and daily review screens.
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+        - { name: accountId, in: query, required: false, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: The waiting items, content: { application/json: { schema: { $ref: "#/components/schemas/NeedsYou" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { description: A parameter is not valid, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /trades:
+    get:
+      operationId: listTrades
+      summary: Changed: five optional filters, so a breakdown row opens exactly its trades
+      description: >
+        Everything else is as in feature 003. The new filters use the same rules as `GET /analytics`, so the total
+        of a filtered list equals the `trades` of the breakdown row it came from.
+      parameters:
+        - { name: weekday, in: query, required: false, description: "ISO weekday of the trading day, 1 (Monday) to 7", schema: { type: integer, minimum: 1, maximum: 7 } }
+        - { name: hour, in: query, required: false, description: "Hour of entry in the journal time zone, 0 to 23", schema: { type: integer, minimum: 0, maximum: 23 } }
+        - { name: instrument, in: query, required: false, schema: { type: string, maxLength: 40 } }
+        - { name: direction, in: query, required: false, schema: { type: string, enum: [long, short] } }
+        - { name: mistakeId, in: query, required: false, description: "Only trades carrying this mistake", schema: { type: string, format: uuid } }
+        - { name: plan, in: query, required: false, description: "followed = answered Yes; notfollowed = No or Partly; notjudged = no answer", schema: { type: string, enum: [followed, notfollowed, notjudged] } }
+      responses:
+        "200": { description: The trades, as before }
+        "422": { description: A filter is not valid, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer }
+  responses:
+    Unauthorized: { description: No valid token, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        fields: { type: array, items: { type: object, properties: { field: { type: string }, message: { type: string } } } }
+    Plan:
+      type: object
+      description: Plan followed X of Y for the same trades. The parts add up to `of`.
+      required: [followed, partly, notFollowed, notJudged, of]
+      properties:
+        followed: { type: integer }
+        partly: { type: integer }
+        notFollowed: { type: integer }
+        notJudged: { type: integer }
+        of: { type: integer }
+    Analytics:
+      type: object
+      required: [from, to, accountId, band, blocks]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        accountId: { type: [string, "null"], format: uuid }
+        band: { type: string, description: "The band that was applied, as a decimal string" }
+        timeZone: { type: string }
+        blocks:
+          type: array
+          description: One block per currency in the scope, ordered by currency code. Empty when the scope has no trades.
+          items: { $ref: "#/components/schemas/Block" }
+        otherPeriods: { type: integer, description: "Trades of the scope outside the period, for the empty-state line (0 when the period has trades)" }
+    Block:
+      type: object
+      required: [currency, accounts, trades, plan, statistics, curve, days, breakdowns, replay, mistakeCost]
+      properties:
+        currency: { type: string }
+        accounts: { type: array, items: { type: object, properties: { id: { type: string, format: uuid }, name: { type: string }, kind: { type: string, enum: [live, backtest] }, archived: { type: boolean } } } }
+        trades: { type: integer }
+        plan: { $ref: "#/components/schemas/Plan" }
+        statistics: { type: array, items: { $ref: "#/components/schemas/Statistic" } }
+        curve: { type: array, items: { type: object, properties: { day: { type: string, format: date }, result: { type: string }, cumulative: { type: string } } } }
+        days:
+          type: array
+          items:
+            type: object
+            properties:
+              day: { type: string, format: date }
+              trades: { type: integer }
+              result: { type: string }
+              plan: { $ref: "#/components/schemas/Plan" }
+              openAccountId: { type: string, format: uuid, description: "The account whose daily review the cell opens (the one with the most trades that day, then by name)" }
+        breakdowns:
+          type: object
+          properties:
+            weekday: { type: array, items: { $ref: "#/components/schemas/Row" } }
+            hour: { type: array, items: { $ref: "#/components/schemas/Row" } }
+            instrument: { type: array, items: { $ref: "#/components/schemas/Row" } }
+            direction: { type: array, items: { $ref: "#/components/schemas/Row" } }
+            account: { type: array, items: { $ref: "#/components/schemas/Row" } }
+        replay:
+          type: object
+          properties:
+            judged: { type: integer }
+            of: { type: integer }
+            lines:
+              type: array
+              description: followed, notFollowed (the edge leak), notJudged, actual (their sum), without (actual minus the edge leak)
+              items: { type: object, properties: { key: { type: string, enum: [followed, notFollowed, notJudged, actual, without] }, trades: { type: integer }, netResult: { type: string } } }
+        mistakeCost:
+          type: array
+          items:
+            type: object
+            properties:
+              mistakeId: { type: string, format: uuid }
+              name: { type: string }
+              trades: { type: integer }
+              netResult: { type: string }
+              plan: { $ref: "#/components/schemas/Plan" }
+              records: { type: integer, description: "The mistake's record count for the period (equals the Mistakes counter)" }
+    Statistic:
+      type: object
+      required: [key, label, n, definitionKey, definition]
+      properties:
+        key: { type: string, enum: [netResult, winRate, profitFactor, expectancy, expectancyR, averageWin, averageLoss, payoffRatio, largestWin, largestLoss, maxDrawdown, winStreak, lossStreak] }
+        label: { type: string }
+        value: { type: [string, "null"], description: "Exact decimal (6 places for ratios) or null" }
+        wins: { type: [integer, "null"], description: "winRate only: k of n" }
+        counted: { type: [integer, "null"], description: "winRate only: n (trades not set aside)" }
+        percent: { type: [integer, "null"], description: "winRate only: half up, whole percent" }
+        day: { type: [string, "null"], format: date, description: "largestWin and largestLoss: the trading day" }
+        peakDay: { type: [string, "null"], format: date, description: "maxDrawdown only (null day means the start of the period)" }
+        troughDay: { type: [string, "null"], format: date }
+        peak: { type: [string, "null"] }
+        trough: { type: [string, "null"] }
+        from: { type: [string, "null"], format: date, description: "streaks: first day of the run" }
+        to: { type: [string, "null"], format: date }
+        n: { type: integer, description: "Trades the figure was made of" }
+        plan: { $ref: "#/components/schemas/Plan" }
+        reason: { type: [string, "null"], description: "Why value is null (the words shown after the dash)" }
+        few: { type: boolean, description: "n is below 10" }
+        definitionKey: { type: string, description: "The key of the definition section of docs/domain.md" }
+        definition: { type: string, description: "The definition in words (what it counts, what it leaves out, its minimum sample), the same text as the domain document, so a figure can be quoted with its definition from this route alone" }
+    Row:
+      type: object
+      required: [key, label, trades, netResult, wins, counted, plan]
+      properties:
+        key: { type: string, description: "The value to filter the Trades list by (weekday 1 to 7, hour 0 to 23, the instrument, long or short, the account id)" }
+        label: { type: string }
+        trades: { type: integer }
+        netResult: { type: string }
+        wins: { type: integer }
+        counted: { type: integer }
+        plan: { $ref: "#/components/schemas/Plan" }
+        few: { type: boolean }
+    NeedsYou:
+      type: object
+      properties:
+        missingDays:
+          type: object
+          properties:
+            total: { type: integer }
+            items: { type: array, items: { type: object, properties: { accountId: { type: string, format: uuid }, accountName: { type: string }, day: { type: string, format: date }, trades: { type: integer } } } }
+        notJudged:
+          type: object
+          properties:
+            total: { type: integer }
+            items: { type: array, items: { type: object, properties: { tradeId: { type: string, format: uuid }, accountId: { type: string, format: uuid }, accountName: { type: string }, instrument: { type: string }, direction: { type: string }, entryAt: { type: string, format: date-time }, tradingDay: { type: string, format: date } } } }
+        missingWeeks:
+          type: object
+          properties:
+            total: { type: integer }
+            items: { type: array, items: { type: object, properties: { accountId: { type: string, format: uuid }, accountName: { type: string }, weekStart: { type: string, format: date }, weekEnd: { type: string, format: date } } } }
