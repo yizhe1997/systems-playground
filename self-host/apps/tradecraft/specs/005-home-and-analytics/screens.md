@@ -63,7 +63,7 @@ Every word the owner will read. No placeholders. Amounts are examples in the acc
 | Controls | Period, Accounts, Break-even band (None, or an amount such as "$ 40.00"). Beside the band: "A trade inside the band is neither a win nor a loss." With a band on: "Trades from -$40.00 to +$40.00 are set aside." |
 | Scope strip | "12 trades, USD · Plan followed 6 of 12 · 3 not judged yet · R known for 8 of 12 trades". With a band: "... · 1 trade inside the break-even band set aside from the win rate". |
 | Performance table | Columns Statistic, Value, n, Plan followed (same trades), and a Definition link. Rows: Net result, Win rate, Profit factor, Expectancy, Expectancy in R, Average win, Average loss, Payoff ratio, Largest win, Largest loss, Maximum drawdown, Longest winning streak, Longest losing streak. |
-| Drawdown note | "Maximum drawdown is the largest fall of the running result from a peak ($90.00 on Mon 5 Oct) to a trough (-$60.00 on Tue 6 Oct). It is in money: there is no capital to take a percentage of." |
+| Drawdown note | "Maximum drawdown is the largest fall of the running result from a peak ($120.00 on Thu 1 Oct) to a trough (-$60.00 on Tue 6 Oct). It is in money: there is no capital to take a percentage of." |
 | Few trades | Dashes with their reason in the Value column: "— no losing trades", "— needs at least 2 trades, has 1", "— no stop recorded on 1 of 1 trades", "— needs a win and a loss"; the win rate carries "few trades". Note: "A dash always says why. Nothing is shown as zero when the honest answer is "not enough to say"." |
 | Break-even band on | "7 of 11 (64%) — 1 trade set aside"; money rows say "(the band does not change money)"; "The band only changes what counts as a win or a loss for the win rate and the streaks. It is a view option: it is not saved." |
 | Definition | A panel titled with the statistic, one sentence of what it counts with the worked figure, one of when it is not shown, and a Close link. Profit factor: "The sum of the net results of the winning trades divided by the sum of the net results of the losing trades, as a positive number. Here: $780.00 / $440.00 = 1.77." and "Not shown (a dash with the reason) when there is no losing trade or fewer than 2 trades. Closed trades only. Every trade in the scope counts, judged or not." |
@@ -76,7 +76,7 @@ Every word the owner will read. No placeholders. Amounts are examples in the acc
 |---|---|
 | Scope strip | "Judged: 9 of 12 trades · 3 not judged yet · USD". Partly judged: "Based on the 4 judged trades of 12 · 8 not judged yet · USD". |
 | Rule replay | Heading "Rule replay", subtitle "what the period looks like without the trades where you did not follow your plan". Table with Trades, Net result and "What it is": Plan followed (Yes) "Trades you judged as following the plan"; Plan not followed (No or Partly) "The edge leak: what these trades cost"; Not judged yet "Neither followed nor not followed: judge them to place them"; Actual result "The three lines above added up"; Result without the plan-breaking trades "Actual result minus the edge leak; the 3 not judged stay in". Chart text equivalent: "Bars: followed +$720.00, not followed -$280.00, not judged -$100.00, actual +$340.00, without the plan-breaking trades +$620.00". Note: "Not judged yet is never guessed. Partly counts as not followed, because Partly never counts as following the plan." |
-| Partly judged | Notice: "Only a third of the period is judged, so the edge leak is a floor, not the whole story. Judge the 8 trades to complete it." and link "Judge the 8 trades not judged yet". |
+| Partly judged | Notice (reworded at the build: a floor is only true when plan-breaking trades lose money): "Only 4 of 12 trades are judged, so the edge leak covers just those. Judge the 8 trades not judged yet to complete it." and link "Judge the 8 trades not judged yet". |
 | Nothing judged | "No trade judged yet." "Rule replay compares the trades where you followed your plan with the ones where you did not. It needs your plan answers from the daily review. 12 trades are waiting." Button "Judge the trades not judged yet". "The cost of each mistake appears when trades carry a mistake tag." |
 | Cost of each mistake | Heading "Cost of each mistake", subtitle "the net result of the trades that carry each mistake tag". Columns Mistake, Trades, Net result of those trades, Plan followed on them, Records this month. Note: "A trade with two mistakes counts under both, so these rows do not add up to a total. Mistakes with no trades in the period are not listed. Select a row to open its trades." Link "Judge the 3 trades not judged yet". |
 
@@ -120,13 +120,21 @@ Every word the owner will read. No placeholders. Amounts are examples in the acc
 
 ## Visual review
 
-Filled in after implementation (constitution principle V).
+- **Date**: 2026-10-31
+- **Visual direction**: see `docs/visual-direction.md` (Hex, light with a matching night mode)
+- **Built screenshots**: 26 captures of every state of H1 to H4 in light and dark, in `tradecraft-built/005-home-and-analytics` in the system temp folder (`zz-screens-home.spec.ts`); not stored in the repository
+- **Wireframe match**: structure, wording, states and behaviour match the signed-off frames; the deliberate differences are listed under "Changes made while building" and the Penpot frames carry them
+- **Design checks run**: a read of every capture against DESIGN.md and PRODUCT.md (hierarchy, spacing, colour, empty and error states), axe (WCAG 2 A and AA, contrast included) in light and dark, constitution check on the real screens (plan figure beside every money figure, dashes with reasons, n beside every rate, no cross-currency totals); the impeccable critique and audit commands were not run separately
+- **Fixed**: notes under tables and the Rule replay notice sat tight against the border (now spaced); a statistic with no trades left its plan cell blank (now a dash)
+- **Parked**: none. Not exercised: phone width (desktop-first, as in earlier features)
+- **Owner's approval**: approved on 2026-10-31
 
-- **Date**:
-- **Visual direction**: see `docs/visual-direction.md`
-- **Built screenshots**: not stored in the repository
-- **Wireframe match**:
-- **Design checks run**: critique, audit
-- **Fixed**:
-- **Parked**:
-- **Owner's approval**:
+## Changes made while building (2026-10-31)
+
+No screen was added or removed. The wording and figures below differ from the drawn frames and are the built truth; the Penpot frames are updated to match.
+
+- **Maximum drawdown** in the sample month is -$180.00 (peak $120.00 on Thu 1 Oct, trough -$60.00 on Tue 6 Oct), not -$150.00 (the first example took the wrong peak).
+- **Rule replay, partly judged**: "Only 4 of 12 trades are judged, so the edge leak covers just those. Judge the 8 trades not judged yet to complete it."
+- **Calendar**: a period longer than 12 months shows its latest 12 months with the line "Showing the 12 latest months of the period. Choose a shorter period to see the earlier ones."; the cell is a link inside a plain group (no grid roles).
+- **Period control**: a list of presets (This week, This month, Last 30 days, This year, All time, Custom range), the existing range picker for a custom range, then Accounts; the line beside them reads "Backtest accounts are left out.", "One account, shown on its own." or, on Analytics, "A trade inside the band is neither a win nor a loss.".
+- **Longest losing streak** of the sample month is 1 trade, the earliest (Fri 2 Oct).

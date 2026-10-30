@@ -21,7 +21,9 @@ Every example in `screens.md` is one month, October 2026, in one USD account pai
 | 11 | Thu 22 Oct | -90 | No | Chased entry, Moved stop | 10 | NQ | short | Alpha 2 |
 | 12 | Tue 27 Oct | +60 | not judged | | 10 | ES | long | Alpha 2 |
 
-Expected: net +340.00; 7 wins of 12 (58%); profit factor 780 / 440 = 1.77; expectancy +28.33; average win +111.43; average loss -88.00; payoff 1.27; largest win +200 (8 Oct), loss -150 (6 Oct); maximum drawdown -150.00 (peak +90 on 5 Oct, trough -60 on 6 Oct); longest winning streak 2 (8 to 9 Oct), losing streak 1; plan followed 6 of 12 (1 partly counted not followed, 3 not judged); replay: followed +720 (6), not followed -280 (3), not judged -100 (3), actual +340, without the plan-breaking trades +620 (9); mistake cost: Chased entry 2 trades -240, Moved stop 1 trade -90.
+Expected: net +340.00; 7 wins of 12 (58%); profit factor 780 / 440 = 1.77; expectancy +28.33; average win +111.43; average loss -88.00; payoff 1.27; largest win +200 (8 Oct), loss -150 (6 Oct); maximum drawdown -180.00 (peak +120 on 1 Oct, trough -60 on 6 Oct); longest winning streak 2 (8 to 9 Oct), losing streak 1; plan followed 6 of 12 (1 partly counted not followed, 3 not judged); replay: followed +720 (6), not followed -280 (3), not judged -100 (3), actual +340, without the plan-breaking trades +620 (9); mistake cost: Chased entry 2 trades -240, Moved stop 1 trade -90.
+
+The trades that have an R (a stop was recorded) are 1, 3, 4, 5, 6, 8, 10 and 11 (8 of 12): R 0.60, 0.30, -1.50, 2.00, 0.40, 0.55, 0.75 and -0.60, so the expectancy in R is 2.5 / 8 = 0.3125, shown 0.31 R; the plan figure of those eight trades is 6 followed of 8. The longest losing streak is 1 trade, the earliest being Fri 2 Oct.
 
 ## Scenarios
 
