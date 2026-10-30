@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartCandlestick, ClipboardCheck, ScrollText, Settings, TriangleAlert, Wallet, type LucideIcon } from "lucide-react";
+import { ChartCandlestick, ChartLine, ClipboardCheck, House, ScrollText, Settings, TriangleAlert, Wallet, type LucideIcon } from "lucide-react";
 
-// Reviews: a checked clipboard (the review you tick off). Trades: candlesticks. Mistakes: a warning triangle.
+// Home: a house. Analytics: a line chart. Reviews: a checked clipboard (the review you tick off). Trades: candlesticks. Mistakes: a warning triangle.
 // Accounts: a wallet. Audit log: a scroll (the record). Settings: the cog.
 type Item = { href: string; label: string; Icon: LucideIcon; children?: { href: string; label: string }[] };
 
@@ -13,9 +13,11 @@ const groups: { label: string; items: Item[] }[] = [
   {
     label: "Journal",
     items: [
+      { href: "/", label: "Home", Icon: House },
       { href: "/reviews", label: "Reviews", Icon: ClipboardCheck },
       { href: "/trades", label: "Trades", Icon: ChartCandlestick },
       { href: "/mistakes", label: "Mistakes", Icon: TriangleAlert },
+      { href: "/analytics", label: "Analytics", Icon: ChartLine },
     ],
   },
   {
@@ -46,7 +48,7 @@ export function Nav() {
           <p className="nav-label" id={`nav-${g.label}`}>{g.label}</p>
           <ul aria-labelledby={`nav-${g.label}`}>
             {g.items.map(({ href, label, Icon, children }) => {
-              const inside = path === href || path.startsWith(href + "/");
+              const inside = href === "/" ? path === "/" : path === href || path.startsWith(href + "/");
               return (
                 <li key={href}>
                   {/* a parent with pages is "current" through its child, not itself */}

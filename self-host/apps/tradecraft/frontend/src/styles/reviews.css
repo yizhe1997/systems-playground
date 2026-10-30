@@ -108,3 +108,71 @@ a.week-row:hover { background: var(--bone-mist); }
 /* a row action reads as an action, not as data */
 .manage-list .btn-quiet, .trade-grid .btn-quiet { text-decoration: underline; text-underline-offset: 3px; }
 .bar-fields { align-items: flex-end; gap: var(--space-md); }
+
+/* ---------- feature 005: Home and Analytics ---------- */
+.filters-note { align-self: center; max-width: 320px; }
+.filters-error { flex-basis: 100%; }
+.home-card .home-plan { margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--border); font-size: 12px; font-weight: 600; }
+.home-card .label { display: block; }
+.def summary { cursor: pointer; list-style: none; font-size: 12px; font-weight: 500; color: var(--text-2); }
+.def summary::-webkit-details-marker { display: none; }
+.def summary:hover { text-decoration: underline; text-underline-offset: 3px; }
+.def[open] { margin-bottom: var(--space-xs); }
+.currency-block { margin-bottom: var(--space-lg); }
+.block-head { display: flex; align-items: baseline; gap: var(--space-md); margin: var(--space-lg) 0 var(--space-sm); }
+.charts { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: var(--space-lg); margin-top: var(--space-md); }
+@media (max-width: 1100px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+.chart-head { display: flex; align-items: baseline; gap: var(--space-sm); margin-bottom: var(--space-sm); flex-wrap: wrap; }
+.chart-svg { width: 100%; height: auto; background: var(--card); border: 1px solid var(--border); border-radius: var(--r-card); }
+.chart-zero { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 4 4; }
+.chart-line { stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.chart-low { fill: var(--card); stroke: var(--ink); stroke-width: 2; }
+.chart-tick { fill: var(--text-2); font-size: 11px; font-family: var(--font-sans); }
+.bar-profit { fill: var(--profit); }
+.bar-loss { fill: var(--loss); }
+.chart-table { margin-top: var(--space-sm); }
+.chart-table summary { cursor: pointer; font-size: 12px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.home-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: var(--space-lg); margin-top: var(--space-lg); align-items: start; }
+@media (max-width: 1100px) { .home-grid { grid-template-columns: minmax(0, 1fr); } }
+.home-side { display: flex; flex-direction: column; gap: var(--space-md); }
+.side-card { display: flex; flex-direction: column; gap: var(--space-sm); }
+.side-head { display: flex; justify-content: space-between; align-items: baseline; }
+.side-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-sm); }
+.side-list li { display: flex; justify-content: space-between; gap: var(--space-md); }
+.focus-row { display: flex; justify-content: space-between; gap: var(--space-md); align-items: flex-start; }
+.cal-month { margin-bottom: var(--space-md); }
+.cal-title { font-size: 14px; font-weight: 600; margin: 0 0 var(--space-xs); }
+.cal-grid { display: grid; gap: 6px; }
+.cal-head { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.cal-cell { text-align: left; display: flex; flex-direction: column; gap: 2px; min-height: 62px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-field); background: var(--bone-mist); font-size: 12px; color: var(--ink); text-decoration: none; min-width: 0; overflow-wrap: anywhere; }
+.cal-out { background: transparent; border-style: dashed; }
+.cal-empty { background: var(--card); }
+.cal-trades { background: var(--card); border: 1px solid var(--outline); padding: 0; }
+.cal-link { text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; min-height: 60px; color: inherit; text-decoration: none; border-radius: var(--r-field); }
+.cal-link:hover { background: var(--bone-mist); }
+.cal-trades:hover { box-shadow: 0 0 0 2px var(--halo); }
+.cal-day { font-size: 11px; font-weight: 600; color: var(--text-2); }
+.cal-result { display: flex; flex-direction: column; }
+.cal-result strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+
+.tabs { display: flex; gap: var(--space-sm); }
+.tab { display: inline-flex; align-items: center; height: var(--field); padding: 0 var(--space-md); border: 1px solid var(--outline); border-radius: var(--r-button); color: var(--ink); text-decoration: none; font-weight: 600; background: var(--card); }
+.tab[aria-current="page"] { background: var(--ink); color: var(--parchment); }
+.scope-strip { padding: 10px 14px; border: 1px solid var(--outline); border-radius: var(--r-card); background: var(--card); font-weight: 600; margin-bottom: var(--space-lg); }
+.analytics-block { display: flex; flex-direction: column; gap: var(--space-lg); margin-bottom: var(--space-xl); }
+.stat-table th[scope="row"] { font-weight: 600; text-align: left; white-space: nowrap; }
+.stat-table td, .stat-table th { vertical-align: top; padding-top: 10px; padding-bottom: 10px; height: auto; }
+.stat-table td.muted, td.muted { color: var(--text-3); }
+.def-text { max-width: 52ch; margin-top: var(--space-xs); white-space: normal; }
+.breakdown-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); margin-top: var(--space-sm); align-items: start; }
+@media (max-width: 1100px) { .breakdown-grid { grid-template-columns: minmax(0, 1fr); } }
+.breakdown-grid h4 { margin-bottom: var(--space-xs); }
+.chips { list-style: none; margin: 0 0 var(--space-md); padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+.chips .chip { display: inline-flex; align-items: center; gap: var(--space-sm); padding: 2px 10px; }
+.chip-x { text-decoration: none; font-weight: 700; padding: 0 4px; }
+.table th[scope="row"] { text-align: left; font-weight: 600; }
+
+.need-list { list-style: none; margin: var(--space-xs) 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+
+/* a note under a table or a chart keeps a little air from its border (feature 005 visual review) */
+.card-flush + .helper, .card + .helper, .card-flush + .banner, .card + .banner { margin-top: 8px; }

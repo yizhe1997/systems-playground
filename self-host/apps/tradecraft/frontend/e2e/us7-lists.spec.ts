@@ -61,7 +61,7 @@ test("the sidebar is the height of the window: the account menu stays in view ho
 test("the sidebar groups its pages, and Settings opens into General, Access and Integrations", async ({ page }) => {
   await page.goto("/trades");
   const nav = page.getByRole("navigation", { name: "Main" });
-  await expect(nav.getByRole("list", { name: "Journal" }).getByRole("link")).toHaveText(["Reviews", "Trades", "Mistakes"]);
+  await expect(nav.getByRole("list", { name: "Journal" }).getByRole("link")).toHaveText(["Home", "Reviews", "Trades", "Mistakes", "Analytics"]);
   await expect(nav.getByRole("list", { name: "Manage" }).getByRole("link").first()).toHaveText("Accounts");
   await expect(nav.getByRole("link", { name: "Access", exact: true })).toHaveCount(0); // closed until you are in Settings
 
