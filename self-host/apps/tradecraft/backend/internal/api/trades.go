@@ -2,6 +2,8 @@ package api
 
 import (
 	"errors"
+	"fmt"
+	"github.com/jackc/pgx/v5/pgtype"
 	"strconv"
 	"strings"
 	"time"
@@ -462,6 +464,46 @@ func (s *Server) listTrades(c *fiber.Ctx) error {
 		}
 		p.PageOffset = int32(n)
 	}
+	// the filters a breakdown row opens (feature 005): the same rules as the figures of GET /analytics
+	intIn := func(field, label string, lo, hi int) pgtype.Int4 {
+		v := c.Query(field)
+		if v == "" {
+			return pgtype.Int4{}
+		}
+		n, err := strconv.Atoi(v)
+		if err != nil || n < lo || n > hi {
+			fe = append(fe, fieldError{field, fmt.Sprintf("%s must be a whole number from %d to %d.", label, lo, hi)})
+			return pgtype.Int4{}
+		}
+		return pgtype.Int4{Int32: int32(n), Valid: true}
+	}
+	p.Weekday = intIn("weekday", "Weekday", 1, 7)
+	p.EntryHour = intIn("hour", "Hour", 0, 23)
+	if v := c.Query("instrument"); v != "" {
+		if len(v) > 40 {
+			fe = append(fe, fieldError{"instrument", "Instrument can be at most 40 characters."})
+		}
+		p.Instrument = &v
+	}
+	if v := c.Query("direction"); v != "" {
+		if v != "long" && v != "short" {
+			fe = append(fe, fieldError{"direction", "Choose long or short."})
+		}
+		p.Direction = &v
+	}
+	if v := c.Query("mistakeId"); v != "" {
+		if !uuidText.MatchString(v) {
+			fe = append(fe, fieldError{"mistakeId", "Choose a mistake."})
+		} else {
+			p.MistakeID = &v
+		}
+	}
+	if v := c.Query("plan"); v != "" {
+		if v != "followed" && v != "notfollowed" && v != "notjudged" {
+			fe = append(fe, fieldError{"plan", "Choose followed, notfollowed or notjudged."})
+		}
+		p.Plan = &v
+	}
 	if len(fe) > 0 {
 		return invalid("filter", fe)
 	}
@@ -469,7 +511,8 @@ func (s *Server) listTrades(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	total, err := s.q.CountTrades(c.Context(), store.CountTradesParams{Deleted: p.Deleted, AccountID: p.AccountID, FromDay: p.FromDay, ToDay: p.ToDay, IncludeBacktests: p.IncludeBacktests})
+	total, err := s.q.CountTrades(c.Context(), store.CountTradesParams{Deleted: p.Deleted, AccountID: p.AccountID, FromDay: p.FromDay, ToDay: p.ToDay, IncludeBacktests: p.IncludeBacktests,
+		Weekday: p.Weekday, EntryHour: p.EntryHour, Instrument: p.Instrument, Direction: p.Direction, MistakeID: p.MistakeID, Plan: p.Plan})
 	if err != nil {
 		return err
 	}

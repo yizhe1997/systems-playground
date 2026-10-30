@@ -1,10 +1,13 @@
 import { api } from "./api";
+import type { Analytics, NeedsYou } from "./analytics";
 import type { Account, AgentAccess, AuditKind, Calendar, Counter, IdentityList, Mistake, DailyReview, ReviewsMonth, Trade, WeeklyReview, TradeImages } from "./types";
 
 export const getSettings = () => api<{ timeZone: string }>("/settings");
 export const getAccounts = (includeArchived = false) => api<Account[]>(`/accounts?includeArchived=${includeArchived}`);
 export const getCurrencies = () => api<string[]>("/currencies");
 export const getTrade = (id: string) => api<Trade>(`/trades/${encodeURIComponent(id)}`);
+export const getAnalytics = (query: string) => api<Analytics>(`/analytics?${query}`);
+export const getNeedsYou = (query: string) => api<NeedsYou>(`/needs-you?${query}`);
 export const getTradeImages = (id: string) => api<TradeImages>(`/trades/${encodeURIComponent(id)}/images`);
 
 // ---------- feature 001 ----------

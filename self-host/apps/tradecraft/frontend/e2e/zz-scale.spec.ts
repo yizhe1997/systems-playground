@@ -155,3 +155,19 @@ test("with images attached: the month list of 5,000 trades, a day's review and i
   expect.soft(dayOpen, "a day with images").toBeLessThan(1000);
   expect.soft(drawer, "pictures in the drawer").toBeLessThan(1000);
 });
+
+// Feature 005 (SC-005): Home and Analytics on the same 5,000 trades, whole journal (the last 20 years) and a change of scope.
+test("Home and Analytics on 5,000 trades: this period, all time and a change of account each open in under one second", async ({ page }) => {
+  const timedGo = (url: string, ready: () => Promise<void>) => timed(async () => { await page.goto(url); await ready(); });
+  const homeReady = () => expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
+  const statsReady = () => expect(page.getByRole("row", { name: /^Net result/ }).first()).toBeVisible();
+  // warm the page once (the first request of a cold server compiles it); the budget is for a request in use
+  await page.goto("/?period=custom&from=2025-06-01&to=2025-06-30");
+  const month = await timedGo("/?period=custom&from=2025-01-01&to=2025-12-31", homeReady);
+  const all = await timedGo("/?period=all", homeReady);
+  const stats = await timedGo("/analytics?period=all", statsReady);
+  const replay = await timedGo("/analytics/replay?period=all", () => expect(page.getByText("Rule replay").first()).toBeVisible());
+  const scope = await timedGo(`/?period=all&account=${accounts[3].id}`, homeReady);
+  console.log(`SC-005 Home and Analytics: a year ${month} ms, all time ${all} ms, Analytics all time ${stats} ms, Rule replay ${replay} ms, one account ${scope} ms`);
+  for (const [name, ms] of Object.entries({ month, all, stats, replay, scope })) expect.soft(ms, name).toBeLessThan(1000);
+});

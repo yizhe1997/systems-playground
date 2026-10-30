@@ -129,8 +129,13 @@ test("keyboard only: stars, the drawer, dialogs, the collapsible weeks and the p
   await page.keyboard.press("Enter");
   const drawer = page.getByRole("dialog");
   await expect(drawer).toBeVisible();
-  for (let i = 0; i < 12; i++) await page.keyboard.press("Tab");
-  expect(await page.evaluate(() => document.activeElement?.closest("dialog") !== null)).toBe(true);
+  await expect(drawer.getByRole("radiogroup", { name: "Did you follow your plan?" })).toBeVisible(); // the form loads after the drawer opens
+  for (let i = 0; i < 12; i++) {
+    await page.keyboard.press("Tab");
+    // inside the drawer, or on the document itself when Tab leaves the last control for the browser's own bar; never a control of the page behind
+    const at = await page.evaluate(() => { const e = document.activeElement; return { ok: e === document.body || e?.closest("dialog") != null, what: `${e?.tagName} ${e?.getAttribute("aria-label") ?? e?.textContent?.slice(0, 30) ?? ""}` }; });
+    expect(at.ok, `Tab ${i + 1} reached the page behind the drawer, on ${at.what}`).toBe(true);
+  }
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
   await expect(judge).toBeFocused();

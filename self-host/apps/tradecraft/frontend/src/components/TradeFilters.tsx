@@ -9,7 +9,7 @@ import { AccountOptions } from "@/components/AccountOptions";
 
 type Values = { account: string; from: string; to: string; deleted: boolean; backtests: boolean };
 
-export function TradeFilters(props: Values & { accounts: Account[]; monthFrom: string; monthTo: string }) {
+export function TradeFilters(props: Values & { accounts: Account[]; monthFrom: string; monthTo: string; keep?: Record<string, string> }) {
   const { accounts } = props;
   const router = useRouter();
   // What is shown is kept here, not only in the address: a navigation takes a moment, and two quick edits in a
@@ -32,6 +32,7 @@ export function TradeFilters(props: Values & { accounts: Account[]; monthFrom: s
     q.set("to", n.to);
     if (n.deleted) q.set("deleted", "1");
     if (n.backtests) q.set("backtests", "1");
+    for (const [k, v] of Object.entries(props.keep ?? {})) q.set(k, v); // the filters of an Analytics row stay
     router.replace(`/trades?${q.toString()}`);
   };
   return (

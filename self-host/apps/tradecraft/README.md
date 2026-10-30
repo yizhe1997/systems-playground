@@ -83,6 +83,10 @@ of live figures until you choose it. A trade belongs to the day it was **entered
 
 A trade can carry up to 10 images (PNG, JPEG or WebP, 5 MB each). On a trade's Edit screen press **Ctrl+V** after taking a screenshot (Win+Shift+S), or choose a file, or drop one on the Images section; on a new trade they wait and are stored when you press Save trade. Click a picture to see it large, edit its note, download or remove it; the daily review's Judge drawer shows them too, and the Trades list has an Images column. The export lists each image (details and address) but not the pictures: those are in the SeaweedFS bucket, which is not backed up yet. An agent can list a trade's images by name and note (`list_trade_images`) and can never fetch a picture. Adding and removing an image are Audit log entries.
 
+## Home and Analytics
+
+**Home** (the page you land on) shows how you are doing for a period and for your accounts: net result, trades, win rate, profit factor and expectancy, each with the plan-followed figure of the same trades beside it, an equity curve, the daily result, a calendar of your trading days, what is waiting for you (days missing a review, trades not judged yet, weeks not reviewed), your focus and your mistakes. **Analytics** has two tabs: Statistics (the performance table with every definition, and breakdowns by weekday, hour, instrument, direction and account; select a row to open exactly those trades) and Rule replay and mistakes (what the period looks like without the trades where you did not follow your plan, and what each mistake cost). Choose the period and the accounts at the top; the choice is in the address, nothing is stored. Every figure is computed by the app from your trades, never by a model; a figure that cannot be computed is a dash with its reason; every rate shows how many trades it is made of; accounts in different currencies are shown separately and never added. The rules are in `docs/domain.md` (feature 005), unconfirmed until you confirm them. Reading these screens changes nothing.
+
 ## Test
 
 ```bash

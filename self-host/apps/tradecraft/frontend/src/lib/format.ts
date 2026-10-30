@@ -38,6 +38,11 @@ export function rValue(value: string): string {
   );
 }
 
+/** A ratio or an average to two decimals (1.77), display only; signed adds the sign. */
+export function ratio(value: string, signed = false): string {
+  return numberFormat({ minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: signed ? "always" : "auto" }).format(asNum(value));
+}
+
 /** Size shown as stored, without trailing zeros. */
 export function plain(value: string): string {
   return numberFormat({ maximumFractionDigits: 8, useGrouping: false }).format(asNum(value));

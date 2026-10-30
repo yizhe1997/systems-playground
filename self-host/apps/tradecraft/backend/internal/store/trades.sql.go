@@ -8,6 +8,8 @@ package store
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const countTrades = `-- name: CountTrades :one
@@ -18,14 +20,31 @@ SELECT count(*)::bigint FROM trade_detail
         OR account_id IN (SELECT a.id FROM account a WHERE a.kind = 'live'))
    AND ($4::date IS NULL OR trading_day >= $4::date)
    AND ($5::date IS NULL OR trading_day <= $5::date)
+   AND ($6::int IS NULL OR extract(isodow FROM trading_day)::int = $6::int)
+   AND ($7::int IS NULL
+        OR extract(hour FROM entry_at AT TIME ZONE (SELECT js.time_zone FROM journal_settings js LIMIT 1))::int = $7::int)
+   AND ($8::text IS NULL OR instrument = $8::text)
+   AND ($9::text IS NULL OR direction = $9::text)
+   AND ($10::uuid IS NULL
+        OR EXISTS (SELECT 1 FROM trade_mistake tm WHERE tm.trade_id = trade_detail.id AND tm.mistake_id = $10::uuid))
+   AND ($11::text IS NULL
+        OR ($11::text = 'followed' AND plan_followed = 'yes')
+        OR ($11::text = 'notfollowed' AND plan_followed IN ('no', 'partly'))
+        OR ($11::text = 'notjudged' AND plan_followed IS NULL))
 `
 
 type CountTradesParams struct {
-	Deleted          bool       `json:"deleted"`
-	AccountID        *string    `json:"account_id"`
-	IncludeBacktests bool       `json:"include_backtests"`
-	FromDay          *time.Time `json:"from_day"`
-	ToDay            *time.Time `json:"to_day"`
+	Deleted          bool        `json:"deleted"`
+	AccountID        *string     `json:"account_id"`
+	IncludeBacktests bool        `json:"include_backtests"`
+	FromDay          *time.Time  `json:"from_day"`
+	ToDay            *time.Time  `json:"to_day"`
+	Weekday          pgtype.Int4 `json:"weekday"`
+	EntryHour        pgtype.Int4 `json:"entry_hour"`
+	Instrument       *string     `json:"instrument"`
+	Direction        *string     `json:"direction"`
+	MistakeID        *string     `json:"mistake_id"`
+	Plan             *string     `json:"plan"`
 }
 
 func (q *Queries) CountTrades(ctx context.Context, arg CountTradesParams) (int64, error) {
@@ -35,6 +54,12 @@ func (q *Queries) CountTrades(ctx context.Context, arg CountTradesParams) (int64
 		arg.IncludeBacktests,
 		arg.FromDay,
 		arg.ToDay,
+		arg.Weekday,
+		arg.EntryHour,
+		arg.Instrument,
+		arg.Direction,
+		arg.MistakeID,
+		arg.Plan,
 	)
 	var column_1 int64
 	err := row.Scan(&column_1)
@@ -134,18 +159,35 @@ SELECT id, account_id, account_name, account_currency, instrument, direction, si
         OR account_id IN (SELECT a.id FROM account a WHERE a.kind = 'live'))
    AND ($4::date IS NULL OR trading_day >= $4::date)
    AND ($5::date IS NULL OR trading_day <= $5::date)
+   AND ($6::int IS NULL OR extract(isodow FROM trading_day)::int = $6::int)
+   AND ($7::int IS NULL
+        OR extract(hour FROM entry_at AT TIME ZONE (SELECT js.time_zone FROM journal_settings js LIMIT 1))::int = $7::int)
+   AND ($8::text IS NULL OR instrument = $8::text)
+   AND ($9::text IS NULL OR direction = $9::text)
+   AND ($10::uuid IS NULL
+        OR EXISTS (SELECT 1 FROM trade_mistake tm WHERE tm.trade_id = trade_detail.id AND tm.mistake_id = $10::uuid))
+   AND ($11::text IS NULL
+        OR ($11::text = 'followed' AND plan_followed = 'yes')
+        OR ($11::text = 'notfollowed' AND plan_followed IN ('no', 'partly'))
+        OR ($11::text = 'notjudged' AND plan_followed IS NULL))
  ORDER BY entry_at DESC, id DESC
- LIMIT NULLIF($7::int, 0) OFFSET $6::int
+ LIMIT NULLIF($13::int, 0) OFFSET $12::int
 `
 
 type ListTradesParams struct {
-	Deleted          bool       `json:"deleted"`
-	AccountID        *string    `json:"account_id"`
-	IncludeBacktests bool       `json:"include_backtests"`
-	FromDay          *time.Time `json:"from_day"`
-	ToDay            *time.Time `json:"to_day"`
-	PageOffset       int32      `json:"page_offset"`
-	PageSize         int32      `json:"page_size"`
+	Deleted          bool        `json:"deleted"`
+	AccountID        *string     `json:"account_id"`
+	IncludeBacktests bool        `json:"include_backtests"`
+	FromDay          *time.Time  `json:"from_day"`
+	ToDay            *time.Time  `json:"to_day"`
+	Weekday          pgtype.Int4 `json:"weekday"`
+	EntryHour        pgtype.Int4 `json:"entry_hour"`
+	Instrument       *string     `json:"instrument"`
+	Direction        *string     `json:"direction"`
+	MistakeID        *string     `json:"mistake_id"`
+	Plan             *string     `json:"plan"`
+	PageOffset       int32       `json:"page_offset"`
+	PageSize         int32       `json:"page_size"`
 }
 
 // With no account chosen only Live accounts' trades are listed, unless include_backtests; an account chosen is
@@ -157,6 +199,12 @@ func (q *Queries) ListTrades(ctx context.Context, arg ListTradesParams) ([]Trade
 		arg.IncludeBacktests,
 		arg.FromDay,
 		arg.ToDay,
+		arg.Weekday,
+		arg.EntryHour,
+		arg.Instrument,
+		arg.Direction,
+		arg.MistakeID,
+		arg.Plan,
 		arg.PageOffset,
 		arg.PageSize,
 	)

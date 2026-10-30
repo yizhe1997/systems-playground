@@ -222,3 +222,129 @@ and trades **count**, never what they are: no trade, review, grade or focus is a
   not a per-trade flag); the exact rules above were read and confirmed on 2026-10-13.
 - Confirmed by owner on: 2026-10-13
 - Source: the owner, in chat, 2026-10-13 (all sixteen rules, ticked one by one after reading each in words)
+
+# Feature 005: Home and Analytics
+
+Every rule below is written once here, implemented once in `backend/internal/analytics` (with the words of each definition in `definitions.go`, which a test checks against this file), and used by Home and Analytics alike. All were read one by one with the owner and **confirmed on 2026-10-31** (feature 005, task T055). Worked examples use the reference month of `specs/005-home-and-analytics/quickstart.md`: October 2026, twelve USD trades with results +120, -90, +60, -150, +200, +80, -40, +110, -70, +150, -90, +60 (net +340.00), plan answers Yes, not judged, Yes, No, Yes, Yes, Partly, Yes, not judged, Yes, No, not judged.
+
+## Scope of a figure
+
+A trade is in the figures when it is not deleted, its trading day is in the chosen period (first and last trading day, both included), and its account is in the chosen scope: with no account chosen, **all Live accounts, archived ones included**; a chosen account of any kind is shown on its own. Backtest accounts are never mixed into the all-accounts scope. Figures are made **per currency**: the trades of the scope are grouped by their account's currency and each group is its own block. Nothing is added or converted across currencies and no capital basis is invented.
+
+- **Status:** confirmed by the owner on 2026-10-31.
+- Confirmed by owner on: 2026-10-31
+- Source: owner decisions 2026-10-27 and 2026-10-30; `specs/005-home-and-analytics/research.md` section 2. Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Win, loss, set aside, and win rate
+
+A **win** has a net result above zero and a **loss** below zero (as in feature 001). With a **break-even band** b greater than zero (a view option, never saved) a trade whose net result is from -b to +b is **set aside**: neither a win nor a loss for the win rate and the streaks. **Win rate k of n**: k wins of n counted trades, where the counted trades are those not set aside; the percentage is 100 k / n rounded half up to a whole percent, a dash with the reason "no trades" when n is zero. A win rate with n below 10 is marked **few trades**.
+
+Worked example (reference month): 7 wins of 12 counted, 58%. With b = 40.00 the trade of -40.00 is set aside: 7 of 11, 64%.
+
+- **Status:** confirmed by the owner on 2026-10-31.
+- Confirmed by owner on: 2026-10-31
+- Source: the owner's request for a break-even band option (2026-10-27); `research/06-analytics-and-scoring.md`. Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Profit factor, average win and loss, payoff ratio
+
+**Profit factor** is the sum of the winning net results divided by the absolute sum of the losing net results, over all trades of the block, whatever the band (the band changes what counts as a win, never the money); six decimals, shown to two. It is a dash with the reason "no losing trades" when there is none, and with "needs at least 2 trades, has N" below 2 trades. **Average win** is the mean net result of the wins and **average loss** the mean of the losses (strictly above and below zero, the band ignored), each a dash with "no winning trades" or "no losing trades" when there are none. **Payoff ratio** is the average win divided by the absolute average loss, a dash with "needs a win and a loss" otherwise.
+
+Worked example (reference month): wins 780.00 over 7 trades, losses 440.00 over 5: profit factor 780 / 440 = 1.77, average win 111.43, average loss 88.00, payoff 1.27. A ten-trade example: wins +200, +100, +50 and losses -80, -40, -60, -30, -20, -50, -10 give profit factor 350 / 290 = 1.21, average win 116.67, average loss 41.43, payoff 2.82.
+
+- **Status:** confirmed by the owner on 2026-10-31.
+- Confirmed by owner on: 2026-10-31
+- Source: common definitions of the field (`research/14-analytics-concepts.md`); the minimum sample is this feature's own rule. Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Expectancy
+
+**Expectancy in money** is the net result of all trades divided by their number (six decimals, shown to two). **Expectancy in R** is the sum of the R multiples of the trades that have one divided by their number; the figure says how many trades had an R ("8 of 12 trades") and is a dash with "no stop recorded on N of N trades" when none has. Both are dashes with "needs at least 2 trades, has N" below 2 trades.
+
+Worked example: net +340.00 over 12 trades: +28.33 per trade; ten trades of the example above: 60 / 10 = 6.00.
+
+- **Status:** confirmed by the owner on 2026-10-31.
+- Confirmed by owner on: 2026-10-31
+- Source: common definitions of the field; the R rule is feature 000's (net divided by risk). Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Largest win and largest loss
+
+The **largest win** is the highest net result above zero and the **largest loss** the lowest below zero, each with the trading day of the trade (the earlier one when two are equal); a dash with "no winning trades" or "no losing trades" when there is none.
+
+Worked example (reference month): +200.00 on Thu 8 Oct, -150.00 on Tue 6 Oct.
+
+- **Status:** confirmed by the owner on 2026-10-31.
+- Confirmed by owner on: 2026-10-31
+- Source: common definitions of the field. Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Maximum drawdown
+
+The running net result is taken trade by trade in **trading-day order, then entry time, then id**. The peak starts at 0 before the first trade. The **maximum drawdown** is the largest fall from a peak to a later point of the running result, in money (a positive amount shown as a loss, for example -150.00), with the trading day of the peak ("the start" when the peak is the 0 before the first trade) and of the trough. With two or more trades and no fall it is zero, with the day of the first trade for both. It is a dash with "needs at least 2 trades, has N" below 2 trades. It is never a percentage: the journal has no capital to take one of.
+
+Worked example (reference month): the running result is 120, 30, 90, -60, 140, 220, 180, 290, 220, 370, 280, 340. The running result peaks at 120.00 on Thu 1 Oct and later falls to -60.00 on Tue 6 Oct (the lower peaks of 90.00 and 220.00 fall less): the largest fall is 180.00.
+
+- **Status:** confirmed by the owner on 2026-10-31.
+- Confirmed by owner on: 2026-10-31
+- Source: `research/06-analytics-and-scoring.md` (drawdown on realised results); the start-at-zero peak is this feature's rule. Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Streaks
+
+A **winning streak** is a run of consecutive wins and a **losing streak** a run of consecutive losses, in the order of the running result. A trade that is neither (zero, or set aside by the band) ends a run without extending it. The figure is the length of the longest run with the days of its first and last trade; a dash with "needs at least 2 trades, has N" below 2 trades, and "no winning trades" or "no losing trades" when none exists.
+
+Worked example (reference month): the longest winning streak is 2 (Thu 8 and Fri 9 Oct), the longest losing streak 1.
+
+- **Status:** confirmed by the owner on 2026-10-31.
+- Confirmed by owner on: 2026-10-31
+- Source: common definitions of the field. Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Minimum samples
+
+A statistic that needs more than one trade (profit factor, expectancy, payoff ratio, drawdown, streaks) is a dash below 2 trades. A rate or a ratio made of fewer than 10 trades is marked **few trades** (shown, never hidden). Every figure shows the number of trades it was made of.
+
+- **Status:** confirmed by the owner on 2026-10-31 (the numbers 2 and 10 as proposed).
+- Confirmed by owner on: 2026-10-31
+- Source: constitution III (every statistic states its definition and its sample size). Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Weekday and hour
+
+The **weekday** of a trade is the weekday of its **trading day**, not of the calendar date of its entry (they differ for an account that starts its day in the evening). The **hour** is the hour of the **entry** in the journal time zone, so 09:41 and 10:14 fall in the 09:00 and the 10:00 hour. Weekdays Monday to Friday are always listed in the breakdown, Saturday and Sunday only when they have a trade, and the other breakdowns list only the values that have trades.
+
+- **Status:** confirmed by the owner on 2026-10-31.
+- Confirmed by owner on: 2026-10-31
+- Source: the trading-day rule of feature 003; owner answer 2026-10-30 on weekends. Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Edge leak and Rule replay
+
+The trades of a block are split by their plan answer into **followed** (Yes), **not followed** (No or Partly, because Partly never counts as following the plan) and **not judged yet** (no answer). The **edge leak** is the net result of the not-followed trades (negative when they cost money, positive when plan-breaking trades earned it). The replay lines are: followed, not followed (the edge leak), not judged yet, **actual** (their sum) and **without the plan-breaking trades** (the actual result minus the edge leak, so the not-judged trades stay in). Each line shows its trade count and the screen says how many trades are judged of how many. A trade not judged yet is never placed on a side by guess.
+
+Worked example (reference month): followed +720.00 (6 trades), not followed -280.00 (3), not judged -100.00 (3), actual +340.00 (12), without the plan-breaking trades +620.00 (9). The sample day of feature 001 (W +300 Yes, L1 -125 Yes, L2 -130 No): actual +45.00, edge leak -130.00, without +175.00, 3 of 3 judged.
+
+- **Status:** confirmed by the owner on 2026-10-31 (No or Partly, answered 2026-10-30).
+- Confirmed by owner on: 2026-10-31
+- Source: the owner, 2026-10-27 (edge leak in the first slice) and 2026-10-30 (the definition); `research/12-owner-decisions.md` idea C. Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Cost of a mistake
+
+For each mistake, the **trades that carry it** in the scope (each trade once per mistake it carries, so a trade with two mistakes appears under both and the rows do not add up to a total), the sum of their net results, their plan figure, and the mistake's **records** for the period (the same count as the Mistakes counter: each tag on a trade and each whole-day record). A mistake with no trade in the scope is not listed.
+
+Worked example (reference month): Chased entry on two trades (-150.00 and -90.00): 2 trades, -240.00; Moved stop on the second of them: 1 trade, -90.00.
+
+- **Status:** confirmed by the owner on 2026-10-31.
+- Confirmed by owner on: 2026-10-31
+- Source: the owner's request for the cost of each mistake (2026-10-27); `research/14-analytics-concepts.md`. Confirmed: the owner, in chat, 2026-10-31 (all eleven rules, read one by one in words with their worked examples).
+
+## Definitions shown on the screens
+
+The words the screens and the API show for each statistic (the Definition link of every row). They are the same text as in `backend/internal/analytics/definitions.go`, and a test checks that the two files agree. The sections above say the rules in full with their worked examples.
+
+- **netResult**: The sum of the net results of the trades in the scope: gross result minus costs, or the typed result when there are no dollars per point. Closed trades only, judged or not.
+- **winRate**: The number of winning trades (net result above zero) out of the trades counted, as k of n with a percentage rounded half up to a whole number. A trade inside the break-even band, when a band is set, is set aside and not counted. Marked few trades below 10.
+- **profitFactor**: The sum of the net results of the winning trades divided by the sum of the net results of the losing trades, as a positive number. Not shown when there is no losing trade or fewer than 2 trades. Every trade in the scope counts, judged or not, whatever the break-even band.
+- **expectancy**: The net result of all the trades divided by their number: what a trade is worth on average. Not shown below 2 trades.
+- **expectancyR**: The sum of the R multiples of the trades that have one divided by their number. A trade has an R only when a stop was recorded. Not shown when no trade has one or below 2 trades.
+- **averageWin**: The mean net result of the winning trades (net result above zero). The break-even band is ignored. Not shown when there is no winning trade.
+- **averageLoss**: The mean net result of the losing trades (net result below zero). The break-even band is ignored. Not shown when there is no losing trade.
+- **payoffRatio**: The average win divided by the average loss, as a positive number: how much a win is worth compared with a loss. Not shown without a win and a loss.
+- **largestWin**: The highest net result above zero, with its trading day. Not shown when there is no winning trade.
+- **largestLoss**: The lowest net result below zero, with its trading day. Not shown when there is no losing trade.
+- **maxDrawdown**: The largest fall of the running net result from a peak to a later low, in money, with the days of the peak and the trough. The running result starts at 0 and trades are taken in trading-day, then entry-time order. Never a percentage: there is no capital to take one of. Not shown below 2 trades.
+- **winStreak**: The longest run of consecutive winning trades, in the order of the running result. A trade that is neither a win nor a loss (zero, or inside the break-even band) ends a run. Not shown below 2 trades.
+- **lossStreak**: The longest run of consecutive losing trades, in the order of the running result. A trade that is neither a win nor a loss (zero, or inside the break-even band) ends a run. Not shown below 2 trades.

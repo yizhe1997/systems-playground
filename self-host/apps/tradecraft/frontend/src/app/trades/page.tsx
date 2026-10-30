@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { PAGE_SIZES, PAGE_SIZE_COOKIE, pickPageSize } from "@/lib/pageSize";
 import { api, apiPaged, ApiFailure } from "@/lib/api";
-import { getAccounts, getSettings } from "@/lib/data";
+import { getAccounts, getMistakes, getSettings } from "@/lib/data";
 import { count, currentMonth } from "@/lib/format";
 import type { Trade } from "@/lib/types";
 import { TradeFilters } from "@/components/TradeFilters";
@@ -12,6 +12,7 @@ import { TradesTable } from "@/components/TradesTable";
 import { CouldNotLoad } from "@/components/Notice";
 import { Pager } from "@/components/Pager";
 import { ExportButton } from "@/components/ExportButton";
+import { ActiveFilters, extraFilters } from "@/components/ActiveFilters";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +76,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   const deleted = one(sp.deleted) === "1";
   const backtests = one(sp.backtests) === "1";
   const hasBacktestAccounts = accounts.some((a) => a.kind === "backtest");
+  const extra = extraFilters(sp); // the filters a breakdown row of Analytics opens (feature 005)
   const page = Math.max(1, Number.parseInt(one(sp.page), 10) || 1);
   const PAGE_SIZE = pickPageSize(one(sp.size), (await cookies()).get(PAGE_SIZE_COOKIE)?.value);
 
@@ -84,6 +86,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   if (to) q.set("to", to);
   if (deleted) q.set("deleted", "true");
   if (backtests) q.set("includeBacktests", "true");
+  for (const [k, v] of Object.entries(extra)) q.set(k, v);
 
   q.set("limit", String(PAGE_SIZE));
   q.set("offset", String((page - 1) * PAGE_SIZE));
@@ -133,7 +136,8 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <Head canLog={canLog} />
-      <TradeFilters accounts={accounts} account={account} from={from} to={to} deleted={deleted} backtests={backtests} monthFrom={month.from} monthTo={month.to} />
+      <TradeFilters accounts={accounts} account={account} from={from} to={to} deleted={deleted} backtests={backtests} monthFrom={month.from} monthTo={month.to} keep={extra} />
+      {Object.keys(extra).length > 0 && <ActiveFilters extra={extra} base={{ account, from, to, deleted: deleted ? "1" : "", backtests: backtests ? "1" : "" }} mistakes={await getMistakes(true).catch(() => [])} />}
       {deleted && !problem && (
         <p className="banner" role="status">
           <span><strong>Showing deleted trades.</strong> They are hidden everywhere else until restored.</span>
@@ -155,7 +159,7 @@ export default async function TradesPage({ searchParams }: { searchParams: Promi
         </p>
       )}
       {!problem && total > PAGE_SIZES[0] && (
-        <Pager page={page} pageSize={PAGE_SIZE} total={total} params={{ account, from, to, deleted: deleted ? "1" : "", backtests: backtests ? "1" : "" }} />
+        <Pager page={page} pageSize={PAGE_SIZE} total={total} params={{ account, from, to, deleted: deleted ? "1" : "", backtests: backtests ? "1" : "", ...extra }} />
       )}
       {!problem && trades.length === 0 && !deleted && !anyTrades && (
         <div className="card empty">
