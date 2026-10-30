@@ -8,6 +8,17 @@ SELECT * FROM trade_detail
         OR account_id IN (SELECT a.id FROM account a WHERE a.kind = 'live'))
    AND (sqlc.narg(from_day)::date IS NULL OR trading_day >= sqlc.narg(from_day)::date)
    AND (sqlc.narg(to_day)::date IS NULL OR trading_day <= sqlc.narg(to_day)::date)
+   AND (sqlc.narg(weekday)::int IS NULL OR extract(isodow FROM trading_day)::int = sqlc.narg(weekday)::int)
+   AND (sqlc.narg(entry_hour)::int IS NULL
+        OR extract(hour FROM entry_at AT TIME ZONE (SELECT js.time_zone FROM journal_settings js LIMIT 1))::int = sqlc.narg(entry_hour)::int)
+   AND (sqlc.narg(instrument)::text IS NULL OR instrument = sqlc.narg(instrument)::text)
+   AND (sqlc.narg(direction)::text IS NULL OR direction = sqlc.narg(direction)::text)
+   AND (sqlc.narg(mistake_id)::uuid IS NULL
+        OR EXISTS (SELECT 1 FROM trade_mistake tm WHERE tm.trade_id = trade_detail.id AND tm.mistake_id = sqlc.narg(mistake_id)::uuid))
+   AND (sqlc.narg(plan)::text IS NULL
+        OR (sqlc.narg(plan)::text = 'followed' AND plan_followed = 'yes')
+        OR (sqlc.narg(plan)::text = 'notfollowed' AND plan_followed IN ('no', 'partly'))
+        OR (sqlc.narg(plan)::text = 'notjudged' AND plan_followed IS NULL))
  ORDER BY entry_at DESC, id DESC
  LIMIT NULLIF(sqlc.arg(page_size)::int, 0) OFFSET sqlc.arg(page_offset)::int;
 
@@ -18,7 +29,18 @@ SELECT count(*)::bigint FROM trade_detail
    AND (sqlc.narg(account_id)::uuid IS NOT NULL OR sqlc.arg(include_backtests)::boolean
         OR account_id IN (SELECT a.id FROM account a WHERE a.kind = 'live'))
    AND (sqlc.narg(from_day)::date IS NULL OR trading_day >= sqlc.narg(from_day)::date)
-   AND (sqlc.narg(to_day)::date IS NULL OR trading_day <= sqlc.narg(to_day)::date);
+   AND (sqlc.narg(to_day)::date IS NULL OR trading_day <= sqlc.narg(to_day)::date)
+   AND (sqlc.narg(weekday)::int IS NULL OR extract(isodow FROM trading_day)::int = sqlc.narg(weekday)::int)
+   AND (sqlc.narg(entry_hour)::int IS NULL
+        OR extract(hour FROM entry_at AT TIME ZONE (SELECT js.time_zone FROM journal_settings js LIMIT 1))::int = sqlc.narg(entry_hour)::int)
+   AND (sqlc.narg(instrument)::text IS NULL OR instrument = sqlc.narg(instrument)::text)
+   AND (sqlc.narg(direction)::text IS NULL OR direction = sqlc.narg(direction)::text)
+   AND (sqlc.narg(mistake_id)::uuid IS NULL
+        OR EXISTS (SELECT 1 FROM trade_mistake tm WHERE tm.trade_id = trade_detail.id AND tm.mistake_id = sqlc.narg(mistake_id)::uuid))
+   AND (sqlc.narg(plan)::text IS NULL
+        OR (sqlc.narg(plan)::text = 'followed' AND plan_followed = 'yes')
+        OR (sqlc.narg(plan)::text = 'notfollowed' AND plan_followed IN ('no', 'partly'))
+        OR (sqlc.narg(plan)::text = 'notjudged' AND plan_followed IS NULL));
 
 -- name: GetTrade :one
 SELECT * FROM trade_detail WHERE id = sqlc.arg(id)::uuid;

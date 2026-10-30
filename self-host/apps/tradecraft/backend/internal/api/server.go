@@ -83,6 +83,8 @@ func New(pool *pgxpool.Pool, now func() time.Time, secret string, opts ...Option
 	app.Post("/accounts/:id/restore", s.restoreAccount)
 
 	app.Get("/trades", s.listTrades)
+	app.Get("/analytics", s.getAnalytics) // feature 005: Home and Analytics, read-only
+	app.Get("/needs-you", s.getNeedsYou)
 	app.Post("/trades", s.createTrade)
 	app.Post("/trades/preview", s.previewTrade)
 	app.Get("/trades/:id", s.getTrade)
