@@ -114,8 +114,9 @@ Check: the domain document and the decision log are updated in the same change a
 
 - **Flow**: constitution (once), specify, wireframes, clarify, wireframe sign-off, plan, checklist,
   tasks, analyze, visual-direction check, implement, visual review, converge.
-- **Branches**: all work stays on the single branch `tradecraft_v2`; there are no per-feature git
-  branches. Feature directories are still numbered under `specs/`.
+- **Branches**: each feature is built on its own branch, `feat/<short-name>`, cut from `main`; work is
+  never committed straight to `main`. A feature reaches `main` through a pull request, merged only
+  when the owner says so. Feature directories are still numbered under `specs/`.
 - **Commits**: commits are made only when the owner asks, or as part of a flow step the owner has
   started. Nothing is pushed to the remote without the owner's say-so. Commit messages end with
   the Co-Authored-By line for Claude.
@@ -129,9 +130,9 @@ Check: the domain document and the decision log are updated in the same change a
 This constitution overrides other practices in this project. An amendment MUST be recorded with
 its date and reason and MUST bump the version. Versioning follows semantic rules: MAJOR for
 removing or redefining a principle, MINOR for adding a principle or materially widening guidance,
-PATCH for wording and clarifications. Amendment log: 1.2.0 (2026-10-04) replaced the Reuse constraint (v1 reused where it fits) with a clean start, reused only when the owner asks for a feature, because the owner wants no inherited assumptions in v2; 1.1.0 (2026-10-02) split principle V into
+PATCH for wording and clarifications. Amendment log: 1.2.1 (2026-10-31) replaced the single-branch `tradecraft_v2` rule with one `feat/` branch per feature merged to `main` by pull request, because features 004 and 005 were built and merged that way and the old text no longer described the practice; 1.2.0 (2026-10-04) replaced the Reuse constraint (v1 reused where it fits) with a clean start, reused only when the owner asks for a feature, because the owner wants no inherited assumptions in v2; 1.1.0 (2026-10-02) split principle V into
 wireframe sign-off, a once-per-project visual direction, and a post-implementation visual review,
 because the first screens drafted assumed the earlier project's look. Each specification, plan and review MUST check compliance with
 these principles, and any exception MUST be written down with its justification and an expiry.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-04
+**Version**: 1.2.1 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-31
