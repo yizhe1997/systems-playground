@@ -135,6 +135,12 @@ EOF
   bash "$REPO_ROOT/self-host/infra/scripts/pg-restore.sh" bats-pg:db "$RUN_DIR/pg_bats-pg_db.dump" > "$TEST_DIR/.pg-restore.log" 2>&1
   docker exec "$PG_CID" psql -U tester -d testdb -Atc "select v from t;" > "$TEST_DIR/.restored-pg.txt"
 
+  # PG_ONLY run (a later timestamp than RUN_DIR): dumps only, no tarballs.
+  sleep 1
+  PG_ONLY=1 bash wsl-backup.sh > "$TEST_DIR/.pgonly.log" 2>&1
+  export PGONLY_DIR
+  PGONLY_DIR="$(find "$TEST_DIR/backups" -maxdepth 1 -type d -name '2*' | sort | tail -1)"
+
   # Restore round trip: each volume into a fresh "restored_*" volume, content captured for the
   # @test blocks below to diff against the original.
   restore_volume() {
@@ -195,6 +201,12 @@ teardown_file() {
 
 @test "backup: produces the filebrowser bind-mount tarball" {
   [ -f "$RUN_DIR/bind_filebrowser_files.tar.gz" ]
+}
+
+@test "PG_ONLY: dumps the database but writes no tarballs" {
+  [ "$PGONLY_DIR" != "$RUN_DIR" ]
+  [ -s "$PGONLY_DIR/pg_bats-pg_db.dump" ]
+  [ -z "$(find "$PGONLY_DIR" -name '*.tar.gz')" ]
 }
 
 @test "retention: prunes the backdated run" {

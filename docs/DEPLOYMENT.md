@@ -306,6 +306,8 @@ Backups stay on the same machine for now (no off-host copy, to save money). Rest
 
 Run one now: `sudo systemctl start systems-playground-infra-backup.service` (or `-apps-`). Check the schedule with `systemctl list-timers 'systems-playground-*-backup.timer'`; the log is `logs/wsl-backup.log` in the layer folder.
 
+Or run it from GitHub: Actions > **Backup Now** > Run workflow. Pick the layer, optionally name specific databases (`n8n:db`), and tick *Postgres dumps only* for a few-second safety copy before a risky change (it skips the slow volume tarballs). Restores are never a workflow.
+
 Restore a Postgres database (stop the app, not its db; Infisical needs its `.env` back first):
 
 ```bash

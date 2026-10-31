@@ -107,6 +107,16 @@ for ENTRY in "${PG_DATABASES[@]}"; do
   fi
 done
 
+# PG_ONLY=1 (set by the "Backup Now" workflow): stop after the dumps, skip the slow volume and folder tarballs.
+if [ "${PG_ONLY:-0}" = "1" ]; then
+  if [ "$FAILED" -eq 1 ]; then
+    alert "Postgres-only backup completed with at least one failure — check $LOGFILE"
+    exit 1
+  fi
+  echo "[✔] Postgres dumps only: $RUN_DIR"
+  exit 0
+fi
+
 # --- 2. Docker named volumes belonging to THIS layer's services ---
 # Scoped via each service's Docker Compose project label — `docker compose` auto-tags every
 # volume it creates with `com.docker.compose.project=<project-name>`, where <project-name>
