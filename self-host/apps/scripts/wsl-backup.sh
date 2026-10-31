@@ -113,6 +113,55 @@ for ENTRY in "${REDIS_SNAPSHOT_SERVICES[@]}"; do
   fi
 done
 
+# --- 1c. Dump each Postgres database (pg_dump -Fc) while its service keeps running ---
+# A logical dump is consistent without stopping anything, so these services no longer go down for
+# the nightly backup, and the dump restores into any Postgres version (see pg-restore.sh). The list
+# is deliberately explicit, "<directory>:<compose service>", one entry per Postgres container. The
+# container is found through its Compose labels (same project = directory basename as the volume
+# scoping below) and pg_dump runs inside it over the local socket, so no password is needed here;
+# POSTGRES_USER and POSTGRES_DB come from the container's own environment.
+# A dump is kept only if pg_restore can list it. Once it is, that service's data volume is left out
+# of the tarballs below; if the dump fails, the live volume is still tarred as a fallback.
+# Overridable via env so the test suite can use fixture names (see test-infra-backup-restore.bats).
+# shellcheck disable=SC2206
+PG_DATABASES=(${PG_DATABASES_OVERRIDE:-tradecraft:postgres})
+
+echo "[*] Dumping Postgres databases (services stay up)..."
+PG_DUMPED_VOLS=()
+for ENTRY in "${PG_DATABASES[@]}"; do
+  PROJECT="${ENTRY%%:*}"
+  SVC_NAME="${ENTRY##*:}"
+  OUT="$RUN_DIR/pg_${PROJECT}_${SVC_NAME}.dump"
+  CID="$(docker ps -q --filter "label=com.docker.compose.project=$PROJECT" \
+                      --filter "label=com.docker.compose.service=$SVC_NAME" | head -n1)"
+  if [ -z "$CID" ]; then
+    echo "    -> $ENTRY is not running, skipping (not deployed here?)"
+    continue
+  fi
+  echo "    -> $ENTRY"
+  if docker exec "$CID" sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$OUT.part" \
+     && docker exec -i "$CID" pg_restore -l < "$OUT.part" >/dev/null; then
+    mv "$OUT.part" "$OUT"
+    while IFS= read -r VOL; do
+      [ -n "$VOL" ] && PG_DUMPED_VOLS+=("$VOL")
+    done < <(docker inspect -f '{{range .Mounts}}{{if eq .Type "volume"}}{{.Name}}{{"\n"}}{{end}}{{end}}' "$CID")
+  else
+    rm -f "$OUT.part"
+    alert "Postgres dump of $ENTRY failed â€” falling back to a live volume snapshot of it"
+    FAILED=1
+  fi
+done
+
+# PG_ONLY=1 (set by the "Backup Now" workflow): stop after the dumps, skip the slow volume and folder tarballs.
+if [ "${PG_ONLY:-0}" = "1" ]; then
+  if [ "$FAILED" -eq 1 ]; then
+    alert "Postgres-only backup completed with at least one failure — check $LOGFILE"
+    exit 1
+  fi
+  echo "[✔] Postgres dumps only: $RUN_DIR"
+  exit 0
+fi
+
 # --- 2. Docker named volumes belonging to THIS layer's services ---
 # Scoped via each service's Docker Compose project label — same mechanism as the infra layer's
 # wsl-backup.sh, see there for the full reasoning. This is what keeps app backups from picking up
@@ -134,6 +183,10 @@ done
 VOLS_TO_BACKUP+=("${EXTERNAL_VOLUMES[@]}")
 
 for VOL in "${VOLS_TO_BACKUP[@]}"; do
+  if [[ " ${PG_DUMPED_VOLS[*]} " == *" $VOL "* ]]; then
+    echo "    -> $VOL is covered by its pg_dump, skipping the tarball"
+    continue
+  fi
   if ! docker volume inspect "$VOL" >/dev/null 2>&1; then
     echo "    -> $VOL not found, skipping (not created yet?)"
     continue

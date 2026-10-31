@@ -255,7 +255,7 @@ The workflows involved, all under `.github/workflows/`:
 | `deploy-infra-n8n.yml` | `build-infra-n8n.yml` completes, or `self-host/infra/n8n/**` changes | Same pattern as `deploy-app-portfolio.yml`, for n8n |
 | `deploy-infra-dsh.yml` | `build-infra-dsh.yml` completes, or its own file changes | Same pattern, with one deliberate difference: the compose file lands as `compose.yml`, so `wsl-startup.sh`'s `*/docker-compose.yml` glob skips it (a bare boot-time `docker compose up -d` would blank its API keys). See [`self-host/infra/dsh/README.md`](../self-host/infra/dsh/README.md) and [ADR 004](adrs/004-dsh-isolation-and-access.md) |
 | `dsh-send-link.yml` | Manual only (`workflow_dispatch`) | Reads dsh's launch link on the host and posts it to a private Discord webhook (`DSH_LINK_WEBHOOK_URL` in Infisical), masked in the run log, so a new browser can be enrolled without shell access; when dsh is published it also includes a loopback link (host machine only) as a fallback for model and settings editing |
-| `deploy-app-scripts.yml` | `Test Apps Scripts` (`test-apps-scripts.yml`) passes on `main` | Copies `wsl-startup.sh`/`wsl-shutdown.sh`/`wsl-backup.sh` to `$APP_BASE_DIR` — gated on tests passing first, unlike most other rows here |
+| `deploy-app-scripts.yml` | `Test Apps Scripts` (`test-apps-scripts.yml`) passes on `main` | Copies `wsl-startup.sh`/`wsl-shutdown.sh`/`wsl-backup.sh`/`pg-restore.sh` to `$APP_BASE_DIR` — gated on tests passing first, unlike most other rows here |
 | `deploy-infra-scripts.yml` | `Test Infra Scripts` (`test-infra-scripts.yml`) passes on `main` | Same, to `$INFRA_BASE_DIR` — gated on tests passing first, unlike most other rows here |
 | `deploy-infra-uptime-kuma.yml`, `deploy-infra-watchtower.yml`, `deploy-infra-filebrowser.yml`, `deploy-infra-infisical.yml`, `deploy-infra-registry.yml`, `deploy-infra-observability.yml` | Its own `self-host/infra/<service>/**` changes | Copies that service's compose file to the host and restarts it |
 
@@ -285,6 +285,40 @@ Setup steps (`make bootstrap` downloads and extracts the runner binary for you �
 **✅ Verify this worked:** on GitHub, go to **Settings → Actions → Runners** — your runner should show as **Idle** with a green dot. Push a trivial change to a path one of the workflows in the table above watches (or use **Actions → Instant Deploy (Self-Hosted) → Run workflow** to trigger one manually) and confirm the run appears and finishes green. Once that's done, `$APP_BASE_DIR/portfolio` should be populated and `docker ps` should show the portfolio's containers running — visiting the hostname you configured in section 1's `config.yml` should now actually reach it.
 
 ---
+
+## 4. Backups and Restores
+
+Two independent nightly runs, one per layer: `wsl-backup.sh` in `$INFRA_BASE_DIR` and in `$APP_BASE_DIR`, each started by its own systemd timer (section 2). Each run makes a folder `backups/<YYYYMMDD_HHMMSS>/` holding:
+
+- `pg_<folder>_<service>.dump`: a `pg_dump -Fc` of each Postgres database (Infisical, n8n, Penpot, Hindsight, LiteLLM, Tradecraft), taken while the service keeps running.
+- `volume_<name>.tar.gz`: every other Docker volume of that layer (a Postgres data volume is skipped when its dump succeeded).
+- `bind_<name>.tar.gz`: known host folders (Filebrowser's files, Infisical's `.env`).
+
+Backups stay on the same machine for now (no off-host copy, to save money). Restore point is the last run, so up to a day can be lost.
+
+| What | Where to set it | Default |
+|---|---|---|
+| Frequency | `OnCalendar=` in `self-host/<layer>/scripts/systemd/systems-playground-<layer>-backup.timer`, then re-run `bootstrap.sh` (or copy the unit to `/etc/systemd/system/` and `sudo systemctl daemon-reload`) | `daily` |
+| Retention | repo variable `BACKUP_RETENTION_DAYS` (infra) / `APP_BACKUP_RETENTION_DAYS` (apps), written to the host's `.env` by the scripts deploy | 14 days |
+| Folder | repo variable `BACKUP_DIR` / `APP_BACKUP_DIR` | `$INFRA_BASE_DIR/backups`, `$APP_BASE_DIR/backups` |
+| Failure alerts | secret `DISCORD_WEBHOOK_INFRA_ALERTS` | off if unset |
+| Which databases | `PG_DATABASES=(...)` near the top of the layer's `wsl-backup.sh` (`<folder>:<compose service>`) | see the script |
+
+Run one now: `sudo systemctl start systems-playground-infra-backup.service` (or `-apps-`). Check the schedule with `systemctl list-timers 'systems-playground-*-backup.timer'`; the log is `logs/wsl-backup.log` in the layer folder.
+
+Or run it from GitHub: Actions > **Backup Now** > Run workflow. Pick the layer, optionally name specific databases (`n8n:db`), and tick *Postgres dumps only* for a few-second safety copy before a risky change (it skips the slow volume tarballs). Restores are never a workflow.
+
+Restore a Postgres database (stop the app, not its db; Infisical needs its `.env` back first):
+
+```bash
+cd "$INFRA_BASE_DIR/n8n" && docker compose stop n8n
+"$INFRA_BASE_DIR/pg-restore.sh" n8n:db "$INFRA_BASE_DIR/backups/<timestamp>/pg_n8n_db.dump"
+cd "$INFRA_BASE_DIR/n8n" && docker compose start n8n
+```
+
+It runs as one transaction, so a failed restore leaves the current data alone. Volume and folder restores, and the full disaster-recovery order, are in [`self-host/infra/scripts/README.md`](../self-host/infra/scripts/README.md) and [`self-host/apps/scripts/README.md`](../self-host/apps/scripts/README.md).
+
+Later options, not built: a UI such as Backrest (restic) over the `backups/` folder for deduplication, encryption and an off-host copy; it need not be Postgres-only.
 
 ## Windows/WSL2-Specific Notes
 

@@ -37,7 +37,8 @@ jobs:
           cp self-host/apps/scripts/wsl-startup.sh "$APP_BASE_DIR/wsl-startup.sh"
           cp self-host/apps/scripts/wsl-shutdown.sh "$APP_BASE_DIR/wsl-shutdown.sh"
           cp self-host/apps/scripts/wsl-backup.sh "$APP_BASE_DIR/wsl-backup.sh"
-          chmod +x "$APP_BASE_DIR/wsl-startup.sh" "$APP_BASE_DIR/wsl-shutdown.sh" "$APP_BASE_DIR/wsl-backup.sh"
+          cp self-host/apps/scripts/pg-restore.sh "$APP_BASE_DIR/pg-restore.sh"
+          chmod +x "$APP_BASE_DIR/wsl-startup.sh" "$APP_BASE_DIR/wsl-shutdown.sh" "$APP_BASE_DIR/wsl-backup.sh" "$APP_BASE_DIR/pg-restore.sh"
           echo "✅ Scripts deployed."
 
       - name: Write app .env

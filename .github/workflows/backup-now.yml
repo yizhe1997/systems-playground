@@ -1,0 +1,38 @@
+name: Backup Now
+
+# Manual, on-demand run of the same wsl-backup.sh the nightly timers run. Restores are deliberately not
+# a workflow: they overwrite live data, so they stay a hand-run step (docs/DEPLOYMENT.md, section 4).
+on:
+  workflow_dispatch:
+    inputs:
+      layer:
+        description: Which layer to back up
+        type: choice
+        options: [both, infra, apps]
+        default: both
+      databases:
+        description: "Only these Postgres databases, space separated <folder>:<service> (e.g. n8n:db penpot:penpot-postgres). Empty = all of the layer's."
+        type: string
+        default: ""
+      pg_only:
+        description: Postgres dumps only (skip the slow volume and folder tarballs)
+        type: boolean
+        default: false
+
+jobs:
+  backup:
+    runs-on: self-hosted
+    env:
+      INFRA_BASE_DIR: ${{ vars.INFRA_BASE_DIR }}
+      APP_BASE_DIR: ${{ vars.APP_BASE_DIR }}
+      LAYER: ${{ inputs.layer }}
+      DATABASES: ${{ inputs.databases }}
+      PG_ONLY_INPUT: ${{ inputs.pg_only }}
+    steps:
+      - name: Run the backup
+        shell: bash
+        run: |
+          if [ -n "$DATABASES" ]; then export PG_DATABASES_OVERRIDE="$DATABASES"; fi
+          if [ "$PG_ONLY_INPUT" = "true" ]; then export PG_ONLY=1; fi
+          if [ "$LAYER" != "apps" ]; then bash "${INFRA_BASE_DIR:?INFRA_BASE_DIR must be set}/wsl-backup.sh"; fi
+          if [ "$LAYER" != "infra" ]; then bash "${APP_BASE_DIR:?APP_BASE_DIR must be set}/wsl-backup.sh"; fi

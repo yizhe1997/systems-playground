@@ -17,7 +17,7 @@ No `CLOUDFLARED_LOG_DIR` anymore — `cloudflared`/`cloudflared-sync` run under 
 |---|---|---|
 | `wsl-startup.sh` | `ExecStart` of the `systems-playground-infra.service` systemd oneshot (installed by `scripts/bootstrap.sh`) | Brings up every `self-host/infra/*/docker-compose.yml` (Infisical first, health-checked, since everything else depends on it for secrets; the self-hosted registry second, reachability-checked, since services like n8n pull their image from it rather than a public registry — see below). No longer starts Docker itself or the Cloudflare tunnel/sync loop — those are `systemd`'s job now (`docker.service`, `cloudflared.service`, `cloudflared-sync.service`), independent of this script's own lifecycle. See `docs/DEPLOYMENT.md` section 2 for the full picture, including the one Windows-side step this doesn't cover on a WSL2 host. |
 | `wsl-shutdown.sh` | `ExecStop` of the same `systems-playground-infra.service` unit | Stops every discovered infra service. |
-| `wsl-backup.sh` | Daily, via `systems-playground-infra-backup.timer` (systemd, installed by `scripts/bootstrap.sh`). See below. | Backs up every Docker named volume belonging to an infra-layer service, plus known bind-mounted paths (Filebrowser's files, Infisical's `.env`). Scoped to this layer only — see "How volumes get scoped" below. The apps layer has its own independent `wsl-backup.sh` (`self-host/apps/scripts/`) for its own volumes. |
+| `wsl-backup.sh` | Daily, via `systems-playground-infra-backup.timer` (systemd, installed by `scripts/bootstrap.sh`). See below. | Dumps each Postgres database (`pg_dump -Fc`, no downtime), backs up every other Docker named volume belonging to an infra-layer service, plus known bind-mounted paths (Filebrowser's files, Infisical's `.env`). Scoped to this layer only — see "How volumes get scoped" below. The apps layer has its own independent `wsl-backup.sh` (`self-host/apps/scripts/`) for its own volumes. |
 | `cloudflared-sync.sh` | Opt-in (`CLOUDFLARED_SYNC_ENABLED=true`), runs as its own `cloudflared-sync.service` systemd user unit, `Restart=always` | Keeps `~/.cloudflared/config.yml`'s ingress rules — and the matching Cloudflare DNS records — in sync with whichever running containers (anywhere on the host, not just this layer) are labelled `cloudflare.tunnel.hostname` / `cloudflare.tunnel.port`. See "Automatic Cloudflare Tunnel routing" below. |
 
 `systemd/` in this directory holds the unit files `scripts/bootstrap.sh` installs for this layer (`cloudflared.service`, `cloudflared-sync.service` as user units in `~/.config/systemd/user/`; `systems-playground-infra.service` and `systems-playground-infra-backup.service`/`.timer` as system units in `/etc/systemd/system/`, plus enabling Docker's own `docker.service`) — see `docs/DEPLOYMENT.md` section 2 for what each one does and why `cloudflared`/`cloudflared-sync` specifically are user-level rather than system-level.
@@ -58,6 +58,7 @@ Everything from one run lives together under `$BACKUP_DIR/<YYYYMMDD_HHMMSS>/` �
 
 | File pattern | What it is | Restore target |
 |---|---|---|
+| `pg_<directory>_<service>.dump` | A `pg_dump -Fc` of one Postgres database, taken with the service still running. That service's data volume is then **not** tarred (the dump replaces it); if a dump fails, the volume is tarred live as a fallback and an alert fires. | `pg-restore.sh <directory>:<service> <file>` — see "Restoring a Postgres database". |
 | `volume_<name>.tar.gz` | A Docker named volume, contents tarred from its root. `<name>` is the exact Docker volume name at backup time (check `docker volume ls` or just read the filename). | Recreate/locate the Docker volume `<name>`, extract into it. |
 | `bind_filebrowser_files.tar.gz` | Filebrowser's `data/files` directory (the actual resume/CMS files — not covered by any Docker volume). | `$INFRA_BASE_DIR/filebrowser/data/` |
 | `bind_infisical_env.tar.gz` | Infisical's own `.env` — its bootstrap `INFISICAL_ENCRYPTION_KEY`/`INFISICAL_AUTH_SECRET`, not stored anywhere else. | `$INFRA_BASE_DIR/infisical/` |
@@ -70,7 +71,7 @@ Recommended order for a full disaster-recovery restore (fresh host):
 
 1. Deploy this repo's compose files to the host as usual (via the deploy workflows, or manually) — you need the directory structure in place before restoring into it.
 2. Restore `bind_infisical_env.tar.gz` into `$INFRA_BASE_DIR/infisical/` first.
-3. Restore `volume_<infisical pg_data>.tar.gz` and `volume_<infisical redis_data>.tar.gz` (see the generic recipe below).
+3. Bring up only Infisical's `db` container and restore `pg_infisical_db.dump` with `pg-restore.sh` (see "Restoring a Postgres database"), then restore `volume_<infisical redis_data>.tar.gz` (generic recipe below).
 4. Start Infisical, confirm it's healthy (`curl http://localhost:8090/api/status` — port comes from [its docker-compose.yml](../infisical/docker-compose.yml), check there if this ever changes) before doing anything else.
 5. Restore every other infra service's volumes and bind-mounted paths in any order — n8n, Filebrowser (needs both its volumes *and* `bind_filebrowser_files.tar.gz` to get files back, not just one), uptime-kuma, registry. Watchtower needs nothing restored — it only mounts the Docker socket, no persistent state. Portfolio and other apps are backed up separately — see [the apps-layer scripts README](../../apps/scripts/README.md).
 
@@ -95,6 +96,24 @@ docker run --rm \
 # 4. Restart
 cd "$INFRA_BASE_DIR/<service>" && docker compose start   # or `up -d` if it was never running
 ```
+
+### Restoring a Postgres database
+
+```bash
+# 1. Stop the app that uses the database (not the Postgres container itself)
+cd "$BASE/<directory>" && docker compose stop <app service>
+
+# 2. Make sure the Postgres container is up, then restore (one transaction: a failure leaves the old data in place)
+cd "$BASE/<directory>" && docker compose up -d <postgres service>
+"$BASE/pg-restore.sh" <directory>:<postgres service> "$BACKUP_RUN/pg_<directory>_<service>.dump"
+
+# 3. Start the app again
+cd "$BASE/<directory>" && docker compose start <app service>
+```
+
+`$BASE` is `$INFRA_BASE_DIR`. The list of databases is `PG_DATABASES` at the top of `wsl-backup.sh`; add a line there when a new service brings its own Postgres. Restoring needs a running container of the same service, so on a fresh host bring up the (empty) Postgres container first, then restore into it.
+
+**Later options (not built):** a UI such as Backrest (restic) could back up the `backups/` folder with deduplication and encryption, and send it off-host when a target exists. It need not be Postgres-only: any other datastore added later can use the same folder. Off-host copies are skipped for now to save money.
 
 ### Restoring a bind-mounted path
 

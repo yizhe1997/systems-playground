@@ -12,8 +12,8 @@
 #
 # Exercises every distinct code path in the infra backup script: a generic Compose-labelled
 # volume, the hardcoded n8n external-volume carve-out, a bind-mounted path, the
-# Postgres-stop-around-snapshot special case (directory literally named "n8n" — the script keys
-# off the name, not the image), and retention pruning.
+# Postgres dump (a real Postgres container: dumped with the service left running, its data volume
+# left out of the tarballs, restored with pg-restore.sh after the row is deleted), and retention pruning.
 
 setup_file() {
   # Git Bash/MSYS2 support: MSYS_NO_PATHCONV=1 stops MSYS from mangling the CONTAINER-side target
@@ -52,28 +52,24 @@ BACKUP_DIR=$TEST_DIR/backups
 BACKUP_RETENTION_DAYS=1
 EOF
 
-  # Fake n8n fixture, named "bats-n8n" rather than the real "n8n" -- Compose infers a project's
-  # identity from directory basename alone, so a fixture literally named "n8n" would target the
-  # SAME project as the real ~/infra/n8n if this test is ever run directly on a host that's also
-  # running it for real (this bit a previous version of this suite: the label-filtered volume
-  # queries below picked up an unrelated real volume and corrupted a variable with an embedded
-  # newline). wsl-backup.sh's Postgres-quiesce special case is pointed at this name via the
-  # POSTGRES_BACKED_SERVICES_OVERRIDE env var below instead of relying on the literal name.
-  #
-  # Volume key is deliberately not "n8n_data" — Compose would name the resulting volume
-  # "bats-n8n_n8n_data" (<project>_<key>), colliding with the EXTERNAL_VOLUMES fixture created
-  # below (which mimics the real script's hardcoded external-volume names).
-  export POSTGRES_BACKED_SERVICES_OVERRIDE="bats-n8n"
-  mkdir -p "$TEST_DIR/bats-n8n"
-  cat > "$TEST_DIR/bats-n8n/docker-compose.yml" <<'EOF'
+  # Postgres fixture, named "bats-pg" rather than a real service name -- Compose infers a project's
+  # identity from directory basename alone, so a fixture named like a real ~/infra directory would
+  # target the real project if this test ever runs on a host that also runs it for real.
+  # wsl-backup.sh is pointed at it via PG_DATABASES_OVERRIDE.
+  export PG_DATABASES_OVERRIDE="bats-pg:db"
+  mkdir -p "$TEST_DIR/bats-pg"
+  cat > "$TEST_DIR/bats-pg/docker-compose.yml" <<'EOF'
 services:
-  n8n:
-    image: alpine:3.20
-    command: sleep infinity
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tester
+      POSTGRES_PASSWORD: tester
+      POSTGRES_DB: testdb
     volumes:
-      - workdata:/data
+      - pgdata:/var/lib/postgresql/data
 volumes:
-  workdata:
+  pgdata:
 EOF
 
   mkdir -p "$TEST_DIR/widget"
@@ -94,7 +90,12 @@ EOF
 
   cd "$TEST_DIR"
   docker compose -f widget/docker-compose.yml -p widget up -d
-  docker compose -f bats-n8n/docker-compose.yml -p bats-n8n up -d
+  docker compose -f bats-pg/docker-compose.yml -p bats-pg up -d
+  export PG_CID
+  PG_CID="$(docker ps -q --filter label=com.docker.compose.project=bats-pg --filter label=com.docker.compose.service=db)"
+  until docker exec "$PG_CID" pg_isready -U tester -d testdb -h 127.0.0.1 >/dev/null 2>&1; do sleep 1; done
+  docker exec "$PG_CID" psql -U tester -d testdb -c "create table t(v text); insert into t values ('pg-test-content');" >/dev/null
+  PG_STARTED="$(docker inspect -f '{{.State.StartedAt}}' "$PG_CID")"
 
   # External volumes, named to match the EXTERNAL_VOLUMES_OVERRIDE below rather than the real
   # "n8n_postgres_data"/"n8n_n8n_data" -- those are real, populated production volumes on this
@@ -109,10 +110,9 @@ EOF
 
   export WIDGET_VOL
   WIDGET_VOL="$(docker volume ls -q --filter label=com.docker.compose.project=widget)"
-  export N8N_VOL
-  N8N_VOL="$(docker volume ls -q --filter label=com.docker.compose.project=bats-n8n)"
+  export PG_VOL
+  PG_VOL="$(docker volume ls -q --filter label=com.docker.compose.project=bats-pg)"
   docker run --rm -v "$WIDGET_VOL":/data alpine sh -c 'echo widget-test-content > /data/marker.txt'
-  docker run --rm -v "$N8N_VOL":/data alpine sh -c 'echo n8n-vol-test-content > /data/marker.txt'
 
   # Backdated fake run, to verify retention pruning.
   OLD_RUN="$TEST_DIR/backups/20200101_000000"
@@ -128,7 +128,18 @@ EOF
   export RUN_DIR
   RUN_DIR="$(find "$TEST_DIR/backups" -maxdepth 1 -type d -name '2*' | sort | tail -1)"
 
-  docker compose -f bats-n8n/docker-compose.yml -p bats-n8n ps --status running > "$TEST_DIR/.n8n-after-backup.txt" 2>/dev/null || true
+  [ "$(docker inspect -f '{{.State.StartedAt}}' "$PG_CID")" = "$PG_STARTED" ] && echo unchanged > "$TEST_DIR/.pg-uptime.txt"
+
+  # Postgres round trip: delete the row, then restore the dump with the real pg-restore.sh.
+  docker exec "$PG_CID" psql -U tester -d testdb -c "delete from t;" >/dev/null
+  bash "$REPO_ROOT/self-host/infra/scripts/pg-restore.sh" bats-pg:db "$RUN_DIR/pg_bats-pg_db.dump" > "$TEST_DIR/.pg-restore.log" 2>&1
+  docker exec "$PG_CID" psql -U tester -d testdb -Atc "select v from t;" > "$TEST_DIR/.restored-pg.txt"
+
+  # PG_ONLY run (a later timestamp than RUN_DIR): dumps only, no tarballs.
+  sleep 1
+  PG_ONLY=1 bash wsl-backup.sh > "$TEST_DIR/.pgonly.log" 2>&1
+  export PGONLY_DIR
+  PGONLY_DIR="$(find "$TEST_DIR/backups" -maxdepth 1 -type d -name '2*' | sort | tail -1)"
 
   # Restore round trip: each volume into a fresh "restored_*" volume, content captured for the
   # @test blocks below to diff against the original.
@@ -141,7 +152,6 @@ EOF
   }
 
   restore_volume "$WIDGET_VOL" > "$TEST_DIR/.restored-widget.txt"
-  restore_volume "$N8N_VOL" > "$TEST_DIR/.restored-n8n.txt"
   restore_volume "bats-n8n_postgres_data" > "$TEST_DIR/.restored-n8n-postgres.txt"
   restore_volume "bats-n8n_n8n_data" > "$TEST_DIR/.restored-n8n-n8n.txt"
 
@@ -151,39 +161,34 @@ EOF
 teardown_file() {
   cd "$TEST_DIR" 2>/dev/null || true
   docker compose -f widget/docker-compose.yml -p widget down -v 2>/dev/null || true
-  docker compose -f bats-n8n/docker-compose.yml -p bats-n8n down -v 2>/dev/null || true
+  docker compose -f bats-pg/docker-compose.yml -p bats-pg down -v 2>/dev/null || true
   docker volume rm bats-n8n_postgres_data bats-n8n_n8n_data 2>/dev/null || true
   docker volume rm "restored_${WIDGET_VOL:-__none__}" 2>/dev/null || true
-  docker volume rm "restored_${N8N_VOL:-__none__}" 2>/dev/null || true
   docker volume rm restored_bats-n8n_postgres_data restored_bats-n8n_n8n_data 2>/dev/null || true
 }
 
 @test "syntax check" {
-  bash -n "$REPO_ROOT/self-host/infra/scripts/wsl-backup.sh"
+  bash -n "$REPO_ROOT/self-host/infra/scripts/wsl-backup.sh" && bash -n "$REPO_ROOT/self-host/infra/scripts/pg-restore.sh"
 }
 
 @test "backup: exits 0" {
   [ "$(cat "$TEST_DIR/.backup.exit")" = "0" ]
 }
 
-@test "backup: stops n8n before snapshotting" {
-  grep -qi "Stopping bats-n8n" "$TEST_DIR/.backup.log"
+@test "backup: dumps the Postgres database" {
+  [ -s "$RUN_DIR/pg_bats-pg_db.dump" ]
 }
 
-@test "backup: restarts n8n after snapshotting" {
-  grep -qi "Starting bats-n8n" "$TEST_DIR/.backup.log"
+@test "backup: Postgres container was not restarted" {
+  [ "$(cat "$TEST_DIR/.pg-uptime.txt")" = "unchanged" ]
 }
 
-@test "backup: n8n container is running again" {
-  grep -q n8n "$TEST_DIR/.n8n-after-backup.txt"
+@test "backup: Postgres data volume is not also tarred" {
+  [ ! -f "$RUN_DIR/volume_${PG_VOL}.tar.gz" ]
 }
 
 @test "backup: produces the widget volume tarball" {
   [ -f "$RUN_DIR/volume_${WIDGET_VOL}.tar.gz" ]
-}
-
-@test "backup: produces the n8n volume tarball" {
-  [ -f "$RUN_DIR/volume_${N8N_VOL}.tar.gz" ]
 }
 
 @test "backup: produces the n8n external postgres_data tarball" {
@@ -198,6 +203,12 @@ teardown_file() {
   [ -f "$RUN_DIR/bind_filebrowser_files.tar.gz" ]
 }
 
+@test "PG_ONLY: dumps the database but writes no tarballs" {
+  [ "$PGONLY_DIR" != "$RUN_DIR" ]
+  [ -s "$PGONLY_DIR/pg_bats-pg_db.dump" ]
+  [ -z "$(find "$PGONLY_DIR" -name '*.tar.gz')" ]
+}
+
 @test "retention: prunes the backdated run" {
   [ ! -d "$TEST_DIR/backups/20200101_000000" ]
 }
@@ -206,8 +217,8 @@ teardown_file() {
   [ "$(cat "$TEST_DIR/.restored-widget.txt")" = "widget-test-content" ]
 }
 
-@test "restore: n8n volume content matches the original" {
-  [ "$(cat "$TEST_DIR/.restored-n8n.txt")" = "n8n-vol-test-content" ]
+@test "restore: pg-restore.sh brings the deleted row back" {
+  [ "$(cat "$TEST_DIR/.restored-pg.txt")" = "pg-test-content" ]
 }
 
 @test "restore: n8n external postgres_data content matches the original" {
