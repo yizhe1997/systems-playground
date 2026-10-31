@@ -15,7 +15,7 @@ There's no `APP_LOG_DIR` GitHub var wired here either (same as infra's `INFRA_LO
 |---|---|---|
 | `wsl-startup.sh` | `ExecStart` of the `systems-playground-apps.service` systemd oneshot (installed by `scripts/bootstrap.sh`), ordered after the infra layer's own oneshot — see [the infra scripts README](../../infra/scripts/README.md) | Auto-discovers every `self-host/apps/*/docker-compose.yml`, pulls and starts each. Compose auto-merges any co-located `docker-compose.override.yml` (e.g. the portfolio's prod override) — no special handling needed for that. |
 | `wsl-shutdown.sh` | `ExecStop` of the same `systems-playground-apps.service` unit | Stops every discovered app service. |
-| `wsl-backup.sh` | Daily, via `systems-playground-apps-backup.timer` (systemd, installed by `scripts/bootstrap.sh`). See below. | Backs up every Docker named volume belonging to an app-layer service. Independent from the infra layer's own `wsl-backup.sh` — each backs up only its own layer's volumes, into its own backup directory, so the two never mix. |
+| `wsl-backup.sh` | Daily, via `systems-playground-apps-backup.timer` (systemd, installed by `scripts/bootstrap.sh`). See below. | Dumps each Postgres database (`pg_dump -Fc`, no downtime), then backs up every other Docker named volume belonging to an app-layer service. Independent from the infra layer's own `wsl-backup.sh` — each backs up only its own layer's volumes, into its own backup directory, so the two never mix. |
 
 ## How volumes get scoped to this layer
 
@@ -39,7 +39,26 @@ Everything from one run lives together under `$APP_BACKUP_DIR/<YYYYMMDD_HHMMSS>/
 
 | File pattern | What it is | Restore target |
 |---|---|---|
+| `pg_<directory>_<service>.dump` | A `pg_dump -Fc` of one Postgres database, taken with the service still running. That service's data volume is then **not** tarred (the dump replaces it); if a dump fails, the volume is tarred live as a fallback and an alert fires. | `pg-restore.sh <directory>:<service> <file>` — see "Restoring a Postgres database". |
 | `volume_<name>.tar.gz` | A Docker named volume, contents tarred from its root. `<name>` is the exact Docker volume name at backup time (check `docker volume ls` or just read the filename). | Recreate/locate the Docker volume `<name>`, extract into it. |
+
+### Restoring a Postgres database
+
+```bash
+# 1. Stop the app that uses the database (not the Postgres container itself)
+cd "$BASE/<directory>" && docker compose stop <app service>
+
+# 2. Make sure the Postgres container is up, then restore (one transaction: a failure leaves the old data in place)
+cd "$BASE/<directory>" && docker compose up -d <postgres service>
+"$BASE/pg-restore.sh" <directory>:<postgres service> "$BACKUP_RUN/pg_<directory>_<service>.dump"
+
+# 3. Start the app again
+cd "$BASE/<directory>" && docker compose start <app service>
+```
+
+`$BASE` is `$APP_BASE_DIR`. The list of databases is `PG_DATABASES` at the top of `wsl-backup.sh`; add a line there when a new service brings its own Postgres. Restoring needs a running container of the same service, so on a fresh host bring up the (empty) Postgres container first, then restore into it.
+
+**Later options (not built):** a UI such as Backrest (restic) could back up the `backups/` folder with deduplication and encryption, and send it off-host when a target exists. It need not be Postgres-only: any other datastore added later can use the same folder. Off-host copies are skipped for now to save money.
 
 No bind-mounted-path backups exist for this layer today (no app persists to a plain host path) — if one ever does, it'll show up here as `bind_<name>.tar.gz`, matching the infra layer's convention.
 

@@ -68,31 +68,42 @@ for compose_file in "$SCRIPT_DIR"/*/docker-compose.yml; do
   [ -f "$compose_file" ] && SERVICE_DIRS+=("$(dirname "$compose_file")")
 done
 
-# --- 1. Quiesce Postgres-backed services before snapshotting their volumes ---
-# Tarring a live Postgres data directory is not crash-consistent — files can be mid-write. The
-# other volumes on this host (Redis, RabbitMQ, Redpanda, Filebrowser's SQLite, uptime-kuma,
-# the registry) are either not a real RDBMS or low enough stakes that a live snapshot is an
-# acceptable risk; Postgres is not, since Infisical's DB holds every secret on the host and n8n's
-# holds every workflow. This list is deliberately explicit (not auto-discovered) — add a service
-# here only if it runs its own Postgres/MySQL-style database that needs quiescing.
-# Overridable via env (see scripts/tests/test-infra-backup-restore.bats) so the test suite can
-# exercise this exact logic with fixture names that can never collide with the real ~/infra/
-# directories of the same name -- Compose infers a project's identity from directory basename
-# alone, so a same-named fixture anywhere on the same Docker daemon targets the real project too.
+# --- 1. Dump each Postgres database (pg_dump -Fc) while its service keeps running ---
+# A logical dump is consistent without stopping anything, so these services no longer go down for
+# the nightly backup, and the dump restores into any Postgres version (see pg-restore.sh). The list
+# is deliberately explicit, "<directory>:<compose service>", one entry per Postgres container. The
+# container is found through its Compose labels (same project = directory basename as the volume
+# scoping below) and pg_dump runs inside it over the local socket, so no password is needed here;
+# POSTGRES_USER and POSTGRES_DB come from the container's own environment.
+# A dump is kept only if pg_restore can list it. Once it is, that service's data volume is left out
+# of the tarballs below; if the dump fails, the live volume is still tarred as a fallback.
+# Overridable via env so the test suite can use fixture names (see test-infra-backup-restore.bats).
 # shellcheck disable=SC2206
-POSTGRES_BACKED_SERVICES=(${POSTGRES_BACKED_SERVICES_OVERRIDE:-infisical n8n})
+PG_DATABASES=(${PG_DATABASES_OVERRIDE:-infisical:db n8n:db penpot:penpot-postgres hindsight:db dsh:litellm-db})
 
-echo "[*] Stopping Postgres-backed services for a consistent snapshot..."
-for SVC in "${POSTGRES_BACKED_SERVICES[@]}"; do
-  SVC_DIR="$SCRIPT_DIR/$SVC"
-  if [ -f "$SVC_DIR/docker-compose.yml" ]; then
-    echo "    -> Stopping $SVC"
-    if ! (cd "$SVC_DIR" && docker compose stop); then
-      alert "Failed to stop $SVC before backup — its volume snapshot may be inconsistent"
-      FAILED=1
-    fi
+echo "[*] Dumping Postgres databases (services stay up)..."
+PG_DUMPED_VOLS=()
+for ENTRY in "${PG_DATABASES[@]}"; do
+  PROJECT="${ENTRY%%:*}"
+  SVC_NAME="${ENTRY##*:}"
+  OUT="$RUN_DIR/pg_${PROJECT}_${SVC_NAME}.dump"
+  CID="$(docker ps -q --filter "label=com.docker.compose.project=$PROJECT" \
+                      --filter "label=com.docker.compose.service=$SVC_NAME" | head -n1)"
+  if [ -z "$CID" ]; then
+    echo "    -> $ENTRY is not running, skipping (not deployed here?)"
+    continue
+  fi
+  echo "    -> $ENTRY"
+  if docker exec "$CID" sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$OUT.part" \
+     && docker exec -i "$CID" pg_restore -l < "$OUT.part" >/dev/null; then
+    mv "$OUT.part" "$OUT"
+    while IFS= read -r VOL; do
+      [ -n "$VOL" ] && PG_DUMPED_VOLS+=("$VOL")
+    done < <(docker inspect -f '{{range .Mounts}}{{if eq .Type "volume"}}{{.Name}}{{"\n"}}{{end}}{{end}}' "$CID")
   else
-    echo "    -> $SVC_DIR not found, skipping (not deployed here?)"
+    rm -f "$OUT.part"
+    alert "Postgres dump of $ENTRY failed â€” falling back to a live volume snapshot of it"
+    FAILED=1
   fi
 done
 
@@ -108,7 +119,7 @@ done
 # names in its docker-compose.yml. External volumes are referenced, not created, by Compose, so
 # they never get the project label and would be invisible to the filter below — listed explicitly
 # instead. If a future infra service adds its own external volume, add it here too.
-# Overridable via env, same reason as POSTGRES_BACKED_SERVICES_OVERRIDE above.
+# Overridable via env, same reason as PG_DATABASES_OVERRIDE above.
 # shellcheck disable=SC2206
 EXTERNAL_VOLUMES=(${EXTERNAL_VOLUMES_OVERRIDE:-n8n_postgres_data n8n_n8n_data})
 
@@ -123,6 +134,10 @@ done
 VOLS_TO_BACKUP+=("${EXTERNAL_VOLUMES[@]}")
 
 for VOL in "${VOLS_TO_BACKUP[@]}"; do
+  if [[ " ${PG_DUMPED_VOLS[*]} " == *" $VOL "* ]]; then
+    echo "    -> $VOL is covered by its pg_dump, skipping the tarball"
+    continue
+  fi
   if ! docker volume inspect "$VOL" >/dev/null 2>&1; then
     echo "    -> $VOL not found, skipping (not created yet?)"
     continue
@@ -137,20 +152,7 @@ for VOL in "${VOLS_TO_BACKUP[@]}"; do
   fi
 done
 
-# --- 3. Restart the Postgres-backed services now that their volumes are captured ---
-echo "[*] Restarting Postgres-backed services..."
-for SVC in "${POSTGRES_BACKED_SERVICES[@]}"; do
-  SVC_DIR="$SCRIPT_DIR/$SVC"
-  if [ -f "$SVC_DIR/docker-compose.yml" ]; then
-    echo "    -> Starting $SVC"
-    if ! (cd "$SVC_DIR" && docker compose start); then
-      alert "Failed to restart $SVC after backup — it is still down, check it manually"
-      FAILED=1
-    fi
-  fi
-done
-
-# --- 4. Known bind-mounted host paths that hold real state, not covered by a Docker volume ---
+# --- 3. Known bind-mounted host paths that hold real state, not covered by a Docker volume ---
 # Not auto-discoverable like volumes are — add a line here any time a service starts persisting
 # something to a plain host path instead of a named volume.
 declare -A BIND_PATHS=(
@@ -171,7 +173,7 @@ for NAME in "${!BIND_PATHS[@]}"; do
   fi
 done
 
-# --- 5. Prune backup runs older than BACKUP_RETENTION_DAYS ---
+# --- 4. Prune backup runs older than BACKUP_RETENTION_DAYS ---
 echo "[*] Pruning backups older than $BACKUP_RETENTION_DAYS days..."
 find "$BACKUP_DIR" -maxdepth 1 -mindepth 1 -type d -mtime "+$BACKUP_RETENTION_DAYS" -print -exec rm -rf {} \;
 
