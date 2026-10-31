@@ -286,6 +286,38 @@ Setup steps (`make bootstrap` downloads and extracts the runner binary for you â
 
 ---
 
+## 4. Backups and Restores
+
+Two independent nightly runs, one per layer: `wsl-backup.sh` in `$INFRA_BASE_DIR` and in `$APP_BASE_DIR`, each started by its own systemd timer (section 2). Each run makes a folder `backups/<YYYYMMDD_HHMMSS>/` holding:
+
+- `pg_<folder>_<service>.dump`: a `pg_dump -Fc` of each Postgres database (Infisical, n8n, Penpot, Hindsight, LiteLLM, Tradecraft), taken while the service keeps running.
+- `volume_<name>.tar.gz`: every other Docker volume of that layer (a Postgres data volume is skipped when its dump succeeded).
+- `bind_<name>.tar.gz`: known host folders (Filebrowser's files, Infisical's `.env`).
+
+Backups stay on the same machine for now (no off-host copy, to save money). Restore point is the last run, so up to a day can be lost.
+
+| What | Where to set it | Default |
+|---|---|---|
+| Frequency | `OnCalendar=` in `self-host/<layer>/scripts/systemd/systems-playground-<layer>-backup.timer`, then re-run `bootstrap.sh` (or copy the unit to `/etc/systemd/system/` and `sudo systemctl daemon-reload`) | `daily` |
+| Retention | repo variable `BACKUP_RETENTION_DAYS` (infra) / `APP_BACKUP_RETENTION_DAYS` (apps), written to the host's `.env` by the scripts deploy | 14 days |
+| Folder | repo variable `BACKUP_DIR` / `APP_BACKUP_DIR` | `$INFRA_BASE_DIR/backups`, `$APP_BASE_DIR/backups` |
+| Failure alerts | secret `DISCORD_WEBHOOK_INFRA_ALERTS` | off if unset |
+| Which databases | `PG_DATABASES=(...)` near the top of the layer's `wsl-backup.sh` (`<folder>:<compose service>`) | see the script |
+
+Run one now: `sudo systemctl start systems-playground-infra-backup.service` (or `-apps-`). Check the schedule with `systemctl list-timers 'systems-playground-*-backup.timer'`; the log is `logs/wsl-backup.log` in the layer folder.
+
+Restore a Postgres database (stop the app, not its db; Infisical needs its `.env` back first):
+
+```bash
+cd "$INFRA_BASE_DIR/n8n" && docker compose stop n8n
+"$INFRA_BASE_DIR/pg-restore.sh" n8n:db "$INFRA_BASE_DIR/backups/<timestamp>/pg_n8n_db.dump"
+cd "$INFRA_BASE_DIR/n8n" && docker compose start n8n
+```
+
+It runs as one transaction, so a failed restore leaves the current data alone. Volume and folder restores, and the full disaster-recovery order, are in [`self-host/infra/scripts/README.md`](../self-host/infra/scripts/README.md) and [`self-host/apps/scripts/README.md`](../self-host/apps/scripts/README.md).
+
+Later options, not built: a UI such as Backrest (restic) over the `backups/` folder for deduplication, encryption and an off-host copy; it need not be Postgres-only.
+
 ## Windows/WSL2-Specific Notes
 
 Everything above applies to any Ubuntu host. This section is the one place that collects things which only matter if your host specifically is Windows/WSL2 â€” if you're on bare metal or a VM, skip it.
