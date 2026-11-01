@@ -65,7 +65,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings (the same sidebar on e
 |---|---|
 | Title | Log a trade, or Edit trade with "NQ Long x2 · Wed 1 Oct 2025 · Funded 50K" |
 | Back | < Trades |
-| Basic fields | Account · Instrument · Direction (Long, Short) · Size · Entry price · Entry time (Central Time) · Exit price · Exit time (Central Time) · Dollars per point (optional) · Costs (total) · Stop price (optional) |
+| Basic fields | Account · Instrument · Direction (Long, Short) · Size · Entry price · Entry time (Central Time, with a calendar button) · Exit price · Exit time (Central Time, with a calendar button) · Dollars per point (optional) · Costs (total) · Stop price (optional) |
 | Placeholders | Choose an account · e.g. NQ · 1 · 0.00 · Date and time · e.g. 20 · 0.00 · e.g. 21440.00 |
 | Typed result | Result after costs (required) · Needed while dollars per point is blank. · dollars per point shows "Leave blank to type the result" |
 | Details | Details (collapsible) · Why I took it (thesis, optional) |
@@ -77,6 +77,7 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings (the same sidebar on e
 | Changed elsewhere | ! This trade was changed elsewhere. Reload to see the latest version. · Reload |
 | Leave prompt | Leave without saving? / Your changes will be lost. / Keep editing · Leave |
 | Numbers | ! Enter a number with a point for decimals, for example 21450.25. · ! At most 8 decimal places. · prices, size and dollars per point must be above zero |
+| Time picker | The calendar button at the right of Entry time and Exit time opens a month calendar (month and year dropdowns, week starts Monday) and, under it, "Time (24-hour)" with an hour and a minute selector and Done. Picking a day or a time writes the field; the time selectors stay disabled until a date is set. Typing still works |
 | Time messages | ! That time does not exist on that date in this time zone. · Times are typed to the minute and shown on a 24-hour clock |
 | More error messages | ! Times cannot be in the future. · ! Entry price and exit price are required. · ! Result is required while dollars per point is blank. · ! Dollars per point must be above zero. · ! Costs cannot be negative. · ! Choose an account. |
 | Actions | Save trade, or Save changes · Cancel · Delete trade (edit only) · Last saved Wed 1 Oct 10:05 |
@@ -178,3 +179,4 @@ Left for the sign-off step: the principle I exception (process information besid
 **Parked**: items 2 and 3 stay as built unless the owner says otherwise. `spec.md` still says lists are not paged; changing it makes the sign-off stale.
 
 **Owner's approval of the look**: approved by the owner on 2026-10-04, after fixes 1 and 4 were built. The owner has further feel and design changes they are not happy about; those come after feature 001 is specified.
+| 2026-11-01 | L2 Log a trade: time picker | Owner: the times need a date-time picker | Entry time and Exit time keep the typed field and gain a calendar button opening a month calendar with 24-hour hour and minute selectors (see Time picker above). Penpot L2: calendar button on every Entry and Exit time field, plus a new frame "L2 Log a trade: time picker open" |

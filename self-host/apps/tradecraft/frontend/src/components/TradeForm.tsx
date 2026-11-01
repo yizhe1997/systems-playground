@@ -7,6 +7,7 @@ import { call } from "@/lib/browserApi";
 import { dateTime, dayLabel, monthQuery, plain, screenTime } from "@/lib/format";
 import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
 import { FailureBanner, Waiting, useNoticeableWait } from "@/components/Notice";
+import { DateTimeField } from "@/components/DateTimeField";
 import { ResultPreview } from "@/components/ResultPreview";
 import { AccountOptions } from "@/components/AccountOptions";
 import { useTradeActions } from "@/components/TradeRowActions";
@@ -249,8 +250,7 @@ export function TradeForm({
 
             <div className="field">
               <label className="label" htmlFor="t-entry">Entry time ({zoneLabel})</label>
-              <input id="t-entry" className="field-input" placeholder="Date and time" value={v.entryAt} autoComplete="off"
-                onChange={(e) => set("entryAt", e.target.value)} onBlur={() => set("entryAt", screenTime(v.entryAt))} {...inv("entryAt", "t-entry")} />
+              <DateTimeField id="t-entry" value={v.entryAt} onChange={(x) => set("entryAt", x)} {...inv("entryAt", "t-entry")} />
               {err("entryAt", "t-entry")}
             </div>
 
@@ -262,8 +262,7 @@ export function TradeForm({
 
             <div className="field">
               <label className="label" htmlFor="t-exit">Exit time ({zoneLabel})</label>
-              <input id="t-exit" className="field-input" placeholder="Date and time" value={v.exitAt} autoComplete="off"
-                onChange={(e) => set("exitAt", e.target.value)} onBlur={() => set("exitAt", screenTime(v.exitAt))} {...inv("exitAt", "t-exit")} />
+              <DateTimeField id="t-exit" value={v.exitAt} onChange={(x) => set("exitAt", x)} {...inv("exitAt", "t-exit")} />
               {err("exitAt", "t-exit")}
               <p className="helper">Times are typed to the minute and shown on a 24-hour clock, for example Wed 1 Oct 2025 09:41 or 2025-10-01 09:41.</p>
             </div>
