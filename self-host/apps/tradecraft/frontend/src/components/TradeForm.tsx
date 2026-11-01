@@ -4,10 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Account, FieldError, Preview, Trade, TradeFormValues, TradeImages as TradeImagesAnswer } from "@/lib/types";
 import { call } from "@/lib/browserApi";
-import { dateTime, dayLabel, monthQuery, plain, screenTime } from "@/lib/format";
+import { dateTime, dayLabel, monthQuery, plain } from "@/lib/format";
 import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
 import { FailureBanner, Waiting, useNoticeableWait } from "@/components/Notice";
-import { DateTimeField } from "@/components/DateTimeField";
 import { ResultPreview } from "@/components/ResultPreview";
 import { AccountOptions } from "@/components/AccountOptions";
 import { useTradeActions } from "@/components/TradeRowActions";
@@ -37,9 +36,9 @@ function fromTrade(t: Trade): TradeFormValues {
     direction: t.direction,
     size: t.size,
     entryPrice: t.entryPrice,
-    entryAt: screenTime(t.entryAt),
+    entryAt: localMinute(t.entryAt),
     exitPrice: t.exitPrice,
-    exitAt: screenTime(t.exitAt),
+    exitAt: localMinute(t.exitAt),
     dollarsPerPoint: t.dollarsPerPoint ?? "",
     cost: t.cost,
     stopPrice: t.stopPrice ?? "",
@@ -47,6 +46,9 @@ function fromTrade(t: Trade): TradeFormValues {
     thesis: t.thesis ?? "",
   };
 }
+
+// "2025-10-01 09:41" from an API instant such as "2025-10-01T09:41:00-05:00"; the native field reads and writes it with a T
+const localMinute = (iso: string) => iso.slice(0, 16).replace("T", " ");
 
 const orNull = (s: string) => (s.trim() === "" ? null : s.trim());
 
@@ -250,7 +252,7 @@ export function TradeForm({
 
             <div className="field">
               <label className="label" htmlFor="t-entry">Entry time ({zoneLabel})</label>
-              <DateTimeField id="t-entry" value={v.entryAt} onChange={(x) => set("entryAt", x)} {...inv("entryAt", "t-entry")} />
+              <input id="t-entry" type="datetime-local" className="field-input" value={v.entryAt.replace(" ", "T")} onChange={(e) => set("entryAt", e.target.value.replace("T", " "))} {...inv("entryAt", "t-entry")} />
               {err("entryAt", "t-entry")}
             </div>
 
@@ -262,9 +264,9 @@ export function TradeForm({
 
             <div className="field">
               <label className="label" htmlFor="t-exit">Exit time ({zoneLabel})</label>
-              <DateTimeField id="t-exit" value={v.exitAt} onChange={(x) => set("exitAt", x)} {...inv("exitAt", "t-exit")} />
+              <input id="t-exit" type="datetime-local" className="field-input" value={v.exitAt.replace(" ", "T")} onChange={(e) => set("exitAt", e.target.value.replace("T", " "))} {...inv("exitAt", "t-exit")} />
               {err("exitAt", "t-exit")}
-              <p className="helper">Times are typed to the minute and shown on a 24-hour clock, for example Wed 1 Oct 2025 09:41 or 2025-10-01 09:41.</p>
+              <p className="helper">Times are set to the minute.</p>
             </div>
 
             <div className="field">

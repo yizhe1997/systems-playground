@@ -22,12 +22,6 @@
 .range-trigger { display: inline-flex; align-items: center; gap: var(--space-sm); min-width: 250px; text-align: left; cursor: pointer; color: var(--ink); }
 .range-trigger svg { color: var(--text-2); flex-shrink: 0; }
 .range-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.datetime { position: relative; }
-.datetime .field-input { padding-right: 40px; }
-.datetime-open { position: absolute; top: 0; right: 0; height: 100%; width: 40px; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--text-2); cursor: pointer; }
-.datetime-open:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.datetime-time { align-items: center; }
-.datetime-time select { width: auto; display: inline-block; }
 .range-actions { display: flex; justify-content: space-between; gap: var(--space-md); border-top: 1px solid var(--border); margin-top: var(--space-sm); padding-top: var(--space-sm); }
 .range-popup .rdp-root {
   --rdp-accent-color: var(--ink);

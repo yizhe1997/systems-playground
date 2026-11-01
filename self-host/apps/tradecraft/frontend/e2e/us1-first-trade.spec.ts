@@ -109,21 +109,15 @@ test("leaving a changed form asks first; Keep editing stays", async ({ page }) =
   await expect(page).toHaveURL(/\/accounts/);
 });
 
-test("the time field takes ISO or the screen style, and shows the screen style", async ({ page }) => {
+test("the time fields are native date-time fields and a saved time comes back to the minute", async ({ page }) => {
   const acct = await makeAccount(uniq("Time"));
   await page.goto("/trades/new");
-  const entry = page.getByLabel(/Entry time \(/);
-  await entry.fill("2025-10-01 09:41");
-  await entry.blur();
-  await expect(entry).toHaveValue("Wed 1 Oct 2025 09:41");
+  await page.getByLabel(/Entry time \(/).fill("2025-10-01T09:41");
   await fillTrade(page, { account: acct.name, instrument: "TM1", direction: "Long", size: "1", entryPrice: "10", exitPrice: "11", dollarsPerPoint: "5" });
-  await page.getByLabel(/Exit time \(/).fill("Thu 1 Oct 2025 09:50"); // the weekday does not match
-  await page.getByRole("button", { name: "Save trade" }).click();
-  await expect(page.getByText("! That weekday does not match the date.")).toBeVisible();
-  await page.getByLabel(/Exit time \(/).fill("Wed 1 Oct 2025 09:50");
+  await page.getByLabel(/Exit time \(/).fill("2025-10-01T09:50");
   await page.getByRole("button", { name: "Save trade" }).click();
   await expect(page).toHaveURL(/\/trades\?from=2025-10-01/);
   await page.goto(tradesFor(acct.id));
   await rowAction(page, /TM1/, "Edit");
-  await expect(page.getByLabel(/Entry time \(/)).toHaveValue("Wed 1 Oct 2025 09:41");
+  await expect(page.getByLabel(/Entry time \(/)).toHaveValue("2025-10-01T09:41");
 });
