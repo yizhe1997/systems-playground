@@ -77,7 +77,8 @@ TRADECRAFT; Reviews, Trades, Mistakes, Accounts, Settings (the same sidebar on e
 | Changed elsewhere | ! This trade was changed elsewhere. Reload to see the latest version. · Reload |
 | Leave prompt | Leave without saving? / Your changes will be lost. / Keep editing · Leave |
 | Numbers | ! Enter a number with a point for decimals, for example 21450.25. · ! At most 8 decimal places. · prices, size and dollars per point must be above zero |
-| Time messages | ! That time does not exist on that date in this time zone. · Times are typed to the minute and shown on a 24-hour clock |
+| Time fields | Entry time and Exit time are native date-time fields: segmented day, month, year, hour and minute, no letters, the browser's own picker icon inside the field (as Jump to date in Reviews). The clock follows the browser's locale |
+| Time messages | ! That time does not exist on that date in this time zone. · Times are set to the minute |
 | More error messages | ! Times cannot be in the future. · ! Entry price and exit price are required. · ! Result is required while dollars per point is blank. · ! Dollars per point must be above zero. · ! Costs cannot be negative. · ! Choose an account. |
 | Actions | Save trade, or Save changes · Cancel · Delete trade (edit only) · Last saved Wed 1 Oct 10:05 |
 
@@ -178,3 +179,4 @@ Left for the sign-off step: the principle I exception (process information besid
 **Parked**: items 2 and 3 stay as built unless the owner says otherwise. `spec.md` still says lists are not paged; changing it makes the sign-off stale.
 
 **Owner's approval of the look**: approved by the owner on 2026-10-04, after fixes 1 and 4 were built. The owner has further feel and design changes they are not happy about; those come after feature 001 is specified.
+| 2026-11-01 | L2 Log a trade: time picker | Owner: a date-time picker; then: not a text field, picker icon inside the field like Jump to date | Entry time and Exit time are native date-time fields (see Time fields above). Penpot L2: calendar icon inside every time field; the open-picker frame removed (the browser draws it) |

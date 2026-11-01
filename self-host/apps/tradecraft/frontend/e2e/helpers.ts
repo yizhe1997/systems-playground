@@ -101,9 +101,9 @@ export async function fillTrade(
   if (f.direction) await page.getByText(f.direction, { exact: true }).click();
   if (f.size !== undefined) await page.getByLabel("Size", { exact: true }).fill(f.size);
   if (f.entryPrice !== undefined) await page.getByLabel("Entry price").fill(f.entryPrice);
-  if (f.entryDate !== undefined && f.entryTime !== undefined) await page.getByLabel(/Entry time \(/).fill(`${f.entryDate} ${f.entryTime}`);
+  if (f.entryDate !== undefined && f.entryTime !== undefined) await page.getByLabel(/Entry time \(/).fill(`${f.entryDate}T${f.entryTime}`);
   if (f.exitPrice !== undefined) await page.getByLabel("Exit price").fill(f.exitPrice);
-  if (f.exitDate !== undefined && f.exitTime !== undefined) await page.getByLabel(/Exit time \(/).fill(`${f.exitDate} ${f.exitTime}`);
+  if (f.exitDate !== undefined && f.exitTime !== undefined) await page.getByLabel(/Exit time \(/).fill(`${f.exitDate}T${f.exitTime}`);
   if (f.dollarsPerPoint !== undefined) await page.getByLabel(/Dollars per point/).fill(f.dollarsPerPoint);
   if (f.cost !== undefined) await page.getByLabel(/Costs \(total\)/).fill(f.cost);
   if (f.stopPrice !== undefined) await page.getByLabel(/Stop price/).fill(f.stopPrice);

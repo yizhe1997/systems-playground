@@ -38,9 +38,9 @@ async function saveATrade(page: Page) {
   await page.getByText("Long", { exact: true }).click();
   await page.getByLabel("Size", { exact: true }).fill("1");
   await page.getByLabel("Entry price").fill("100");
-  await page.getByLabel(/Entry time \(/).fill("2025-06-15 09:00");
+  await page.getByLabel(/Entry time \(/).fill("2025-06-15T09:00");
   await page.getByLabel("Exit price").fill("101");
-  await page.getByLabel(/Exit time \(/).fill("2025-06-15 09:30");
+  await page.getByLabel(/Exit time \(/).fill("2025-06-15T09:30");
   await page.getByLabel(/Dollars per point/).fill("10");
   return timed(async () => {
     await page.getByRole("button", { name: "Save trade" }).click();
