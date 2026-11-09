@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { call } from "@/lib/browserApi";
-import { nowIn, zoneName } from "@/lib/format";
+import { nowIn, utcOffset, zoneName } from "@/lib/format";
 import { FailureBanner, Waiting, useNoticeableWait } from "@/components/Notice";
 
 export function SettingsForm({ timeZone, zones }: { timeZone: string; zones: string[] }) {
@@ -15,6 +15,7 @@ export function SettingsForm({ timeZone, zones }: { timeZone: string; zones: str
   const [saving, setSaving] = useState(false);
   const waiting = useNoticeableWait(saving);
   const known = zones.includes(zone);
+  const labels = useMemo(() => Object.fromEntries(zones.map((z) => [z, `${z} (${utcOffset(z)})`])), [zones]);
   // the clock is read in the browser, so server and browser never disagree about the minute
   const [clock, setClock] = useState("");
   useEffect(() => {
@@ -55,19 +56,19 @@ export function SettingsForm({ timeZone, zones }: { timeZone: string; zones: str
         {/* the card is as wide as every other card; its content keeps a readable line length */}
         <div className="stack-md" style={{ maxWidth: 640 }}>
         <div className="field">
-          <label className="label" htmlFor="s-zone">Time zone (type to search any standard time zone)</label>
-          <input id="s-zone" className="field-input" list="zones" value={zone} autoComplete="off" spellCheck={false}
+          <label className="label" htmlFor="s-zone">Time zone (open the list, or type a name to jump to it)</label>
+          <select id="s-zone" className="field-input" value={zone}
             onChange={(e) => { setZone(e.target.value); setSaved(false); setError(null); }}
-            aria-invalid={error ? true : undefined} aria-describedby={error ? "s-zone-err" : undefined} />
-          <datalist id="zones">
-            {zones.map((z) => <option key={z} value={z} />)}
-          </datalist>
+            aria-invalid={error ? true : undefined} aria-describedby={error ? "s-zone-err" : undefined}>
+            {/* name first so typing "Chi" jumps to Chicago; the offset is today's, so it already includes daylight saving */}
+            {(known ? zones : [zone, ...zones]).map((z) => <option key={z} value={z}>{labels[z] ?? z}</option>)}
+          </select>
           {error && <p className="field-error" id="s-zone-err">! {error}</p>}
           <p className="helper">Times you enter and see, and the trading day, are read in this zone. Changing it never moves a trade in time.</p>
         </div>
         {known && (
           <div>
-            <div><strong>{zoneName(zone)}</strong> ({zone})</div>
+            <div><strong>{zoneName(zone)}</strong> ({zone}, {utcOffset(zone)} right now)</div>
             <p className="helper">Current time in this zone: {clock}</p>
           </div>
         )}

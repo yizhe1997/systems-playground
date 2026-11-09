@@ -86,6 +86,12 @@ export function currentMonth(zone: string, now = new Date()): { from: string; to
   return { from: `${y}-${mm}-01`, to: `${y}-${mm}-${String(last).padStart(2, "0")}` };
 }
 
+/** "UTC-06:00" for America/Chicago right now (follows daylight saving, so it moves twice a year); "UTC" for UTC. */
+export function utcOffset(zone: string): string {
+  const v = new Intl.DateTimeFormat("en-US", { timeZone: zone, timeZoneName: "longOffset" }).formatToParts(new Date()).find((p) => p.type === "timeZoneName")?.value ?? "GMT";
+  return v === "GMT" ? "UTC" : v.replace("GMT", "UTC").replace("−", "-");
+}
+
 /** "Central Time" for America/Chicago. */
 export function zoneName(zone: string): string {
   const part = new Intl.DateTimeFormat("en-US", { timeZone: zone, timeZoneName: "longGeneric" }).formatToParts(new Date()).find((p) => p.type === "timeZoneName");
