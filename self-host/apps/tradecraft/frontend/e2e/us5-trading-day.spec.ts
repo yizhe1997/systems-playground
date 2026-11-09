@@ -52,8 +52,9 @@ test("changing the time zone in Settings moves trading days, never the instant",
   try {
     await page.goto("/settings");
     await expect(page.getByText("Current time in this zone:")).toContainText(/\d{2}:\d{2}/);
-    await page.getByLabel(/Time zone/).fill("America/New_York");
+    await page.getByLabel(/Time zone/).selectOption("America/New_York");
     await expect(page.getByText("Eastern Time")).toBeVisible();
+    await expect(page.getByText(/America\/New_York, UTC-0[45]:00 right now/)).toBeVisible();
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("Saved. Trading days were recomputed.")).toBeVisible();
 
@@ -61,10 +62,8 @@ test("changing the time zone in Settings moves trading days, never the instant",
     expect(after.tradingDay).toBe("2025-10-08");
     expect(new Date(after.exitAt).getTime()).toBe(new Date(before.exitAt).getTime());
 
-    // a name that is not a zone is refused
-    await page.getByLabel(/Time zone/).fill("Nowhere/Land");
-    await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("! Choose a time zone from the list.")).toBeVisible();
+    // a name that is not a zone is refused (the dropdown can no longer produce one, so ask the API directly)
+    expect((await api("PUT", "/settings", { timeZone: "Nowhere/Land" })).status).toBe(422);
   } finally {
     await api("PUT", "/settings", { timeZone: "America/Chicago" });
   }

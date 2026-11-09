@@ -15,7 +15,11 @@ export function SettingsForm({ timeZone, zones }: { timeZone: string; zones: str
   const [saving, setSaving] = useState(false);
   const waiting = useNoticeableWait(saving);
   const known = zones.includes(zone);
-  const labels = useMemo(() => Object.fromEntries(zones.map((z) => [z, `${z} (${utcOffset(z)})`])), [zones]);
+  // offsets are filled in after mount: the server and the browser can carry different zone databases, and a
+  // server-rendered label that differs from the browser's is a hydration error
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const labels = useMemo(() => mounted ? Object.fromEntries(zones.map((z) => [z, `${z} (${utcOffset(z)})`])) : {}, [zones, mounted]);
   // the clock is read in the browser, so server and browser never disagree about the minute
   const [clock, setClock] = useState("");
   useEffect(() => {
@@ -68,7 +72,7 @@ export function SettingsForm({ timeZone, zones }: { timeZone: string; zones: str
         </div>
         {known && (
           <div>
-            <div><strong>{zoneName(zone)}</strong> ({zone}, {utcOffset(zone)} right now)</div>
+            <div><strong>{zoneName(zone)}</strong> ({zone}{mounted && `, ${utcOffset(zone)} right now`})</div>
             <p className="helper">Current time in this zone: {clock}</p>
           </div>
         )}
